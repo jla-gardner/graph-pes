@@ -6,15 +6,26 @@ from typing import Callable, TypeVar
 
 import pytorch_lightning as pl
 import torch
-from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
+from graph_pes.data import keys
+from pytorch_lightning.callbacks import (
+    LearningRateMonitor,
+    ModelCheckpoint,
+    RichProgressBar,
+)
 from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
 
 from .core import GraphPESModel
-from .data import AtomicGraph
-from .data.batching import AtomicDataLoader, AtomicGraphBatch
+from .data import (
+    AtomicDataLoader,
+    AtomicGraph,
+    AtomicGraphBatch,
+    batch_graphs,
+    is_periodic,
+    number_of_atoms,
+    number_of_structures,
+)
 from .loss import RMSE, Loss, WeightedLoss
 from .transform import PerAtomScale, PerAtomStandardScaler, Scale
-from .util import ALL_PROPERTIES, Property, PropertyKey
 
 T = TypeVar("T", bound=GraphPESModel)
 
@@ -41,7 +52,7 @@ def train_model(
         raise ValueError("The model does not appear to work") from e
 
     # TODO check using a strict flag that all the data have the same keys
-    train_batch = AtomicGraphBatch.from_graphs(train_data)
+    train_batch = batch_graphs(train_data)
 
     # process and validate the loss
     total_loss = process_loss(loss, train_data[0])
@@ -55,9 +66,9 @@ def train_model(
         raise ValueError("No properties to train on")
 
     expected_shapes = {
-        Property.ENERGY: (train_batch.n_structures,),
-        Property.FORCES: (train_batch.n_atoms, 3),
-        Property.STRESS: (train_batch.n_structures, 3, 3),
+        keys.ENERGY: (number_of_structures(train_batch),),
+        keys.FORCES: (number_of_atoms(train_batch), 3),
+        keys.STRESS: (number_of_structures(train_batch), 3, 3),
     }
     for prop in training_on:
         if train_batch[prop].shape != expected_shapes[prop]:
@@ -65,7 +76,7 @@ def train_model(
                 f"Expected {prop} to have shape {expected_shapes[prop]}, "
                 f"but found {train_batch[prop].shape}"
             )
-    if Property.STRESS in training_on and not train_batch.has_cell:
+    if keys.STRESS in training_on and not is_periodic(train_batch):
         raise ValueError("Can't train on stress without cell information.")
 
     # create the data loaders
@@ -77,7 +88,7 @@ def train_model(
     )
 
     # deal with fitting transforms
-    if pre_fit_model and Property.ENERGY in training_on:
+    if pre_fit_model and keys.ENERGY in training_on:
         model.pre_fit(train_batch)
     total_loss.fit_transform(train_batch)
 
@@ -112,8 +123,8 @@ def train_model(
     return model
 
 
-def get_existing_properties(graph: AtomicGraph) -> list[PropertyKey]:
-    return [p for p in ALL_PROPERTIES if p in graph]
+def get_existing_properties(graph: AtomicGraph) -> list[keys.LabelKey]:
+    return [p for p in keys.ALL_LABEL_KEYS if p in graph]
 
 
 class LearnThePES(pl.LightningModule):
@@ -127,7 +138,7 @@ class LearnThePES(pl.LightningModule):
         self.model = model
         self.optimizer = optimizer
         self.total_loss = total_loss
-        self.properties: list[PropertyKey] = [
+        self.properties: list[keys.LabelKey] = [
             component.property_key for component in total_loss.losses
         ]
 
@@ -146,7 +157,7 @@ class LearnThePES(pl.LightningModule):
                 prog_bar=verbose and prefix == "val",
                 on_step=False,
                 on_epoch=True,
-                batch_size=graph.n_structures,
+                batch_size=number_of_structures(graph),
             )
 
         # generate prediction:
@@ -222,14 +233,14 @@ def process_loss(
         return WeightedLoss([loss], [1.0])
 
     default_transforms = {
-        Property.ENERGY: PerAtomStandardScaler(),  # TODO is this right?
-        Property.FORCES: PerAtomScale(),
-        Property.STRESS: Scale(),
+        keys.ENERGY: PerAtomStandardScaler(),  # TODO is this right?
+        keys.FORCES: PerAtomScale(),
+        keys.STRESS: Scale(),
     }
     default_weights = {
-        Property.ENERGY: 1.0,
-        Property.FORCES: 1.0,
-        Property.STRESS: 1.0,
+        keys.ENERGY: 1.0,
+        keys.FORCES: 1.0,
+        keys.STRESS: 1.0,
     }
 
     available_properties = get_existing_properties(graph)
@@ -261,6 +272,7 @@ def default_trainer_kwargs() -> dict:
                 save_top_k=1,
                 save_weights_only=True,
             ),
+            RichProgressBar(),
         ],
     }
 

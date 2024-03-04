@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import warnings
 from contextlib import contextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 import ase
 import numpy as np
 import torch
 from ase.neighborlist import neighbor_list
 from torch import Tensor
+from torch.utils.data import DataLoader as TorchDataLoader
 from torch_geometric.utils import scatter
 
 from . import keys
@@ -194,7 +195,7 @@ def neighbour_distances(graph: AtomicGraph) -> Tensor:
 def convert_to_atomic_graph(
     structure: ase.Atoms,
     cutoff: float,
-    property_mapping: dict[keys.LABEL_KEY, str] | None = None,
+    property_mapping: dict[keys.LabelKey, str] | None = None,
 ) -> AtomicGraph:
     """
     Convert an ASE Atoms object to an AtomicGraph.
@@ -232,13 +233,31 @@ def convert_to_atomic_graph(
         all_keys: set[str] = set(structure.info) | set(structure.arrays)
         property_mapping = {k: k for k in keys.ALL_LABEL_KEYS if k in all_keys}
 
-    for label, name_on_graph in property_mapping.items():
+    for label, name_on_structure in property_mapping.items():
         if label in structure.info:
-            graph[name_on_graph] = torch.FloatTensor([structure.info[label]])
+            data = structure.info[label]
+            if isinstance(data, (int, float)):
+                graph[label] = torch.scalar_tensor(data, dtype=torch.float)
+            else:
+                graph[label] = torch.FloatTensor(
+                    structure.info[name_on_structure]
+                )
         elif label in structure.arrays:
-            graph[name_on_graph] = torch.FloatTensor(structure.arrays[label])
+            graph[label] = torch.FloatTensor(
+                structure.arrays[name_on_structure]
+            )
 
     return graph  # type: ignore
+
+
+def convert_to_atomic_graphs(
+    structures: Sequence[ase.Atoms],
+    cutoff: float,
+    property_mapping: dict[keys.LabelKey, str] | None = None,
+) -> list[AtomicGraph]:
+    return [
+        convert_to_atomic_graph(s, cutoff, property_mapping) for s in structures
+    ]
 
 
 #### BATCHING ####
@@ -328,3 +347,46 @@ def structure_sizes(batch: AtomicGraphBatch) -> Tensor:
     """Get the number of atoms in each structure in the `batch`."""
 
     return batch[keys.PTR][1:] - batch[keys.PTR][:-1]
+
+
+class AtomicDataLoader(TorchDataLoader):
+    r"""
+    A data loader for merging :class:`AtomicGraph` objects into
+    :class:`AtomicGraphBatch` objects.
+
+    Parameters
+    ----------
+    dataset: Sequence[AtomicGraph]
+        The dataset to load.
+    batch_size: int
+        The batch size.
+    shuffle: bool
+        Whether to shuffle the dataset.
+    **kwargs:
+        Additional keyword arguments are passed to the underlying
+        :class:`torch.utils.data.DataLoader`.
+    """
+
+    def __init__(
+        self,
+        dataset: Sequence[AtomicGraph],
+        batch_size: int = 1,
+        shuffle: bool = False,
+        **kwargs,
+    ):
+        if "collate_fn" in kwargs:
+            warnings.warn(
+                "graph-pes uses a custom collate_fn (`collate_atomic_graphs`), "
+                "are you sure you want to override this?",
+                stacklevel=2,
+            )
+
+        collate_fn = kwargs.pop("collate_fn", batch_graphs)
+
+        super().__init__(
+            dataset,  # type: ignore
+            batch_size,
+            shuffle,
+            collate_fn=collate_fn,
+            **kwargs,
+        )

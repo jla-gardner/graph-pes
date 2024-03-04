@@ -13,8 +13,8 @@ from graph_pes.data import (
     sum_per_structure,
 )
 from graph_pes.transform import Identity, PerAtomStandardScaler, Transform
-from graph_pes.util import Property, PropertyKey, differentiate, require_grad
-from jaxtyping import Float  # TODO: use this throughout
+from graph_pes.util import differentiate, require_grad
+from jaxtyping import Float
 from torch import Tensor, nn
 
 
@@ -52,10 +52,12 @@ class GraphPESModel(nn.Module, ABC):
         """
 
     @overload
-    def forward(self, graph: AtomicGraphBatch) -> Float[Tensor, "N"]: ...
+    def forward(self, graph: AtomicGraphBatch) -> Float[Tensor, "N"]:
+        ...
 
     @overload
-    def forward(self, graph: AtomicGraph) -> Float[Tensor, "1"]: ...
+    def forward(self, graph: AtomicGraph) -> Float[Tensor, "1"]:
+        ...
 
     def forward(self, graph: AtomicGraph):
         """
@@ -108,35 +110,38 @@ class GraphPESModel(nn.Module, ABC):
         graph: AtomicGraph | list[AtomicGraph],
         *,
         training: bool = False,
-    ) -> dict[PropertyKey, Tensor]: ...
+    ) -> dict[keys.LabelKey, Tensor]:
+        ...
 
     @overload
     def predict(
         self,
         graph: AtomicGraph | list[AtomicGraph],
         *,
-        properties: Sequence[PropertyKey],
+        properties: Sequence[keys.LabelKey],
         training: bool = False,
-    ) -> dict[PropertyKey, Tensor]: ...
+    ) -> dict[keys.LabelKey, Tensor]:
+        ...
 
     @overload
     def predict(
         self,
         graph: AtomicGraph | list[AtomicGraph],
         *,
-        property: PropertyKey,
+        property: keys.LabelKey,
         training: bool = False,
-    ) -> Tensor: ...
+    ) -> Tensor:
+        ...
 
     # TODO: implement max batch size
     def predict(
         self,
         graph: AtomicGraph | list[AtomicGraph],
         *,
-        properties: Sequence[PropertyKey] | None = None,
-        property: PropertyKey | None = None,
+        properties: Sequence[keys.LabelKey] | None = None,
+        property: keys.LabelKey | None = None,
         training: bool = False,
-    ) -> dict[PropertyKey, Tensor] | Tensor:
+    ) -> dict[keys.LabelKey, Tensor] | Tensor:
         """
         Evaluate the model on the given structure to get
         the properties requested.
@@ -147,9 +152,9 @@ class GraphPESModel(nn.Module, ABC):
             The atomic structure to evaluate.
         properties
             The properties to predict. If not provided, defaults to
-            :code:`[Property.ENERGY, Property.FORCES]` if the structure
-            has no cell, and :code:`[Property.ENERGY, Property.FORCES,
-            Property.STRESS]` if it does.
+            :code:`[keys.ENERGY, keys.FORCES]` if the structure
+            has no cell, and :code:`[keys.ENERGY, keys.FORCES,
+            keys.STRESS]` if it does.
         property
             The property to predict. Can't be used when :code:`properties`
             is also provided.
@@ -176,17 +181,17 @@ class GraphPESModel(nn.Module, ABC):
 
         if properties is None:
             if is_periodic(graph):
-                properties = [Property.ENERGY, Property.FORCES, Property.STRESS]
+                properties = [keys.ENERGY, keys.FORCES, keys.STRESS]
             else:
-                properties = [Property.ENERGY, Property.FORCES]
+                properties = [keys.ENERGY, keys.FORCES]
 
-        if Property.STRESS in properties and not is_periodic(graph):
+        if keys.STRESS in properties and not is_periodic(graph):
             raise ValueError("Can't predict stress without cell information.")
 
-        predictions: dict[PropertyKey, Tensor] = {}
+        predictions: dict[keys.LabelKey, Tensor] = {}
 
         # setup for calculating stress:
-        if Property.STRESS in properties:
+        if keys.STRESS in properties:
             # The virial stress tensor is the gradient of the total energy wrt
             # an infinitesimal change in the cell parameters.
             # We therefore add this change to the cell, such that
@@ -207,16 +212,16 @@ class GraphPESModel(nn.Module, ABC):
         with require_grad(graph[keys._POSITIONS]), require_grad(change_to_cell):
             energy = self(graph)
 
-            if Property.ENERGY in properties:
-                predictions[Property.ENERGY] = energy
+            if keys.ENERGY in properties:
+                predictions[keys.ENERGY] = energy
 
-            if Property.FORCES in properties:
+            if keys.FORCES in properties:
                 dE_dR = differentiate(energy, graph[keys._POSITIONS])
-                predictions[Property.FORCES] = -dE_dR
+                predictions[keys.FORCES] = -dE_dR
 
-            if Property.STRESS in properties:
+            if keys.STRESS in properties:
                 stress = differentiate(energy, change_to_cell)
-                predictions[Property.STRESS] = stress
+                predictions[keys.STRESS] = stress
 
         if not training:
             for key, value in predictions.items():
@@ -229,10 +234,12 @@ class GraphPESModel(nn.Module, ABC):
 
     # add type hints to play nicely with mypy
     @overload
-    def __call__(self, graph: AtomicGraph) -> Float[Tensor, "1"]: ...
+    def __call__(self, graph: AtomicGraph) -> Float[Tensor, "1"]:
+        ...
 
     @overload
-    def __call__(self, graph: AtomicGraphBatch) -> Float[Tensor, "N"]: ...
+    def __call__(self, graph: AtomicGraphBatch) -> Float[Tensor, "N"]:
+        ...
 
     def __call__(self, graph: AtomicGraph):
         return super().__call__(graph)
@@ -272,12 +279,14 @@ class EnergySummation(nn.Module):
     @overload
     def forward(
         self, local_energies: Float[Tensor, "N"], graph: AtomicGraphBatch
-    ) -> Float[Tensor, "S"]: ...
+    ) -> Float[Tensor, "S"]:
+        ...
 
     @overload
     def forward(
         self, local_energies: Float[Tensor, "N"], graph: AtomicGraph
-    ) -> Float[Tensor, "1"]: ...
+    ) -> Float[Tensor, "1"]:
+        ...
 
     def forward(self, local_energies: Tensor, graph: AtomicGraph):
         """
@@ -311,7 +320,7 @@ class EnergySummation(nn.Module):
         assert keys.ENERGY in graphs, "No energy data in training graphs."
 
         for transform in [self.local_transform, self.total_transform]:
-            transform.fit(graphs[Property.ENERGY], graphs)  # type: ignore
+            transform.fit(graphs[keys.ENERGY], graphs)  # type: ignore
 
     def __repr__(self):
         # only show non-default transforms

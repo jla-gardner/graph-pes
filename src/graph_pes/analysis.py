@@ -1,20 +1,22 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
-from functools import wraps
-
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from ase import Atoms
 from cycler import cycler
+from matplotlib.axes import Axes
 from matplotlib.ticker import MaxNLocator
 
 from .core import GraphPESModel
-from .data.atomic_graph import AtomicGraph, convert_to_atomic_graphs
-from .data.batching import AtomicGraphBatch
+from .data import (
+    AtomicGraph,
+    AtomicGraphBatch,
+    batch_graphs,
+    convert_to_atomic_graph,
+    keys,
+)
 from .transform import Identity, Transform
-from .util import Property, PropertyKey
 
 _my_style = {
     "figure.figsize": (3.5, 3),
@@ -39,47 +41,28 @@ _my_style = {
     ),
 }
 
-
-@contextmanager
-def nice_style():
-    """
-    Context manager to use my home-made plt style within a context
-    """
-    with plt.rc_context(_my_style):
-        yield
-
-
-def my_style(func):
-    """
-    Decorator to use my home-made plt style within a function
-    """
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        with plt.rc_context(_my_style):
-            return func(*args, **kwargs)
-
-    return wrapper
+plt.rcParams.update(_my_style)
 
 
 def move_axes(ax: plt.Axes | None = None):  # type: ignore
     """
     Move the axes to the center of the figure
     """
-    ax: plt.Axes = ax or plt.gca()
+    ax: Axes = ax or plt.gca()
     ax.spines["left"].set_position(("outward", 10))
     ax.spines["bottom"].set_position(("outward", 10))
 
 
-@my_style
+# TODO per-property default transforms
+# energy: per-atom with arbitrary shift
 def parity_plot(
     model: GraphPESModel,
     graphs: AtomicGraphBatch | list[AtomicGraph],
-    property: PropertyKey = Property.ENERGY,
+    property: keys.LabelKey = keys.ENERGY,
     property_label: str | None = None,
     transform: Transform | None = None,
     units: str | None = None,
-    ax: plt.Axes | None = None,  # type: ignore
+    ax: Axes | None = None,  # type: ignore
     **scatter_kwargs,
 ):
     r"""
@@ -93,11 +76,11 @@ def parity_plot(
     graphs
         The graphs to make predictions on.
     property
-        The property to plot, e.g. :code:`Property.ENERGY`.
+        The property to plot, e.g. :code:`keys.ENERGY`.
     property_label
         The string that the property is indexed by on the graphs. If not
         provided, defaults to the value of :code:`property`, e.g.
-        :code:`Property.ENERGY` :math:`\rightarrow` :code:`"energy"`.
+        :code:`keys.ENERGY` :math:`\rightarrow` :code:`"energy"`.
     transform
         The transform to apply to the predictions and labels before plotting.
         If not provided, no transform is applied.
@@ -115,7 +98,7 @@ def parity_plot(
 
     .. code-block:: python
 
-        parity_plot(model, train, Property.ENERGY)
+        parity_plot(model, train, keys.ENERGY)
 
     .. image:: notebooks/Cu-LJ-default-parity.svg
         :align: center
@@ -136,7 +119,7 @@ def parity_plot(
             parity_plot(
                 model,
                 data,
-                Property.ENERGY,
+                keys.ENERGY,
                 transform=DividePerAtom(),
                 units="eV / atom",
                 label=name,
@@ -155,7 +138,7 @@ def parity_plot(
 
     # get the predictions and labels
     if isinstance(graphs, list):
-        graphs = AtomicGraphBatch.from_graphs(graphs)
+        graphs = batch_graphs(graphs)
 
     ground_truth = transform(graphs[property_label], graphs).detach()
     predictions = transform(
@@ -163,7 +146,7 @@ def parity_plot(
     ).detach()
 
     # plot
-    ax: plt.Axes = ax or plt.gca()
+    ax: Axes = ax or plt.gca()
 
     default_kwargs = dict(lw=0, clip_on=False)
     scatter_kwargs = {**default_kwargs, **scatter_kwargs}
@@ -189,7 +172,6 @@ def parity_plot(
     ax.yaxis.set_major_locator(MaxNLocator(5))
 
 
-@my_style
 def dimer_curve(
     model: GraphPESModel,
     system: str,
@@ -241,16 +223,16 @@ def dimer_curve(
         system = system + "2"
 
     rs = np.linspace(rmin, rmax, 200)
-    atoms = [Atoms(system, positions=[[0, 0, 0], [r, 0, 0]]) for r in rs]
-    graphs = convert_to_atomic_graphs(atoms, cutoff=rmax + 0.1)
-    batch = AtomicGraphBatch.from_graphs(graphs)
+    dimers = [Atoms(system, positions=[[0, 0, 0], [r, 0, 0]]) for r in rs]
+    graphs = [convert_to_atomic_graph(d, cutoff=rmax + 0.1) for d in dimers]
+    batch = batch_graphs(graphs)
 
     with torch.no_grad():
         energy = model(batch).numpy()
     if set_to_zero:
         energy -= energy[-1]
 
-    ax: plt.Axes = ax or plt.gca()
+    ax: Axes = ax or plt.gca()
 
     default_kwargs = dict(lw=1, c="k")
     plot_kwargs = {**default_kwargs, **plot_kwargs}

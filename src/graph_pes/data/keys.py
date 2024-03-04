@@ -15,10 +15,10 @@ BATCH = "batch"
 PTR = "ptr"
 
 
-LABEL_KEY = Literal[
+LabelKey = Literal[
     "energy",
     "forces",
     "stress",
     "local_energies",
 ]
-ALL_LABEL_KEYS = LABEL_KEY.__args__  # type: ignore
+ALL_LABEL_KEYS = LabelKey.__args__  # type: ignore

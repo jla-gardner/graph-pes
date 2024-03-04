@@ -5,9 +5,8 @@ from typing import Callable
 import torch
 from torch import Tensor, nn
 
-from .data import AtomicGraphBatch
+from .data import AtomicGraphBatch, keys
 from .transform import Identity, Transform
-from .util import PropertyKey
 
 
 class Loss(nn.Module):
@@ -53,12 +52,12 @@ class Loss(nn.Module):
 
     def __init__(
         self,
-        property: PropertyKey,
+        label: keys.LabelKey,
         metric: Callable[[Tensor, Tensor], Tensor] | None = None,
         transform: Transform | None = None,
     ):
         super().__init__()
-        self.property_key: PropertyKey = property
+        self.property_key: keys.LabelKey = label
         self.metric = MAE() if metric is None else metric
         self.transform = transform or Identity()
         self.transform.trainable = False
@@ -66,14 +65,14 @@ class Loss(nn.Module):
     # add type hints to play nicely with mypy
     def __call__(
         self,
-        predictions: dict[PropertyKey, torch.Tensor],
+        predictions: dict[keys.LabelKey, torch.Tensor],
         graphs: AtomicGraphBatch,
     ) -> torch.Tensor:
         return super().__call__(predictions, graphs)
 
     def forward(
         self,
-        predictions: dict[PropertyKey, torch.Tensor],
+        predictions: dict[keys.LabelKey, torch.Tensor],
         graphs: AtomicGraphBatch,
     ) -> torch.Tensor:
         """
@@ -89,12 +88,12 @@ class Loss(nn.Module):
 
         return self.metric(
             self.transform(predictions[self.property_key], graphs),
-            self.transform(graphs[self.property_key], graphs),
+            self.transform(graphs[self.property_key], graphs),  # type: ignore
         )
 
     def raw(
         self,
-        predictions: dict[PropertyKey, torch.Tensor],
+        predictions: dict[keys.LabelKey, torch.Tensor],
         graphs: AtomicGraphBatch,
     ) -> torch.Tensor:
         """
@@ -110,7 +109,7 @@ class Loss(nn.Module):
 
         return self.metric(
             predictions[self.property_key],
-            graphs[self.property_key],
+            graphs[self.property_key],  # type: ignore
         )
 
     def fit_transform(self, graphs: AtomicGraphBatch):
@@ -123,7 +122,7 @@ class Loss(nn.Module):
             The graphs containing the labels.
         """
 
-        self.transform.fit(graphs[self.property_key], graphs)
+        self.transform.fit(graphs[self.property_key], graphs)  # type: ignore
 
     @property
     def name(self) -> str:
@@ -212,7 +211,7 @@ class WeightedLoss(torch.nn.Module):
 
     def forward(
         self,
-        predictions: dict[PropertyKey, torch.Tensor],
+        predictions: dict[keys.LabelKey, torch.Tensor],
         graphs: AtomicGraphBatch,
     ) -> torch.Tensor:
         return sum(
