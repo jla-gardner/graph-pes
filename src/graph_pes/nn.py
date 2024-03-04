@@ -405,14 +405,18 @@ class PositiveParameter(ConstrainedParameter):
 
 
 class HaddamardProduct(nn.Module):
-    def __init__(self, *components: nn.Module):
+    def __init__(self, *components: nn.Module, left_aligned: bool = False):
         super().__init__()
         self.components: list[nn.Module] = nn.ModuleList(components)  # type: ignore
+        self.left_aligned = left_aligned
 
     def forward(self, x):
-        out = 1
+        out = torch.scalar_tensor(1)
         for component in self.components:
-            out = out * component(x)
+            if self.left_aligned:
+                out = left_aligned_mul(out, component(x))
+            else:
+                out = out * component(x)
         return out
 
 

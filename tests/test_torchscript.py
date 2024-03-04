@@ -4,7 +4,7 @@ import pytest
 import torch
 from ase.build import molecule
 from graph_pes.data import batch_graphs, convert_to_atomic_graph
-from graph_pes.models.zoo import LennardJones, PaiNN, SchNet, TensorNet
+from graph_pes.models.zoo import LennardJones, Morse, PaiNN, SchNet, TensorNet
 
 graph = convert_to_atomic_graph(molecule("CH3CH2OH"), cutoff=1.5)
 batch = batch_graphs([graph, graph])
@@ -13,6 +13,7 @@ models = [
     PaiNN(),
     SchNet(),
     TensorNet(),
+    Morse(),
 ]
 
 
