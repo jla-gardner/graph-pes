@@ -25,7 +25,7 @@ from graph_pes.data import convert_to_atomic_graphs
 from graph_pes.models.pairwise import LennardJones
 from graph_pes.training import train_model
 
-# 1. load some structures
+# 1. load some (labelled) structures
 structures = read("structures.xyz", index=":10")
 assert "energy" in structures[0].info
 

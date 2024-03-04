@@ -52,12 +52,10 @@ class GraphPESModel(nn.Module, ABC):
         """
 
     @overload
-    def forward(self, graph: AtomicGraphBatch) -> Float[Tensor, "N"]:
-        ...
+    def forward(self, graph: AtomicGraphBatch) -> Float[Tensor, "N"]: ...
 
     @overload
-    def forward(self, graph: AtomicGraph) -> Float[Tensor, "1"]:
-        ...
+    def forward(self, graph: AtomicGraph) -> Float[Tensor, "1"]: ...
 
     def forward(self, graph: AtomicGraph):
         """
@@ -110,8 +108,7 @@ class GraphPESModel(nn.Module, ABC):
         graph: AtomicGraph | list[AtomicGraph],
         *,
         training: bool = False,
-    ) -> dict[keys.LabelKey, Tensor]:
-        ...
+    ) -> dict[keys.LabelKey, Tensor]: ...
 
     @overload
     def predict(
@@ -120,8 +117,7 @@ class GraphPESModel(nn.Module, ABC):
         *,
         properties: Sequence[keys.LabelKey],
         training: bool = False,
-    ) -> dict[keys.LabelKey, Tensor]:
-        ...
+    ) -> dict[keys.LabelKey, Tensor]: ...
 
     @overload
     def predict(
@@ -130,8 +126,7 @@ class GraphPESModel(nn.Module, ABC):
         *,
         property: keys.LabelKey,
         training: bool = False,
-    ) -> Tensor:
-        ...
+    ) -> Tensor: ...
 
     # TODO: implement max batch size
     def predict(
@@ -234,12 +229,10 @@ class GraphPESModel(nn.Module, ABC):
 
     # add type hints to play nicely with mypy
     @overload
-    def __call__(self, graph: AtomicGraph) -> Float[Tensor, "1"]:
-        ...
+    def __call__(self, graph: AtomicGraph) -> Float[Tensor, "1"]: ...
 
     @overload
-    def __call__(self, graph: AtomicGraphBatch) -> Float[Tensor, "N"]:
-        ...
+    def __call__(self, graph: AtomicGraphBatch) -> Float[Tensor, "N"]: ...
 
     def __call__(self, graph: AtomicGraph):
         return super().__call__(graph)
@@ -279,14 +272,12 @@ class EnergySummation(nn.Module):
     @overload
     def forward(
         self, local_energies: Float[Tensor, "N"], graph: AtomicGraphBatch
-    ) -> Float[Tensor, "S"]:
-        ...
+    ) -> Float[Tensor, "S"]: ...
 
     @overload
     def forward(
         self, local_energies: Float[Tensor, "N"], graph: AtomicGraph
-    ) -> Float[Tensor, "1"]:
-        ...
+    ) -> Float[Tensor, "1"]: ...
 
     def forward(self, local_energies: Tensor, graph: AtomicGraph):
         """
