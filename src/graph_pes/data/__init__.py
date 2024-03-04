@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Iterator, Sequence
+from typing import TYPE_CHECKING, Dict, Iterator, Sequence
 
 import ase
 import numpy as np
@@ -11,6 +11,7 @@ from ase.neighborlist import neighbor_list
 from torch import Tensor
 from torch.utils.data import DataLoader as TorchDataLoader
 from torch_geometric.utils import scatter
+from typing_extensions import TypeAlias
 
 from . import keys
 from .graph_typing import AtomicGraph as AtomicGraphType
@@ -27,13 +28,13 @@ __all__ = [
 
 if TYPE_CHECKING:
     # when people are writing code, we want correct types
-    AtomicGraph = AtomicGraphType
-    AtomicGraphBatch = AtomicGraphBatchType
+    AtomicGraph: TypeAlias = AtomicGraphType
+    AtomicGraphBatch: TypeAlias = AtomicGraphBatchType
 else:
     # at runtime, we want @torch.jit.script to work, and this requires
     # the key-type to be a string
-    AtomicGraph = dict[str, torch.Tensor]
-    AtomicGraphBatch = dict[str, torch.Tensor]
+    AtomicGraph: TypeAlias = Dict[str, torch.Tensor]
+    AtomicGraphBatch: TypeAlias = Dict[str, torch.Tensor]
 
 
 # TODO work out how to do this while keeping torchscript happy
