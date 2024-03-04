@@ -84,6 +84,7 @@ exclude_also = [
     "\\.\\.\\.",
     "except ImportError",
     "if TYPE_CHECKING",
+    "raise NotImplementedError",
 ]
 
 [tool.pytest.ini_options]
