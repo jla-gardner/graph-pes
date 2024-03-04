@@ -38,7 +38,6 @@ def test_expansions(expansion: type[DistanceExpansion]):
 @pytest.mark.parametrize(
     "envelope",
     [
-        Envelope,
         CosineEnvelope,
         PolynomialEnvelope,
     ],
@@ -48,6 +47,8 @@ def test_envelopes(envelope: type[Envelope]):
     env = envelope(cutoff=cutoff)
 
     r = torch.tensor([4.5, 5, 5.5])
+    x = env(r)
+    assert x.shape == (3,)
     a, b, c = env(r).tolist()
     assert a > 0, "The envelope should be positive"
     assert b == 0, "The envelope should be zero at the cutoff"

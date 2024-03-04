@@ -80,6 +80,7 @@ class EdgeEmbedding(nn.Module):
                 nn.Linear(radial_features, 3 * embedding_size),
             ),
             CosineEnvelope(cutoff),
+            left_aligned=True,
         )
 
     def forward(self, graph: AtomicGraph) -> tuple[Tensor, Tensor, Tensor]:
@@ -259,6 +260,7 @@ class Interaction(nn.Module):
                 nn.Linear(radial_features, 3 * embedding_size),
             ),
             CosineEnvelope(cutoff),
+            left_aligned=True,
         )
 
     def forward(self, X: Tensor, graph: AtomicGraph) -> Tensor:
