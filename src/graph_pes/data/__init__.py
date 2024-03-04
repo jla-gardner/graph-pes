@@ -56,7 +56,27 @@ class AtomicGraph_Impl(dict):
         return super().__getitem__(key)
 
     def __repr__(self):
-        return f"AtomicGraph({super().__repr__()})"
+        info = {}
+
+        if is_batch(self):  # type: ignore
+            name = "AtomicGraphBatch"
+            info["structures"] = number_of_structures(self)  # type: ignore
+        else:
+            name = "AtomicGraph"
+
+        info["atoms"] = number_of_atoms(self)  # type: ignore
+        info["edges"] = self[keys.NEIGHBOUR_INDEX].shape[1]  # type: ignore
+        info["periodic"] = is_periodic(self)  # type: ignore
+
+        labels = [label for label in keys.ALL_LABEL_KEYS if label in self]
+        if labels:
+            info["labels"] = labels
+
+        info_str = ", ".join(f"{k}: {v}" for k, v in info.items())
+        return f"{name}({info_str})"
+
+        # # TODO shapes and dtypes
+        # return f"AtomicGraph({super().__repr__()})"
 
 
 @contextmanager
@@ -73,6 +93,27 @@ def is_batch(graph: AtomicGraph) -> bool:
     """Is the data in `graph` batched?"""
 
     return "batch" in graph
+
+
+def number_of_atoms(graph: AtomicGraph) -> int:
+    """Get the number of atoms in the `graph`."""
+
+    return graph[keys.ATOMIC_NUMBERS].shape[0]
+
+
+def is_local_property(x: Tensor, graph: AtomicGraph) -> bool:
+    """
+    Is the property `x` local to each atom in the `graph`?
+
+    Parameters
+    ----------
+    x
+        The property to check.
+    graph
+        The graph to check the property for.
+    """
+
+    return len(x.shape) > 0 and x.shape[0] == number_of_atoms(graph)
 
 
 def is_periodic(graph: AtomicGraph) -> bool:
@@ -187,6 +228,16 @@ def convert_to_atomic_graph(
         }
     )
 
+    if property_mapping is None:
+        all_keys: set[str] = set(structure.info) | set(structure.arrays)
+        property_mapping = {k: k for k in keys.ALL_LABEL_KEYS if k in all_keys}
+
+    for label, name_on_graph in property_mapping.items():
+        if label in structure.info:
+            graph[name_on_graph] = torch.FloatTensor([structure.info[label]])
+        elif label in structure.arrays:
+            graph[name_on_graph] = torch.FloatTensor(structure.arrays[label])
+
     return graph  # type: ignore
 
 
@@ -265,3 +316,15 @@ def sum_per_structure(x: Tensor, graph: AtomicGraph) -> Tensor:
     else:
         # we only have one structure: sum over all the atoms
         return x.sum()
+
+
+def number_of_structures(batch: AtomicGraphBatch) -> int:
+    """Get the number of structures in the `batch`."""
+
+    return batch[keys.PTR].shape[0] - 1
+
+
+def structure_sizes(batch: AtomicGraphBatch) -> Tensor:
+    """Get the number of atoms in each structure in the `batch`."""
+
+    return batch[keys.PTR][1:] - batch[keys.PTR][:-1]

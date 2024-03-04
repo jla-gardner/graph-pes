@@ -21,3 +21,4 @@ LABEL_KEY = Literal[
     "stress",
     "local_energies",
 ]
+ALL_LABEL_KEYS = LABEL_KEY.__args__  # type: ignore

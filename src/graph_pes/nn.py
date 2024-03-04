@@ -414,3 +414,72 @@ class HaddamardProduct(nn.Module):
         for component in self.components:
             out = out * component(x)
         return out
+
+
+# NB: we have to repeat code here somewhat because torchsript doesn't support
+# typing for callable
+
+
+def left_aligned_add(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    """
+    Assume:
+    x.shape: (n, ...)
+    y.shape: (n, )
+
+    We broadcast y to the left of x and apply the operation op.
+    """
+    # add a fake dimension to x to make it (n, 1, ...)
+    x = x.unsqueeze(1)
+    # transpose x to make it (1, ..., n)
+    x = x.transpose(0, -1)
+    # apply the operation
+    result = x + y  # shape: (1, ..., n)
+    # transpose back to the original shape
+    result = result.transpose(0, -1)
+    # remove the fake dimension
+    return result.squeeze(1)
+
+
+def left_aligned_sub(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    """
+    Assume:
+    x.shape: (n, ...)
+    y.shape: (n, )
+
+    We broadcast y to the left of x and apply the operation op.
+    """
+    x = x.unsqueeze(1)
+    x = x.transpose(0, -1)
+    result = x - y  # shape: (1, ..., n)
+    result = result.transpose(0, -1)
+    return result.squeeze(1)
+
+
+def left_aligned_mul(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    """
+    Assume:
+    x.shape: (n, ...)
+    y.shape: (n, )
+
+    We broadcast y to the left of x and apply the operation op.
+    """
+    x = x.unsqueeze(1)
+    x = x.transpose(0, -1)
+    result = x * y  # shape: (1, ..., n)
+    result = result.transpose(0, -1)
+    return result.squeeze(1)
+
+
+def left_aligned_div(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    """
+    Assume:
+    x.shape: (n, ...)
+    y.shape: (n, )
+
+    We broadcast y to the left of x and apply the operation op.
+    """
+    x = x.unsqueeze(1)
+    x = x.transpose(0, -1)
+    result = x / y  # shape: (1, ..., n)
+    result = result.transpose(0, -1)
+    return result.squeeze(1)
