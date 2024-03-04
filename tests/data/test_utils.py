@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 from graph_pes.data.utils import random_split
 
