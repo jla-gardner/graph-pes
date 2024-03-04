@@ -4,8 +4,12 @@ from abc import ABC, abstractmethod
 
 import torch
 from graph_pes.core import EnergySummation, GraphPESModel
-from graph_pes.data import AtomicGraph
-from graph_pes.data.batching import AtomicGraphBatch
+from graph_pes.data import (
+    AtomicGraph,
+    AtomicGraphBatch,
+    keys,
+    neighbour_distances,
+)
 from graph_pes.nn import PositiveParameter
 from graph_pes.transform import PerAtomScale, PerAtomShift
 from jaxtyping import Float
@@ -57,23 +61,28 @@ class PairPotential(GraphPESModel, ABC):
             The pair-wise interactions.
         """
 
-    def predict_local_energies(
-        self, graph: AtomicGraph
-    ) -> Float[Tensor, "graph.n_edges"]:
+    def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
         """
         Predict the local energies as half the sum of the pair-wise
         interactions that each atom participates in.
         """
-        central_atoms, neighbours = graph.neighbour_index
-        distances = graph.neighbour_distances
 
-        Z_i, Z_j = graph.Z[central_atoms], graph.Z[neighbours]
+        # avoid tuple unpacking to keep torchscript happy
+        central_atoms = graph[keys.NEIGHBOUR_INDEX][0]
+        neighbours = graph[keys.NEIGHBOUR_INDEX][1]
+        distances = neighbour_distances(graph)
+
+        Z_i = graph[keys.ATOMIC_NUMBERS][central_atoms]
+        Z_j = graph[keys.ATOMIC_NUMBERS][neighbours]
+
         V = self.interaction(
             distances.view(-1, 1), Z_i.view(-1, 1), Z_j.view(-1, 1)
         )
 
         # sum over the neighbours
-        energies = torch.zeros_like(graph.Z, dtype=torch.float)
+        energies = torch.zeros_like(
+            graph[keys.ATOMIC_NUMBERS], dtype=torch.float
+        )
         energies.scatter_add_(0, central_atoms, V.squeeze())
 
         # divide by 2 to avoid double counting
@@ -104,8 +113,8 @@ class LennardJones(PairPotential):
 
     def __init__(self, epsilon: float = 0.1, sigma: float = 1.0):
         super().__init__()
-        self.epsilon = PositiveParameter(epsilon)
-        self.sigma = PositiveParameter(sigma)
+        self._log_epsilon = torch.nn.Parameter(torch.tensor(epsilon).log())
+        self._log_sigma = torch.nn.Parameter(torch.tensor(sigma).log())
 
         # epsilon is a scaling term, so only need to learn a shift
         # parameter (rather than a shift and scale)
@@ -122,16 +131,19 @@ class LennardJones(PairPotential):
         r
             The pair-wise distances between the atoms.
         """
-        x = self.sigma / r
-        return 4 * self.epsilon * (x**12 - x**6)
+        epsilon = self._log_epsilon.exp()
+        sigma = self._log_sigma.exp()
+
+        x = sigma / r
+        return 4 * epsilon * (x**12 - x**6)
 
     def pre_fit(self, graph: AtomicGraphBatch):
         super().pre_fit(graph)
 
         # set the distance at which the potential is zero to be
         # close to the minimum pair-wise distance
-        d = torch.quantile(graph.neighbour_distances, 0.01)
-        self.sigma = PositiveParameter(d)
+        d = torch.quantile(neighbour_distances(graph), 0.01)
+        self._log_sigma = torch.nn.Parameter(d.log())
 
 
 class Morse(PairPotential):
@@ -191,7 +203,7 @@ class Morse(PairPotential):
 
         # set the center of the well to be close to the minimum pair-wise
         # distance
-        d = torch.quantile(graph.neighbour_distances, 0.01)
+        d = torch.quantile(neighbour_distances(graph), 0.01)
         self.r0 = PositiveParameter(d)
 
         # set the width to be broad

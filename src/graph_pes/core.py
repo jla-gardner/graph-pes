@@ -4,8 +4,14 @@ from abc import ABC, abstractmethod
 from typing import Literal, Sequence, overload
 
 import torch
-from graph_pes.data import AtomicGraph
-from graph_pes.data.batching import AtomicGraphBatch, sum_per_structure
+from graph_pes.data import (
+    AtomicGraph,
+    AtomicGraphBatch,
+    batch_graphs,
+    is_periodic,
+    keys,
+    sum_per_structure,
+)
 from graph_pes.transform import Identity, PerAtomStandardScaler, Transform
 from graph_pes.util import Property, PropertyKey, differentiate, require_grad
 from jaxtyping import Float  # TODO: use this throughout
@@ -35,9 +41,7 @@ class GraphPESModel(nn.Module, ABC):
     """
 
     @abstractmethod
-    def predict_local_energies(
-        self, graph: AtomicGraph | AtomicGraphBatch
-    ) -> Float[Tensor, "graph.n_atoms"]:
+    def predict_local_energies(self, graph: AtomicGraph) -> Float[Tensor, "N"]:
         """
         Predict the (standardized) local energy for each atom in the graph.
 
@@ -48,16 +52,12 @@ class GraphPESModel(nn.Module, ABC):
         """
 
     @overload
-    def forward(
-        self, graph: AtomicGraphBatch
-    ) -> Float[Tensor, "graph.n_structures"]:
-        ...
+    def forward(self, graph: AtomicGraphBatch) -> Float[Tensor, "N"]: ...
 
     @overload
-    def forward(self, graph: AtomicGraph) -> Float[Tensor, "1"]:
-        ...
+    def forward(self, graph: AtomicGraph) -> Float[Tensor, "1"]: ...
 
-    def forward(self, graph: AtomicGraph | AtomicGraphBatch):
+    def forward(self, graph: AtomicGraph):
         """
         Predict the total energy of the structure/s.
 
@@ -105,36 +105,33 @@ class GraphPESModel(nn.Module, ABC):
     @overload
     def predict(
         self,
-        graph: AtomicGraph | AtomicGraphBatch | list[AtomicGraph],
+        graph: AtomicGraph | list[AtomicGraph],
         *,
         training: bool = False,
-    ) -> dict[PropertyKey, Tensor]:
-        ...
+    ) -> dict[PropertyKey, Tensor]: ...
 
     @overload
     def predict(
         self,
-        graph: AtomicGraph | AtomicGraphBatch | list[AtomicGraph],
+        graph: AtomicGraph | list[AtomicGraph],
         *,
         properties: Sequence[PropertyKey],
         training: bool = False,
-    ) -> dict[PropertyKey, Tensor]:
-        ...
+    ) -> dict[PropertyKey, Tensor]: ...
 
     @overload
     def predict(
         self,
-        graph: AtomicGraph | AtomicGraphBatch | list[AtomicGraph],
+        graph: AtomicGraph | list[AtomicGraph],
         *,
         property: PropertyKey,
         training: bool = False,
-    ) -> Tensor:
-        ...
+    ) -> Tensor: ...
 
     # TODO: implement max batch size
     def predict(
         self,
-        graph: AtomicGraph | AtomicGraphBatch | list[AtomicGraph],
+        graph: AtomicGraph | list[AtomicGraph],
         *,
         properties: Sequence[PropertyKey] | None = None,
         property: PropertyKey | None = None,
@@ -175,15 +172,15 @@ class GraphPESModel(nn.Module, ABC):
             raise ValueError("Can't specify both `property` and `properties`")
 
         if isinstance(graph, list):
-            graph = AtomicGraphBatch.from_graphs(graph)
+            graph = batch_graphs(graph)
 
         if properties is None:
-            if graph.has_cell:
+            if is_periodic(graph):
                 properties = [Property.ENERGY, Property.FORCES, Property.STRESS]
             else:
                 properties = [Property.ENERGY, Property.FORCES]
 
-        if Property.STRESS in properties and not graph.has_cell:
+        if Property.STRESS in properties and not is_periodic(graph):
             raise ValueError("Can't predict stress without cell information.")
 
         predictions: dict[PropertyKey, Tensor] = {}
@@ -196,25 +193,25 @@ class GraphPESModel(nn.Module, ABC):
             # we can calculate the gradient wrt later if required.
             #
             # See <> TODO: find reference
-            actual_cell = graph.cell
+            actual_cell = graph[keys.CELL]
             change_to_cell = torch.zeros_like(actual_cell, requires_grad=True)
             symmetric_change = 0.5 * (
                 change_to_cell + change_to_cell.transpose(-1, -2)
             )
-            graph.cell = actual_cell + symmetric_change
+            graph[keys.CELL] = actual_cell + symmetric_change
         else:
-            change_to_cell = torch.zeros_like(graph.cell)
+            change_to_cell = torch.zeros_like(graph[keys.CELL])
 
         # use the autograd machinery to auto-magically
         # calculate forces and stress from the energy
-        with require_grad(graph._positions), require_grad(change_to_cell):
+        with require_grad(graph[keys._POSITIONS]), require_grad(change_to_cell):
             energy = self(graph)
 
             if Property.ENERGY in properties:
                 predictions[Property.ENERGY] = energy
 
             if Property.FORCES in properties:
-                dE_dR = differentiate(energy, graph._positions)
+                dE_dR = differentiate(energy, graph[keys._POSITIONS])
                 predictions[Property.FORCES] = -dE_dR
 
             if Property.STRESS in properties:
@@ -232,16 +229,12 @@ class GraphPESModel(nn.Module, ABC):
 
     # add type hints to play nicely with mypy
     @overload
-    def __call__(self, graph: AtomicGraph) -> Float[Tensor, "1"]:
-        ...
+    def __call__(self, graph: AtomicGraph) -> Float[Tensor, "1"]: ...
 
     @overload
-    def __call__(
-        self, graph: AtomicGraphBatch
-    ) -> Float[Tensor, "graph.n_structures"]:
-        ...
+    def __call__(self, graph: AtomicGraphBatch) -> Float[Tensor, "N"]: ...
 
-    def __call__(self, graph: AtomicGraph | AtomicGraphBatch):
+    def __call__(self, graph: AtomicGraph):
         return super().__call__(graph)
 
 
@@ -278,25 +271,15 @@ class EnergySummation(nn.Module):
 
     @overload
     def forward(
-        self,
-        local_energies: Float[Tensor, "graph.n_atoms"],
-        graph: AtomicGraphBatch,
-    ) -> Float[Tensor, "graph.n_structures"]:
-        ...
+        self, local_energies: Float[Tensor, "N"], graph: AtomicGraphBatch
+    ) -> Float[Tensor, "S"]: ...
 
     @overload
     def forward(
-        self,
-        local_energies: Float[Tensor, "graph.n_atoms"],
-        graph: AtomicGraph,
-    ) -> Float[Tensor, "1"]:
-        ...
+        self, local_energies: Float[Tensor, "N"], graph: AtomicGraph
+    ) -> Float[Tensor, "1"]: ...
 
-    def forward(
-        self,
-        local_energies: Float[Tensor, "graph.n_atoms"],
-        graph: AtomicGraph,
-    ):
+    def forward(self, local_energies: Tensor, graph: AtomicGraph):
         """
         Sum the local energies to obtain the total energy.
 
@@ -321,11 +304,14 @@ class EnergySummation(nn.Module):
         graphs
             The training data.
         """
-        if not isinstance(graphs, AtomicGraphBatch):
-            graphs = AtomicGraphBatch.from_graphs(graphs)
+
+        if isinstance(graphs, list):
+            graphs = batch_graphs(graphs)
+
+        assert keys.ENERGY in graphs, "No energy data in training graphs."
 
         for transform in [self.local_transform, self.total_transform]:
-            transform.fit(graphs[Property.ENERGY], graphs)
+            transform.fit(graphs[Property.ENERGY], graphs)  # type: ignore
 
     def __repr__(self):
         # only show non-default transforms
@@ -407,12 +393,12 @@ class Ensemble(GraphPESModel):
         # use the energy summation of each model separately
         self.energy_summation = None
 
-    def predict_local_energies(self, graph: AtomicGraph | AtomicGraphBatch):
+    def predict_local_energies(self, graph: AtomicGraph):
         raise NotImplementedError(
             "Ensemble models don't have a single local energy prediction."
         )
 
-    def forward(self, graph: AtomicGraph | AtomicGraphBatch):
+    def forward(self, graph: AtomicGraph):
         predictions: Tensor = sum(
             w * model(graph) for w, model in zip(self.weights, self.models)
         )  # type: ignore
@@ -429,5 +415,5 @@ class Ensemble(GraphPESModel):
         return f"Ensemble(\n  {info}\n)"
 
     # add type hints to play nicely with mypy
-    def __call__(self, graph: AtomicGraph | AtomicGraphBatch) -> Tensor:
+    def __call__(self, graph: AtomicGraph) -> Tensor:
         return super().__call__(graph)

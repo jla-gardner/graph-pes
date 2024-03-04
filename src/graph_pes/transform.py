@@ -6,12 +6,9 @@ import torch
 from graph_pes.data import (
     AtomicGraph,
     AtomicGraphBatch,
-    GlobalProperty,
-    LocalProperty,
     sum_per_structure,
 )
 from graph_pes.nn import PerSpeciesParameter
-from jaxtyping import Shaped
 from torch import Tensor, nn
 
 
@@ -39,9 +36,9 @@ class Transform(nn.Module, ABC):
     @abstractmethod
     def forward(
         self,
-        x: LocalProperty | GlobalProperty,
-        graph: AtomicGraph | AtomicGraphBatch,
-    ) -> LocalProperty | GlobalProperty:
+        x: Tensor,
+        graph: AtomicGraph,
+    ) -> Tensor:
         r"""
         Implements the forward transformation, :math:`y = T(x; \mathcal{G})`.
 
@@ -61,17 +58,17 @@ class Transform(nn.Module, ABC):
     # add type hints to play nicely with mypy
     def __call__(
         self,
-        x: Shaped[Tensor, "shape ..."],
-        graph: AtomicGraph | AtomicGraphBatch,
-    ) -> Shaped[Tensor, "shape ..."]:
+        x: Tensor,
+        graph: AtomicGraph,
+    ) -> Tensor:
         return super().__call__(x, graph)
 
     @abstractmethod
     def inverse(
         self,
-        x: LocalProperty | GlobalProperty,
-        graph: AtomicGraph | AtomicGraphBatch,
-    ) -> LocalProperty | GlobalProperty:
+        x: Tensor,
+        graph: AtomicGraph,
+    ) -> Tensor:
         r"""
         Implements the inverse transformation,
         :math:`x = T^{-1}(y; \mathcal{G})`.
@@ -113,10 +110,10 @@ class Identity(Transform):
     def __init__(self):
         super().__init__(trainable=False)
 
-    def forward(self, x, graph):
+    def forward(self, x: Tensor, graph: AtomicGraph) -> Tensor:
         return x
 
-    def inverse(self, x, graph):
+    def inverse(self, x: Tensor, graph: AtomicGraph) -> Tensor:
         return x
 
     def fit(self, x: Tensor, graphs: AtomicGraphBatch) -> Transform:
@@ -202,7 +199,7 @@ class PerAtomShift(Transform):
         """The fitted, per-species shifts."""
 
     @torch.no_grad()
-    def fit(self, x: LocalProperty | GlobalProperty, graphs: AtomicGraphBatch):
+    def fit(self, x: Tensor, graphs: AtomicGraphBatch):
         r"""
         Fit the shift to the data, :math:`x`.
 
@@ -243,9 +240,9 @@ class PerAtomShift(Transform):
 
     def forward(
         self,
-        x: Shaped[Tensor, "shape ..."],
-        graph: AtomicGraph | AtomicGraphBatch,
-    ) -> Shaped[Tensor, "shape ..."]:
+        x: Tensor,
+        graph: AtomicGraph,
+    ) -> Tensor:
         r"""
         Subtract the learned shift from :math:`x` such that the output
         is expected to be centered about 0 if :math:`x` is centered similarly
@@ -267,7 +264,7 @@ class PerAtomShift(Transform):
 
         Returns
         -------
-        Shaped[Tensor, "shape ..."]
+        Tensor
             The input data, shifted by the learned shift.
         """
         shifts = self.shift[graph.Z].squeeze()
@@ -279,9 +276,9 @@ class PerAtomShift(Transform):
 
     def inverse(
         self,
-        x: Shaped[Tensor, "shape ..."],
-        graph: AtomicGraph | AtomicGraphBatch,
-    ) -> Shaped[Tensor, "shape ..."]:
+        x: Tensor,
+        graph: AtomicGraph,
+    ) -> Tensor:
         r"""
         Add the learned shift to :math:`x`, such that the output
         is expected to be centered about the learned shift if :math:`x`
@@ -346,7 +343,7 @@ class PerAtomScale(Transform):
         self.act_on_norms = act_on_norms
 
     @torch.no_grad()
-    def fit(self, x: LocalProperty | GlobalProperty, graphs: AtomicGraphBatch):
+    def fit(self, x: Tensor, graphs: AtomicGraphBatch):
         r"""
         Fit the scale to the data, :math:`x`.
 
@@ -386,9 +383,9 @@ class PerAtomScale(Transform):
 
     def forward(
         self,
-        x: Shaped[Tensor, "shape ..."],
-        graph: AtomicGraph | AtomicGraphBatch,
-    ) -> Shaped[Tensor, "shape ..."]:
+        x: Tensor,
+        graph: AtomicGraph,
+    ) -> Tensor:
         r"""
         Scale the input data, :math:`x`, by the learned scale such that the
         output is expected to have unit variance if :math:`x` has unit
@@ -409,7 +406,7 @@ class PerAtomScale(Transform):
 
         Returns
         -------
-        Shaped[Tensor, "shape ..."]
+        Tensor
             The input data, scaled by the learned scale.
         """
         scales = self.scales[graph.Z].squeeze()
@@ -421,9 +418,9 @@ class PerAtomScale(Transform):
 
     def inverse(
         self,
-        x: Shaped[Tensor, "shape ..."],
-        graph: AtomicGraph | AtomicGraphBatch,
-    ) -> Shaped[Tensor, "shape ..."]:
+        x: Tensor,
+        graph: AtomicGraph,
+    ) -> Tensor:
         r"""
         Scale the input data, :math:`x`, by the inverse of the learned scale
         such that the output is expected to have variance equal to the
@@ -444,7 +441,7 @@ class PerAtomScale(Transform):
 
         Returns
         -------
-        Shaped[Tensor, "shape ..."]
+        Tensor
             The input data, scaled by the inverse of the learned scale.
         """
         scales = self.scales[graph.Z]
