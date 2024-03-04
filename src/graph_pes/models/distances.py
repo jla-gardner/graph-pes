@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import math
 from abc import ABC, abstractmethod
-from math import pi as π
 
 import torch
 from jaxtyping import Float
@@ -49,9 +49,7 @@ class DistanceExpansion(nn.Module, ABC):
             The distances to expand. Guaranteed to have shape :math:`(..., 1)`.
         """
 
-    def forward(
-        self, r: Float[Tensor, "..."]
-    ) -> Float[Tensor, "... n_features"]:
+    def forward(self, r: Tensor) -> Tensor:
         """
         Call the expansion as normal in PyTorch.
 
@@ -121,7 +119,7 @@ class Bessel(DistanceExpansion):
     def __init__(self, n_features: int, cutoff: float, trainable: bool = True):
         super().__init__(n_features, cutoff)
         self.frequencies = nn.Parameter(
-            torch.arange(1, n_features + 1) * π / cutoff,
+            torch.arange(1, n_features + 1) * math.pi / cutoff,
             requires_grad=trainable,
         )
         self.pre_factor = torch.sqrt(torch.tensor(2 / cutoff))
@@ -250,7 +248,7 @@ class SinExpansion(DistanceExpansion):
     def __init__(self, n_features: int, cutoff: float, trainable: bool = True):
         super().__init__(n_features, cutoff, trainable)
         self.frequencies = nn.Parameter(
-            torch.arange(1, n_features + 1) * π / cutoff,
+            torch.arange(1, n_features + 1) * math.pi / cutoff,
             requires_grad=trainable,
         )
 
@@ -333,8 +331,7 @@ class ExponentialRBF(DistanceExpansion):
 
 
 class Envelope(nn.Module):
-    def forward(self, r: Float[Tensor, "... 1"]) -> Float[Tensor, "... 1"]:
-        ...
+    def forward(self, r: Float[Tensor, "... 1"]) -> Float[Tensor, "... 1"]: ...
 
 
 class PolynomialEnvelope(Envelope):
@@ -424,7 +421,7 @@ class CosineEnvelope(Envelope):
 
     def forward(self, r: torch.Tensor) -> torch.Tensor:
         r = r.unsqueeze(-1)
-        cos = 0.5 * (1 + torch.cos(π * r / self.cutoff))
+        cos = 0.5 * (1 + torch.cos(math.pi * r / self.cutoff))
         return torch.where(r <= self.cutoff, cos, torch.tensor(0.0))
 
     def __repr__(self):
