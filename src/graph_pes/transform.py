@@ -432,7 +432,7 @@ class PerAtomScale(Transform):
         Tensor
             The input data, scaled by the inverse of the learned scale.
         """
-        scales = self.scales[graph["atomic_numbers"]]
+        scales = self.scales[graph["atomic_numbers"]].squeeze()
         if not is_local_property(x, graph):
             scales = sum_per_structure(scales, graph)
 
