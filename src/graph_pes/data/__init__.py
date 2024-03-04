@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import warnings
-from contextlib import contextmanager
 from typing import TYPE_CHECKING, Dict, Iterator, Sequence
 
 import ase
@@ -19,7 +18,6 @@ from .graph_typing import AtomicGraphBatch as AtomicGraphBatchType
 
 __all__ = [
     "AtomicGraph",
-    "allow_position_access",
     "is_batch",
     "neighbour_vectors",
     "neighbour_distances",
@@ -37,25 +35,9 @@ else:
     AtomicGraphBatch: TypeAlias = Dict[str, torch.Tensor]
 
 
-# TODO work out how to do this while keeping torchscript happy
-# currently not allowed global variable access
-_WARN_ON_POS_ACCESS = False
-
-
 class AtomicGraph_Impl(dict):
-    def __getitem__(self, key):
-        if _WARN_ON_POS_ACCESS and key == keys._POSITIONS:
-            warnings.warn(
-                (
-                    "Accessing the raw atomic positions is discouraged. "
-                    "Are you trying to access information derived from "
-                    "relative atomic positions? If so, use "
-                    "`neighbour_vectors` or `neighbour_distances` instead."
-                ),
-                stacklevel=2,
-            )
-
-        return super().__getitem__(key)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def __repr__(self):
         info = {}
@@ -76,19 +58,6 @@ class AtomicGraph_Impl(dict):
 
         info_str = ", ".join(f"{k}: {v}" for k, v in info.items())
         return f"{name}({info_str})"
-
-        # # TODO shapes and dtypes
-        # return f"AtomicGraph({super().__repr__()})"
-
-
-@contextmanager
-def allow_position_access():
-    global _WARN_ON_POS_ACCESS
-    _WARN_ON_POS_ACCESS = False
-    try:
-        yield
-    finally:
-        _WARN_ON_POS_ACCESS = True
 
 
 def is_batch(graph: AtomicGraph) -> bool:
@@ -141,7 +110,6 @@ def neighbour_vectors(graph: AtomicGraph) -> Tensor:
         The graph to extract the neighbour vectors from.
     """
 
-    # with allow_position_access():
     positions = graph[keys._POSITIONS]
 
     if not is_batch(graph):
