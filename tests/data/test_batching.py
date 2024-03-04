@@ -3,10 +3,17 @@ import pytest
 from ase import Atoms
 from graph_pes.data import (
     AtomicDataLoader,
+    batch_graphs,
     convert_to_atomic_graphs,
+    keys,
+    neighbour_distances,
+    neighbour_vectors,
+    number_of_atoms,
+    number_of_edges,
+    number_of_structures,
+    structure_sizes,
     sum_per_structure,
 )
-from graph_pes.data.batching import AtomicGraphBatch
 
 STRUCTURES = [
     Atoms("H2", positions=[(0, 0, 0), (0, 0, 1)], pbc=False),
@@ -16,43 +23,42 @@ GRAPHS = convert_to_atomic_graphs(STRUCTURES, cutoff=1.5)
 
 
 def test_batching():
-    batch = AtomicGraphBatch.from_graphs(GRAPHS)
-    assert isinstance(batch, AtomicGraphBatch)
-    assert batch.n_atoms == 5
-    assert batch.n_structures == 2
-    assert list(batch.ptr) == [0, 2, 5]
-    assert list(batch.batch) == [0, 0, 1, 1, 1]
+    batch = batch_graphs(GRAPHS)
+    assert number_of_atoms(batch) == 5
+    assert number_of_structures(batch) == 2
+    assert list(batch["ptr"]) == [0, 2, 5]
+    assert list(batch["batch"]) == [0, 0, 1, 1, 1]
 
-    assert batch.n_edges == sum(g.n_edges for g in GRAPHS)
-    assert batch.structure_sizes.tolist() == [2, 3]
-    assert batch.neighbour_vectors.shape == (batch.n_edges, 3)
+    assert number_of_edges(batch) == sum(number_of_edges(g) for g in GRAPHS)
+    assert structure_sizes(batch).tolist() == [2, 3]
+    assert neighbour_vectors(batch).shape == (number_of_edges(batch), 3)
 
 
 def test_label_batching():
     structures = [s.copy() for s in STRUCTURES]
     # per-structure labels:
-    structures[0].info["label"] = 0
-    structures[0].info["stress"] = np.eye(3)
-    structures[1].info["label"] = 1
-    structures[1].info["stress"] = 2 * np.eye(3)
+    structures[0].info[keys.ENERGY] = 0
+    structures[0].info[keys.STRESS] = np.eye(3)
+    structures[1].info[keys.ENERGY] = 1
+    structures[1].info[keys.STRESS] = 2 * np.eye(3)
 
     # per-atom labels:
-    structures[0].arrays["atom_label"] = [0, 1]
-    structures[0].arrays["force"] = np.zeros((2, 3))
-    structures[1].arrays["atom_label"] = [2, 3, 4]
-    structures[1].arrays["force"] = np.zeros((3, 3))
+    structures[0].arrays[keys.LOCAL_ENERGIES] = [0, 1]
+    structures[0].arrays[keys.FORCES] = np.zeros((2, 3))
+    structures[1].arrays[keys.LOCAL_ENERGIES] = [2, 3, 4]
+    structures[1].arrays[keys.FORCES] = np.zeros((3, 3))
 
     graphs = convert_to_atomic_graphs(structures, cutoff=1.5)
-    batch = AtomicGraphBatch.from_graphs(graphs)
+    batch = batch_graphs(graphs)
 
     # per-structure, array-type labels are concatenated along a new batch axis
-    assert batch.structure_labels["stress"].shape == (2, 3, 3)
+    assert batch[keys.STRESS].shape == (2, 3, 3)
     # energy is a scalar, so the "new batch axis" is just concatenation:
-    assert batch.structure_labels["label"].tolist() == [0, 1]
+    assert batch[keys.ENERGY].tolist() == [0, 1]
 
     # per-atom labels are concatenated along the first axis
-    assert batch.atom_labels["atom_label"].tolist() == [0, 1, 2, 3, 4]
-    assert batch.atom_labels["force"].shape == (5, 3)
+    assert batch[keys.LOCAL_ENERGIES].tolist() == [0, 1, 2, 3, 4]
+    assert batch[keys.FORCES].shape == (5, 3)
 
 
 def test_pbcs():
@@ -64,47 +70,50 @@ def test_pbcs():
     ]
     graphs = convert_to_atomic_graphs(structures, cutoff=1.2)
 
-    assert graphs[0].n_edges == 6
-    assert graphs[1].n_edges == 0
+    assert number_of_edges(graphs[0]) == 6
+    assert number_of_edges(graphs[1]) == 0
 
-    batch = AtomicGraphBatch.from_graphs(graphs)
-    assert batch.n_edges == 6
-    assert batch.cells.shape == (2, 3, 3)
+    batch = batch_graphs(graphs)
+    assert number_of_edges(batch) == 6
+    assert batch[keys.CELL].shape == (2, 3, 3)
 
-    vecs = batch.neighbour_vectors
-    assert vecs.shape == (6, 3)
-
-    assert batch.neighbour_distances.tolist() == [1.0] * 6
+    assert neighbour_vectors(batch).shape == (6, 3)
+    assert neighbour_distances(batch).tolist() == [1.0] * 6
 
 
 def test_sum_per_structure():
     structures = [s.copy() for s in STRUCTURES]
-    structures[0].arrays["atom_label"] = [0, 1]
-    structures[1].arrays["atom_label"] = [2, 3, 4]
+    structures[0].arrays[keys.LOCAL_ENERGIES] = [0, 1]
+    structures[1].arrays[keys.LOCAL_ENERGIES] = [2, 3, 4]
     graphs = convert_to_atomic_graphs(structures, cutoff=1.5)
 
     # sum per structure should work for:
 
     # 1. a single structure
-    x = graphs[0].atom_labels["atom_label"]
+    x = graphs[0][keys.LOCAL_ENERGIES]
     assert sum_per_structure(x, graphs[0]) == x.sum()
 
     # 2. a batch of structures
-    batch = AtomicGraphBatch.from_graphs(graphs)
-    x = batch.atom_labels["atom_label"]
+    batch = batch_graphs(graphs)
+    x = batch[keys.LOCAL_ENERGIES]
     assert sum_per_structure(x, batch).tolist() == [1, 9]
 
 
 def test_data_loader():
     loader = AtomicDataLoader(GRAPHS, batch_size=2)
+
+    num_batches = 0
+
     for batch in loader:
-        assert isinstance(batch, AtomicGraphBatch)
-        assert batch.n_atoms == 5
-        assert batch.n_structures == 2
-        assert batch.n_edges == 6
-        assert batch.structure_sizes.tolist() == [2, 3]
-        assert batch.neighbour_vectors.shape == (6, 3)
-        break
+        assert number_of_atoms(batch) == 5
+        assert number_of_structures(batch) == 2
+        assert number_of_edges(batch) == 6
+        assert structure_sizes(batch).tolist() == [2, 3]
+        assert neighbour_vectors(batch).shape == (6, 3)
+
+        num_batches += 1
+
+    assert num_batches == 1
 
     # test warning if try to pass own collate function
     with pytest.warns(UserWarning):

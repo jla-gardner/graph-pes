@@ -1,9 +1,13 @@
 import pytest
 import torch
 from ase import Atoms
-from graph_pes.data import AtomicGraphBatch, convert_to_atomic_graph
+from graph_pes.data import (
+    batch_graphs,
+    convert_to_atomic_graph,
+    keys,
+    number_of_edges,
+)
 from graph_pes.models.pairwise import LennardJones
-from graph_pes.util import Property
 
 no_pbc = convert_to_atomic_graph(
     Atoms("H2", positions=[(0, 0, 0), (0, 0, 1)], pbc=False),
@@ -17,9 +21,9 @@ pbc = convert_to_atomic_graph(
 
 def test_predictions():
     expected_shapes = {
-        Property.ENERGY: (),
-        Property.FORCES: (2, 3),
-        Property.STRESS: (3, 3),
+        keys.ENERGY: (),
+        keys.FORCES: (2, 3),
+        keys.STRESS: (3, 3),
     }
 
     model = LennardJones()
@@ -29,7 +33,7 @@ def test_predictions():
     predictions = model.predict(no_pbc)
     assert set(predictions.keys()) == {"energy", "forces"}
 
-    for key in Property.ENERGY, Property.FORCES:
+    for key in keys.ENERGY, keys.FORCES:
         assert predictions[key].shape == expected_shapes[key]
 
     # if we ask for stress, we get an error:
@@ -40,29 +44,29 @@ def test_predictions():
     predictions = model.predict(pbc)
     assert set(predictions.keys()) == {"energy", "forces", "stress"}
 
-    for key in Property.ENERGY, Property.FORCES, Property.STRESS:
+    for key in keys.ENERGY, keys.FORCES, keys.STRESS:
         assert predictions[key].shape == expected_shapes[key]
 
 
 def test_batched_prediction():
-    batch = AtomicGraphBatch.from_graphs([pbc, pbc])
+    batch = batch_graphs([pbc, pbc])
 
     expected_shapes = {
-        Property.ENERGY: (2,),  # two structures
-        Property.FORCES: (4, 3),  # four atoms
-        Property.STRESS: (2, 3, 3),  # two structures
+        keys.ENERGY: (2,),  # two structures
+        keys.FORCES: (4, 3),  # four atoms
+        keys.STRESS: (2, 3, 3),  # two structures
     }
 
     predictions = LennardJones().predict(batch)
 
-    for key in Property.ENERGY, Property.FORCES, Property.STRESS:
+    for key in keys.ENERGY, keys.FORCES, keys.STRESS:
         assert predictions[key].shape == expected_shapes[key]
 
 
 def test_isolated_atom():
     atom = Atoms("H", positions=[(0, 0, 0)], pbc=False)
     graph = convert_to_atomic_graph(atom, cutoff=1.5)
-    assert graph.n_edges == 0
+    assert number_of_edges(graph) == 0
 
     predictions = LennardJones().predict(graph)
     assert torch.allclose(predictions["forces"], torch.zeros(1, 3))

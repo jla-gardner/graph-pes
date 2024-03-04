@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Iterator, Sequence
 
 import ase
 import numpy as np
@@ -100,6 +100,12 @@ def number_of_atoms(graph: AtomicGraph) -> int:
     """Get the number of atoms in the `graph`."""
 
     return graph[keys.ATOMIC_NUMBERS].shape[0]
+
+
+def number_of_edges(graph: AtomicGraph) -> int:
+    """Get the number of edges in the `graph`."""
+
+    return graph[keys.NEIGHBOUR_INDEX].shape[1]
 
 
 def is_local_property(x: Tensor, graph: AtomicGraph) -> bool:
@@ -390,3 +396,7 @@ class AtomicDataLoader(TorchDataLoader):
             collate_fn=collate_fn,
             **kwargs,
         )
+
+    # add typing for mypy purposes
+    def __iter__(self) -> Iterator[AtomicGraphBatch]:
+        return super().__iter__()

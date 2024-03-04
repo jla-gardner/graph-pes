@@ -1,14 +1,16 @@
+from __future__ import annotations
+
+from ase import Atoms
 from ase.io import read
-from graph_pes.data.atomic_graph import convert_to_atomic_graphs
-from graph_pes.data.batching import AtomicGraphBatch
+from graph_pes.data import batch_graphs, convert_to_atomic_graphs
 from graph_pes.models.pairwise import LennardJones
 from graph_pes.training import Loss, train_model
 
 
 def test_integration():
-    structures = read("tests/test.xyz", ":")
+    structures: list[Atoms] = read("tests/test.xyz", ":")  # type: ignore
     graphs = convert_to_atomic_graphs(structures, cutoff=3)
-    batch = AtomicGraphBatch.from_graphs(graphs)
+    batch = batch_graphs(graphs)
 
     model = LennardJones()
 
