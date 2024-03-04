@@ -428,6 +428,8 @@ def left_aligned_add(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
     We broadcast y to the left of x and apply the operation op.
     """
+    if x.dim() == 1 or x.dim() == 0:
+        return x + y
     # add a fake dimension to x to make it (n, 1, ...)
     x = x.unsqueeze(1)
     # transpose x to make it (1, ..., n)
@@ -448,6 +450,8 @@ def left_aligned_sub(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
     We broadcast y to the left of x and apply the operation op.
     """
+    if x.dim() == 1 or x.dim() == 0:
+        return x - y
     x = x.unsqueeze(1)
     x = x.transpose(0, -1)
     result = x - y  # shape: (1, ..., n)
@@ -463,6 +467,8 @@ def left_aligned_mul(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
     We broadcast y to the left of x and apply the operation op.
     """
+    if x.dim() == 1 or x.dim() == 0:
+        return x * y
     x = x.unsqueeze(1)
     x = x.transpose(0, -1)
     result = x * y  # shape: (1, ..., n)
@@ -478,6 +484,8 @@ def left_aligned_div(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
     We broadcast y to the left of x and apply the operation op.
     """
+    if x.dim() == 1 or x.dim() == 0:
+        return x / y
     x = x.unsqueeze(1)
     x = x.transpose(0, -1)
     result = x / y  # shape: (1, ..., n)

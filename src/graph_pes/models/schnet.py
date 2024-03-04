@@ -4,7 +4,7 @@ from typing import Literal
 
 import torch
 from graph_pes.core import GraphPESModel
-from graph_pes.data.atomic_graph import AtomicGraph
+from graph_pes.data import AtomicGraph, neighbour_distances
 from graph_pes.nn import MLP, PerSpeciesEmbedding, ShiftedSoftplus
 from torch import Tensor, nn
 from torch_geometric.nn import MessagePassing
@@ -216,9 +216,9 @@ class SchNet(GraphPESModel):
 
     def __init__(
         self,
-        node_features: int,
-        expansion_features: int,
-        cutoff: float,
+        node_features: int = 64,
+        expansion_features: int = 50,
+        cutoff: float = 5.0,
         num_interactions: int = 3,
         expansion: type[DistanceExpansion] | None = None,
     ):
@@ -242,11 +242,11 @@ class SchNet(GraphPESModel):
         )
 
     def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
-        h = self.chemical_embedding(graph.Z)
+        h = self.chemical_embedding(graph["atomic_numbers"])
 
         for interaction in self.interactions:
             h = h + interaction(
-                graph.neighbour_index, graph.neighbour_distances, h
+                graph["neighbour_index"], neighbour_distances(graph), h
             )
 
         return self.read_out(h)
@@ -299,7 +299,9 @@ class ImprovedSchNetInteraction(nn.Module):
         graph: AtomicGraph,
     ) -> torch.Tensor:
         # get radial features
-        radial_embedding = self.get_radial_embeddings(graph.neighbour_distances)
+        radial_embedding = self.get_radial_embeddings(
+            neighbour_distances(graph)
+        )
 
         if self.pre_embed:
             # update atomic features
@@ -308,7 +310,7 @@ class ImprovedSchNetInteraction(nn.Module):
             )
 
         # haddamard product to mix atomic features with radial features
-        i, j = graph.neighbour_index
+        i, j = graph["neighbour_index"]
         neighbour_atom_embeddings = central_atom_embeddings[j]
         messages = neighbour_atom_embeddings * radial_embedding
 
@@ -372,7 +374,7 @@ class ImprovedSchNet(GraphPESModel):
         return self.per_block_predictions(graph).sum(dim=1)
 
     def per_block_predictions(self, graph: AtomicGraph) -> torch.Tensor:
-        h = self.chemical_embedding(graph.Z)
+        h = self.chemical_embedding(graph["atomic_numbers"])
 
         predictions = []
         for block, read_out in zip(self.interactions, self.read_outs):

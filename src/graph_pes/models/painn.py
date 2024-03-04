@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import torch
 from graph_pes.core import GraphPESModel
-from graph_pes.data import AtomicGraph
+from graph_pes.data import (
+    AtomicGraph,
+    neighbour_distances,
+    neighbour_vectors,
+    number_of_atoms,
+)
 from graph_pes.nn import MLP, HaddamardProduct, PerSpeciesEmbedding
-from jaxtyping import Float
 from torch import Tensor, nn
 
 from .distances import Bessel, PolynomialEnvelope
@@ -60,16 +64,13 @@ class Interaction(nn.Module):
 
     def forward(
         self,
-        vector_embeddings: Float[Tensor, "graph.n_atoms self.internal_dim 3"],
-        scalar_embeddings: Float[Tensor, "graph.n_atoms self.internal_dim"],
+        vector_embeddings: Tensor,
+        scalar_embeddings: Tensor,
         graph: AtomicGraph,
-    ) -> tuple[
-        Float[Tensor, "graph.n_atoms self.internal_dim 3"],
-        Float[Tensor, "graph.n_atoms self.internal_dim"],
-    ]:
-        central_atoms, neighbours = graph.neighbour_index  # (E,)
-        d = graph.neighbour_distances.unsqueeze(-1)  # (E, 1)
-        unit_vectors = graph.neighbour_vectors / d  # (E, 3)
+    ) -> tuple[Tensor, Tensor]:
+        neighbours = graph["neighbour_index"][1]  # (E,)
+        d = neighbour_distances(graph).unsqueeze(-1)  # (E, 1)
+        unit_vectors = neighbour_vectors(graph) / d  # (E, 3)
 
         # continous filter message creation
         x_ij = self.filter_generator(d) * self.φ(scalar_embeddings)[neighbours]
@@ -88,7 +89,7 @@ class Interaction(nn.Module):
             0, neighbours.unsqueeze(-1).unsqueeze(-1).expand_as(v_ij), v_ij
         )
 
-        return Δv, Δs
+        return Δv, Δs  # (N, D, 3), (N, D)
 
 
 class VectorLinear(nn.Module):
@@ -96,9 +97,7 @@ class VectorLinear(nn.Module):
         super().__init__()
         self._linear = nn.Linear(in_features, out_features)
 
-    def forward(
-        self, x: Float[Tensor, "... self.in_features 3"]
-    ) -> Float[Tensor, "... self.out_features 3"]:
+    def forward(self, x: Tensor) -> Tensor:
         # a hack to swap the vector and channel dimensions
         return self._linear(x.transpose(-1, -2)).transpose(-1, -2)
 
@@ -128,18 +127,16 @@ class Update(nn.Module):
         )
 
     def forward(
-        self,
-        vector_embeddings: Float[Tensor, "batch self.internal_dim 3"],
-        scalar_embeddings: Float[Tensor, "batch self.internal_dim"],
-    ) -> tuple[
-        Float[Tensor, "batch self.internal_dim 3"],
-        Float[Tensor, "batch self.internal_dim"],
-    ]:
+        self, vector_embeddings: Tensor, scalar_embeddings: Tensor
+    ) -> tuple[Tensor, Tensor]:
         u = self.U(vector_embeddings)  # (N, D, 3)
         v = self.V(vector_embeddings)  # (N, D, 3)
 
         # stack scalar message and the norm of v
-        m = torch.cat([scalar_embeddings, v.norm(dim=-1)], dim=-1)  # (N, 2D)
+        m = torch.cat(
+            [scalar_embeddings, torch.linalg.norm(v, dim=-1)],
+            dim=-1,
+        )  # (N, 2D)
         m = self.mlp(m)  # (N, 3D)
 
         # split the update into 3 parts
@@ -211,14 +208,12 @@ class PaiNN(GraphPESModel):
             activation=nn.SiLU(),
         )
 
-    def predict_local_energies(
-        self, graph: AtomicGraph
-    ) -> Float[Tensor, "1 graph.n_atoms"]:
+    def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
         vector_embeddings = torch.zeros(
-            (graph.n_atoms, self.internal_dim, 3),
-            device=graph.Z.device,
+            (number_of_atoms(graph), self.internal_dim, 3),
+            device=graph["atomic_numbers"].device,
         )
-        scalar_embeddings = self.z_embedding(graph.Z)
+        scalar_embeddings = self.z_embedding(graph["atomic_numbers"])
 
         for interaction, update in zip(self.interactions, self.updates):
             Δv, Δs = interaction(vector_embeddings, scalar_embeddings, graph)

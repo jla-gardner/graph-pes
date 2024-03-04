@@ -142,7 +142,9 @@ class Chain(Transform):
         super().__init__(trainable)
         for t in transforms:
             t.trainable = trainable
-        self.transforms: list[Transform] = nn.ModuleList(transforms)  # type: ignore
+        self.transforms = nn.ModuleList(transforms)  # type: ignore
+        # stored here for torchscript compatibility
+        self._reversed = nn.ModuleList(reversed(transforms))  # type: ignore
 
     def forward(self, x: Tensor, graph: AtomicGraph) -> Tensor:
         for transform in self.transforms:
@@ -150,7 +152,7 @@ class Chain(Transform):
         return x
 
     def inverse(self, x: Tensor, graph: AtomicGraph) -> Tensor:
-        for transform in reversed(self.transforms):
+        for transform in self._reversed:
             x = transform.inverse(x, graph)
         return x
 
