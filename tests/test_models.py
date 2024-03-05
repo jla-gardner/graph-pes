@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from ase import Atoms
 from ase.io import read
+from graph_pes.core import get_predictions
 from graph_pes.data import (
     convert_to_atomic_graph,
     convert_to_atomic_graphs,
@@ -17,7 +18,7 @@ graphs = convert_to_atomic_graphs(structures, cutoff=3)
 
 def test_model():
     model = LennardJones()
-    predictions = model.predict(graphs)
+    predictions = get_predictions(model, graphs)
     assert "energy" in predictions
     assert "forces" in predictions
     assert "stress" in predictions and is_periodic(graphs[0])

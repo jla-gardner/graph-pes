@@ -22,7 +22,7 @@ def test_identity():
     x = torch.arange(10).float()
 
     assert transform.forward(x, graph).equal(x)
-    assert transform.inverse(x, graph).equal(x)
+    assert transform.inverse()(x, graph).equal(x)
 
 
 def test_is_local_property():
@@ -45,7 +45,6 @@ def test_per_atom_transforms():
     for n_H, n_C in nums:
         atoms = Atoms("H" * n_H + "C" * n_C)
         atoms.info["energy"] = n_H * H_energy + n_C * C_energy
-        atoms.arrays["local_energies"] = [H_energy] * n_H + [C_energy] * n_C
         atoms.arrays["forces"] = np.zeros((n_H + n_C, 3))
         structures.append(atoms)
 
@@ -73,26 +72,6 @@ def test_per_atom_transforms():
         atol=1e-5,
     )
     assert not centered_energy.requires_grad
-
-    # fit shift to the local energies
-    shift = PerAtomShift(trainable=False)
-    local_energies: torch.Tensor = batch["local_energies"]
-
-    shift.fit(local_energies, batch)
-    shifted_local_energies = shift(local_energies, batch)
-    assert shifted_local_energies.shape == local_energies.shape
-    assert torch.allclose(
-        shift.shift[torch.tensor([1, 6])].detach().squeeze(),
-        torch.tensor([H_energy, C_energy]),
-    )
-
-    centered_local_energy = shift(local_energies, batch)
-    assert torch.allclose(
-        centered_local_energy,
-        torch.zeros_like(centered_local_energy),
-        atol=1e-5,
-    )
-    assert not centered_local_energy.requires_grad
 
     # test scaling forces
     scale = PerAtomScale(trainable=False)

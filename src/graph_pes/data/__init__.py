@@ -96,7 +96,7 @@ def is_local_property(x: Tensor, graph: AtomicGraph) -> bool:
 def is_periodic(graph: AtomicGraph) -> bool:
     """Is the data in `graph` periodic?"""
 
-    return torch.any(graph[keys.CELL] != 0).item()  # type: ignore
+    return bool(torch.any(graph[keys.CELL] != 0).item())
 
 
 def neighbour_vectors(graph: AtomicGraph) -> Tensor:
@@ -238,6 +238,7 @@ def convert_to_atomic_graphs(
 #### BATCHING ####
 
 
+@torch.no_grad()
 def batch_graphs(graphs: list[AtomicGraph]) -> AtomicGraphBatch:
     # easy properties: just cat these together
     Z = torch.cat([g[keys.ATOMIC_NUMBERS] for g in graphs])
@@ -282,7 +283,7 @@ def batch_graphs(graphs: list[AtomicGraph]) -> AtomicGraphBatch:
         if label in graphs[0]:
             graph[label] = torch.stack([g[label] for g in graphs])
 
-    # - per atom and per edge labels are concatenated along the first axis
+    # - per atom labels are concatenated along the first axis
     if keys.FORCES in graphs[0]:
         graph[keys.FORCES] = torch.cat([g[keys.FORCES] for g in graphs])  # type: ignore
 

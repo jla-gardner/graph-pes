@@ -6,7 +6,6 @@ from typing import Callable, TypeVar
 
 import pytorch_lightning as pl
 import torch
-from graph_pes.data import keys
 from pytorch_lightning.callbacks import (
     LearningRateMonitor,
     ModelCheckpoint,
@@ -14,7 +13,9 @@ from pytorch_lightning.callbacks import (
 )
 from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
 
-from .core import GraphPESModel
+from graph_pes.data import keys
+
+from .core import GraphPESModel, get_predictions
 from .data import (
     AtomicDataLoader,
     AtomicGraph,
@@ -142,9 +143,7 @@ class LearnThePES(pl.LightningModule):
             component.property_key for component in total_loss.losses
         ]
 
-    def forward(
-        self, graphs: AtomicGraphBatch
-    ) -> dict[keys.LabelKey, torch.Tensor]:
+    def forward(self, graphs: AtomicGraphBatch) -> torch.Tensor:
         return self.model(graphs)
 
     def _step(self, graph: AtomicGraphBatch, prefix: str):
@@ -163,8 +162,11 @@ class LearnThePES(pl.LightningModule):
             )
 
         # generate prediction:
-        predictions = self.model(
-            graph, properties=self.properties, training=True
+        # predictions = self.model(
+        #     graph, properties=self.properties, training=True
+        # )
+        predictions = get_predictions(
+            self.model, graph, properties=self.properties, training=True
         )
 
         # compute the losses

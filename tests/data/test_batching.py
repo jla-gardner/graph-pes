@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+import torch
 from ase import Atoms
 from graph_pes.data import (
     AtomicDataLoader,
@@ -45,9 +46,7 @@ def test_label_batching():
     structures[1].info[keys.STRESS] = 2 * np.eye(3)
 
     # per-atom labels:
-    structures[0].arrays[keys.LOCAL_ENERGIES] = [0, 1]
     structures[0].arrays[keys.FORCES] = np.zeros((2, 3))
-    structures[1].arrays[keys.LOCAL_ENERGIES] = [2, 3, 4]
     structures[1].arrays[keys.FORCES] = np.zeros((3, 3))
 
     graphs = convert_to_atomic_graphs(structures, cutoff=1.5)
@@ -59,7 +58,6 @@ def test_label_batching():
     assert batch[keys.ENERGY].tolist() == [0, 1]
 
     # per-atom labels are concatenated along the first axis
-    assert batch[keys.LOCAL_ENERGIES].tolist() == [0, 1, 2, 3, 4]
     assert batch[keys.FORCES].shape == (5, 3)
 
 
@@ -85,20 +83,18 @@ def test_pbcs():
 
 def test_sum_per_structure():
     structures = [s.copy() for s in STRUCTURES]
-    structures[0].arrays[keys.LOCAL_ENERGIES] = [0, 1]
-    structures[1].arrays[keys.LOCAL_ENERGIES] = [2, 3, 4]
     graphs = convert_to_atomic_graphs(structures, cutoff=1.5)
 
     # sum per structure should work for:
 
     # 1. a single structure
-    x = graphs[0][keys.LOCAL_ENERGIES]
+    x = torch.tensor([1, 2])
     assert sum_per_structure(x, graphs[0]) == x.sum()
 
     # 2. a batch of structures
     batch = batch_graphs(graphs)
-    x = batch[keys.LOCAL_ENERGIES]
-    assert sum_per_structure(x, batch).tolist() == [1, 9]
+    x = torch.tensor([1, 2, 3, 4, 5])
+    assert sum_per_structure(x, batch).tolist() == [3, 12]
 
 
 def test_data_loader():

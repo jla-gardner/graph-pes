@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Literal, Sequence
+from typing import Literal, Sequence, overload
 
 import torch
+from torch import Tensor, nn
+
 from graph_pes.data import (
     AtomicGraph,
     AtomicGraphBatch,
@@ -12,9 +14,8 @@ from graph_pes.data import (
     keys,
     sum_per_structure,
 )
-from graph_pes.transform import PerAtomStandardScaler, Transform
+from graph_pes.transform import Identity, PerAtomStandardScaler, Transform
 from graph_pes.util import differentiate, require_grad
-from torch import Tensor, nn
 
 
 class GraphPESModel(nn.Module, ABC):
@@ -58,10 +59,9 @@ class GraphPESModel(nn.Module, ABC):
 
     def __init__(self):
         super().__init__()
-        self.energy_transform: Transform = PerAtomStandardScaler()
-
-    def __add__(self, other: GraphPESModel) -> Ensemble:
-        return Ensemble([self, other], aggregation="sum")
+        # assigned here to appease torchscript and mypy:
+        # this gets overridden in pre_fit below
+        self.energy_transform: Transform = Identity()
 
     def pre_fit(self, graphs: AtomicGraphBatch):
         """
@@ -85,16 +85,22 @@ class GraphPESModel(nn.Module, ABC):
         """
         if "energy" not in graphs:
             raise ValueError("No energy data in the training graphs.")
-        self.energy_transform.fit(graphs["energy"], graphs)
 
-    def total_energy(self, graph: AtomicGraph) -> Tensor:
+        transform = PerAtomStandardScaler()
+        transform.fit(graphs["energy"], graphs)
+        # The standard scaler maps final energies to a unit normal
+        # distribution. We want to go the other way for our predictions,
+        # and so use the inverse transform.
+        self.energy_transform = transform.inverse()
+
+    def forward(self, graph: AtomicGraph) -> Tensor:
         """
         Calculate the total energy of the structure.
 
         Parameters
         ----------
         graph
-            The atomic structure/s to evaluate.
+            The atomic structure to evaluate.
 
         Returns
         -------
@@ -103,110 +109,16 @@ class GraphPESModel(nn.Module, ABC):
             of graphs, the result will be a tensor of shape :code:`(B,)`,
             where :code:`B` is the batch size, else a scalar.
         """
-        local_energies = self.predict_local_energies(graph)
+        local_energies = self.predict_local_energies(graph).squeeze()
         transformed = self.energy_transform(local_energies, graph)
         return sum_per_structure(transformed, graph)
 
-    # TODO: implement max batch size?
-    def forward(
-        self,
-        graph: AtomicGraph | list[AtomicGraph],
-        *,
-        properties: Sequence[keys.LabelKey] | None = None,
-        training: bool = False,
-    ) -> dict[keys.LabelKey, Tensor]:
-        """
-        Evaluate the model on the given structure to get
-        the properties requested.
-
-        Parameters
-        ----------
-        graph
-            The atomic structure to evaluate.
-        properties
-            The properties to predict. If not provided, defaults to
-            :code:`[keys.ENERGY, keys.FORCES]` if the structure
-            has no cell, and :code:`[keys.ENERGY, keys.FORCES,
-            keys.STRESS]` if it does.
-        property
-            The property to predict. Can't be used when :code:`properties`
-            is also provided.
-        training
-            Whether the model is currently being trained. If :code:`False`,
-            the gradients of the predictions will be detached.
-
-        Examples
-        --------
-        >>> model.predict(graph_pbc)
-        {'energy': tensor(-12.3), 'forces': tensor(...), 'stress': tensor(...)}
-        >>> model.predict(graph_no_pbc)
-        {'energy': tensor(-12.3), 'forces': tensor(...)}
-        >>> model.predict(graph_pbc, property="energy")
-        tensor(-12.3)
-        """
-
-        if isinstance(graph, list):
-            graph = batch_graphs(graph)
-
-        if properties is None:
-            if is_periodic(graph):
-                properties = [keys.ENERGY, keys.FORCES, keys.STRESS]
-            else:
-                properties = [keys.ENERGY, keys.FORCES]
-
-        if keys.STRESS in properties and not is_periodic(graph):
-            raise ValueError("Can't predict stress without cell information.")
-
-        predictions: dict[keys.LabelKey, Tensor] = {}
-
-        # setup for calculating stress:
-        if keys.STRESS in properties:
-            # The virial stress tensor is the gradient of the total energy wrt
-            # an infinitesimal change in the cell parameters.
-            # We therefore add this change to the cell, such that
-            # we can calculate the gradient wrt later if required.
-            #
-            # See <> TODO: find reference
-            actual_cell = graph[keys.CELL]
-            change_to_cell = torch.zeros_like(actual_cell, requires_grad=True)
-            symmetric_change = 0.5 * (
-                change_to_cell + change_to_cell.transpose(-1, -2)
-            )
-            graph[keys.CELL] = actual_cell + symmetric_change
-        else:
-            change_to_cell = torch.zeros_like(graph[keys.CELL])
-
-        # use the autograd machinery to auto-magically
-        # calculate forces and stress from the energy
-        with require_grad(graph[keys._POSITIONS]), require_grad(change_to_cell):
-            energy = self.total_energy(graph)
-
-            if keys.ENERGY in properties:
-                predictions[keys.ENERGY] = energy
-
-            if keys.FORCES in properties:
-                dE_dR = differentiate(energy, graph[keys._POSITIONS])
-                predictions[keys.FORCES] = -dE_dR
-
-            if keys.STRESS in properties:
-                stress = differentiate(energy, change_to_cell)
-                predictions[keys.STRESS] = stress
-
-        if not training:
-            for key, value in predictions.items():
-                predictions[key] = value.detach()
-
-        return predictions
-
     # add type hints to play nicely with mypy
-    def __call__(
-        self,
-        graph: AtomicGraph | list[AtomicGraph],
-        *,
-        properties: Sequence[keys.LabelKey] | None = None,
-        training: bool = False,
-    ) -> dict[keys.LabelKey, Tensor]:
-        return super().__call__(graph, properties=properties, training=training)
+    def __call__(self, graph: AtomicGraph) -> Tensor:
+        return super().__call__(graph)
+
+    def __add__(self, other: GraphPESModel) -> Ensemble:
+        return Ensemble([self, other], aggregation="sum")
 
 
 class Ensemble(GraphPESModel):
@@ -272,7 +184,7 @@ class Ensemble(GraphPESModel):
             "Ensemble models don't have a single local energy prediction."
         )
 
-    def total_energy(self, graph: AtomicGraph):
+    def forward(self, graph: AtomicGraph):
         predictions: Tensor = torch.stack(
             [
                 w * model.total_energy(graph)
@@ -290,3 +202,132 @@ class Ensemble(GraphPESModel):
             info.append(f"weights={self.weights.tolist()}")
         info = "\n  ".join(info)
         return f"Ensemble(\n  {info}\n)"
+
+
+@overload
+def get_predictions(
+    model: GraphPESModel,
+    graph: AtomicGraph | AtomicGraphBatch | list[AtomicGraph],
+    *,
+    training: bool = False,
+) -> dict[keys.LabelKey, Tensor]: ...
+
+
+@overload
+def get_predictions(
+    model: GraphPESModel,
+    graph: AtomicGraph | AtomicGraphBatch | list[AtomicGraph],
+    *,
+    properties: Sequence[keys.LabelKey],
+    training: bool = False,
+) -> dict[keys.LabelKey, Tensor]: ...
+
+
+@overload
+def get_predictions(
+    model: GraphPESModel,
+    graph: AtomicGraph | AtomicGraphBatch | list[AtomicGraph],
+    *,
+    property: keys.LabelKey,
+    training: bool = False,
+) -> Tensor: ...
+
+
+# TODO: implement max batch size
+def get_predictions(
+    model: GraphPESModel,
+    graph: AtomicGraph | AtomicGraphBatch | list[AtomicGraph],
+    *,
+    properties: Sequence[keys.LabelKey] | None = None,
+    property: keys.LabelKey | None = None,
+    training: bool = False,
+) -> dict[keys.LabelKey, Tensor] | Tensor:
+    """
+    Evaluate the model on the given structure to get
+    the properties requested.
+
+    Parameters
+    ----------
+    graph
+        The atomic structure to evaluate.
+    properties
+        The properties to predict. If not provided, defaults to
+        :code:`[Property.ENERGY, Property.FORCES]` if the structure
+        has no cell, and :code:`[Property.ENERGY, Property.FORCES,
+        Property.STRESS]` if it does.
+    property
+        The property to predict. Can't be used when :code:`properties`
+        is also provided.
+    training
+        Whether the model is currently being trained. If :code:`False`,
+        the gradients of the predictions will be detached.
+
+    Examples
+    --------
+    >>> model.predict(graph_pbc)
+    {'energy': tensor(-12.3), 'forces': tensor(...), 'stress': tensor(...)}
+    >>> model.predict(graph_no_pbc)
+    {'energy': tensor(-12.3), 'forces': tensor(...)}
+    >>> model.predict(graph_pbc, property="energy")
+    tensor(-12.3)
+    """
+
+    # check correctly called
+    if property is not None and properties is not None:
+        raise ValueError("Can't specify both `property` and `properties`")
+
+    if isinstance(graph, list):
+        graph = batch_graphs(graph)
+
+    if properties is None:
+        if is_periodic(graph):
+            properties = [keys.ENERGY, keys.FORCES, keys.STRESS]
+        else:
+            properties = [keys.ENERGY, keys.FORCES]
+
+    if keys.STRESS in properties and not is_periodic(graph):
+        raise ValueError("Can't predict stress without cell information.")
+
+    predictions: dict[keys.LabelKey, Tensor] = {}
+
+    # setup for calculating stress:
+    if keys.STRESS in properties:
+        # The virial stress tensor is the gradient of the total energy wrt
+        # an infinitesimal change in the cell parameters.
+        # We therefore add this change to the cell, such that
+        # we can calculate the gradient wrt later if required.
+        #
+        # See <> TODO: find reference
+        actual_cell = graph[keys.CELL]
+        change_to_cell = torch.zeros_like(actual_cell, requires_grad=True)
+        symmetric_change = 0.5 * (
+            change_to_cell + change_to_cell.transpose(-1, -2)
+        )
+        graph[keys.CELL] = actual_cell + symmetric_change
+    else:
+        change_to_cell = torch.zeros_like(graph[keys.CELL])
+
+    # use the autograd machinery to auto-magically
+    # calculate forces and stress from the energy
+    with require_grad(graph[keys._POSITIONS]), require_grad(change_to_cell):
+        energy = model(graph)
+
+        if keys.ENERGY in properties:
+            predictions[keys.ENERGY] = energy
+
+        if keys.FORCES in properties:
+            dE_dR = differentiate(energy, graph[keys._POSITIONS])
+            predictions[keys.FORCES] = -dE_dR
+
+        if keys.STRESS in properties:
+            stress = differentiate(energy, change_to_cell)
+            predictions[keys.STRESS] = stress
+
+    if not training:
+        for key, value in predictions.items():
+            predictions[key] = value.detach()
+
+    if property is not None:
+        return predictions[property]
+
+    return predictions

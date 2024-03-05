@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 from ase import Atoms
 from cycler import cycler
 from matplotlib.axes import Axes
 from matplotlib.ticker import MaxNLocator
 
-from .core import GraphPESModel
+from .core import GraphPESModel, get_predictions
 from .data import (
     AtomicGraph,
     AtomicGraphBatch,
@@ -140,7 +141,7 @@ def parity_plot(
         graphs = batch_graphs(graphs)
 
     ground_truth = transform(graphs[property_label], graphs).detach()
-    pred = model(graphs, properties=[property])[property]
+    pred = get_predictions(model, graphs, property=property)
     predictions = transform(pred, graphs).detach()
 
     # plot
@@ -225,7 +226,9 @@ def dimer_curve(
     graphs = [convert_to_atomic_graph(d, cutoff=rmax + 0.1) for d in dimers]
     batch = batch_graphs(graphs)
 
-    energy = model(batch)["energy"].numpy()
+    with torch.no_grad():
+        energy = model(batch).numpy()
+
     if set_to_zero:
         energy -= energy[-1]
 

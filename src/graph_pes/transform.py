@@ -15,9 +15,7 @@ from graph_pes.data import (
 )
 from graph_pes.nn import (
     PerSpeciesParameter,
-    left_aligned_add,
     left_aligned_div,
-    left_aligned_mul,
     left_aligned_sub,
 )
 from torch import Tensor, nn
@@ -29,7 +27,12 @@ class Transform(nn.Module, ABC):
     :math:`x`, defined on :class:`AtomicGraph <graph_pes.data.AtomicGraph>`s,
     :math:`\mathcal{G}`.
 
-    :math:`T: (x; \mathcal{G}) \mapsto y, \quad x, y \in \mathbb{R}^n`
+    By convention, and in alignment with e.g. scipy's StandardScaler,
+    the forward transformation maps from an arbitrary input space, :math:`x`,
+    to some kind of standardised output space, :math:`y`:\ :
+
+    .. math::
+        T: (x; \mathcal{G}) \mapsto y, \quad x, y \in \mathbb{R}^n
 
     Subclasses should implement :meth:`forward`, :meth:`inverse`,
     and :meth:`fit`.
@@ -43,6 +46,10 @@ class Transform(nn.Module, ABC):
     def __init__(self, trainable: bool = True):
         super().__init__()
         self.trainable = trainable
+
+    # add type hints to play nicely with mypy
+    def __call__(self, x: Tensor, graph: AtomicGraph) -> Tensor:
+        return super().__call__(x, graph)
 
     @abstractmethod
     def forward(self, x: Tensor, graph: AtomicGraph) -> Tensor:
@@ -62,34 +69,12 @@ class Transform(nn.Module, ABC):
             The transformed data.
         """
 
-    # add type hints to play nicely with mypy
-    def __call__(self, x: Tensor, graph: AtomicGraph) -> Tensor:
-        return super().__call__(x, graph)
-
-    @abstractmethod
-    def inverse(self, x: Tensor, graph: AtomicGraph) -> Tensor:
-        r"""
-        Implements the inverse transformation,
-        :math:`x = T^{-1}(y; \mathcal{G})`.
-
-        Parameters
-        ----------
-        x
-            The input data.
-        graph
-            The graph to condition the inverse transformation on.
-
-        Returns
-        -------
-        x: Tensor
-            The inversely-transformed data.
-        """
-
     @abstractmethod
     @torch.no_grad()
     def fit(self, x: Tensor, graphs: AtomicGraphBatch) -> Transform:
         r"""
-        Fits the transform to property `x` defined on `graphs`.
+        Fits the transform to property :math:`x` defined on :code:`graphs`,
+        and returns the fitted transform.
 
         Parameters
         ----------
@@ -98,6 +83,10 @@ class Transform(nn.Module, ABC):
         graphs
             The graphs :math:`\mathcal{G}` that the data originates from.
         """
+
+    @abstractmethod
+    def inverse(self) -> Transform:
+        """Get the inverse of the transformation, :math:`T^{-1}`."""
 
 
 class Identity(Transform):
@@ -112,8 +101,8 @@ class Identity(Transform):
     def forward(self, x: Tensor, graph: AtomicGraph) -> Tensor:
         return x
 
-    def inverse(self, x: Tensor, graph: AtomicGraph) -> Tensor:
-        return x
+    def inverse(self) -> Identity:
+        return self
 
     def fit(self, x: Tensor, graphs: AtomicGraphBatch) -> Transform:
         return self
@@ -124,11 +113,10 @@ class Chain(Transform):
     A chain of transformations, :math:`T_n \circ \dots \circ T_2 \circ T_1`.
 
     The forward transformation is applied sequentially from left to right,
-    :math:`y = T_n \circ \dots \circ T_2 \circ T_1(x; \mathcal{G})`.
+    as originally defined by the order of the transformations:
 
-    The inverse transformation is applied sequentially from right to left,
-    :math:`x = T_1^{-1} \circ T_2^{-1} \circ \dots
-    \circ T_n^{-1}(y; \mathcal{G})`.
+    .. math::
+        y = T_n ( \; \dots (\; T_2( \; T1(x; \mathcal{G})\;) \;) \dots \;)
 
     Parameters
     ----------
@@ -151,10 +139,8 @@ class Chain(Transform):
             x = transform(x, graph)
         return x
 
-    def inverse(self, x: Tensor, graph: AtomicGraph) -> Tensor:
-        for transform in self._reversed:
-            x = transform.inverse(x, graph)
-        return x
+    def inverse(self) -> Chain:
+        return Chain([t.inverse() for t in self._reversed], self.trainable)
 
     @torch.no_grad()
     def fit(self, x: Tensor, graphs: AtomicGraphBatch) -> Transform:
@@ -175,14 +161,10 @@ class PerAtomShift(Transform):
     or global property.
 
     Within :meth:`fit`, we calculate the per-species shift that center the
-    input data about 0.
+    input data to 0.
 
     Within :meth:`forward`, we apply the fitted shift to the input data, and
     hence expect the output to be centered about 0.
-
-    Within :meth:`inverse`, we apply the inverse of the fitted shift to the
-    input data. If this input is centered about 0, we expect the output to be
-    centered about the fitted shift.
 
     Parameters
     ----------
@@ -200,7 +182,11 @@ class PerAtomShift(Transform):
         """The fitted, per-species shifts."""
 
     @torch.no_grad()
-    def fit(self, x: Tensor, graphs: AtomicGraphBatch):
+    def fit(
+        self,
+        x: Tensor,
+        graphs: AtomicGraphBatch,
+    ):
         r"""
         Fit the shift to the data, :math:`x`.
 
@@ -218,7 +204,7 @@ class PerAtomShift(Transform):
         graphs
             The atomic graphs that x originates from.
         """
-        # reset the shift
+
         zs = torch.unique(graphs["atomic_numbers"])
 
         if is_local_property(x, graphs):
@@ -243,9 +229,9 @@ class PerAtomShift(Transform):
 
     def forward(self, x: Tensor, graph: AtomicGraph) -> Tensor:
         r"""
-        Subtract the learned shift from :math:`x` such that the output
-        is expected to be centered about 0 if :math:`x` is centered similarly
-        to the data used to fit the shift.
+        Subtract the learned shift from :math:`x` such that the output,
+        :math:`y`, is expected to be centered about 0 if :math:`x` is centered
+        similarly to the data used to fit the shift.
 
         If :math:`x` is a local property, we subtract the shift from
         each element: :math:`x_i \rightarrow x_i - \text{shift}_i`.
@@ -273,31 +259,12 @@ class PerAtomShift(Transform):
 
         return left_aligned_sub(x, shifts)
 
-    def inverse(self, x: Tensor, graph: AtomicGraph) -> Tensor:
-        r"""
-        Add the learned shift to :math:`x`, such that the output
-        is expected to be centered about the learned shift if :math:`x`
-        is centered about 0.
-
-        If :math:`x` is a local property, we add the shift to
-        each element: :math:`x_i \rightarrow x_i + \text{shift}_i`.
-
-        If :math:`x` is a global property, we add the shift to
-        each structure: :math:`x_i \rightarrow x_i + \sum_{j \in i}
-        \text{shift}_j`.
-
-        Parameters
-        ----------
-        x
-            The input data.
-        batch
-            The batch of atomic graphs.
-        """
-        shifts = self.shift[graph["atomic_numbers"]].squeeze()
-        if not is_local_property(x, graph):
-            shifts = sum_per_structure(shifts, graph)
-
-        return left_aligned_add(x, shifts)
+    @torch.no_grad()
+    def inverse(self) -> PerAtomShift:
+        new_shift = PerAtomShift(trainable=self.trainable)
+        for z in self.shift._accessed_Zs:  # type: ignore
+            new_shift.shift[z] = -self.shift[z]
+        return new_shift
 
     def __repr__(self):
         return self.shift.__repr__().replace(
@@ -403,42 +370,14 @@ class PerAtomScale(Transform):
         if not is_local_property(x, graph):
             scales = sum_per_structure(scales, graph)
 
-        # ndims = len(x.shape)
-        # return x / scales.view(-1, *([1] * (ndims - 1))) ** 0.5
-
         return left_aligned_div(x, scales**0.5)
 
-    def inverse(self, x: Tensor, graph: AtomicGraph) -> Tensor:
-        r"""
-        Scale the input data, :math:`x`, by the inverse of the learned scale
-        such that the output is expected to have variance equal to the
-        learned scale if :math:`x` has unit variance.
-
-        If :math:`x` is a local property, we scale each element:
-        :math:`x_i \rightarrow x_i \times \text{scale}_i`.
-
-        If :math:`x` is a global property, we scale each structure:
-        :math:`x_i \rightarrow x_i \times \sqrt{\text{scale}_i}`.
-
-        Parameters
-        ----------
-        x
-            The input data.
-        batch
-            The batch of atomic graphs.
-
-        Returns
-        -------
-        Tensor
-            The input data, scaled by the inverse of the learned scale.
-        """
-        scales = self.scales[graph["atomic_numbers"]].squeeze()
-        if not is_local_property(x, graph):
-            scales = sum_per_structure(scales, graph)
-
-        # ndims = len(x.shape)
-        # return x * scales.view(-1, *([1] * (ndims - 1))) ** 0.5
-        return left_aligned_mul(x, scales**0.5)
+    @torch.no_grad()
+    def inverse(self) -> PerAtomScale:
+        new_scale = PerAtomScale(trainable=self.trainable)
+        for z in self.scales._accessed_Zs:  # type: ignore
+            new_scale.scales[z] = 1 / self.scales[z]
+        return new_scale
 
     def __repr__(self):
         return self.scales.__repr__().replace(
@@ -448,7 +387,7 @@ class PerAtomScale(Transform):
 
 def PerAtomStandardScaler(trainable: bool = True) -> Transform:
     r"""
-    A convenience function for a chain of :class:`PerAtomShift` and
+    A convenience function for a :class:`Chain` of :class:`PerAtomShift` and
     :class:`PerAtomScale` transforms.
     """
     return Chain([PerAtomShift(trainable), PerAtomScale(trainable)])
@@ -464,8 +403,8 @@ class Scale(Transform):
     def forward(self, x: Tensor, graph: AtomicGraph) -> Tensor:
         return x * self.scale**0.5
 
-    def inverse(self, x: Tensor, graph: AtomicGraph) -> Tensor:
-        return x / self.scale**0.5
+    def inverse(self) -> Scale:
+        return Scale(trainable=self.trainable, scale=1 / self.scale.item())
 
     @torch.no_grad()
     def fit(self, x: Tensor, graphs: AtomicGraphBatch) -> Transform:
@@ -474,11 +413,6 @@ class Scale(Transform):
 
 
 class DividePerAtom(Transform):
-    """
-    A convenience transform for dividing a property by the number of atoms
-    in the structure.
-    """
-
     def __init__(self):
         super().__init__(trainable=False)
 
@@ -493,10 +427,24 @@ class DividePerAtom(Transform):
         )
         return x / sizes
 
-    def inverse(self, x: Tensor, graph: AtomicGraph) -> Tensor:
+    def inverse(self) -> MultiplyPerAtom:
+        return MultiplyPerAtom()
+
+
+class MultiplyPerAtom(Transform):
+    def __init__(self):
+        super().__init__(trainable=False)
+
+    def fit(self, x: Tensor, graphs: AtomicGraphBatch) -> Transform:
+        return self
+
+    def forward(self, x: Tensor, graph: AtomicGraph) -> Tensor:
         sizes = (
             structure_sizes(graph)  # type: ignore
             if is_batch(graph)
             else number_of_atoms(graph)
         )
         return x * sizes
+
+    def inverse(self) -> DividePerAtom:
+        return DividePerAtom()

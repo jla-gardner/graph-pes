@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 # graph properties
 ATOMIC_NUMBERS = "atomic_numbers"
@@ -15,9 +15,16 @@ PTR = "ptr"
 ENERGY = "energy"
 FORCES = "forces"
 STRESS = "stress"
-LabelKey = Literal[
-    "energy",
-    "forces",
-    "stress",
-]
-ALL_LABEL_KEYS = LabelKey.__args__  # type: ignore
+
+# appease torchscript by forcing LabelKey to be a simple string
+# at runtime
+if TYPE_CHECKING:
+    LabelKey = Literal[
+        "energy",
+        "forces",
+        "stress",
+    ]
+else:
+    LabelKey = str
+
+ALL_LABEL_KEYS: list[LabelKey] = [ENERGY, FORCES, STRESS]

@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 from ase import Atoms
 from ase.io import read
+from graph_pes import get_predictions
 from graph_pes.data import batch_graphs, convert_to_atomic_graphs
 from graph_pes.models.zoo import LennardJones, Morse
 from graph_pes.training import Loss, train_model
@@ -24,7 +25,7 @@ def test_integration(model):
     batch = batch_graphs(graphs)
 
     loss = Loss("energy")
-    before = loss(model.predict(batch), batch)
+    before = loss(get_predictions(model, batch), batch)
 
     train_model(
         model,
@@ -36,6 +37,6 @@ def test_integration(model):
         callbacks=[],
     )
 
-    after = loss(model.predict(batch), batch)
+    after = loss(get_predictions(model, batch), batch)
 
     assert after < before, "training did not improve the loss"
