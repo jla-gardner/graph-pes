@@ -186,10 +186,7 @@ class Ensemble(GraphPESModel):
 
     def forward(self, graph: AtomicGraph):
         predictions: Tensor = torch.stack(
-            [
-                w * model.total_energy(graph)
-                for w, model in zip(self.weights, self.models)
-            ]
+            [w * model(graph) for w, model in zip(self.weights, self.models)]
         ).sum(dim=0)
         if self.aggregation == "mean":
             return predictions / self.weights.sum()
@@ -285,7 +282,8 @@ def get_predictions(
         else:
             properties = [keys.ENERGY, keys.FORCES]
 
-    if keys.STRESS in properties and not is_periodic(graph):
+    want_stress = keys.STRESS in properties or property == keys.STRESS
+    if want_stress and not is_periodic(graph):
         raise ValueError("Can't predict stress without cell information.")
 
     predictions: dict[keys.LabelKey, Tensor] = {}

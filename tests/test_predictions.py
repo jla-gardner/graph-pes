@@ -40,7 +40,7 @@ def test_predictions():
         assert predictions[key].shape == expected_shapes[key]
 
     # if we ask for stress, we get an error:
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError):
         get_predictions(model, no_pbc, property="stress")
 
     # with pbc structures, we should get all three predictions
@@ -73,3 +73,13 @@ def test_isolated_atom():
 
     predictions = get_predictions(LennardJones(), graph)
     assert torch.allclose(predictions["forces"], torch.zeros(1, 3))
+
+
+def test_general_api():
+    with pytest.raises(ValueError):
+        get_predictions(
+            LennardJones(),
+            no_pbc,
+            property="energy",
+            properties=["forces"],
+        )  # type: ignore

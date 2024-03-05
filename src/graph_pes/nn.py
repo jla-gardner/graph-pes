@@ -443,7 +443,7 @@ def left_aligned_add(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     # transpose x to make it (1, ..., n)
     x = x.transpose(0, -1)
     # apply the operation
-    result = x + y  # shape: (1, ..., n)
+    result = x - y  # shape: (1, ..., n)
     # transpose back to the original shape
     result = result.transpose(0, -1)
     # remove the fake dimension

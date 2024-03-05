@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import torch
 from ase import Atoms
 from ase.io import read
-from graph_pes.core import get_predictions
+from graph_pes.core import Ensemble, get_predictions
 from graph_pes.data import (
     convert_to_atomic_graph,
     convert_to_atomic_graphs,
@@ -10,7 +11,7 @@ from graph_pes.data import (
     number_of_atoms,
     number_of_edges,
 )
-from graph_pes.models.pairwise import LennardJones
+from graph_pes.models.zoo import LennardJones, Morse
 
 structures: list[Atoms] = read("tests/test.xyz", ":")  # type: ignore
 graphs = convert_to_atomic_graphs(structures, cutoff=3)
@@ -33,3 +34,16 @@ def test_isolated_atom():
 
     model = LennardJones()
     assert model(graph) == 0
+
+
+def test_ensembling():
+    lj = LennardJones()
+    morse = Morse()
+    addition_model = lj + morse
+    assert addition_model(graphs[0]) == lj(graphs[0]) + morse(graphs[0])
+
+    mean_model = Ensemble([lj, morse], aggregation="mean", weights=[1.2, 5.7])
+    assert torch.allclose(
+        mean_model(graphs[0]),
+        (1.2 * lj(graphs[0]) + 5.7 * morse(graphs[0])) / (1.2 + 5.7),
+    )

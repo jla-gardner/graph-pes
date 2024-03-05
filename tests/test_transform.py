@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 import torch
 from ase import Atoms
 from graph_pes.data import (
@@ -9,7 +10,15 @@ from graph_pes.data import (
     convert_to_atomic_graphs,
     is_local_property,
 )
-from graph_pes.transform import Identity, PerAtomScale, PerAtomShift
+from graph_pes.transform import (
+    DividePerAtom,
+    Identity,
+    MultiplyPerAtom,
+    PerAtomScale,
+    PerAtomShift,
+    PerAtomStandardScaler,
+    Scale,
+)
 
 structure = Atoms("H2", positions=[(0, 0, 0), (0, 0, 1)])
 structure.info["energy"] = -1.0
@@ -80,3 +89,29 @@ def test_per_atom_transforms():
 
     scaled_forces = scale(forces, batch)
     assert scaled_forces.shape == forces.shape
+
+
+transforms = [
+    PerAtomShift(),
+    PerAtomScale(),
+    DividePerAtom(),
+    MultiplyPerAtom(),
+    PerAtomStandardScaler(),
+    Scale(),
+]
+
+
+@pytest.mark.parametrize(
+    "transform",
+    transforms,
+    ids=[transform.__class__.__name__ for transform in transforms],
+)
+def test_inverse(transform):
+    x = torch.tensor([1.0, 2.0])
+    y = transform(x, graph)
+
+    inverse = transform.inverse()
+    assert inverse(y, graph).equal(x)
+
+    double_inverse = inverse.inverse()
+    assert double_inverse(x, graph).equal(y)
