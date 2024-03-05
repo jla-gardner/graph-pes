@@ -3,14 +3,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 import torch
-from graph_pes.core import EnergySummation, GraphPESModel
+from graph_pes.core import GraphPESModel
 from graph_pes.data import (
     AtomicGraph,
     AtomicGraphBatch,
     keys,
     neighbour_distances,
 )
-from graph_pes.transform import PerAtomScale, PerAtomShift
+from graph_pes.transform import PerAtomShift
 from jaxtyping import Float
 from torch import Tensor
 
@@ -116,7 +116,7 @@ class LennardJones(PairPotential):
 
         # epsilon is a scaling term, so only need to learn a shift
         # parameter (rather than a shift and scale)
-        self.energy_summation = EnergySummation(local_transform=PerAtomShift())
+        self.energy_transform = PerAtomShift()
 
     # don't use Z_i and Z_j, but include them for consistency with the
     # abstract method
@@ -164,7 +164,7 @@ class Morse(PairPotential):
 
         # D is a scaling term, so only need to learn a shift
         # parameter (rather than a shift and scale)
-        self.energy_summation = EnergySummation(local_transform=PerAtomScale())
+        self.energy_transform = PerAtomShift()
 
     def interaction(
         self, r: torch.Tensor, Z_i: torch.Tensor, Z_j: torch.Tensor

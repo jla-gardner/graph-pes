@@ -1,21 +1,13 @@
 from __future__ import annotations
 
-from typing import Literal
-
 import torch
 from graph_pes.core import GraphPESModel
 from graph_pes.data import AtomicGraph, neighbour_distances
 from graph_pes.nn import MLP, PerSpeciesEmbedding, ShiftedSoftplus
 from torch import Tensor, nn
 from torch_geometric.nn import MessagePassing
-from torch_geometric.utils import scatter
 
-from .distances import (
-    Bessel,
-    DistanceExpansion,
-    GaussianSmearing,
-    PolynomialEnvelope,
-)
+from .distances import DistanceExpansion, GaussianSmearing
 
 
 class CFConv(MessagePassing):
@@ -250,138 +242,3 @@ class SchNet(GraphPESModel):
             )
 
         return self.read_out(h)
-
-
-class ImprovedSchNetInteraction(nn.Module):
-    def __init__(
-        self,
-        cutoff: float,
-        radial_features: int = 8,
-        radial_expansion: type[DistanceExpansion] = Bessel,
-        atom_features: int = 4,
-        mlp_height: int = 16,
-        mlp_depth: int = 3,
-        activation: type[nn.Module] = nn.CELU,
-        pre_embed: bool = True,
-    ):
-        super().__init__()
-
-        # radial filter components
-        self.envelope = PolynomialEnvelope(cutoff)
-        self.raw_filter_generator = nn.Sequential(
-            radial_expansion(radial_features, cutoff),
-            MLP(
-                [radial_features, mlp_height, mlp_height, atom_features],
-                activation=activation(),
-            ),
-        )
-
-        # atom embedding components
-        self.pre_embed = pre_embed
-        if pre_embed:
-            self.pre_embedding = MLP(
-                [atom_features] + [mlp_height] * mlp_depth + [atom_features],
-                activation=activation(),
-            )
-        self.post_embedding = MLP(
-            [atom_features] + [mlp_height] * mlp_depth + [atom_features],
-            activation=activation(),
-        )
-
-    def get_radial_embeddings(self, distances: torch.Tensor) -> torch.Tensor:
-        envelope = self.envelope(distances).unsqueeze(-1)
-        radial_embedding = self.raw_filter_generator(distances)
-        return radial_embedding * envelope
-
-    def forward(
-        self,
-        central_atom_embeddings: torch.Tensor,
-        graph: AtomicGraph,
-    ) -> torch.Tensor:
-        # get radial features
-        radial_embedding = self.get_radial_embeddings(
-            neighbour_distances(graph)
-        )
-
-        if self.pre_embed:
-            # update atomic features
-            central_atom_embeddings = self.pre_embedding(
-                central_atom_embeddings
-            )
-
-        # haddamard product to mix atomic features with radial features
-        i, j = graph["neighbour_index"]
-        neighbour_atom_embeddings = central_atom_embeddings[j]
-        messages = neighbour_atom_embeddings * radial_embedding
-
-        # aggregate over neighbours to get new central atom embeddings
-        central_atom_embeddings = scatter(messages, i, reduce="add")
-
-        # update atomic features
-        return self.post_embedding(central_atom_embeddings)
-
-
-class ImprovedSchNet(GraphPESModel):
-    def __init__(
-        self,
-        cutoff: float,
-        radial_features: int = 8,
-        radial_expansion: type[DistanceExpansion] = Bessel,
-        atom_features: int = 4,
-        mlp_height: int = 16,
-        mlp_depth: int = 3,
-        activation: type[nn.Module] = nn.CELU,
-        num_blocks: int = 3,
-        residual_messages: bool = True,
-        pre_embed: Literal["none", "all", "2+"] = "2+",
-    ):
-        super().__init__()
-
-        self.residual_messages = residual_messages
-
-        self.chemical_embedding = PerSpeciesEmbedding(dim=atom_features)
-
-        def _rule(i):
-            return {
-                "none": False,
-                "all": True,
-                "2+": i > 0,
-            }[pre_embed]
-
-        self.interactions = nn.ModuleList(
-            ImprovedSchNetInteraction(
-                cutoff,
-                radial_features,
-                radial_expansion,
-                atom_features,
-                mlp_height,
-                mlp_depth,
-                activation,
-                pre_embed=_rule(i),
-            )
-            for i in range(num_blocks)
-        )
-
-        self.read_outs = nn.ModuleList(
-            MLP(
-                [atom_features] + [mlp_height] * mlp_depth + [1],
-                activation=activation(),
-            )
-            for _ in range(num_blocks)
-        )
-
-    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
-        return self.per_block_predictions(graph).sum(dim=1)
-
-    def per_block_predictions(self, graph: AtomicGraph) -> torch.Tensor:
-        h = self.chemical_embedding(graph["atomic_numbers"])
-
-        predictions = []
-        for block, read_out in zip(self.interactions, self.read_outs):
-            if self.residual_messages:
-                h = block(h, graph) + h
-            else:
-                h = block(h, graph)
-            predictions.append(read_out(h).squeeze())
-
-        return torch.stack(predictions, dim=1)

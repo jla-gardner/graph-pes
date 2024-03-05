@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Literal, Sequence, overload
+from typing import Literal, Sequence
 
 import torch
 from graph_pes.data import (
@@ -12,9 +12,8 @@ from graph_pes.data import (
     keys,
     sum_per_structure,
 )
-from graph_pes.transform import Identity, PerAtomStandardScaler, Transform
+from graph_pes.transform import PerAtomStandardScaler, Transform
 from graph_pes.util import differentiate, require_grad
-from jaxtyping import Float
 from torch import Tensor, nn
 
 
@@ -33,49 +32,33 @@ class GraphPESModel(nn.Module, ABC):
     see the :class:`PairPotential <graph_pes.models.pairwise.PairPotential>`
     `implementation <_modules/graph_pes/models/pairwise.html#PairPotential>`_.
 
-    Under the hood, :class:`GraphPESModel` contains an
-    :class:`EnergySummation` module, which is responsible for
-    summing over local energies to obtain the total energy/ies,
-    with optional transformations of the local and total energies.
-    By default, this learns a per-species, local energy offset and scale.
+    Under the hood, :class:`GraphPESModel`s pass the local energy predictions
+    through a :class:`graph_pes.transform.Transform` before summing them to
+    get the total energy. By default, this learns a per-species local-energy
+    offset and scale. This can be overridden by setting the
+    :attr:`energy_transform` attribute to any custom
+    :class:`graph_pes.transform.Transform`, trainable or otherwise.
     """
 
     @abstractmethod
-    def predict_local_energies(self, graph: AtomicGraph) -> Float[Tensor, "N"]:
+    def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
         """
-        Predict the (standardized) local energy for each atom in the graph.
+        Predict the (non-transformed) local energy for each atom in the graph.
 
         Parameters
         ----------
         graph
             The graph representation of the structure/s.
+
+        Returns
+        -------
+        Tensor
+            The per-atom local energy predictions with shape :code:`(N,)`.
         """
-
-    @overload
-    def forward(self, graph: AtomicGraphBatch) -> Float[Tensor, "N"]: ...
-
-    @overload
-    def forward(self, graph: AtomicGraph) -> Float[Tensor, "1"]: ...
-
-    def forward(self, graph: AtomicGraph):
-        """
-        Predict the total energy of the structure/s.
-
-        Parameters
-        ----------
-        graph
-            The graph representation of the structure/s.
-        """
-
-        # local predictions
-        local_energies = self.predict_local_energies(graph).squeeze()
-
-        # sum over atoms to get total energy
-        return self.energy_summation(local_energies, graph)
 
     def __init__(self):
         super().__init__()
-        self.energy_summation = EnergySummation()
+        self.energy_transform: Transform = PerAtomStandardScaler()
 
     def __add__(self, other: GraphPESModel) -> Ensemble:
         return Ensemble([self, other], aggregation="sum")
@@ -84,8 +67,8 @@ class GraphPESModel(nn.Module, ABC):
         """
         Perform optional pre-processing of the training data.
 
-        By default, this fits a :class:`graph_pes.transform.PerAtomShift`
-        and :class:`graph_pes.transform.PerAtomScale` to the energies
+        By default, this fits a :class:`graph_pes.transform.PerAtomScale`
+        and :class:`graph_pes.transform.PerAtomShift` to the energies
         of the training data, such that, before training, a unit-Normal
         output by the underlying model will result in energy predictions
         that are distributed according to the training data.
@@ -100,43 +83,38 @@ class GraphPESModel(nn.Module, ABC):
         graphs
             The training data.
         """
-        self.energy_summation.fit_to_graphs(graphs)
+        if "energy" not in graphs:
+            raise ValueError("No energy data in the training graphs.")
+        self.energy_transform.fit(graphs["energy"], graphs)
 
-    @overload
-    def predict(
-        self,
-        graph: AtomicGraph | list[AtomicGraph],
-        *,
-        training: bool = False,
-    ) -> dict[keys.LabelKey, Tensor]: ...
+    def total_energy(self, graph: AtomicGraph) -> Tensor:
+        """
+        Calculate the total energy of the structure.
 
-    @overload
-    def predict(
-        self,
-        graph: AtomicGraph | list[AtomicGraph],
-        *,
-        properties: Sequence[keys.LabelKey],
-        training: bool = False,
-    ) -> dict[keys.LabelKey, Tensor]: ...
+        Parameters
+        ----------
+        graph
+            The atomic structure/s to evaluate.
 
-    @overload
-    def predict(
-        self,
-        graph: AtomicGraph | list[AtomicGraph],
-        *,
-        property: keys.LabelKey,
-        training: bool = False,
-    ) -> Tensor: ...
+        Returns
+        -------
+        Tensor
+            The total energy of the structure/s. If the input is a batch
+            of graphs, the result will be a tensor of shape :code:`(B,)`,
+            where :code:`B` is the batch size, else a scalar.
+        """
+        local_energies = self.predict_local_energies(graph)
+        transformed = self.energy_transform(local_energies, graph)
+        return sum_per_structure(transformed, graph)
 
-    # TODO: implement max batch size
-    def predict(
+    # TODO: implement max batch size?
+    def forward(
         self,
         graph: AtomicGraph | list[AtomicGraph],
         *,
         properties: Sequence[keys.LabelKey] | None = None,
-        property: keys.LabelKey | None = None,
         training: bool = False,
-    ) -> dict[keys.LabelKey, Tensor] | Tensor:
+    ) -> dict[keys.LabelKey, Tensor]:
         """
         Evaluate the model on the given structure to get
         the properties requested.
@@ -166,10 +144,6 @@ class GraphPESModel(nn.Module, ABC):
         >>> model.predict(graph_pbc, property="energy")
         tensor(-12.3)
         """
-
-        # check correctly called
-        if property is not None and properties is not None:
-            raise ValueError("Can't specify both `property` and `properties`")
 
         if isinstance(graph, list):
             graph = batch_graphs(graph)
@@ -205,7 +179,7 @@ class GraphPESModel(nn.Module, ABC):
         # use the autograd machinery to auto-magically
         # calculate forces and stress from the energy
         with require_grad(graph[keys._POSITIONS]), require_grad(change_to_cell):
-            energy = self(graph)
+            energy = self.total_energy(graph)
 
             if keys.ENERGY in properties:
                 predictions[keys.ENERGY] = energy
@@ -222,117 +196,17 @@ class GraphPESModel(nn.Module, ABC):
             for key, value in predictions.items():
                 predictions[key] = value.detach()
 
-        if property is not None:
-            return predictions[property]
-
         return predictions
-
-    # add type hints to play nicely with mypy
-    @overload
-    def __call__(self, graph: AtomicGraph) -> Float[Tensor, "1"]: ...
-
-    @overload
-    def __call__(self, graph: AtomicGraphBatch) -> Float[Tensor, "N"]: ...
-
-    def __call__(self, graph: AtomicGraph):
-        return super().__call__(graph)
-
-
-class EnergySummation(nn.Module):
-    """
-    A module for summing local energies to obtain the total energy.
-
-    Before summation, :code:`local_transform` is applied to the local energies.
-    After summation, :code:`total_transform` is applied to the total energy.
-
-    By default, :code:`EnergySummation()` learns a per-species, local energy
-    offset and scale.
-
-    Parameters
-    ----------
-    local_transform
-        A transformation of the local energies.
-    total_transform
-        A transformation of the total energy.
-    """
-
-    def __init__(
-        self,
-        local_transform: Transform | None = None,
-        total_transform: Transform | None = None,
-    ):
-        super().__init__()
-
-        # if both None, default to a per-species, local energy offset
-        if local_transform is None and total_transform is None:
-            local_transform = PerAtomStandardScaler()
-        self.local_transform: Transform = local_transform or Identity()
-        self.total_transform: Transform = total_transform or Identity()
-
-    @overload
-    def forward(
-        self, local_energies: Float[Tensor, "N"], graph: AtomicGraphBatch
-    ) -> Float[Tensor, "S"]: ...
-
-    @overload
-    def forward(
-        self, local_energies: Float[Tensor, "N"], graph: AtomicGraph
-    ) -> Float[Tensor, "1"]: ...
-
-    def forward(self, local_energies: Tensor, graph: AtomicGraph):
-        """
-        Sum the local energies to obtain the total energy.
-
-        Parameters
-        ----------
-        local_energies
-            The local energies.
-        graph
-            The graph representation of the structure/s.
-        """
-        local_energies = self.local_transform.inverse(local_energies, graph)
-        total_E = sum_per_structure(local_energies, graph)
-        total_E = self.total_transform.inverse(total_E, graph)
-        return total_E
-
-    def fit_to_graphs(self, graphs: AtomicGraphBatch | list[AtomicGraph]):
-        """
-        Fit the transforms to the training data.
-
-        Parameters
-        ----------
-        graphs
-            The training data.
-        """
-
-        if isinstance(graphs, list):
-            graphs = batch_graphs(graphs)
-
-        assert keys.ENERGY in graphs, "No energy data in training graphs."
-
-        for transform in [self.local_transform, self.total_transform]:
-            transform.fit(graphs[keys.ENERGY], graphs)  # type: ignore
-
-    def __repr__(self):
-        # only show non-default transforms
-        info = [
-            f"{t}_transform={transform}"
-            for t, transform in [
-                ("local", self.local_transform),
-                ("total", self.total_transform),
-            ]
-            if not isinstance(transform, Identity)
-        ]
-        info = "\n  ".join(info)
-        return f"EnergySummation(\n  {info}\n)"
 
     # add type hints to play nicely with mypy
     def __call__(
         self,
-        local_energies: Float[Tensor, "graph.n_atoms"],
-        graph: AtomicGraph,
-    ) -> Tensor:
-        return super().__call__(local_energies, graph)
+        graph: AtomicGraph | list[AtomicGraph],
+        *,
+        properties: Sequence[keys.LabelKey] | None = None,
+        training: bool = False,
+    ) -> dict[keys.LabelKey, Tensor]:
+        return super().__call__(graph, properties=properties, training=training)
 
 
 class Ensemble(GraphPESModel):
@@ -398,10 +272,13 @@ class Ensemble(GraphPESModel):
             "Ensemble models don't have a single local energy prediction."
         )
 
-    def forward(self, graph: AtomicGraph):
-        predictions: Tensor = sum(
-            w * model(graph) for w, model in zip(self.weights, self.models)
-        )  # type: ignore
+    def total_energy(self, graph: AtomicGraph):
+        predictions: Tensor = torch.stack(
+            [
+                w * model.total_energy(graph)
+                for w, model in zip(self.weights, self.models)
+            ]
+        ).sum(dim=0)
         if self.aggregation == "mean":
             return predictions / self.weights.sum()
         else:
@@ -413,7 +290,3 @@ class Ensemble(GraphPESModel):
             info.append(f"weights={self.weights.tolist()}")
         info = "\n  ".join(info)
         return f"Ensemble(\n  {info}\n)"
-
-    # add type hints to play nicely with mypy
-    def __call__(self, graph: AtomicGraph) -> Tensor:
-        return super().__call__(graph)

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TypedDict
 
 from torch import Tensor
+from typing_extensions import NotRequired
 
 
 class AtomicGraph(TypedDict):
@@ -14,10 +15,10 @@ class AtomicGraph(TypedDict):
     _neighbour_cell_offsets: Tensor
 
     # optional labels
-    energy: Tensor | None
-    forces: Tensor | None
-    stress: Tensor | None
-    local_energies: Tensor | None
+    energy: NotRequired[Tensor]
+    forces: NotRequired[Tensor]
+    stress: NotRequired[Tensor]
+    local_energies: NotRequired[Tensor]
 
 
 class AtomicGraphBatch(AtomicGraph):

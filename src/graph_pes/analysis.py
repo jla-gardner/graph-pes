@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
 from ase import Atoms
 from cycler import cycler
 from matplotlib.axes import Axes
@@ -141,9 +140,8 @@ def parity_plot(
         graphs = batch_graphs(graphs)
 
     ground_truth = transform(graphs[property_label], graphs).detach()
-    predictions = transform(
-        model.predict(graphs, property=property), graphs
-    ).detach()
+    pred = model(graphs, properties=[property])[property]
+    predictions = transform(pred, graphs).detach()
 
     # plot
     ax: Axes = ax or plt.gca()
@@ -227,8 +225,7 @@ def dimer_curve(
     graphs = [convert_to_atomic_graph(d, cutoff=rmax + 0.1) for d in dimers]
     batch = batch_graphs(graphs)
 
-    with torch.no_grad():
-        energy = model(batch).numpy()
+    energy = model(batch)["energy"].numpy()
     if set_to_zero:
         energy -= energy[-1]
 

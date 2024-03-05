@@ -283,9 +283,8 @@ def batch_graphs(graphs: list[AtomicGraph]) -> AtomicGraphBatch:
             graph[label] = torch.stack([g[label] for g in graphs])
 
     # - per atom and per edge labels are concatenated along the first axis
-    for label in [keys.FORCES, keys.LOCAL_ENERGIES]:
-        if label in graphs[0]:
-            graph[label] = torch.cat([g[label] for g in graphs])
+    if keys.FORCES in graphs[0]:
+        graph[keys.FORCES] = torch.cat([g[keys.FORCES] for g in graphs])  # type: ignore
 
     return graph  # type: ignore
 

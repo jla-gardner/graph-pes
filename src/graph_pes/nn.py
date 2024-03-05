@@ -300,6 +300,9 @@ class PerSpeciesEmbedding(torch.nn.Module):
     def forward(self, Z: Tensor) -> Tensor:
         return self._embeddings[Z]
 
+    def __repr__(self) -> str:
+        return f"PerSpeciesEmbedding(dim={self._embeddings.shape[1]})"
+
 
 class ConstrainedParameter(nn.Module, ABC):
     """
@@ -381,6 +384,7 @@ class ConstrainedParameter(nn.Module, ABC):
         return self._do_math(0, torch.sub, rev=True)
 
 
+# TODO: make this work with torchscript
 class PositiveParameter(ConstrainedParameter):
     """
     Drop-in replacement for :class:`torch.nn.Parameter`. An internal
@@ -430,7 +434,7 @@ def left_aligned_add(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     x.shape: (n, ...)
     y.shape: (n, )
 
-    We broadcast y to the left of x and apply the operation op.
+    We broadcast y to the left of x and add the two tensors elementwise.
     """
     if x.dim() == 1 or x.dim() == 0:
         return x + y
@@ -447,13 +451,6 @@ def left_aligned_add(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
 
 def left_aligned_sub(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    """
-    Assume:
-    x.shape: (n, ...)
-    y.shape: (n, )
-
-    We broadcast y to the left of x and apply the operation op.
-    """
     if x.dim() == 1 or x.dim() == 0:
         return x - y
     x = x.unsqueeze(1)
@@ -464,13 +461,6 @@ def left_aligned_sub(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
 
 def left_aligned_mul(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    """
-    Assume:
-    x.shape: (n, ...)
-    y.shape: (n, )
-
-    We broadcast y to the left of x and apply the operation op.
-    """
     if x.dim() == 1 or x.dim() == 0:
         return x * y
     x = x.unsqueeze(1)
@@ -481,13 +471,6 @@ def left_aligned_mul(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
 
 def left_aligned_div(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    """
-    Assume:
-    x.shape: (n, ...)
-    y.shape: (n, )
-
-    We broadcast y to the left of x and apply the operation op.
-    """
     if x.dim() == 1 or x.dim() == 0:
         return x / y
     x = x.unsqueeze(1)

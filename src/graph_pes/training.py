@@ -142,7 +142,9 @@ class LearnThePES(pl.LightningModule):
             component.property_key for component in total_loss.losses
         ]
 
-    def forward(self, graphs: AtomicGraphBatch):
+    def forward(
+        self, graphs: AtomicGraphBatch
+    ) -> dict[keys.LabelKey, torch.Tensor]:
         return self.model(graphs)
 
     def _step(self, graph: AtomicGraphBatch, prefix: str):
@@ -161,7 +163,7 @@ class LearnThePES(pl.LightningModule):
             )
 
         # generate prediction:
-        predictions = self.model.predict(
+        predictions = self.model(
             graph, properties=self.properties, training=True
         )
 
