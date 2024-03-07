@@ -13,11 +13,11 @@ from graph_pes.data import (
 from graph_pes.transform import (
     DividePerAtom,
     Identity,
-    MultiplyPerAtom,
     PerAtomScale,
     PerAtomShift,
     PerAtomStandardScaler,
     Scale,
+    Transform,
 )
 
 structure = Atoms("H2", positions=[(0, 0, 0), (0, 0, 1)])
@@ -31,7 +31,7 @@ def test_identity():
     x = torch.arange(10).float()
 
     assert transform.forward(x, graph).equal(x)
-    assert transform.inverse()(x, graph).equal(x)
+    assert transform.inverse(x, graph).equal(x)
 
 
 def test_is_local_property():
@@ -63,7 +63,7 @@ def test_per_atom_transforms():
     # fit shift to the total energies
     shift = PerAtomShift(trainable=False)
     total_energies: torch.Tensor = batch["energy"]  # type: ignore
-    shift.fit(total_energies, batch)
+    shift.fit_to_source(total_energies, batch)
     shifted_total_energies = shift(total_energies, batch)
 
     # shape preservation
@@ -85,7 +85,7 @@ def test_per_atom_transforms():
     # test scaling forces
     scale = PerAtomScale(trainable=False)
     forces = batch["forces"]
-    scale.fit(forces, batch)
+    scale.fit_to_source(forces, batch)
 
     scaled_forces = scale(forces, batch)
     assert scaled_forces.shape == forces.shape
@@ -95,7 +95,6 @@ transforms = [
     PerAtomShift(),
     PerAtomScale(),
     DividePerAtom(),
-    MultiplyPerAtom(),
     PerAtomStandardScaler(),
     Scale(),
 ]
@@ -106,12 +105,9 @@ transforms = [
     transforms,
     ids=[transform.__class__.__name__ for transform in transforms],
 )
-def test_inverse(transform):
+def test_inverse(transform: Transform):
     x = torch.tensor([1.0, 2.0])
     y = transform(x, graph)
 
-    inverse = transform.inverse()
-    assert inverse(y, graph).equal(x)
-
-    double_inverse = inverse.inverse()
-    assert double_inverse(x, graph).equal(y)
+    inverse = transform.inverse(y, graph)
+    assert x.equal(inverse)

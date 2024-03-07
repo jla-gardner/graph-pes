@@ -114,7 +114,7 @@ class Loss(nn.Module):
 
     def fit_transform(self, graphs: AtomicGraphBatch):
         """
-        Fit the transform to the labels.
+        Fit the transform to the target labels.
 
         Parameters
         ----------
@@ -122,7 +122,7 @@ class Loss(nn.Module):
             The graphs containing the labels.
         """
 
-        self.transform.fit(graphs[self.property_key], graphs)  # type: ignore
+        self.transform.fit_to_target(graphs[self.property_key], graphs)  # type: ignore
 
     @property
     def name(self) -> str:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from abc import ABC, abstractmethod
 from typing import Literal, Sequence, overload
 
@@ -37,60 +38,17 @@ class GraphPESModel(nn.Module, ABC):
     Under the hood, :class:`GraphPESModel`\ s pass the local energy predictions
     through a :class:`graph_pes.transform.Transform` before summing them to
     get the total energy. By default, this learns a per-species local-energy
-    offset and scale. This can be changed by directly altering the
+    scale and shift. This can be changed by directly altering passing a
+    different :class:`~graph_pes.transform.Transform` to this base class's
+    constructor.
+
+    Parameters
+    ----------
+    energy_transform
+        The transform to apply to the local energy predictions before summing
+        them to get the total energy. By default, this is a learnable
+        per-species scale and shift.
     """
-
-    @abstractmethod
-    def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
-        """
-        Predict the (non-transformed) local energy for each atom in the graph.
-
-        Parameters
-        ----------
-        graph
-            The graph representation of the structure/s.
-
-        Returns
-        -------
-        Tensor
-            The per-atom local energy predictions with shape :code:`(N,)`.
-        """
-
-    def __init__(self):
-        super().__init__()
-        # assigned here to appease torchscript and mypy:
-        # this gets overridden in pre_fit below
-        self.energy_transform: Transform = PerAtomStandardScaler()
-
-    def pre_fit(self, graphs: AtomicGraphBatch):
-        """
-        Perform optional pre-processing of the training data.
-
-        By default, this fits a :class:`~graph_pes.transform.PerAtomScale`
-        and :class:`~graph_pes.transform.PerAtomShift` to the energies
-        of the training data, such that, before training, a unit-Normal
-        output by the underlying model will result in energy predictions
-        that are distributed according to the training data.
-
-        For an example customisation of this method, see the
-        :class:`~graph_pes.models.pairwise.LennardJones`
-        `implementation
-        <_modules/graph_pes/models/pairwise.html#LennardJones>`_.
-
-        Parameters
-        ----------
-        graphs
-            The training data.
-        """
-        if "energy" not in graphs:
-            raise ValueError("No energy data in the training graphs.")
-
-        transform = PerAtomStandardScaler()
-        transform.fit(graphs["energy"], graphs)
-        # The standard scaler maps final energies to a unit normal
-        # distribution. We want to go the other way for our predictions,
-        # and so use the inverse transform.
-        self.energy_transform = transform.inverse()
 
     def forward(self, graph: AtomicGraph) -> Tensor:
         """
@@ -111,6 +69,151 @@ class GraphPESModel(nn.Module, ABC):
         local_energies = self.predict_local_energies(graph).squeeze()
         transformed = self.energy_transform(local_energies, graph)
         return sum_per_structure(transformed, graph)
+
+    @abstractmethod
+    def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
+        """
+        Predict the (non-transformed) local energy for each atom in the graph.
+
+        Parameters
+        ----------
+        graph
+            The graph representation of the structure/s.
+
+        Returns
+        -------
+        Tensor
+            The per-atom local energy predictions with shape :code:`(N,)`.
+        """
+
+    def __init__(self, energy_transform: Transform | None = None):
+        super().__init__()
+        self.energy_transform: Transform = (
+            PerAtomStandardScaler()
+            if energy_transform is None
+            else energy_transform
+        )
+
+        #
+        self._has_been_pre_fit: Tensor
+        self.register_buffer("_has_been_pre_fit", torch.tensor(False))
+
+    def pre_fit(self, graphs: AtomicGraphBatch, relative: bool = True):
+        """
+        Pre-fit the model to the training data.
+
+        By default, this fits the :code:`energy_transform` to the energies
+        of the training data. To add additional pre-fitting steps, override
+        :meth:`_extra_pre_fit`. As an example of this, see the
+        :class:`~graph_pes.models.pairwise.LennardJones`
+        `implementation
+        <_modules/graph_pes/models/pairwise.html#LennardJones>`__.
+
+        If the model has already been pre-fitted, subsequent calls to
+        :meth:`pre_fit` will be ignored.
+
+        Parameters
+        ----------
+        graphs
+            The training data.
+        relative
+            Whether to account for the current energy predictions when fitting
+            the energy transform.
+
+        Example
+        -------
+        Without any pre-fitting, models *tend* to predict energies that are
+        close to 0:
+
+        >>> from graph_pes.models.zoo import LennardJones
+        >>> model = LennardJones()
+        >>> model
+        LennardJones(
+          (epsilon): 0.1
+          (sigma): 1.0
+          (energy_transform): PerAtomShift(
+              Cu : [0.],
+          )
+        )
+        >>> from graph_pes.analysis import parity_plot
+        >>> parity_plot(model, val, units="eV")
+
+        .. image:: /_static/lj-parity-raw.svg
+            :align: center
+
+        Pre-fitting a model's :code:`energy_transform` to the training data
+        (together with any other steps defined in :meth:`_extra_pre_fit`)
+        dramatically improves the predictions for free:
+
+        >>> from graph_pes.data import batch_graphs
+        >>> model = LennardJones()
+        >>> model.pre_fit(batch_graphs(train_set), relative=False)
+        >>> model
+        LennardJones(
+          (epsilon): 0.1
+          (sigma): 2.27
+          (energy_transform): PerAtomShift(
+              Cu : [3.5229],
+          )
+        )
+        >>> parity_plot(model, val, units="eV")
+
+        .. image:: /_static/lj-parity-prefit.svg
+            :align: center
+
+        Accounting for the model's current predictions when fitting the
+        energy transforms (the default behaviour) leads to even better
+        pre-conditioned models:
+
+        >>> model = LennardJones()
+        >>> model.pre_fit(batch_graphs(train_set), relative=True)
+        >>> model
+        LennardJones(
+          (epsilon): 0.1
+          (sigma): 2.27
+          (energy_transform): PerAtomShift(
+              Cu : [2.9238],
+          )
+        )
+        >>> parity_plot(model, val, units="eV")
+
+        .. image:: /_static/lj-parity-relative.svg
+            :align: center
+        """
+        if self._has_been_pre_fit:
+            warnings.warn(
+                "This model has already been pre-fitted. "
+                "Subsequent calls to pre_fit will be ignored.",
+                stacklevel=2,
+            )
+            return
+
+        self._has_been_pre_fit.fill_(True)
+
+        if self._extra_pre_fit(graphs):
+            return
+
+        if "energy" not in graphs:
+            warnings.warn(
+                "The training data doesn't contain energies. "
+                "The energy transform will not be fitted.",
+                stacklevel=2,
+            )
+            return
+
+        target = graphs["energy"]
+        if relative:
+            with torch.no_grad():
+                target = graphs["energy"] - self(graphs)
+
+        self.energy_transform.fit_to_target(target, graphs)
+
+    def _extra_pre_fit(self, graphs: AtomicGraphBatch) -> bool | None:
+        """
+        Override this method to perform additional pre-fitting steps.
+        Return ``True`` to surpress the default pre-fitting of the energy
+        transform implemented on this base class.
+        """
 
     # add type hints to play nicely with mypy
     def __call__(self, graph: AtomicGraph) -> Tensor:
@@ -206,7 +309,8 @@ def get_predictions(
     graph: AtomicGraph | AtomicGraphBatch | list[AtomicGraph],
     *,
     training: bool = False,
-) -> dict[keys.LabelKey, Tensor]: ...
+) -> dict[keys.LabelKey, Tensor]:
+    """test"""
 
 
 @overload
@@ -216,7 +320,11 @@ def get_predictions(
     *,
     properties: Sequence[keys.LabelKey],
     training: bool = False,
-) -> dict[keys.LabelKey, Tensor]: ...
+) -> dict[keys.LabelKey, Tensor]:
+    """
+    test
+    """
+    ...
 
 
 @overload
@@ -226,7 +334,8 @@ def get_predictions(
     *,
     property: keys.LabelKey,
     training: bool = False,
-) -> Tensor: ...
+) -> Tensor:
+    """test"""
 
 
 def get_predictions(

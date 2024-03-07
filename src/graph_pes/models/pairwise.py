@@ -121,12 +121,11 @@ class LennardJones(PairPotential):
     """
 
     def __init__(self, epsilon: float = 0.1, sigma: float = 1.0):
-        super().__init__()
+        # epsilon is a scaling term, so only need to learn a shift
+        super().__init__(energy_transform=PerAtomShift())
+
         self._log_epsilon = torch.nn.Parameter(torch.tensor(epsilon).log())
         self._log_sigma = torch.nn.Parameter(torch.tensor(sigma).log())
-
-        # epsilon is a scaling term, so only need to learn a shift
-        self.energy_transform = PerAtomShift()
 
     @property
     def epsilon(self):
@@ -151,28 +150,11 @@ class LennardJones(PairPotential):
         x = self.sigma / r
         return 4 * self.epsilon * (x**12 - x**6)
 
-    def pre_fit(self, graph: AtomicGraphBatch):
+    def _extra_pre_fit(self, graph: AtomicGraphBatch):
         # set the distance at which the potential is zero to be
         # close to the minimum pair-wise distance
         d = torch.quantile(neighbour_distances(graph), 0.01)
         self._log_sigma = torch.nn.Parameter(d.log())
-
-        assert "energy" in graph
-        # epsilon is already a scaling term, so we only need to
-        # learn a shift parameter (rather than a shift and scale):
-        transform = PerAtomShift()
-
-        # we want the predictions of the model to be centered around 0
-        # after this process
-        with torch.no_grad():
-            current_predictions = self(graph)
-        transform.fit(graph["energy"] - current_predictions, graph)
-
-        # This transform maps total energies to a distribution with
-        # 0 mean. We want to go the other way (i.e. transform our raw
-        # predictions (with ~0 mean) into total energies, and so we use
-        # the inverse of the transform.
-        self.energy_transform = transform.inverse()
 
     def __repr__(self):
         return pytorch_repr(
@@ -219,14 +201,13 @@ class Morse(PairPotential):
     """
 
     def __init__(self, D: float = 0.1, a: float = 5.0, r0: float = 1.5):
-        super().__init__()
+        # D is a scaling term, so only need to learn a shift
+        # parameter (rather than a shift and scale)
+        super().__init__(energy_transform=PerAtomShift())
+
         self._log_D = torch.nn.Parameter(torch.tensor(D).log())
         self._log_a = torch.nn.Parameter(torch.tensor(a).log())
         self._log_r0 = torch.nn.Parameter(torch.tensor(r0).log())
-
-        # D is a scaling term, so only need to learn a shift
-        # parameter (rather than a shift and scale)
-        self.energy_transform = PerAtomShift()
 
     @property
     def D(self):
@@ -257,20 +238,11 @@ class Morse(PairPotential):
         """
         return self.D * (1 - torch.exp(-self.a * (r - self.r0))) ** 2
 
-    def pre_fit(self, graph: AtomicGraphBatch):
+    def _extra_pre_fit(self, graph: AtomicGraphBatch):
         # set the center of the well to be close to the minimum pair-wise
-        # distance
+        # distance: the 10th percentile plus a small offset
         d = torch.quantile(neighbour_distances(graph), 0.1) + 0.1
         self._log_r0 = torch.nn.Parameter(d.log())
-
-        assert "energy" in graph
-        with torch.no_grad():
-            current_predictions = self(graph)
-        self.energy_transform = (
-            PerAtomShift()
-            .fit(graph["energy"] - current_predictions, graph)
-            .inverse()
-        )
 
     def __repr__(self):
         return pytorch_repr(
