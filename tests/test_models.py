@@ -35,6 +35,12 @@ def test_model():
     assert predictions["energy"].shape == (len(graphs),)
     assert predictions["stress"].shape == (len(graphs), 3, 3)
 
+    energy = model(graphs[0])
+    assert torch.equal(
+        get_predictions(model, graphs[0], property="energy"),
+        energy,
+    )
+
 
 def test_isolated_atom():
     atom = Atoms("He", positions=[[0, 0, 0]])

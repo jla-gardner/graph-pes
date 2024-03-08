@@ -122,3 +122,8 @@ def test_data_loader():
     # test warning if try to pass own collate function
     with pytest.warns(UserWarning):
         AtomicDataLoader(GRAPHS, batch_size=2, collate_fn=lambda x: x)
+
+
+def test_number_of_structures():
+    assert number_of_structures(to_batch(GRAPHS)) == len(GRAPHS)
+    assert number_of_structures(GRAPHS[0]) == 1
