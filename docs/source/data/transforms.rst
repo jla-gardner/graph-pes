@@ -2,9 +2,13 @@
 Transforms
 ###########
 
-Transforming properties defined on graphs has several useful properties
-when training PES models. For instance, adding a per-species shift to 
-energy predictions...
+.. Transforming properties defined on graphs has several useful properties
+.. when training PES models. For instance, adding a per-species shift to 
+.. energy predictions...
+
+.. autoclass :: graph_pes.transform.Transform
+   :members:
+   :private-members:
 
 Available Transforms
 ====================
@@ -23,9 +27,5 @@ Useful Other Transforms
 .. autoclass :: graph_pes.transform.Identity()
 
 
-Implementing a New Transform
-============================
 
-.. autoclass :: graph_pes.transform.Transform
-   :members:
-   :private-members:
+

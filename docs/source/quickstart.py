@@ -1,6 +1,6 @@
 from ase.io import read
 from graph_pes.analysis import parity_plot
-from graph_pes.data import convert_to_atomic_graphs, random_split
+from graph_pes.data import random_split, to_atomic_graphs
 from graph_pes.models.zoo import LennardJones
 from graph_pes.training import train_model
 from graph_pes.transform import DividePerAtom
@@ -10,7 +10,7 @@ structures = read("structures.xyz", index=":")
 assert "energy" in structures[0].info
 
 # 2. convert to graphs (e.g. using a radius cutoff)
-graphs = convert_to_atomic_graphs(structures, cutoff=5.0)
+graphs = to_atomic_graphs(structures, cutoff=5.0)
 train, val, test = random_split(graphs, [100, 25, 25])
 
 # 3. define the model

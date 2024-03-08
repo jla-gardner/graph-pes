@@ -1,10 +1,18 @@
 Batching
 ========
 
-.. autoclass :: graph_pes.data.AtomicGraphBatch
-    :members:
+Definition
+----------
+.. autoclass:: graph_pes.data.AtomicGraphBatch()
+.. autoclass:: graph_pes.data.LabelledBatch()
 
-.. autoclass :: graph_pes.data.AtomicDataLoader
-    :members:
+Creation
+--------
+.. autofunction:: graph_pes.data.to_batch
 
-.. autofunction :: graph_pes.data.sum_per_structure
+Batch Operations
+----------------
+.. autofunction:: graph_pes.data.is_batch
+.. autofunction:: graph_pes.data.sum_per_structure
+.. autofunction:: graph_pes.data.number_of_structures
+

@@ -1,8 +1,8 @@
 from ase.io import read
 from graph_pes.data import (
     AtomicDataLoader,
-    convert_to_atomic_graphs,
     random_split,
+    to_atomic_graphs,
 )
 from graph_pes.loss import MAE, RMSE, Loss
 from graph_pes.models.pairwise import LennardJones
@@ -12,7 +12,7 @@ model = LennardJones(epsilon=1.0, sigma=1.0)
 
 # 2. Load the training data
 structures = read("data/training_data.xyz", ":100")
-graphs = convert_to_atomic_graphs(structures, cutoff=5.0)
+graphs = to_atomic_graphs(structures, cutoff=5.0)
 train, val = random_split(graphs, [90, 10], seed=42)
 
 # 3. Define total loss
