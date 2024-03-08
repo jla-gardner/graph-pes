@@ -94,11 +94,14 @@ class GraphPESModel(nn.Module, ABC):
             else energy_transform
         )
 
-        #
         self._has_been_pre_fit: Tensor
         self.register_buffer("_has_been_pre_fit", torch.tensor(False))
 
-    def pre_fit(self, graphs: AtomicGraphBatch, relative: bool = True):
+    def pre_fit(
+        self,
+        graphs: AtomicGraphBatch | Sequence[AtomicGraph],
+        relative: bool = True,
+    ):
         """
         Pre-fit the model to the training data.
 
@@ -189,6 +192,8 @@ class GraphPESModel(nn.Module, ABC):
             return
 
         self._has_been_pre_fit.fill_(True)
+        if isinstance(graphs, Sequence):
+            graphs = to_batch(graphs)
 
         if self._extra_pre_fit(graphs):
             return

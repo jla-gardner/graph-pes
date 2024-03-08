@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import pytest
 import torch
 from ase import Atoms
 from ase.io import read
-from graph_pes.core import Ensemble, get_predictions
+from graph_pes.core import Ensemble, GraphPESModel, get_predictions
 from graph_pes.data import (
+    AtomicGraph,
+    AtomicGraphBatch,
     has_cell,
     number_of_atoms,
     number_of_edges,
@@ -13,6 +16,7 @@ from graph_pes.data import (
     to_batch,
 )
 from graph_pes.models.zoo import LennardJones, Morse
+from graph_pes.transform import PerAtomShift
 
 structures: list[Atoms] = read("tests/test.xyz", ":")  # type: ignore
 graphs = to_atomic_graphs(structures, cutoff=3)
@@ -20,7 +24,7 @@ graphs = to_atomic_graphs(structures, cutoff=3)
 
 def test_model():
     model = LennardJones()
-    model.pre_fit(to_batch(graphs[:2]))  # type: ignore
+    model.pre_fit(graphs[:2])
 
     assert sum(p.numel() for p in model.parameters()) == 3
 
@@ -52,3 +56,44 @@ def test_ensembling():
         mean_model(graphs[0]),
         (1.2 * lj(graphs[0]) + 5.7 * morse(graphs[0])) / (1.2 + 5.7),
     )
+
+
+def test_pre_fit():
+    model = LennardJones()
+    model.pre_fit(graphs)
+
+    with pytest.warns(
+        UserWarning,
+        match="This model has already been pre-fitted",
+    ):
+        model.pre_fit(graphs)
+
+    batch = to_batch(graphs)
+    batch.pop("energy")  # type: ignore
+    with pytest.warns(
+        UserWarning,
+        match="The training data doesn't contain energies.",
+    ):
+        LennardJones().pre_fit(batch)
+
+    for ret_value in True, False:
+        # make sure energy transform is not called if return from _extra_pre_fit
+        class DummyModel(GraphPESModel):
+            def __init__(self):
+                super().__init__(energy_transform=PerAtomShift())
+
+            def predict_local_energies(
+                self, graph: AtomicGraph
+            ) -> torch.Tensor:
+                return torch.ones(number_of_atoms(graph))
+
+            def _extra_pre_fit(self, graphs: AtomicGraphBatch) -> bool | None:
+                return ret_value  # noqa: B023
+
+        model = DummyModel()
+        assert model.energy_transform.shift[29] == 0
+        model.pre_fit(graphs)
+        if ret_value:
+            assert model.energy_transform.shift[29] == 0
+        else:
+            assert model.energy_transform.shift[29] != 0

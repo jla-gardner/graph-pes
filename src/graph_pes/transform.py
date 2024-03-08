@@ -469,10 +469,10 @@ class Scale(Transform):
         )
 
     def forward(self, x: Tensor, graph: AtomicGraph) -> Tensor:
-        return x * self.scale
+        return x / self.scale
 
     def inverse(self, y: Tensor, graph: AtomicGraph) -> Tensor:
-        return y / self.scale
+        return y * self.scale
 
     @torch.no_grad()
     def fit_to_source(self, x: Tensor, graphs: AtomicGraphBatch):

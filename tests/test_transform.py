@@ -111,3 +111,21 @@ def test_inverse(transform: Transform):
 
     inverse = transform.inverse(y, graph)
     assert x.equal(inverse)
+
+
+def test_scale():
+    x = torch.tensor([1.3, 2.1])  # per atom property
+    std = x.std()
+
+    transform = Scale()
+
+    # when fitting to source, output of x should have unit std
+    transform.fit_to_source(x, graph)  # type: ignore
+    y = transform(x, graph)
+    assert torch.allclose(y, x / std)
+
+    # when fitting to target, output of ones should have std of x
+    transform.fit_to_target(x, graph)  # type: ignore
+    ones = torch.ones_like(x)
+    y = transform(ones, graph)
+    assert torch.allclose(y, ones * std)
