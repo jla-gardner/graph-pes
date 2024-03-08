@@ -21,7 +21,7 @@ pip install graph-pes
 
 ```python
 from ase.io import read
-from graph_pes.data import convert_to_atomic_graphs
+from graph_pes.data import to_atomic_graphs
 from graph_pes.models.pairwise import LennardJones
 from graph_pes.training import train_model
 
@@ -30,7 +30,7 @@ structures = read("structures.xyz", index=":10")
 assert "energy" in structures[0].info
 
 # 2. convert to graphs (e.g. using a radius cutoff)
-graphs = convert_to_atomic_graphs(structures, cutoff=5.0)
+graphs = to_atomic_graphs(structures, cutoff=5.0)
 
 # 3. define the model
 model = LennardJones()

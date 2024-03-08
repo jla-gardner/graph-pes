@@ -6,8 +6,6 @@ import torch
 from ase import Atoms
 from graph_pes.data import (
     AtomicDataLoader,
-    batch_graphs,
-    convert_to_atomic_graphs,
     keys,
     neighbour_distances,
     neighbour_vectors,
@@ -16,17 +14,19 @@ from graph_pes.data import (
     number_of_structures,
     structure_sizes,
     sum_per_structure,
+    to_atomic_graphs,
+    to_batch,
 )
 
 STRUCTURES = [
     Atoms("H2", positions=[(0, 0, 0), (0, 0, 1)], pbc=False),
     Atoms("H3", positions=[(0, 0, 0), (0, 0, 1), (0, 0, 2)], pbc=False),
 ]
-GRAPHS = convert_to_atomic_graphs(STRUCTURES, cutoff=1.5)
+GRAPHS = to_atomic_graphs(STRUCTURES, cutoff=1.5)
 
 
 def test_batching():
-    batch = batch_graphs(GRAPHS)
+    batch = to_batch(GRAPHS)
     assert number_of_atoms(batch) == 5
     assert number_of_structures(batch) == 2
     assert list(batch["ptr"]) == [0, 2, 5]
@@ -49,8 +49,8 @@ def test_label_batching():
     structures[0].arrays[keys.FORCES] = np.zeros((2, 3))
     structures[1].arrays[keys.FORCES] = np.zeros((3, 3))
 
-    graphs = convert_to_atomic_graphs(structures, cutoff=1.5)
-    batch = batch_graphs(graphs)
+    graphs = to_atomic_graphs(structures, cutoff=1.5)
+    batch = to_batch(graphs)
 
     # per-structure, array-type labels are concatenated along a new batch axis
     assert batch[keys.STRESS].shape == (2, 3, 3)
@@ -68,12 +68,12 @@ def test_pbcs():
         Atoms("H", positions=[(0, 0, 0)], pbc=True, cell=(1, 1, 1)),
         Atoms("H", positions=[(0, 0, 0)], pbc=True, cell=(2, 2, 2)),
     ]
-    graphs = convert_to_atomic_graphs(structures, cutoff=1.2)
+    graphs = to_atomic_graphs(structures, cutoff=1.2)
 
     assert number_of_edges(graphs[0]) == 6
     assert number_of_edges(graphs[1]) == 0
 
-    batch = batch_graphs(graphs)
+    batch = to_batch(graphs)
     assert number_of_edges(batch) == 6
     assert batch[keys.CELL].shape == (2, 3, 3)
 
@@ -83,7 +83,7 @@ def test_pbcs():
 
 def test_sum_per_structure():
     structures = [s.copy() for s in STRUCTURES]
-    graphs = convert_to_atomic_graphs(structures, cutoff=1.5)
+    graphs = to_atomic_graphs(structures, cutoff=1.5)
 
     # sum per structure should work for:
 
@@ -92,7 +92,7 @@ def test_sum_per_structure():
     assert sum_per_structure(x, graphs[0]) == x.sum()
 
     # 2. a batch of structures
-    batch = batch_graphs(graphs)
+    batch = to_batch(graphs)
     x = torch.tensor([1, 2, 3, 4, 5])
     assert sum_per_structure(x, batch).tolist() == [3, 12]
 

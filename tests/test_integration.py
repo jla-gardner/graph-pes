@@ -4,7 +4,7 @@ import pytest
 from ase import Atoms
 from ase.io import read
 from graph_pes import get_predictions
-from graph_pes.data import batch_graphs, convert_to_atomic_graphs
+from graph_pes.data import to_atomic_graphs, to_batch
 from graph_pes.models.zoo import LennardJones, Morse
 from graph_pes.training import Loss, train_model
 
@@ -21,8 +21,8 @@ models = [
 )
 def test_integration(model):
     structures: list[Atoms] = read("tests/test.xyz", ":")  # type: ignore
-    graphs = convert_to_atomic_graphs(structures, cutoff=3)
-    batch = batch_graphs(graphs)
+    graphs = to_atomic_graphs(structures, cutoff=3)
+    batch = to_batch(graphs)
 
     loss = Loss("energy")
     before = loss(get_predictions(model, batch), batch)

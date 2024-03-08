@@ -5,36 +5,36 @@ from ase import Atoms
 from ase.io import read
 from graph_pes.core import Ensemble, get_predictions
 from graph_pes.data import (
-    batch_graphs,
-    convert_to_atomic_graph,
-    convert_to_atomic_graphs,
-    is_periodic,
+    has_cell,
     number_of_atoms,
     number_of_edges,
+    to_atomic_graph,
+    to_atomic_graphs,
+    to_batch,
 )
 from graph_pes.models.zoo import LennardJones, Morse
 
 structures: list[Atoms] = read("tests/test.xyz", ":")  # type: ignore
-graphs = convert_to_atomic_graphs(structures, cutoff=3)
+graphs = to_atomic_graphs(structures, cutoff=3)
 
 
 def test_model():
     model = LennardJones()
-    model.pre_fit(batch_graphs(graphs[:2]))  # type: ignore
+    model.pre_fit(to_batch(graphs[:2]))  # type: ignore
 
     assert sum(p.numel() for p in model.parameters()) == 3
 
     predictions = get_predictions(model, graphs)
     assert "energy" in predictions
     assert "forces" in predictions
-    assert "stress" in predictions and is_periodic(graphs[0])
+    assert "stress" in predictions and has_cell(graphs[0])
     assert predictions["energy"].shape == (len(graphs),)
     assert predictions["stress"].shape == (len(graphs), 3, 3)
 
 
 def test_isolated_atom():
     atom = Atoms("He", positions=[[0, 0, 0]])
-    graph = convert_to_atomic_graph(atom, cutoff=3)
+    graph = to_atomic_graph(atom, cutoff=3)
     assert number_of_atoms(graph) == 1 and number_of_edges(graph) == 0
 
     model = LennardJones()

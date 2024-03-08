@@ -4,7 +4,7 @@ from ase import Atoms
 from ase.calculators.calculator import Calculator, all_changes
 
 from graph_pes.core import GraphPESModel, get_predictions
-from graph_pes.data import AtomicGraph, convert_to_atomic_graph
+from graph_pes.data import AtomicGraph, to_atomic_graph
 
 
 class GraphPESCalculator(Calculator):
@@ -49,7 +49,7 @@ class GraphPESCalculator(Calculator):
         # call to base-class to set atoms attribute
         Calculator.calculate(self, atoms)
 
-        graph = convert_to_atomic_graph(atoms, self.cutoff)
+        graph = to_atomic_graph(atoms, self.cutoff)
         graph: AtomicGraph = {k: v.to(self.device) for k, v in graph.items()}  # type: ignore
 
         self.results = {

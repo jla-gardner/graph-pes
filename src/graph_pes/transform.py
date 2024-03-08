@@ -25,8 +25,8 @@ from graph_pes.nn import (
 class Transform(nn.Module, ABC):
     r"""
     Abstract base class for shape-preserving transformations, :math:`T`, of
-    source properties, :math:`x`, to target properties :math:`y`, defined on
-    :class:`~graph_pes.data.AtomicGraph`\ s, :math:`\mathcal{G}`\ :
+    source property, :math:`x`, to target property :math:`y`, defined on an
+    :class:`~graph_pes.data.AtomicGraph`, :math:`\mathcal{G}`\ :
 
     .. math::
         T: (x; \mathcal{G}) \mapsto y, \quad x, y \in \mathbb{R}^n
@@ -38,7 +38,7 @@ class Transform(nn.Module, ABC):
     Parameters
     ----------
     trainable
-        Whether the transform should be trainable.
+        whether the transform should be trainable.
     """
 
     def __init__(self, trainable: bool = True):
@@ -57,14 +57,14 @@ class Transform(nn.Module, ABC):
         Parameters
         ----------
         x
-            The input data.
+            the input data.
         graph
-            The graph to condition the transformation on.
+            the graph to condition the transformation on.
 
         Returns
         -------
-        y
-            The transformed data.
+        Tensor
+            y: the transformed data.
         """
 
     @abstractmethod
@@ -82,15 +82,15 @@ class Transform(nn.Module, ABC):
 
         Returns
         -------
-        x
-            The reverse-transformed data.
+        Tensor
+            x: the reverse-transformed data.
         """
 
     @torch.no_grad()
     def fit_to_source(self, x: Tensor, graphs: AtomicGraphBatch):
         r"""
-        Fits the transform :math:`T(x, \mathcal{G}) = y` to property :math:`x`
-        defined on :code:`graphs`.
+        Fits the transform :math:`T: (x; \mathcal{G}) \rightarrow y` to property
+        ``x`` defined on :code:`graphs`.
 
         Parameters
         ----------
@@ -103,8 +103,8 @@ class Transform(nn.Module, ABC):
     @torch.no_grad()
     def fit_to_target(self, y: Tensor, graphs: AtomicGraphBatch):
         r"""
-        Fits the transform :math:`T(x, \mathcal{G}) = y` to property :math:`y`
-        defined on :code:`graphs`.
+        Fits the transform :math:`T: (x; \mathcal{G}) \rightarrow y` to property
+        ``y`` defined on :code:`graphs`.
 
         Parameters
         ----------
@@ -202,11 +202,11 @@ class PerAtomShift(Transform):
         T: y_i = x_i + \text{shift}[z_i]
 
     When :math:`x` is a global property, per-atom shifts are summed per
-    structure, :math:`s`, in the batch:
+    structure, :math:`S`, in the batch:
 
     .. math::
 
-        T: Y_s = X_s + \sum_{i \in s} \text{shift}[z_i]
+        T: Y_S = X_S + \sum_{i \in S} \text{shift}[z_i]
 
     Parameters
     ----------
@@ -334,13 +334,13 @@ class PerAtomScale(Transform):
         T: y_i = x_i \times \text{scale}[z_i]
 
     When :math:`x` is a global property, squared per-atom scales are summed per
-    structures, :math:`s`, in the batch, before being applied (in a manner
+    structure, :math:`S`, in the batch, before being applied (in a manner
     consistent with e.g. the variance of a sum of independent random variables):
 
     .. math::
 
-        T: Y_s = X_s \times \left(
-            \sum_{i \in s} \text{scale}[z_i]^2
+        T: Y_S = X_S \times \left(
+            \sum_{i \in S} \text{scale}[z_i]^2
             \right)^{1/2}
 
     Parameters

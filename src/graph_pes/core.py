@@ -10,10 +10,10 @@ from torch import Tensor, nn
 from graph_pes.data import (
     AtomicGraph,
     AtomicGraphBatch,
-    batch_graphs,
-    is_periodic,
+    has_cell,
     keys,
     sum_per_structure,
+    to_batch,
 )
 from graph_pes.transform import PerAtomStandardScaler, Transform
 from graph_pes.util import differentiate, require_grad
@@ -145,9 +145,9 @@ class GraphPESModel(nn.Module, ABC):
         (together with any other steps defined in :meth:`_extra_pre_fit`)
         dramatically improves the predictions for free:
 
-        >>> from graph_pes.data import batch_graphs
+        >>> from graph_pes.data import to_batch
         >>> model = LennardJones()
-        >>> model.pre_fit(batch_graphs(train_set), relative=False)
+        >>> model.pre_fit(to_batch(train_set), relative=False)
         >>> model
         LennardJones(
           (epsilon): 0.1
@@ -166,7 +166,7 @@ class GraphPESModel(nn.Module, ABC):
         pre-conditioned models:
 
         >>> model = LennardJones()
-        >>> model.pre_fit(batch_graphs(train_set), relative=True)
+        >>> model.pre_fit(to_batch(train_set), relative=True)
         >>> model
         LennardJones(
           (epsilon): 0.1
@@ -306,7 +306,7 @@ class Ensemble(GraphPESModel):
 @overload
 def get_predictions(
     model: GraphPESModel,
-    graph: AtomicGraph | AtomicGraphBatch | list[AtomicGraph],
+    graph: AtomicGraph | AtomicGraphBatch | Sequence[AtomicGraph],
     *,
     training: bool = False,
 ) -> dict[keys.LabelKey, Tensor]:
@@ -316,7 +316,7 @@ def get_predictions(
 @overload
 def get_predictions(
     model: GraphPESModel,
-    graph: AtomicGraph | AtomicGraphBatch | list[AtomicGraph],
+    graph: AtomicGraph | AtomicGraphBatch | Sequence[AtomicGraph],
     *,
     properties: Sequence[keys.LabelKey],
     training: bool = False,
@@ -330,7 +330,7 @@ def get_predictions(
 @overload
 def get_predictions(
     model: GraphPESModel,
-    graph: AtomicGraph | AtomicGraphBatch | list[AtomicGraph],
+    graph: AtomicGraph | AtomicGraphBatch | Sequence[AtomicGraph],
     *,
     property: keys.LabelKey,
     training: bool = False,
@@ -340,7 +340,7 @@ def get_predictions(
 
 def get_predictions(
     model: GraphPESModel,
-    graph: AtomicGraph | AtomicGraphBatch | list[AtomicGraph],
+    graph: AtomicGraph | AtomicGraphBatch | Sequence[AtomicGraph],
     *,
     properties: Sequence[keys.LabelKey] | None = None,
     property: keys.LabelKey | None = None,
@@ -380,17 +380,17 @@ def get_predictions(
     if property is not None and properties is not None:
         raise ValueError("Can't specify both `property` and `properties`")
 
-    if isinstance(graph, list):
-        graph = batch_graphs(graph)
+    if isinstance(graph, Sequence):
+        graph = to_batch(graph)
 
     if properties is None:
-        if is_periodic(graph):
+        if has_cell(graph):
             properties = [keys.ENERGY, keys.FORCES, keys.STRESS]
         else:
             properties = [keys.ENERGY, keys.FORCES]
 
     want_stress = keys.STRESS in properties or property == keys.STRESS
-    if want_stress and not is_periodic(graph):
+    if want_stress and not has_cell(graph):
         raise ValueError("Can't predict stress without cell information.")
 
     predictions: dict[keys.LabelKey, Tensor] = {}

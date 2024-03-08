@@ -12,9 +12,9 @@ from .core import GraphPESModel, get_predictions
 from .data import (
     AtomicGraph,
     AtomicGraphBatch,
-    batch_graphs,
-    convert_to_atomic_graph,
     keys,
+    to_atomic_graph,
+    to_batch,
 )
 from .transform import Identity, Transform
 
@@ -138,7 +138,7 @@ def parity_plot(
 
     # get the predictions and labels
     if isinstance(graphs, list):
-        graphs = batch_graphs(graphs)
+        graphs = to_batch(graphs)
 
     ground_truth = transform(graphs[property_label], graphs).detach()
     pred = get_predictions(model, graphs, property=property)
@@ -223,8 +223,8 @@ def dimer_curve(
 
     rs = np.linspace(rmin, rmax, 200)
     dimers = [Atoms(system, positions=[[0, 0, 0], [r, 0, 0]]) for r in rs]
-    graphs = [convert_to_atomic_graph(d, cutoff=rmax + 0.1) for d in dimers]
-    batch = batch_graphs(graphs)
+    graphs = [to_atomic_graph(d, cutoff=rmax + 0.1) for d in dimers]
+    batch = to_batch(graphs)
 
     with torch.no_grad():
         energy = model(batch).numpy()

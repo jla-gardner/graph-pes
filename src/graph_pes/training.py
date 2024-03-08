@@ -18,12 +18,13 @@ from graph_pes.data import keys
 from .core import GraphPESModel, get_predictions
 from .data import (
     AtomicDataLoader,
-    AtomicGraph,
     AtomicGraphBatch,
-    batch_graphs,
-    is_periodic,
+    LabelledBatch,
+    LabelledGraph,
+    has_cell,
     number_of_atoms,
     number_of_structures,
+    to_batch,
 )
 from .loss import RMSE, Loss, WeightedLoss
 from .transform import PerAtomScale, PerAtomStandardScaler, Scale
@@ -33,8 +34,8 @@ T = TypeVar("T", bound=GraphPESModel)
 
 def train_model(
     model: T,
-    train_data: list[AtomicGraph],
-    val_data: list[AtomicGraph] | None = None,
+    train_data: list[LabelledGraph],
+    val_data: list[LabelledGraph] | None = None,
     optimizer: Callable[[T], torch.optim.Optimizer | OptimizerLRSchedulerConfig]
     | None = None,
     loss: WeightedLoss | Loss | None = None,
@@ -53,7 +54,7 @@ def train_model(
         raise ValueError("The model does not appear to work") from e
 
     # TODO check using a strict flag that all the data have the same keys
-    train_batch = batch_graphs(train_data)
+    train_batch = to_batch(train_data)
 
     # process and validate the loss
     total_loss = process_loss(loss, train_data[0])
@@ -77,7 +78,7 @@ def train_model(
                 f"Expected {prop} to have shape {expected_shapes[prop]}, "
                 f"but found {train_batch[prop].shape}"
             )
-    if keys.STRESS in training_on and not is_periodic(train_batch):
+    if keys.STRESS in training_on and not has_cell(train_batch):
         raise ValueError("Can't train on stress without cell information.")
 
     # create the data loaders
@@ -124,7 +125,7 @@ def train_model(
     return model
 
 
-def get_existing_properties(graph: AtomicGraph) -> list[keys.LabelKey]:
+def get_existing_properties(graph: LabelledGraph) -> list[keys.LabelKey]:
     return [p for p in keys.ALL_LABEL_KEYS if p in graph]
 
 
@@ -146,7 +147,7 @@ class LearnThePES(pl.LightningModule):
     def forward(self, graphs: AtomicGraphBatch) -> torch.Tensor:
         return self.model(graphs)
 
-    def _step(self, graph: AtomicGraphBatch, prefix: str):
+    def _step(self, graph: LabelledBatch, prefix: str):
         """
         Get (and log) the losses for a training/validation step.
         """
@@ -189,10 +190,10 @@ class LearnThePES(pl.LightningModule):
         log("total_loss", total_loss)
         return total_loss
 
-    def training_step(self, structure: AtomicGraphBatch, _):
+    def training_step(self, structure: LabelledBatch, _):
         return self._step(structure, "train")
 
-    def validation_step(self, structure: AtomicGraphBatch, _):
+    def validation_step(self, structure: LabelledBatch, _):
         return self._step(structure, "val")
 
     def configure_optimizers(self):
@@ -229,7 +230,7 @@ class LearnThePES(pl.LightningModule):
 
 
 def process_loss(
-    loss: WeightedLoss | Loss | None, graph: AtomicGraph
+    loss: WeightedLoss | Loss | None, graph: LabelledGraph
 ) -> WeightedLoss:
     if isinstance(loss, WeightedLoss):
         return loss

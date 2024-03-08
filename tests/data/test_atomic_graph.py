@@ -6,13 +6,13 @@ import torch
 from ase import Atoms
 from graph_pes.data import (
     AtomicGraph,
-    convert_to_atomic_graph,
-    convert_to_atomic_graphs,
     neighbour_distances,
     neighbour_vectors,
     number_of_atoms,
     number_of_edges,
     sum_over_neighbours,
+    to_atomic_graph,
+    to_atomic_graphs,
 )
 
 ISOLATED_ATOM = Atoms("H", positions=[(0, 0, 0)], pbc=False)
@@ -25,7 +25,7 @@ RANDOM_STRUCTURE = Atoms(
     cell=np.eye(3),
 )
 STRUCTURES = [ISOLATED_ATOM, PERIODIC_ATOM, DIMER, RANDOM_STRUCTURE]
-GRAPHS = convert_to_atomic_graphs(STRUCTURES, cutoff=1.0)
+GRAPHS = to_atomic_graphs(STRUCTURES, cutoff=1.0)
 
 
 @pytest.mark.parametrize("structure, graph", zip(STRUCTURES, GRAPHS))
@@ -39,13 +39,13 @@ def test_general(structure: Atoms, graph: AtomicGraph):
 
 
 def test_iso_atom():
-    graph = convert_to_atomic_graph(ISOLATED_ATOM, cutoff=1.0)
+    graph = to_atomic_graph(ISOLATED_ATOM, cutoff=1.0)
     assert number_of_atoms(graph) == 1
     assert number_of_edges(graph) == 0
 
 
 def test_periodic_atom():
-    graph = convert_to_atomic_graph(PERIODIC_ATOM, cutoff=1.1)
+    graph = to_atomic_graph(PERIODIC_ATOM, cutoff=1.1)
     assert number_of_atoms(graph) == 1
 
     # 6 neighbours: up, down, left, right, front, back
@@ -54,7 +54,7 @@ def test_periodic_atom():
 
 @pytest.mark.parametrize("cutoff", [0.5, 1.0, 1.5])
 def test_random_structure(cutoff: int):
-    graph = convert_to_atomic_graph(RANDOM_STRUCTURE, cutoff=cutoff)
+    graph = to_atomic_graph(RANDOM_STRUCTURE, cutoff=cutoff)
     assert number_of_atoms(graph) == 8
 
     assert neighbour_distances(graph).max() <= cutoff
@@ -64,7 +64,7 @@ def test_get_labels():
     atoms = Atoms("H2", positions=[(0, 0, 0), (0, 0, 1)], pbc=False)
     atoms.info["energy"] = -1.0
     atoms.arrays["forces"] = np.zeros((2, 3))
-    graph = convert_to_atomic_graph(atoms, cutoff=1.0)
+    graph = to_atomic_graph(atoms, cutoff=1.0)
 
     forces = graph["forces"]
     assert forces.shape == (2, 3)
@@ -73,14 +73,14 @@ def test_get_labels():
     assert energy.item() == -1.0
 
     with pytest.raises(KeyError):
-        graph["missing"]
+        graph["missing"]  # type: ignore
 
 
 # in each of these structures, each atom has the same number of neighbours,
 # making it easy to test that the sum over neighbours is correct
 @pytest.mark.parametrize("structure", [ISOLATED_ATOM, DIMER, PERIODIC_ATOM])
 def test_sum_over_neighbours(structure):
-    graph = convert_to_atomic_graph(structure, cutoff=1.1)
+    graph = to_atomic_graph(structure, cutoff=1.1)
     N = number_of_atoms(graph)
     E = number_of_edges(graph)
 

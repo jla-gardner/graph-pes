@@ -5,10 +5,10 @@ import pytest
 import torch
 from ase import Atoms
 from graph_pes.data import (
-    batch_graphs,
-    convert_to_atomic_graph,
-    convert_to_atomic_graphs,
     is_local_property,
+    to_atomic_graph,
+    to_atomic_graphs,
+    to_batch,
 )
 from graph_pes.transform import (
     DividePerAtom,
@@ -23,7 +23,7 @@ from graph_pes.transform import (
 structure = Atoms("H2", positions=[(0, 0, 0), (0, 0, 1)])
 structure.info["energy"] = -1.0
 structure.arrays["forces"] = torch.zeros((2, 3))
-graph = convert_to_atomic_graph(structure, cutoff=1.5)
+graph = to_atomic_graph(structure, cutoff=1.5)
 
 
 def test_identity():
@@ -57,8 +57,8 @@ def test_per_atom_transforms():
         atoms.arrays["forces"] = np.zeros((n_H + n_C, 3))
         structures.append(atoms)
 
-    graphs = convert_to_atomic_graphs(structures, cutoff=1.5)
-    batch = batch_graphs(graphs)
+    graphs = to_atomic_graphs(structures, cutoff=1.5)
+    batch = to_batch(graphs)
 
     # fit shift to the total energies
     shift = PerAtomShift(trainable=False)

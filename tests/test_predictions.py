@@ -5,18 +5,18 @@ import torch
 from ase import Atoms
 from graph_pes.core import get_predictions
 from graph_pes.data import (
-    batch_graphs,
-    convert_to_atomic_graph,
     keys,
     number_of_edges,
+    to_atomic_graph,
+    to_batch,
 )
 from graph_pes.models.pairwise import LennardJones
 
-no_pbc = convert_to_atomic_graph(
+no_pbc = to_atomic_graph(
     Atoms("H2", positions=[(0, 0, 0), (0, 0, 1)], pbc=False),
     cutoff=1.5,
 )
-pbc = convert_to_atomic_graph(
+pbc = to_atomic_graph(
     Atoms("H2", positions=[(0, 0, 0), (0, 0, 1)], pbc=True, cell=(2, 2, 2)),
     cutoff=1.5,
 )
@@ -52,7 +52,7 @@ def test_predictions():
 
 
 def test_batched_prediction():
-    batch = batch_graphs([pbc, pbc])
+    batch = to_batch([pbc, pbc])
 
     expected_shapes = {
         keys.ENERGY: (2,),  # two structures
@@ -68,7 +68,7 @@ def test_batched_prediction():
 
 def test_isolated_atom():
     atom = Atoms("H", positions=[(0, 0, 0)], pbc=False)
-    graph = convert_to_atomic_graph(atom, cutoff=1.5)
+    graph = to_atomic_graph(atom, cutoff=1.5)
     assert number_of_edges(graph) == 0
 
     predictions = get_predictions(LennardJones(), graph)

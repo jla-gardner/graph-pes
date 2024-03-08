@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from contextlib import contextmanager
 from typing import Iterator, Sequence, TypeVar, overload
 
@@ -142,3 +143,7 @@ def pytorch_repr(
 
     main_str += ")"
     return main_str
+
+
+def _is_being_documented():
+    return "sphinx" in sys.modules
