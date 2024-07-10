@@ -145,8 +145,8 @@ class LennardJones(PairPotential):
     def interaction(
         self,
         r: torch.Tensor,
-        Z_i: Optional[torch.Tensor] = None,
-        Z_j: Optional[torch.Tensor] = None,
+        Z_i: Optional[torch.Tensor] = None,  # noqa: UP007
+        Z_j: Optional[torch.Tensor] = None,  # noqa: UP007
     ):
         """
         Evaluate the pair potential.
@@ -226,7 +226,12 @@ class Morse(PairPotential):
     def r0(self):
         return self._log_r0.exp()
 
-    def interaction(self, r: torch.Tensor, Z_i=None, Z_j=None):
+    def interaction(
+        self,
+        r: torch.Tensor,
+        Z_i: Optional[torch.Tensor] = None,  # noqa: UP007
+        Z_j: Optional[torch.Tensor] = None,  # noqa: UP007
+    ):
         """
         Evaluate the pair potential.
 
@@ -313,7 +318,11 @@ class LennardJonesMixture(PairPotential):
 
         sigma_j = self.sigma[Z_j].squeeze()  # (E)
         sigma_i = self.sigma[Z_i].squeeze()  # (E)
-        nu = self.nu[Z_i, Z_j].squeeze() if self.modulate_distances else 1
+        nu = (
+            self.nu[Z_i, Z_j].squeeze()
+            if self.modulate_distances
+            else torch.tensor(1)
+        )
         sigma = torch.where(
             cross_interaction,
             nu * (sigma_i + sigma_j) / 2,
