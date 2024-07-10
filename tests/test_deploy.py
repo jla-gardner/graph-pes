@@ -8,9 +8,11 @@ from ase.build import molecule
 from graph_pes.core import GraphPESModel
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.deploy import deploy_model
+from graph_pes.graphs.operations import number_of_atoms
 from graph_pes.models import ALL_MODELS, NequIP
 
-graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=1.5)
+CUTOFF = 1.5
+graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=CUTOFF)
 
 
 @pytest.mark.parametrize(
@@ -19,30 +21,42 @@ graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=1.5)
     ids=[model.__name__ for model in ALL_MODELS],
 )
 def test_deploy(model_klass: type[GraphPESModel], tmp_path: Path):
-    if model_klass is NequIP:
-        model: GraphPESModel = NequIP(n_elements=3)  # type: ignore
-    else:
-        model = model_klass()
+    # 1. instantiate the model
+    kwargs = {"n_elements": 3} if model_klass is NequIP else {}
+    model = model_klass(**kwargs)
+    model.pre_fit([graph])  # required by some models before making predictions
 
-    # register per-element parameters so that the model can be run
-    model.pre_fit([graph])
-
+    # 2. deploy the model
     save_path = tmp_path / "model.pt"
-    deploy_model(model, cutoff=4.0, path=save_path)
+    deploy_model(model, cutoff=CUTOFF, path=save_path)
 
-    # load back in
+    # 3. load the model back in
     loaded_model = torch.jit.load(save_path)
     assert isinstance(loaded_model, torch.jit.ScriptModule)
-    assert loaded_model.get_cutoff() == 4.0
+    assert loaded_model.get_cutoff() == CUTOFF
 
-    with torch.no_grad():
-        actual_energy = model(graph).double()
-
-    dummy_lammps_graph = {
-        **graph,
-        "compute_virial": torch.tensor(True),
-        "debug": torch.tensor(False),
+    # 4. test outputs
+    outputs = loaded_model(
+        # mock the graph that would be passed through from LAMMPS
+        {
+            **graph,
+            "compute_virial": torch.tensor(True),
+            "debug": torch.tensor(False),
+        }
+    )
+    assert isinstance(outputs, dict)
+    assert set(outputs.keys()) == {
+        "total_energy",
+        "local_energies",
+        "forces",
+        "virial",
     }
-    scripted_energy = loaded_model(dummy_lammps_graph)["total_energy"].double()
+    assert outputs["total_energy"].shape == torch.Size([])
+    assert outputs["local_energies"].shape == (number_of_atoms(graph),)
+    assert outputs["forces"].shape == graph["_positions"].shape
+    assert outputs["virial"].shape == (3, 3)
 
-    assert torch.allclose(actual_energy, scripted_energy)
+    # 5. test that the deployment process hasn't changed the model's predictions
+    with torch.no_grad():
+        original_energy = model(graph).double()
+    assert torch.allclose(original_energy, outputs["total_energy"])

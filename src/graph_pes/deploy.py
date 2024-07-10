@@ -63,7 +63,7 @@ class LAMMPSModel(torch.nn.Module):
         graph[keys._POSITIONS].requires_grad_(True)
         change_to_cell.requires_grad_(True)
 
-        local_energies = self.model.predict_local_energies(graph)
+        local_energies = self.model.predict_local_energies(graph).squeeze()
         props["local_energies"] = local_energies
         total_energy = torch.sum(local_energies)
         props["total_energy"] = total_energy
