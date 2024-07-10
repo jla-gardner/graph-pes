@@ -13,7 +13,7 @@ from graph_pes.graphs.operations import (
     number_of_atoms,
     number_of_edges,
 )
-from graph_pes.models import ALL_MODELS, LennardJones, Morse
+from graph_pes.models import ALL_MODELS, LennardJones, Morse, NequIP
 
 structures: list[Atoms] = read("tests/test.xyz", ":")  # type: ignore
 graphs = to_atomic_graphs(structures, cutoff=3)
@@ -65,17 +65,18 @@ def test_pre_fit():
     ids=[m.__name__ for m in ALL_MODELS],
 )
 def test_model_serialisation(model: type[GraphPESModel], tmp_path):
-    m = model()
-    m.pre_fit(graphs)
+    kwargs = {} if model is not NequIP else {"n_elements": 1}
+    m1 = model(**kwargs)
+    m1.pre_fit(graphs)
 
-    torch.save(m.state_dict(), tmp_path / "model.pt")
+    torch.save(m1.state_dict(), tmp_path / "model.pt")
 
-    m2 = model()
+    m2 = model(**kwargs)
     # check no errors occur
     m2.load_state_dict(torch.load(tmp_path / "model.pt"))
 
     # check predictions are the same
-    assert torch.allclose(m(graphs[0]), m2(graphs[0]))
+    assert torch.allclose(m1(graphs[0]), m2(graphs[0]))
 
 
 def test_addition():

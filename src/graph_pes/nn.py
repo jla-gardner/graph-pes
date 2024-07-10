@@ -463,7 +463,8 @@ class AtomicOneHot(torch.nn.Module):
         unique_Zs = sorted(set(Zs))
         if len(unique_Zs) != self.n_elements:
             raise ValueError(
-                f"Expected {self.n_elements} elements, got {unique_Zs}"
+                f"Expected {self.n_elements} elements, got "
+                f"{len(unique_Zs)}: {unique_Zs}"
             )
 
         for i, Z in enumerate(unique_Zs):
