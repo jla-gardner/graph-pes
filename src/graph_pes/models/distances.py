@@ -318,7 +318,7 @@ class ExponentialRBF(DistanceExpansion):
         super().__init__(n_features, cutoff, trainable)
 
         c = torch.exp(-torch.tensor(cutoff))
-        self.β = nn.Parameter(
+        self.beta = nn.Parameter(
             torch.ones(n_features) / (2 * (1 - c) / n_features) ** 2,
             requires_grad=trainable,
         )
@@ -329,7 +329,7 @@ class ExponentialRBF(DistanceExpansion):
 
     def expand(self, r: torch.Tensor) -> torch.Tensor:
         offsets = torch.exp(-r) - self.centers
-        return torch.exp(-self.β * offsets**2)
+        return torch.exp(-self.beta * offsets**2)
 
 
 class Envelope(nn.Module):

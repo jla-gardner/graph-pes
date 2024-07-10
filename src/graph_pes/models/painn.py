@@ -58,7 +58,7 @@ class Interaction(nn.Module):
             PolynomialEnvelope(cutoff),
         )
 
-        self.φ = MLP(
+        self.Phi = MLP(
             [internal_dim, internal_dim, internal_dim * 3],
             activation=nn.SiLU(),
         )
@@ -74,23 +74,25 @@ class Interaction(nn.Module):
         unit_vectors = neighbour_vectors(graph) / d  # (E, 3)
 
         # continous filter message creation
-        x_ij = self.filter_generator(d) * self.φ(scalar_embeddings)[neighbours]
+        x_ij = (
+            self.filter_generator(d) * self.Phi(scalar_embeddings)[neighbours]
+        )
         a, b, c = torch.split(x_ij, self.internal_dim, dim=-1)  # (E, D)
 
         # simple sum over neighbours to get scalar messages
-        Δs = torch.zeros_like(scalar_embeddings)  # (N, D)
-        Δs.scatter_add_(0, neighbours.view(-1, 1).expand_as(a), a)
+        delta_s = torch.zeros_like(scalar_embeddings)  # (N, D)
+        delta_s.scatter_add_(0, neighbours.view(-1, 1).expand_as(a), a)
 
         # create vector messages
         v_ij = b.unsqueeze(-1) * unit_vectors.unsqueeze(1)  # (E, D, 3)
         v_ij = v_ij + c.unsqueeze(-1) * vector_embeddings[neighbours]
 
-        Δv = torch.zeros_like(vector_embeddings)  # (N, D, 3)
-        Δv.scatter_add_(
+        delta_v = torch.zeros_like(vector_embeddings)  # (N, D, 3)
+        delta_v.scatter_add_(
             0, neighbours.unsqueeze(-1).unsqueeze(-1).expand_as(v_ij), v_ij
         )
 
-        return Δv, Δs  # (N, D, 3), (N, D)
+        return delta_v, delta_s  # (N, D, 3), (N, D)
 
 
 class VectorLinear(nn.Module):
@@ -144,13 +146,13 @@ class Update(nn.Module):
         a, b, c = torch.split(m, self.internal_dim, dim=-1)  # (N, D)
 
         # vector update:
-        Δv = u * a.unsqueeze(-1)  # (N, D, 3)
+        delta_v = u * a.unsqueeze(-1)  # (N, D, 3)
 
         # scalar update:
         dot = torch.sum(u * v, dim=-1)  # (N, D)
-        Δs = b + c * dot  # (N, D)
+        delta_s = b + c * dot  # (N, D)
 
-        return Δv, Δs
+        return delta_v, delta_s
 
 
 class PaiNN(GraphPESModel):
@@ -217,12 +219,14 @@ class PaiNN(GraphPESModel):
         scalar_embeddings = self.z_embedding(graph["atomic_numbers"])
 
         for interaction, update in zip(self.interactions, self.updates):
-            Δv, Δs = interaction(vector_embeddings, scalar_embeddings, graph)
-            vector_embeddings = vector_embeddings + Δv
-            scalar_embeddings = scalar_embeddings + Δs
+            delta_v, delta_s = interaction(
+                vector_embeddings, scalar_embeddings, graph
+            )
+            vector_embeddings = vector_embeddings + delta_v
+            scalar_embeddings = scalar_embeddings + delta_s
 
-            Δv, Δs = update(vector_embeddings, scalar_embeddings)
-            vector_embeddings = vector_embeddings + Δv
-            scalar_embeddings = scalar_embeddings + Δs
+            delta_v, delta_s = update(vector_embeddings, scalar_embeddings)
+            vector_embeddings = vector_embeddings + delta_v
+            scalar_embeddings = scalar_embeddings + delta_s
 
         return self.read_out(scalar_embeddings)
