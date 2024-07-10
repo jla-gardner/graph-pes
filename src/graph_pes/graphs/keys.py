@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Literal
 
 # graph properties
@@ -27,4 +29,4 @@ if TYPE_CHECKING:
 else:
     LabelKey = str
 
-ALL_LABEL_KEYS: "list[LabelKey]" = [ENERGY, FORCES, STRESS]
+ALL_LABEL_KEYS: list[LabelKey] = [ENERGY, FORCES, STRESS]

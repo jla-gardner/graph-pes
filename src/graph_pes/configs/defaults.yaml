@@ -1,0 +1,19 @@
+fitting:
+    pre_fit_model: true
+    max_n_pre_fit: 5_000
+    early_stopping_patience: 100
+
+    optimizer:
+        graph_pes.training.opt.Optimizer:
+            name: AdamW
+            lr: 0.001
+            weight_decay: 0.0
+            amsgrad: false
+
+    # no scheduler enabled by default
+    scheduler: null
+
+    # train for 100 epochs on the best device available
+    trainer_kwargs:
+        max_epochs: 100
+        accelerator: auto

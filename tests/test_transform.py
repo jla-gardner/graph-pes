@@ -1,24 +1,11 @@
 from __future__ import annotations
 
-import numpy as np
 import pytest
 import torch
 from ase import Atoms
-from graph_pes.data import (
-    is_local_property,
-    to_atomic_graph,
-    to_atomic_graphs,
-    to_batch,
-)
-from graph_pes.transform import (
-    DividePerAtom,
-    Identity,
-    PerAtomScale,
-    PerAtomShift,
-    PerAtomStandardScaler,
-    Scale,
-    Transform,
-)
+from graph_pes.data.io import to_atomic_graph
+from graph_pes.graphs.operations import is_local_property
+from graph_pes.transform import Chain, DividePerAtom, Identity, Scale
 
 structure = Atoms("H2", positions=[(0, 0, 0), (0, 0, 1)])
 structure.info["energy"] = -1.0
@@ -31,7 +18,6 @@ def test_identity():
     x = torch.arange(10).float()
 
     assert transform.forward(x, graph).equal(x)
-    assert transform.inverse(x, graph).equal(x)
 
 
 def test_is_local_property():
@@ -42,90 +28,26 @@ def test_is_local_property():
     assert is_local_property(forces, graph)
 
 
-def test_per_atom_transforms():
-    # create some fake structures to test shift and scale fitting
-
-    structures = []
-
-    # (num H atoms, num C atoms)
-    nums = [(3, 0), (4, 8), (5, 2)]
-    H_energy, C_energy = -4.5, -10.0
-
-    for n_H, n_C in nums:
-        atoms = Atoms("H" * n_H + "C" * n_C)
-        atoms.info["energy"] = n_H * H_energy + n_C * C_energy
-        atoms.arrays["forces"] = np.zeros((n_H + n_C, 3))
-        structures.append(atoms)
-
-    graphs = to_atomic_graphs(structures, cutoff=1.5)
-    batch = to_batch(graphs)
-
-    # fit shift to the total energies
-    shift = PerAtomShift(trainable=False)
-    total_energies: torch.Tensor = batch["energy"]
-    shift.fit_to_source(total_energies, batch)
-    shifted_total_energies = shift(total_energies, batch)
-
-    # shape preservation
-    assert shifted_total_energies.shape == total_energies.shape
-    # learn the correct shifts
-    assert torch.allclose(
-        shift.shift[torch.tensor([1, 6])].detach().squeeze(),
-        torch.tensor([H_energy, C_energy]),
-    )
-
-    centered_energy = shift(total_energies, batch)
-    assert torch.allclose(
-        centered_energy,
-        torch.zeros_like(centered_energy),
-        atol=1e-5,
-    )
-    assert not centered_energy.requires_grad
-
-    # test scaling forces
-    scale = PerAtomScale(trainable=False)
-    forces = batch["forces"]
-    scale.fit_to_source(forces, batch)
-
-    scaled_forces = scale(forces, batch)
-    assert scaled_forces.shape == forces.shape
-
-
-transforms = [
-    PerAtomShift(),
-    PerAtomScale(),
-    DividePerAtom(),
-    PerAtomStandardScaler(),
-    Scale(),
-]
-
-
-@pytest.mark.parametrize(
-    "transform",
-    transforms,
-    ids=[transform.__class__.__name__ for transform in transforms],
-)
-def test_inverse(transform: Transform):
-    x = torch.tensor([1.0, 2.0])
-    y = transform(x, graph)
-
-    inverse = transform.inverse(y, graph)
-    assert x.equal(inverse)
-
-
 def test_scale():
-    x = torch.tensor([1.3, 2.1])  # per atom property
+    x = torch.tensor([1.3, 2.1])
     std = x.std()
 
     transform = Scale()
 
-    # when fitting to source, output of x should have unit std
-    transform.fit_to_source(x, graph)  # type: ignore
+    # once fitted, y should have unit std
+    transform.fit(x, graph)
     y = transform(x, graph)
     assert torch.allclose(y, x / std)
 
-    # when fitting to target, output of ones should have std of x
-    transform.fit_to_target(x, graph)  # type: ignore
-    ones = torch.ones_like(x)
-    y = transform(ones, graph)
-    assert torch.allclose(y, ones * std)
+    with pytest.warns(UserWarning, match="has already been fitted"):
+        transform.fit(x, graph)
+
+
+def test_chain():
+    transform = Chain(Scale(scale=5), DividePerAtom())
+
+    x = torch.tensor([1.0, 2.0])
+    y = transform(x, graph)
+
+    # y = (x * 5) / 2
+    assert torch.allclose(y, x * 5 / 2)

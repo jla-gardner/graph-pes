@@ -4,12 +4,9 @@ import pytest
 import torch
 from ase import Atoms
 from graph_pes.core import get_predictions
-from graph_pes.data import (
-    keys,
-    number_of_edges,
-    to_atomic_graph,
-    to_batch,
-)
+from graph_pes.data.io import to_atomic_graph
+from graph_pes.graphs import keys
+from graph_pes.graphs.operations import number_of_edges, to_batch
 from graph_pes.models.pairwise import LennardJones
 
 no_pbc = to_atomic_graph(

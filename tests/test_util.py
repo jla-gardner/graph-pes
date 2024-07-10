@@ -4,6 +4,7 @@ import torch
 from graph_pes.util import (
     as_possible_tensor,
     differentiate,
+    nested_merge,
     require_grad,
 )
 
@@ -52,7 +53,9 @@ def test_get_gradient():
     # test nice error message
     x = torch.tensor([1.0, 2.0, 3.0])
     y = x.sum()
-    with pytest.raises(ValueError, match="must be the result of a computation"):
+
+    # raises warning
+    with pytest.warns(UserWarning, match="there is no grad function"):
         dy_dx = differentiate(y, x)
 
     # test that it works
@@ -80,3 +83,12 @@ def test_get_gradient():
     dy_dx = differentiate(y, x)
     dy_dx2 = differentiate(dy_dx, x)
     assert torch.allclose(dy_dx2, 2 * torch.ones_like(x))
+
+
+def test_nested_merge():
+    a = {"a": 1, "b": {"c": 2}, "d": 3}
+    b = {"a": 3, "b": {"c": 4}}
+    c = nested_merge(a, b)
+    assert c == {"a": 3, "b": {"c": 4}, "d": 3}, "nested_merge failed"
+    assert a == {"a": 1, "b": {"c": 2}, "d": 3}, "nested_merge mutated a"
+    assert b == {"a": 3, "b": {"c": 4}}, "nested_merge mutated b"

@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 import torch
-from graph_pes.transform import Transform
 from torch import Tensor, nn
 
-from ..core import GraphPESModel
-from ..data import (
-    AtomicGraph,
+from graph_pes.core import GraphPESModel
+from graph_pes.graphs import AtomicGraph
+from graph_pes.graphs.operations import (
     neighbour_distances,
     neighbour_vectors,
     number_of_atoms,
     number_of_edges,
 )
-from ..nn import MLP, HaddamardProduct, PerElementEmbedding
+from graph_pes.nn import MLP, HaddamardProduct, PerElementEmbedding
+
 from .distances import CosineEnvelope, ExponentialRBF
 
 
@@ -321,9 +321,8 @@ class TensorNet(GraphPESModel):
         embedding_size: int = 32,
         cutoff: float = 5.0,
         layers: int = 1,
-        energy_transform: Transform | None = None,
     ):
-        super().__init__(energy_transform)
+        super().__init__()
         self.embedding = Embedding(radial_features, embedding_size, cutoff)
         self.interactions: list[Interaction] = nn.ModuleList(
             [

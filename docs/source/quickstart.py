@@ -1,8 +1,9 @@
 from ase.io import read
 from graph_pes.analysis import parity_plot
-from graph_pes.data import random_split, to_atomic_graphs
-from graph_pes.models.zoo import LennardJones
-from graph_pes.training import train_model
+from graph_pes.data.io import to_atomic_graphs
+from graph_pes.data.utils import random_split
+from graph_pes.models import LennardJones
+from graph_pes.training.manual import train_the_model
 from graph_pes.transform import DividePerAtom
 
 # 1. load some (labelled) structures
@@ -17,7 +18,7 @@ train, val, test = random_split(graphs, [100, 25, 25])
 model = LennardJones()
 
 # 4. train
-train_model(model, train, val, max_epochs=100)
+train_the_model(model, train, val, max_epochs=100)
 
 # 5. evaluate
 parity_plot(model, test, units="eV / atom", transform=DividePerAtom())

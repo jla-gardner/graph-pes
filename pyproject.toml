@@ -19,10 +19,12 @@ dependencies = [
     "torch",
     "torch-geometric",
     "pytorch-lightning",
-    "ase",
+    "ase==3.22.1",       # TODO: unpin this? or pin other versions?
     "numpy",
     "jaxtyping",
     "rich",
+    "dacite",
+    "e3nn",
 ]
 requires-python = ">=3.8"
 
@@ -85,6 +87,7 @@ exclude_also = [
     "except ImportError",
     "if TYPE_CHECKING",
     "raise NotImplementedError",
+    "if __name__ == '__main__':",
 ]
 
 [tool.pytest.ini_options]

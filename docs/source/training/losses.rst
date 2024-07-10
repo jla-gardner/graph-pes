@@ -3,7 +3,8 @@ Losses
 ######
 
 .. autoclass:: graph_pes.loss.Loss
-.. autoclass:: graph_pes.loss.WeightedLoss()
+.. autoclass:: graph_pes.loss.TotalLoss()
+.. autoclass:: graph_pes.loss.PerAtomEnergyLoss
     
 Metrics
 =======

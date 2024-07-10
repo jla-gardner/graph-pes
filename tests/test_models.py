@@ -1,22 +1,19 @@
 from __future__ import annotations
 
+import itertools
+
 import pytest
 import torch
 from ase import Atoms
 from ase.io import read
-from graph_pes.core import Ensemble, GraphPESModel, get_predictions
-from graph_pes.data import (
-    AtomicGraph,
-    AtomicGraphBatch,
+from graph_pes.core import AdditionModel, GraphPESModel, get_predictions
+from graph_pes.data.io import to_atomic_graph, to_atomic_graphs
+from graph_pes.graphs.operations import (
     has_cell,
     number_of_atoms,
     number_of_edges,
-    to_atomic_graph,
-    to_atomic_graphs,
-    to_batch,
 )
-from graph_pes.models.zoo import ALL_MODELS, LennardJones, Morse
-from graph_pes.transform import PerAtomShift
+from graph_pes.models import ALL_MODELS, LennardJones, Morse
 
 structures: list[Atoms] = read("tests/test.xyz", ":")  # type: ignore
 graphs = to_atomic_graphs(structures, cutoff=3)
@@ -26,7 +23,7 @@ def test_model():
     model = LennardJones()
     model.pre_fit(graphs[:2])
 
-    assert sum(p.numel() for p in model.parameters()) == 3
+    assert sum(p.numel() for p in model.parameters()) == 2
 
     predictions = get_predictions(model, graphs)
     assert "energy" in predictions
@@ -51,58 +48,15 @@ def test_isolated_atom():
     assert model(graph) == 0
 
 
-def test_ensembling():
-    lj = LennardJones()
-    morse = Morse()
-    addition_model = lj + morse
-    assert addition_model(graphs[0]) == lj(graphs[0]) + morse(graphs[0])
-
-    mean_model = Ensemble([lj, morse], aggregation="mean", weights=[1.2, 5.7])
-    assert torch.allclose(
-        mean_model(graphs[0]),
-        (1.2 * lj(graphs[0]) + 5.7 * morse(graphs[0])) / (1.2 + 5.7),
-    )
-
-
 def test_pre_fit():
     model = LennardJones()
     model.pre_fit(graphs)
 
     with pytest.warns(
         UserWarning,
-        match="This model has already been pre-fitted",
+        match="has already been pre-fitted",
     ):
         model.pre_fit(graphs)
-
-    batch = to_batch(graphs)
-    batch.pop("energy")  # type: ignore
-    with pytest.warns(
-        UserWarning,
-        match="The training data doesn't contain energies.",
-    ):
-        LennardJones().pre_fit(batch)
-
-    for ret_value in True, False:
-        # make sure energy transform is not called if return from _extra_pre_fit
-        class DummyModel(GraphPESModel):
-            def __init__(self):
-                super().__init__(energy_transform=PerAtomShift())
-
-            def predict_local_energies(
-                self, graph: AtomicGraph
-            ) -> torch.Tensor:
-                return torch.ones(number_of_atoms(graph))
-
-            def _extra_pre_fit(self, graphs: AtomicGraphBatch) -> bool | None:
-                return ret_value  # noqa: B023
-
-        model = DummyModel()
-        assert model.energy_transform.shift[29] == 0
-        model.pre_fit(graphs)
-        if ret_value:
-            assert model.energy_transform.shift[29] == 0
-        else:
-            assert model.energy_transform.shift[29] != 0
 
 
 @pytest.mark.parametrize(
@@ -122,3 +76,33 @@ def test_model_serialisation(model: type[GraphPESModel], tmp_path):
 
     # check predictions are the same
     assert torch.allclose(m(graphs[0]), m2(graphs[0]))
+
+
+def test_addition():
+    lj = LennardJones()
+    m = Morse()
+
+    # test addition of two models
+    addition_model = lj + m
+    assert isinstance(addition_model, AdditionModel)
+    assert set(addition_model.models) == {lj, m}
+    assert torch.allclose(
+        addition_model(graphs[0]),
+        lj(graphs[0]) + m(graphs[0]),
+    )
+
+    # test pre_fit
+    original_lj_sigma = lj.sigma.item()
+    addition_model.pre_fit(graphs)
+    assert (
+        lj.sigma.item() != original_lj_sigma
+    ), "component LJ model was not pre-fitted"
+
+    # test nice errors
+    with pytest.raises(TypeError, match="Can't add"):
+        lj + "hello"  # type: ignore
+
+    # extra addition tests
+    for a, b in itertools.product([lj, addition_model], repeat=2):
+        total = a + b
+        assert isinstance(total, AdditionModel)

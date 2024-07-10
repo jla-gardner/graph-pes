@@ -11,13 +11,9 @@ from matplotlib.axes import Axes
 from matplotlib.ticker import MaxNLocator
 
 from .core import GraphPESModel, get_predictions
-from .data import (
-    AtomicGraph,
-    AtomicGraphBatch,
-    keys,
-    to_atomic_graph,
-    to_batch,
-)
+from .data.io import to_atomic_graph
+from .graphs import AtomicGraph, AtomicGraphBatch, keys
+from .graphs.operations import to_batch
 from .transform import Identity, Transform
 
 _my_style = {

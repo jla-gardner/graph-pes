@@ -4,9 +4,10 @@ import numpy as np
 import pytest
 import torch
 from ase import Atoms
-from graph_pes.data import (
-    AtomicDataLoader,
-    keys,
+from graph_pes.data.io import to_atomic_graphs
+from graph_pes.data.loader import GraphDataLoader
+from graph_pes.graphs import keys
+from graph_pes.graphs.operations import (
     neighbour_distances,
     neighbour_vectors,
     number_of_atoms,
@@ -14,7 +15,6 @@ from graph_pes.data import (
     number_of_structures,
     structure_sizes,
     sum_per_structure,
-    to_atomic_graphs,
     to_batch,
 )
 
@@ -27,6 +27,7 @@ GRAPHS = to_atomic_graphs(STRUCTURES, cutoff=1.5)
 
 def test_batching():
     batch = to_batch(GRAPHS)
+
     assert number_of_atoms(batch) == 5
     assert number_of_structures(batch) == 2
     assert list(batch["ptr"]) == [0, 2, 5]
@@ -104,7 +105,7 @@ def test_sum_per_structure():
 
 
 def test_data_loader():
-    loader = AtomicDataLoader(GRAPHS, batch_size=2)
+    loader = GraphDataLoader(GRAPHS, batch_size=2)
 
     num_batches = 0
 
@@ -121,7 +122,7 @@ def test_data_loader():
 
     # test warning if try to pass own collate function
     with pytest.warns(UserWarning):
-        AtomicDataLoader(GRAPHS, batch_size=2, collate_fn=lambda x: x)
+        GraphDataLoader(GRAPHS, batch_size=2, collate_fn=lambda x: x)
 
 
 def test_number_of_structures():

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from functools import reduce
-from typing import Callable, Iterable
+from typing import Any, Iterable
 
 import torch
 import torch.nn as nn
-from ase.data import covalent_radii
+from ase.data import atomic_numbers, chemical_symbols, covalent_radii
 from torch import Tensor
 
-from .util import MAX_Z, pairs, to_significant_figures
+from .util import MAX_Z, pairs, to_significant_figures, uniform_repr
 
 
 class MLP(nn.Module):
@@ -17,14 +17,14 @@ class MLP(nn.Module):
 
     Parameters
     ----------
-    layers: List[int]
+    layers
         The number of nodes in each layer.
-    activation: str or nn.Module
+    activation
         The activation function to use: either a named activation function
         from `torch.nn`, or a `torch.nn.Module` instance.
-    activate_last: bool
+    activate_last
         Whether to apply the activation function after the last linear layer.
-    bias: bool
+    bias
         Whether to include bias terms in the linear layers.
 
     Examples
@@ -95,7 +95,12 @@ class MLP(nn.Module):
 
     def __repr__(self):
         layers = " → ".join(map(str, self.layer_widths))
-        return f"MLP({layers}, activation={self.activation})"
+        return uniform_repr(
+            self.__class__.__name__,
+            layers,
+            activation=self.activation,
+            stringify=False,
+        )
 
 
 class ShiftedSoftplus(torch.nn.Module):
@@ -105,6 +110,9 @@ class ShiftedSoftplus(torch.nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return torch.nn.functional.softplus(x) - self.shift
+
+    def __repr__(self):
+        return uniform_repr(self.__class__.__name__)
 
 
 def parse_activation(act: str) -> torch.nn.Module:
@@ -167,6 +175,27 @@ class PerElementParameter(torch.nn.Parameter):
         return psp
 
     @classmethod
+    @torch.no_grad()
+    def from_dict(
+        cls,
+        requires_grad: bool = True,
+        default_value: float = 0.0,
+        **values: float,
+    ) -> PerElementParameter:
+        pep = PerElementParameter.of_length(
+            1, requires_grad=requires_grad, default_value=default_value
+        )
+        for element_symbol, value in values.items():
+            if element_symbol not in chemical_symbols:
+                raise ValueError(f"Unknown element: {element_symbol}")
+            Z = chemical_symbols.index(element_symbol)
+            pep[Z] = value
+
+        pep.register_elements(atomic_numbers[v] for v in values)
+
+        return pep
+
+    @classmethod
     def of_length(
         cls,
         length: int,
@@ -183,14 +212,10 @@ class PerElementParameter(torch.nn.Parameter):
     def covalent_radii(
         cls,
         scaling_factor: float = 1.0,
-        transform: Callable[[Tensor], Tensor] | None = None,
     ) -> PerElementParameter:
         pep = PerElementParameter.of_length(1, default_value=1.0)
         for Z in range(1, MAX_Z + 1):
-            r = torch.tensor(covalent_radii[Z]) * scaling_factor
-            if transform is not None:
-                r = transform(r)
-            pep[Z] = r
+            pep[Z] = torch.tensor(covalent_radii[Z]) * scaling_factor
         return pep
 
     def numel(self) -> int:
@@ -213,27 +238,53 @@ class PerElementParameter(torch.nn.Parameter):
         )
 
     @torch.no_grad()
-    def __repr__(self) -> str:
+    def __repr__(
+        self,
+        alias: str | None = None,
+        more_info: dict[str, Any] | None = None,
+    ) -> str:
+        alias = alias or self.__class__.__name__
+        more_info = more_info or {}
+        if "trainable" not in more_info:
+            more_info["trainable"] = self.requires_grad
+
         if len(self._accessed_Zs) == 0:
-            return (
-                f"PerElementParameter(index_dims={self._index_dims}, "
-                f"shape={tuple(self.shape[self._index_dims:])})"
+            if self._index_dims == 1 and self.shape[1] == 1:
+                return uniform_repr(alias, **more_info)
+
+            return uniform_repr(
+                alias,
+                index_dims=self._index_dims,
+                shape=tuple(self.shape[self._index_dims :]),
+                **more_info,
             )
 
         if self._index_dims == 1:
             if self.shape[1] == 1:
                 d = {
-                    Z: to_significant_figures(self[Z].item())
+                    chemical_symbols[Z]: to_significant_figures(self[Z].item())
                     for Z in self._accessed_Zs
                 }
-                return str(d)
+                string = f"{alias}({str(d)}, "
+                for k, v in more_info.items():
+                    string += f"{k}={v}, "
+                return string[:-2] + ")"
+
             elif len(self.shape) == 2:
-                d = {Z: self[Z].tolist() for Z in self._accessed_Zs}
-                return str(d)
+                d = {
+                    chemical_symbols[Z]: self[Z].tolist()
+                    for Z in self._accessed_Zs
+                }
+                string = f"{alias}({str(d)}, "
+                for k, v in more_info.items():
+                    string += f"{k}={v}, "
+                return string[:-2] + ")"
 
         if self._index_dims == 2 and self.shape[2] == 1:
             columns = []
-            columns.append(["Z"] + [str(Z) for Z in self._accessed_Zs])
+            columns.append(
+                ["Z"] + [chemical_symbols[Z] for Z in self._accessed_Zs]
+            )
             for col_Z in self._accessed_Zs:
                 row = [col_Z]
                 for row_Z in self._accessed_Zs:
@@ -251,12 +302,18 @@ class PerElementParameter(torch.nn.Parameter):
                     line += f"{x:>{w}}  "
                 lines.append(line)
             table = "\n" + "\n".join(lines)
-            return str(table)
+            return uniform_repr(
+                alias,
+                table,
+                **more_info,
+            )
 
-        return (
-            f"PerElementParameter(index_dims={self._index_dims}, "
-            f"accessed_Zs={sorted(self._accessed_Zs)}, "
-            f"shape={tuple(self.shape[self._index_dims:])})"
+        return uniform_repr(
+            alias,
+            index_dims=self._index_dims,
+            accessed_Zs=sorted(self._accessed_Zs),
+            shape=tuple(self.shape[self._index_dims :]),
+            **more_info,
         )
 
 
@@ -267,14 +324,13 @@ def _rebuild_per_element_parameter(data, requires_grad, state):
     return psp
 
 
-# TODO update docs
 class PerElementEmbedding(torch.nn.Module):
     """
-    A per-species equivalent of `torch.nn.Embedding`.
+    A per-element equivalent of `torch.nn.Embedding`.
 
     Parameters
     ----------
-    length
+    dim
         The length of each embedding vector.
 
     Examples
@@ -286,15 +342,20 @@ class PerElementEmbedding(torch.nn.Module):
     <tensor of shape (24, 10)>
     """
 
-    def __init__(self, length: int):
+    def __init__(self, dim: int):
         super().__init__()
-        self._embeddings = PerElementParameter.of_length(length)
+        self._embeddings = PerElementParameter.of_length(dim)
 
     def forward(self, Z: Tensor) -> Tensor:
         return self._embeddings[Z]
 
     def __repr__(self) -> str:
-        return f"PerElementEmbedding(length={self._embeddings.shape[1]})"
+        Zs = sorted(self._embeddings._accessed_Zs)
+        return uniform_repr(
+            self.__class__.__name__,
+            dim=self._embeddings.shape[1],
+            elements=[chemical_symbols[Z] for Z in Zs],
+        )
 
 
 class HaddamardProduct(nn.Module):
@@ -317,6 +378,7 @@ class HaddamardProduct(nn.Module):
 # typing for callable
 
 
+# TODO: sort out this mess
 def left_aligned_add(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """
     Assume:
@@ -359,6 +421,7 @@ def left_aligned_mul(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return result.squeeze(1)
 
 
+# TODO: tests for this!
 def left_aligned_div(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     if x.dim() == 1 or x.dim() == 0:
         return x / y
@@ -367,3 +430,58 @@ def left_aligned_div(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     result = x / y  # shape: (1, ..., n)
     result = result.transpose(0, -1)
     return result.squeeze(1)
+
+
+def learnable_parameters(module: nn.Module) -> int:
+    """Count the number of **learnable** parameters a module has."""
+    return sum(p.numel() for p in module.parameters() if p.requires_grad)
+
+
+class AtomicOneHot(torch.nn.Module):
+    """
+    Takes a tensor of atomic numbers Z, and returns a one-hot encoding of
+    the atomic numbers.
+
+    Parameters
+    ----------
+    n_elements
+        The total number of expected atomic numbers.
+    """
+
+    def __init__(self, n_elements: int):
+        super().__init__()
+
+        self.n_elements = n_elements
+        self.Z_to_idx: Tensor
+        self.register_buffer(
+            "Z_to_idx",
+            # deliberately crazy value to catch errors
+            torch.full((MAX_Z + 1,), fill_value=1234),
+        )
+
+    def register_Zs(self, Zs: list[int]):
+        unique_Zs = sorted(set(Zs))
+        if len(unique_Zs) != self.n_elements:
+            raise ValueError(
+                f"Expected {self.n_elements} elements, got {unique_Zs}"
+            )
+
+        for i, Z in enumerate(unique_Zs):
+            self.Z_to_idx[Z] = i
+
+    def forward(self, Z: Tensor) -> Tensor:
+        internal_idx = self.Z_to_idx[Z]
+        return torch.nn.functional.one_hot(internal_idx, self.n_elements)
+        # try:
+        #     return torch.nn.functional.one_hot(internal_idx, self.n_elements)
+        # except IndexError:
+        #     raise ValueError(
+        #         f"Unknown atomic number: {sorted(set(Z.tolist()))}. "
+        #         f"Expected {self.n_elements} elements. "
+        #         "Did you forget to call `register_Zs`?"
+        #     ) from None
+
+    @torch.jit.unused
+    @property
+    def registered_elements(self) -> list[str]:
+        return [chemical_symbols[Z] for Z in self.Z_to_idx if Z <= MAX_Z]

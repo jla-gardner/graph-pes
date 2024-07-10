@@ -6,15 +6,14 @@ import numpy as np
 import pytest
 import torch
 from ase import Atoms
-from graph_pes.data import (
-    AtomicGraph,
+from graph_pes.data.io import to_atomic_graph, to_atomic_graphs
+from graph_pes.graphs import AtomicGraph
+from graph_pes.graphs.operations import (
     neighbour_distances,
     neighbour_vectors,
     number_of_atoms,
     number_of_edges,
     sum_over_neighbours,
-    to_atomic_graph,
-    to_atomic_graphs,
 )
 
 ISOLATED_ATOM = Atoms("H", positions=[(0, 0, 0)], pbc=False)

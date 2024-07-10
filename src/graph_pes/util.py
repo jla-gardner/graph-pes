@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import copy
 import sys
+import warnings
 from contextlib import contextmanager
-from typing import Iterator, Sequence, TypeVar, overload
+from typing import Any, Iterator, Sequence, TypeVar, overload
 
 import torch
 from torch import Tensor
@@ -64,11 +66,15 @@ def as_possible_tensor(value: object) -> Tensor | None:
 
 def differentiate(y: torch.Tensor, x: torch.Tensor):
     if y.grad_fn is None:
-        raise ValueError(
-            "The tensor `y` must be the result of a computation "
+        warnings.warn(
+            "Expected the tensor `y` to be the result of a computation "
             "that requires gradients. Currently, there is no "
-            "gradient function associated with this tensor."
+            "grad function associated with this tensor: "
+            f"{y}.",
+            stacklevel=2,
         )
+        return torch.zeros_like(x, requires_grad=True)
+
     with require_grad(x):
         grad = torch.autograd.grad(
             y.sum(),
@@ -82,7 +88,7 @@ def differentiate(y: torch.Tensor, x: torch.Tensor):
 
 
 @contextmanager
-def require_grad(tensor: torch.Tensor):
+def require_grad(*tensors: torch.Tensor):
     # check if in a torch.no_grad() context: if so,
     # raise an error
     if not torch.is_grad_enabled():
@@ -92,10 +98,12 @@ def require_grad(tensor: torch.Tensor):
             "a torch.enable_grad() context."
         )
 
-    req_grad = tensor.requires_grad
-    tensor.requires_grad_(True)
+    original = [tensor.requires_grad for tensor in tensors]
+    for tensor in tensors:
+        tensor.requires_grad_(True)
     yield
-    tensor.requires_grad_(req_grad)
+    for tensor, req_grad in zip(tensors, original):
+        tensor.requires_grad_(req_grad)
 
 
 def to_significant_figures(x: float | int, sf: int = 3) -> float:
@@ -112,38 +120,62 @@ def to_significant_figures(x: float | int, sf: int = 3) -> float:
     return float(possibly_scientific)
 
 
-def pytorch_repr(
-    name: str, _modules: dict | None = None, extra_repr: str = ""
-) -> str:
-    # lifted from torch.nn.Module.__repr__
-    from torch.nn.modules.module import _addindent
-
-    if _modules is None:
-        _modules = {}
-
-    # We treat the extra repr like the sub-module, one item per line
-    extra_lines = []
-    # empty string will be split into list ['']
-    if extra_repr:
-        extra_lines = extra_repr.split("\n")
-    child_lines = []
-    for key, module in _modules.items():
-        mod_str = repr(module)
-        mod_str = _addindent(mod_str, 2)
-        child_lines.append("(" + key + "): " + mod_str)
-    lines = extra_lines + child_lines
-
-    main_str = name + "("
-    if lines:
-        # simple one-liner info, which most builtin Modules will use
-        if len(extra_lines) == 1 and not child_lines:
-            main_str += extra_lines[0]
-        else:
-            main_str += "\n  " + "\n  ".join(lines) + "\n"
-
-    main_str += ")"
-    return main_str
-
-
 def _is_being_documented():
     return "sphinx" in sys.modules
+
+
+def uniform_repr(
+    thing_name: str,
+    *anonymous_things: Any,
+    max_width: int = 60,
+    stringify: bool = True,
+    **named_things: Any,
+) -> str:
+    def _to_str(thing: Any) -> str:
+        if isinstance(thing, str) and stringify:
+            return f'"{thing}"'
+        return str(thing)
+
+    info = list(map(_to_str, anonymous_things))
+    info += [f"{name}={_to_str(thing)}" for name, thing in named_things.items()]
+
+    single_liner = f"{thing_name}({', '.join(info)})"
+    if len(single_liner) < max_width and "\n" not in single_liner:
+        return single_liner
+
+    def indent(s: str, n=2) -> str:
+        _indent = " " * n
+        return "\n".join(f"{_indent}{line}" for line in s.split("\n"))
+
+    # if we're here, we need to do a multi-line repr
+    rep = f"{thing_name}("
+    for thing in info:
+        rep += "\n" + indent(thing) + ","
+
+    # remove trailing comma, add final newline and close bracket
+    return rep[:-1] + "\n)"
+
+
+def force_to_single_line(s: str) -> str:
+    lines = [line.strip() for line in s.split("\n")]
+    return " ".join(lines)
+
+
+def nested_merge(a: dict, b: dict):
+    """
+    Merge two nested dictionaries, with `b` taking precedence
+    over `a`.
+    """
+
+    new_dict = copy.deepcopy(a)
+    for key, value in b.items():
+        if (
+            key in new_dict
+            and isinstance(value, dict)
+            and isinstance(new_dict[key], dict)
+        ):
+            new_dict[key] = nested_merge(new_dict[key], value)
+        else:
+            new_dict[key] = value
+
+    return new_dict

@@ -3,8 +3,9 @@ from __future__ import annotations
 import pytest
 import torch
 from ase.build import molecule
-from graph_pes.data import to_atomic_graph, to_batch
-from graph_pes.models.zoo import LennardJones, Morse, PaiNN, SchNet, TensorNet
+from graph_pes.data.io import to_atomic_graph
+from graph_pes.graphs.operations import to_batch
+from graph_pes.models import LennardJones, Morse, PaiNN, SchNet, TensorNet
 
 graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=1.5)
 batch = to_batch([graph, graph])

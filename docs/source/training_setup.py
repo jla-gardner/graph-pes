@@ -1,11 +1,9 @@
 from ase.io import read
-from graph_pes.data import (
-    AtomicDataLoader,
-    random_split,
-    to_atomic_graphs,
-)
-from graph_pes.loss import MAE, RMSE, Loss
+from graph_pes.data.io import to_atomic_graphs
+from graph_pes.data.loader import GraphDataLoader
+from graph_pes.data.utils import random_split
 from graph_pes.models.pairwise import LennardJones
+from graph_pes.training.loss import MAE, RMSE, Loss
 
 # 1. Define and initialize the model
 model = LennardJones(epsilon=1.0, sigma=1.0)
@@ -24,7 +22,7 @@ for loss in total_loss.losses:
     loss.fit_transform(train)
 
 # 5. Train the model
-train_loader, val_loader = AtomicDataLoader(train), AtomicDataLoader(val)
+train_loader, val_loader = GraphDataLoader(train), GraphDataLoader(val)
 
 # typical PyTorch training loop
 ...

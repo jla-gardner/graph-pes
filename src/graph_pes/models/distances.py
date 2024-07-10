@@ -33,6 +33,8 @@ class DistanceExpansion(nn.Module, ABC):
     def __init__(self, n_features: int, cutoff: float, trainable: bool = True):
         super().__init__()
         self.n_features = n_features
+        # TODO: check serialization - need to register as buffer to be included
+        # in state_dict?
         self.cutoff = cutoff
         self.trainable = trainable
 
@@ -117,7 +119,7 @@ class Bessel(DistanceExpansion):
     """
 
     def __init__(self, n_features: int, cutoff: float, trainable: bool = True):
-        super().__init__(n_features, cutoff)
+        super().__init__(n_features, cutoff, trainable)
         self.frequencies = nn.Parameter(
             torch.arange(1, n_features + 1) * math.pi / cutoff,
             requires_grad=trainable,

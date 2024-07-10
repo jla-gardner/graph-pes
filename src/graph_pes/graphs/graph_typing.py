@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-from typing import TypedDict
+from typing import TYPE_CHECKING, Dict, TypedDict
 
+import torch
 from torch import Tensor
+from typing_extensions import TypeAlias
+
+from graph_pes.util import _is_being_documented
 
 
 class AtomicGraph(TypedDict):
@@ -169,3 +173,43 @@ class LabelledBatch(AtomicGraphBatch, Labels):
           - :code:`(S, 3, 3)`
           - stress tensor
     """
+
+
+# Torchscript compilation is used in graph_pes to serialise models for
+# deployment in e.g. LAMMPs, and also sometimes as a means to accelerate
+# training.
+#
+# When such compilation takes place, Torchscript uses the run-time type
+# hint information to determine the form of the data structures and
+# required functions that act on these.
+#
+# Unfortunately, Torchscript does not support:
+# - TypedDicts
+# - Literal types
+# and so we resort below to defining the AtomicGraph (and other derived) types
+# as TypedDicts when type checking is enabled (i.e. when we write code in
+# an IDE), and as vanilla dictionaries types at run time.
+#
+# Further to this, in order to enable nicer printing of the AtomicGraph
+# objects, we actually subclass the dictionary type and override the __repr__
+# method, see `graph_pes.graphs.operations._AtomicGraph_Impl` and
+# `graph_pes.graphs.operations.with_nice_repr` for more details.
+#
+# It is important to realise that this (and any other custom
+# behaviour implemented on the _AtomicGraph_Impl class) will not be available
+# when the AtomicGraph is compiled to Torchscript and used in e.g. LAMMPs.
+# Hence we don't put any logic on this _AtomicGraph_Impl class.
+#
+#
+# Type definitions:
+# -----------------
+# when people are writing code, we want correct types
+# and so use TypedDicts to raise warnings in IDEs
+#
+# but at run time, we want @torch.jit.script to work, and this requires
+# vanilla dictionaries with no pre-defined keys:
+if not (TYPE_CHECKING or _is_being_documented()):
+    AtomicGraph: TypeAlias = Dict[str, torch.Tensor]
+    LabelledGraph: TypeAlias = Dict[str, torch.Tensor]
+    AtomicGraphBatch: TypeAlias = Dict[str, torch.Tensor]
+    LabelledBatch: TypeAlias = Dict[str, torch.Tensor]

@@ -4,7 +4,8 @@ from ase import Atoms
 from ase.calculators.calculator import Calculator, all_changes
 
 from graph_pes.core import GraphPESModel, get_predictions
-from graph_pes.data import AtomicGraph, to_atomic_graph
+from graph_pes.data.io import to_atomic_graph
+from graph_pes.graphs import AtomicGraph
 
 
 class GraphPESCalculator(Calculator):

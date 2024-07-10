@@ -4,13 +4,13 @@ from typing import Sequence, TypeVar
 
 import numpy as np
 
-__all__ = ["random_split"]
-
 E = TypeVar("E")
 
 
 def random_split(
-    sequence: Sequence[E], lengths: Sequence[int], seed: int | None = None
+    sequence: Sequence[E],
+    lengths: Sequence[int],
+    seed: int | None = None,
 ) -> list[list[E]]:
     """
     Randomly split `sequence` into sub-sequences according to `lengths`.

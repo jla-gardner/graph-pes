@@ -13,6 +13,7 @@ coverage.xml
 *.extxyz
 *.npz
 *.ipynb
+**/wandb
 
 .vscode
 .isort.cfg
@@ -20,3 +21,8 @@ coverage.xml
 
 thoughts*
 TODO*
+
+results/
+lammps/
+dumps/
+**.cache

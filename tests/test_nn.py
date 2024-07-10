@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import pytest
 import torch
 from graph_pes.nn import (
     MLP,
     PerElementEmbedding,
     PerElementParameter,
+    parse_activation,
 )
 from graph_pes.util import MAX_Z
 
@@ -13,6 +15,9 @@ def test_per_element_parameter(tmp_path):
     pep = PerElementParameter.of_length(5)
     assert pep._index_dims == 1
     assert pep.data.shape == (MAX_Z + 1, 5)
+    assert isinstance(pep, PerElementParameter)
+    assert isinstance(pep, torch.Tensor)
+    assert isinstance(pep, torch.nn.Parameter)
 
     # no elements have been registered, so there should (appear to) be no
     # trainable parameters
@@ -40,6 +45,10 @@ def test_per_element_parameter(tmp_path):
     pep = PerElementParameter.of_shape((5, 5), index_dims=2)
     assert pep.data.shape == (MAX_Z + 1, MAX_Z + 1, 5, 5)
 
+    # test errors
+    with pytest.raises(ValueError, match="Unknown element: ZZZ"):
+        PerElementParameter.from_dict(ZZZ=1)
+
 
 def test_per_element_embedding():
     embedding = PerElementEmbedding(10)
@@ -64,3 +73,13 @@ def test_mlp():
 
     # test nice repr
     assert "MLP(10 → 20 → 1" in str(mlp)
+
+
+def test_activations():
+    act = parse_activation("ReLU")
+    assert act(torch.tensor([-1.0])).item() == 0.0
+
+    with pytest.raises(
+        ValueError, match="Activation function ZZZ not found in `torch.nn`."
+    ):
+        parse_activation("ZZZ")

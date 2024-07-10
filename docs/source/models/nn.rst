@@ -2,10 +2,10 @@
 PyTorch Helpers
 ###############
 
-.. autoclass :: graph_pes.nn.PerSpeciesParameter()
+.. autoclass :: graph_pes.nn.PerElementParameter()
    :members:
 
-.. autoclass :: graph_pes.nn.PerSpeciesEmbedding
+.. autoclass :: graph_pes.nn.PerElementEmbedding
 
 .. autoclass :: graph_pes.nn.MLP
     :members:

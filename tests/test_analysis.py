@@ -1,8 +1,8 @@
 # at least check a lack of failure of the plotting scripts
 from ase.build import molecule
 from graph_pes.analysis import dimer_curve, parity_plot
-from graph_pes.data import to_atomic_graphs
-from graph_pes.models.zoo import LennardJones
+from graph_pes.data.io import to_atomic_graphs
+from graph_pes.models import LennardJones
 
 
 def test_parity_plot():

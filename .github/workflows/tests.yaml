@@ -1,36 +1,42 @@
 name: Source Code Tests
+
 on: [push]
+
 permissions:
     contents: read
-jobs:
-    formatting:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v3
-            - uses: actions/setup-python@v3
-              with:
-                  python-version: 3.9
-            - name: update pip
-              run: pip install --upgrade pip
-            - name: Install ruff
-              run: pip install ruff
-            - name: Run ruff
-              run: ruff check
 
+jobs:
     tests:
         runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                python-version:
+                    - 3.8
+                    - 3.9
+                    - "3.10"
+                    - 3.11
+        name: test - ${{ matrix.python-version }}
         steps:
-            - uses: actions/checkout@v3
-            - uses: actions/setup-python@v3
+            - uses: actions/checkout@v4
+            - uses: actions/setup-python@v5
               with:
-                  python-version: 3.9
+                  python-version: ${{ matrix.python-version }}
             - name: update pip
               run: pip install --upgrade pip
+            # - name: Install ruff
+            # run: pip install ruff
+            # - name: Run ruff
+            # run: ruff check
             - name: Install graph-pes
               run: pip install -e ".[test]"
+            - name: Useful info
+              run: pip freeze
             - name: Run tests
               run: pytest --cov src --cov-report xml
             - name: Upload coverage reports to Codecov
               uses: codecov/codecov-action@v3
+              # only upload coverage reports for the first python version
+              if: matrix.python-version == '3.8'
               with:
                   token: ${{secrets.CODECOV_TOKEN}}
