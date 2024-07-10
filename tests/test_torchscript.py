@@ -1,33 +1,38 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 import torch
-from ase.build import molecule
-from graph_pes.data.io import to_atomic_graph
-from graph_pes.graphs.operations import to_batch
-from graph_pes.models import LennardJones, Morse, PaiNN, SchNet, TensorNet
+from graph_pes.models.distances import (
+    Bessel,
+    DistanceExpansion,
+    ExponentialRBF,
+    GaussianSmearing,
+    SinExpansion,
+)
 
-graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=1.5)
-batch = to_batch([graph, graph])
-models = [
-    LennardJones(),
-    PaiNN(),
-    SchNet(),
-    TensorNet(),
-    Morse(),
-]
+_expansions = [Bessel, GaussianSmearing, SinExpansion, ExponentialRBF]
 
 
 @pytest.mark.parametrize(
-    "model",
-    models,
-    ids=[model.__class__.__name__ for model in models],
+    "expansion_klass",
+    _expansions,
+    ids=[expansion.__name__ for expansion in _expansions],
 )
-def test_model(model):
-    actual_energies = model(batch)
-    assert actual_energies.shape == (2,)
+def test_distance_expansions(
+    expansion_klass: type[DistanceExpansion],
+    tmp_path: Path,
+):
+    n_features = 17
+    cutoff = 5.0
+    expansion = expansion_klass(n_features, cutoff, trainable=True)
 
-    scripted_model: torch.jit.ScriptModule = torch.jit.script(model)  # type: ignore
-    scripted_energy = scripted_model(batch)
+    scripted = torch.jit.script(expansion)
+    r = torch.linspace(0, cutoff, 10)
+    x = scripted(r)
 
-    assert torch.allclose(actual_energies, scripted_energy)
+    torch.jit.save(scripted, tmp_path / "expansion.pt")
+    loaded = torch.jit.load(tmp_path / "expansion.pt")
+
+    assert torch.allclose(x, loaded(r))

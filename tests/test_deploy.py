@@ -24,10 +24,10 @@ def test_deploy(model_klass: type[GraphPESModel], tmp_path: Path):
     else:
         model = model_klass()
 
-    # register parameters so that the model can be run
+    # register per-element parameters so that the model can be run
     model.pre_fit([graph])
 
-    save_path = tmp_path / f"{model.__class__.__name__}.pt"
+    save_path = tmp_path / "model.pt"
     deploy_model(model, cutoff=4.0, path=save_path)
 
     # load back in
