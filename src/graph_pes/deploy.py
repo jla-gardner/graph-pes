@@ -1,4 +1,6 @@
-from contextlib import contextmanager
+from __future__ import annotations
+
+from pathlib import Path
 
 import torch
 
@@ -76,3 +78,9 @@ class LAMMPSModel(torch.nn.Module):
         for key in props:
             props[key] = props[key].double()
         return props
+
+
+def deploy_model(model: GraphPESModel, cutoff: float, path: str | Path):
+    lammps_model = LAMMPSModel(model, cutoff)
+    scripted_model = torch.jit.script(lammps_model)
+    torch.jit.save(scripted_model, path)

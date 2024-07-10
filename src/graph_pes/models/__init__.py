@@ -6,6 +6,7 @@ import torch
 
 from graph_pes.core import GraphPESModel
 
+from .e3nn.nequip import NequIP
 from .offsets import FixedOffset, LearnableOffset
 from .painn import PaiNN
 from .pairwise import LennardJones, LennardJonesMixture, Morse
@@ -19,6 +20,7 @@ __all__ = [
     "TensorNet",
     "Morse",
     "LennardJonesMixture",
+    "NequIP",
     "FixedOffset",
     "LearnableOffset",
     "load_model",
