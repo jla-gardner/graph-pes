@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import e3nn
 import torch
 
 from graph_pes.core import GraphPESModel
@@ -82,5 +83,5 @@ class LAMMPSModel(torch.nn.Module):
 
 def deploy_model(model: GraphPESModel, cutoff: float, path: str | Path):
     lammps_model = LAMMPSModel(model, cutoff)
-    scripted_model = torch.jit.script(lammps_model)
+    scripted_model = e3nn.util.jit.script(lammps_model)
     torch.jit.save(scripted_model, path)
