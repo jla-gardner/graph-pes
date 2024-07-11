@@ -13,6 +13,8 @@ coverage.xml
 *.extxyz
 *.npz
 *.ipynb
+*.pt
+*.pth
 **/wandb
 
 .vscode

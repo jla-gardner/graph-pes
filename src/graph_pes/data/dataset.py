@@ -198,14 +198,15 @@ class ASEDataset(LabelledGraphDataset):
         self.cutoff = cutoff
 
         self.pre_transform = pre_transform
+        self.graphs = None
+
+    def setup(self):
         if self.pre_transform:
             logger.info("Pre-transforming ASE dataset to graphs...")
             self.graphs = [
-                to_atomic_graph(atoms, cutoff=cutoff) for atoms in structures
+                to_atomic_graph(atoms, cutoff=self.cutoff)
+                for atoms in self.structures
             ]
-
-        else:
-            self.graphs = None
 
     def __getitem__(self, index: int) -> LabelledGraph:
         if self.pre_transform:

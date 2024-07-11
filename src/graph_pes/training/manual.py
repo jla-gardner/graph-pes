@@ -4,8 +4,11 @@ from typing import Sequence
 
 from graph_pes.config import FittingOptions
 from graph_pes.core import GraphPESModel
-from graph_pes.data.dataset import LabelledGraphDataset, SequenceDataset
-from graph_pes.data.module import FixedDatasets
+from graph_pes.data.dataset import (
+    FittingData,
+    LabelledGraphDataset,
+    SequenceDataset,
+)
 from graph_pes.graphs import (
     LabelledGraph,
     keys,
@@ -56,9 +59,6 @@ def train_the_model(
         train_data = SequenceDataset(train_data)
     if not isinstance(val_data, LabelledGraphDataset):
         val_data = SequenceDataset(val_data)
-    data = FixedDatasets(
-        train_data, val_data, tests=None, batch_size=batch_size
-    )
 
     # sanity check on cpu TODO: move to ptl
     dummy_batch = to_batch(list(train_data.up_to_n(10)))
@@ -104,10 +104,11 @@ def train_the_model(
         max_n_pre_fit=max_n_pre_fit,
         early_stopping_patience=100,
         trainer_kwargs=trainer_options,
+        loader_kwargs=dict(batch_size=batch_size),
     )
     train_with_lightning(
         model,
-        data=data,
+        data=FittingData(train_data, val_data),
         loss=total_loss,
         fit_config=options,
         optimizer=optimizer,
