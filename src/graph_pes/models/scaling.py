@@ -69,7 +69,6 @@ class UnScaledPESModel(GraphPESModel, ABC):
 
         if isinstance(graphs, LabelledGraphDataset):
             graphs = list(graphs)
-
         if isinstance(graphs, dict) and is_batch(graphs):
             graph_batch = graphs
         else:

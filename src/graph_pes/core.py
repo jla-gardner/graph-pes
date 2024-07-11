@@ -134,8 +134,12 @@ class GraphPESModel(nn.Module, ABC):
 
         if isinstance(graphs, LabelledGraphDataset):
             graphs = list(graphs)
-
-        graph_batch = to_batch(graphs)
+        if isinstance(graphs, dict):  # noqa: SIM108
+            # crude check to see if this is a batch
+            graph_batch = graphs
+        else:
+            # we have a list of graphs: convert to a batch
+            graph_batch = to_batch(graphs)  # type: ignore
 
         self._has_been_pre_fit.fill_(True)
         self.model_specific_pre_fit(graph_batch)
@@ -222,8 +226,6 @@ class AdditionModel(GraphPESModel):
             model.model_specific_pre_fit(graphs)
 
     def __repr__(self):
-        # model_info = "\n  ".join(map(str, self.models))
-        # return f"{self.__class__.__name__}(\n  {model_info}\n)"
         return uniform_repr(self.__class__.__name__, *self.models)
 
 
