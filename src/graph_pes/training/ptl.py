@@ -38,7 +38,7 @@ def train_with_lightning(
     """Hand off to Lightning."""
 
     # - create the trainer
-    trainer = create_training_trainer(fit_config, True)
+    trainer = create_trainer(fit_config, True)
     if config_to_log is not None and trainer.logger is not None:
         trainer.logger.log_hyperparams(config_to_log)
 
@@ -258,7 +258,7 @@ def wandb_available():
         return False
 
 
-def create_training_trainer(
+def create_trainer(
     fit_config: FittingOptions,
     val_available: bool = False,
 ) -> pl.Trainer:
@@ -307,7 +307,3 @@ def create_training_trainer(
         trainer_kwargs["logger"] = pytorch_lightning.loggers.WandbLogger()
 
     return pl.Trainer(**trainer_kwargs)
-
-
-# TODO
-def create_testing_trainer(): ...

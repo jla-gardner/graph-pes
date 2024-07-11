@@ -25,6 +25,8 @@ dependencies = [
     "dacite",
     "e3nn",
     "scikit-learn",
+    "locache",
+    "load-atoms",
 ]
 requires-python = ">=3.8"
 

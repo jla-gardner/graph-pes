@@ -5,10 +5,12 @@ from graph_pes.logger import logger
 def log_model_info(model: GraphPESModel):
     """Log the number of parameters in a model."""
 
-    logger.debug(f"Model: {model}")
+    logger.info(f"Model:\n{model}")
+
     if not isinstance(model, AdditionModel):
         params = sum(p.numel() for p in model.parameters())
         logger.info(f"Number of learnable params : {params:,}")
+
     else:
         model_names = [
             component.__class__.__name__ for component in model.models
