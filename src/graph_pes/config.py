@@ -353,6 +353,8 @@ class Config:
                 cutoff: 5.0
                 n_train: 10000
                 n_val: 1000
+                property_map:
+                    energy: U0
     """
 
     loss: Union[str, Dict[str, Any], List[LossSpec]]

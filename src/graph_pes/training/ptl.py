@@ -45,10 +45,12 @@ def train_with_lightning(
     # - get the data ready in a way that is compatible with
     #   multi-GPU training
     if trainer.local_rank == 0:
+        logger.info("Preparing data")
         data.train.prepare_data()
         data.valid.prepare_data()
     trainer.strategy.barrier("data prepare")
 
+    logger.info("Setting up datasets")
     data.train.setup()
     data.valid.setup()
 
