@@ -3,13 +3,13 @@ from __future__ import annotations
 import torch
 from torch import Tensor, nn
 
-from graph_pes.core import GraphPESModel
 from graph_pes.graphs import AtomicGraph
 from graph_pes.graphs.operations import (
     neighbour_distances,
     neighbour_vectors,
     number_of_atoms,
 )
+from graph_pes.models.scaling import UnScaledPESModel
 from graph_pes.nn import MLP, HaddamardProduct, PerElementEmbedding
 
 from .distances import Bessel, PolynomialEnvelope
@@ -155,7 +155,7 @@ class Update(nn.Module):
         return delta_v, delta_s
 
 
-class PaiNN(GraphPESModel):
+class PaiNN(UnScaledPESModel):
     r"""
     The `Polarizable Atom Interaction Neural Network (PaiNN)
     <https://arxiv.org/abs/2102.03150>`_ model.
@@ -211,7 +211,7 @@ class PaiNN(GraphPESModel):
             activation=nn.SiLU(),
         )
 
-    def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
+    def predict_unscaled_energies(self, graph: AtomicGraph) -> Tensor:
         vector_embeddings = torch.zeros(
             (number_of_atoms(graph), self.internal_dim, 3),
             device=graph["atomic_numbers"].device,
