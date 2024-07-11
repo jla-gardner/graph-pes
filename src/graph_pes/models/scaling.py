@@ -18,7 +18,7 @@ from graph_pes.models.pre_fit import guess_per_element_mean_and_var
 from graph_pes.nn import PerElementParameter
 
 
-class UnScaledPESModel(GraphPESModel, ABC):
+class AutoScaledPESModel(GraphPESModel, ABC):
     """
     An abstract base class for all PES models implementations that are best
     suited to making raw predictions that with ~unit variance. By inheriting

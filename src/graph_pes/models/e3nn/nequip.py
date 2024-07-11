@@ -14,7 +14,7 @@ from graph_pes.graphs.operations import (
     sum_over_neighbours,
 )
 from graph_pes.models import distances
-from graph_pes.models.scaling import UnScaledPESModel
+from graph_pes.models.scaling import AutoScaledPESModel
 from graph_pes.nn import (
     MLP,
     AtomicOneHot,
@@ -323,7 +323,7 @@ class NequIPMessagePassingLayer(torch.nn.Module):
 
 
 @e3nn.util.jit.compile_mode("script")
-class NequIP(UnScaledPESModel):
+class NequIP(AutoScaledPESModel):
     def __init__(
         self,
         n_elements: int,

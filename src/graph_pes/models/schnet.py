@@ -6,7 +6,7 @@ from torch_geometric.nn import MessagePassing
 
 from graph_pes.graphs import AtomicGraph
 from graph_pes.graphs.operations import neighbour_distances
-from graph_pes.models.scaling import UnScaledPESModel
+from graph_pes.models.scaling import AutoScaledPESModel
 from graph_pes.nn import MLP, PerElementEmbedding, ShiftedSoftplus
 
 from .distances import DistanceExpansion, GaussianSmearing
@@ -167,7 +167,7 @@ class SchNetInteraction(nn.Module):
         return self.mlp(h)
 
 
-class SchNet(UnScaledPESModel):
+class SchNet(AutoScaledPESModel):
     r"""
     The `SchNet <https://arxiv.org/abs/1706.08566>`_ model: a pairwise, scalar,
     message passing GNN.

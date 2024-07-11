@@ -9,7 +9,7 @@ from graph_pes.graphs.operations import (
     neighbour_vectors,
     number_of_atoms,
 )
-from graph_pes.models.scaling import UnScaledPESModel
+from graph_pes.models.scaling import AutoScaledPESModel
 from graph_pes.nn import MLP, HaddamardProduct, PerElementEmbedding
 
 from .distances import Bessel, PolynomialEnvelope
@@ -155,7 +155,7 @@ class Update(nn.Module):
         return delta_v, delta_s
 
 
-class PaiNN(UnScaledPESModel):
+class PaiNN(AutoScaledPESModel):
     r"""
     The `Polarizable Atom Interaction Neural Network (PaiNN)
     <https://arxiv.org/abs/2102.03150>`_ model.

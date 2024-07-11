@@ -2,10 +2,10 @@ import torch
 from ase.build import molecule
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.graphs.graph_typing import AtomicGraph
-from graph_pes.models.scaling import UnScaledPESModel
+from graph_pes.models.scaling import AutoScaledPESModel
 
 
-class StupidModel(UnScaledPESModel):
+class StupidModel(AutoScaledPESModel):
     def predict_unscaled_energies(self, graph: AtomicGraph) -> torch.Tensor:
         return torch.ones_like(graph["atomic_numbers"]).float()
 

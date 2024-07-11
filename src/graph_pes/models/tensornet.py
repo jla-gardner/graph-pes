@@ -10,7 +10,7 @@ from graph_pes.graphs.operations import (
     number_of_atoms,
     number_of_edges,
 )
-from graph_pes.models.scaling import UnScaledPESModel
+from graph_pes.models.scaling import AutoScaledPESModel
 from graph_pes.nn import MLP, HaddamardProduct, PerElementEmbedding
 
 from .distances import CosineEnvelope, ExponentialRBF
@@ -314,7 +314,7 @@ class ScalarOutput(nn.Module):
         return self.mlp(X)  # (N, 1)
 
 
-class TensorNet(UnScaledPESModel):
+class TensorNet(AutoScaledPESModel):
     def __init__(
         self,
         radial_features: int = 32,
