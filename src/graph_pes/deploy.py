@@ -80,6 +80,9 @@ class LAMMPSModel(torch.nn.Module):
             props[key] = props[key].double()
         return props
 
+    def __call__(self, graph: AtomicGraph) -> dict[str, torch.Tensor]:
+        return super().__call__(graph)
+
 
 def deploy_model(model: GraphPESModel, cutoff: float, path: str | Path):
     lammps_model = LAMMPSModel(model, cutoff)
