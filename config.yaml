@@ -1,0 +1,40 @@
+model:
+    - graph_pes.models.LearnableOffset()
+    - graph_pes.models.LennardJones()
+    # - graph_pes.models.SchNet()
+    # - graph_pes.models.e3nn.nequip.NequIP:
+    #   n_elements: 1
+
+data:
+    cgap17.load_data:
+        batch_size: 32
+        n_train: 10
+
+loss:
+    - component: graph_pes.training.loss.PerAtomEnergyLoss()
+    - component:
+          graph_pes.training.loss.Loss:
+              property_key: forces
+              metric: graph_pes.training.loss.RMSE()
+
+# TODO: ladder fit etc.
+fitting:
+    pre_fit_model: True
+
+    optimizer:
+        graph_pes.training.opt.Optimizer:
+            name: AdamW
+            lr: 0.001
+            weight_decay: 0.0
+
+    scheduler:
+        graph_pes.training.opt.LRScheduler:
+            name: ReduceLROnPlateau
+            factor: 0.8
+            patience: 10
+
+    trainer_kwargs:
+        max_epochs: 1
+        accelerator: cpu
+
+    # TODO: lightning scheduler configuration

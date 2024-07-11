@@ -57,6 +57,7 @@ class UnScaledPESModel(GraphPESModel, ABC):
             The unscaled, local energies with shape ``(n_atoms,)``.
         """
 
+    @torch.no_grad()
     def pre_fit(
         self,
         graphs: LabelledGraphDataset | Sequence[LabelledGraph] | LabelledBatch,
@@ -77,12 +78,11 @@ class UnScaledPESModel(GraphPESModel, ABC):
         # use Ridge regression to calculate standard deviations in the
         # per-element contributions to the total energy
         if "energy" in graph_batch:
-            with torch.no_grad():
-                _, variances = guess_per_element_mean_and_var(
-                    graph_batch["energy"], graph_batch
-                )
-                for Z, var in variances.items():
-                    self._per_element_scaling[Z] = var**0.5
+            _, variances = guess_per_element_mean_and_var(
+                graph_batch["energy"], graph_batch
+            )
+            for Z, var in variances.items():
+                self._per_element_scaling[Z] = var**0.5
 
         else:
             model_name = self.__class__.__name__
