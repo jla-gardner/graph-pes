@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Iterator, Protocol, Sequence, TypeVar
 
 import ase
@@ -31,6 +32,21 @@ class LabelledGraphDataset(torch.utils.data.Dataset, ABC):
 
     @abstractmethod
     def __len__(self) -> int: ...
+
+    def prepare_data(self):
+        """
+        Prepare the data for the dataset.
+
+        Called on rank-0 only: don't set any state here.
+        May be called multiple times.
+        """
+
+    def setup(self):
+        """
+        Set up the data for the dataset.
+
+        Called on every process in the distributed setup: set state here.
+        """
 
     def shuffled(self, seed: int = 42) -> ShuffledDataset:
         """
@@ -158,14 +174,13 @@ class SequenceDataset(LabelledGraphDataset):
         return len(self.graphs)
 
 
-# TODO: differentiate between structure and graph
-class AseDataset(LabelledGraphDataset):
+class ASEDataset(LabelledGraphDataset):
     """
     A dataset that wraps an ASE dataset.
 
     Parameters
     ----------
-    ase_dataset
+    structures
         The ASE dataset to wrap.
     cutoff
         The cutoff to use when creating neighbour indexes for the graphs.
@@ -175,27 +190,34 @@ class AseDataset(LabelledGraphDataset):
 
     def __init__(
         self,
-        ase_dataset: SizedDataset[ase.Atoms] | Sequence[ase.Atoms],
+        structures: SizedDataset[ase.Atoms] | Sequence[ase.Atoms],
         cutoff: float = 5.0,
         pre_transform: bool = False,
     ):
-        self.ase_dataset = ase_dataset
+        self.structures = structures
         self.cutoff = cutoff
 
         self.pre_transform = pre_transform
-        if pre_transform:
+        if self.pre_transform:
             logger.info("Pre-transforming ASE dataset to graphs...")
             self.graphs = [
-                to_atomic_graph(atoms, cutoff=cutoff) for atoms in ase_dataset
+                to_atomic_graph(atoms, cutoff=cutoff) for atoms in structures
             ]
 
         else:
-            self.grahsp = None
+            self.graphs = None
 
     def __getitem__(self, index: int) -> LabelledGraph:
         if self.pre_transform:
+            assert self.graphs is not None
             return self.graphs[index]
-        return to_atomic_graph(self.ase_dataset[index], cutoff=self.cutoff)
+        return to_atomic_graph(self.structures[index], cutoff=self.cutoff)
 
     def __len__(self) -> int:
-        return len(self.ase_dataset)
+        return len(self.structures)
+
+
+@dataclass
+class FittingData:
+    train: LabelledGraphDataset
+    valid: LabelledGraphDataset

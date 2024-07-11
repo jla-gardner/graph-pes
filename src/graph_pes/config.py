@@ -10,7 +10,7 @@ import dacite
 import yaml
 
 from graph_pes.core import AdditionModel, GraphPESModel
-from graph_pes.data.module import GraphDataModule
+from graph_pes.data.dataset import FittingData
 from graph_pes.training.loss import Loss, TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
 
@@ -188,6 +188,14 @@ class FittingOptions:
             max_epochs: 100
             gpus: 1
             check_val_every_n_epoch: 5
+    """
+
+    loader_kwargs: Dict[str, Any]
+    """
+    Key-word arguments to pass to the underlying 
+    :class:`torch.utils.data.DataLoader`.
+
+    See their docs. # TODO
     """
 
 
@@ -434,7 +442,7 @@ class Config:
 
         raise ValueError("# TODO")
 
-    def instantiate_data(self) -> GraphDataModule:
+    def instantiate_data(self) -> FittingData:
         if isinstance(self.data, (str, dict)):
             return _instantiate(self.data)
 
