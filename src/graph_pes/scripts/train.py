@@ -22,7 +22,7 @@ def main():
     args = parser.parse_args()
 
     # load default and user data
-    with open(Path(__file__).parent / "configs/defaults.yaml") as f:
+    with open(Path(__file__).parent.parent / "configs/defaults.yaml") as f:
         defaults: dict[str, Any] = yaml.safe_load(f)
     with open(args.config) as f:
         user_config: dict[str, Any] = yaml.safe_load(f)
@@ -36,7 +36,6 @@ def main():
     logger.info(config)
 
     model = config.instantiate_model()
-    logger.info(model)
 
     data = config.instantiate_data()
     logger.info(data)
