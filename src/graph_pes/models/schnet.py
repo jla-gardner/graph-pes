@@ -4,9 +4,9 @@ import torch
 from torch import Tensor, nn
 from torch_geometric.nn import MessagePassing
 
-from graph_pes.core import GraphPESModel
 from graph_pes.graphs import AtomicGraph
 from graph_pes.graphs.operations import neighbour_distances
+from graph_pes.models.scaling import UnScaledPESModel
 from graph_pes.nn import MLP, PerElementEmbedding, ShiftedSoftplus
 
 from .distances import DistanceExpansion, GaussianSmearing
@@ -167,7 +167,7 @@ class SchNetInteraction(nn.Module):
         return self.mlp(h)
 
 
-class SchNet(GraphPESModel):
+class SchNet(UnScaledPESModel):
     r"""
     The `SchNet <https://arxiv.org/abs/1706.08566>`_ model: a pairwise, scalar,
     message passing GNN.
@@ -237,7 +237,7 @@ class SchNet(GraphPESModel):
             activation=ShiftedSoftplus(),
         )
 
-    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
+    def predict_unscaled_energies(self, graph: AtomicGraph) -> torch.Tensor:
         h = self.chemical_embedding(graph["atomic_numbers"])
 
         for interaction in self.interactions:

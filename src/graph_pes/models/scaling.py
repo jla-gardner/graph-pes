@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import warnings
 from abc import ABC, abstractmethod
 from typing import Sequence
@@ -12,7 +14,7 @@ from graph_pes.models.pre_fit import guess_per_element_mean_and_var
 from graph_pes.nn import PerElementParameter
 
 
-class ScaledPESModel(GraphPESModel, ABC):
+class UnScaledPESModel(GraphPESModel, ABC):
     """
     An abstract base class for all PES models implementations that are best
     suited to making raw predictions that with ~unit variance. By inheriting
@@ -66,11 +68,12 @@ class ScaledPESModel(GraphPESModel, ABC):
         # use Ridge regression to calculate standard deviations in the
         # per-element contributions to the total energy
         if "energy" in graph_batch:
-            _, variances = guess_per_element_mean_and_var(
-                graph_batch["energy"], graph_batch
-            )
-            for Z, var in variances.items():
-                self._per_element_scaling[Z] = var**0.5
+            with torch.no_grad():
+                _, variances = guess_per_element_mean_and_var(
+                    graph_batch["energy"], graph_batch
+                )
+                for Z, var in variances.items():
+                    self._per_element_scaling[Z] = var**0.5
 
         else:
             model_name = self.__class__.__name__
