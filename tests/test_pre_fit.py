@@ -4,7 +4,10 @@ import numpy as np
 import torch
 from graph_pes.graphs.graph_typing import LabelledBatch, LabelledGraph
 from graph_pes.graphs.operations import number_of_structures, to_batch
-from graph_pes.models.pre_fit import guess_per_element_mean_and_var
+from graph_pes.models.pre_fit import (
+    MIN_VARIANCE,
+    guess_per_element_mean_and_var,
+)
 
 
 def _create_batch(
@@ -70,3 +73,17 @@ def test_guess_per_element_mean_and_var():
     # are variances roughly right?
     for Z, actual_sigma in sigma.items():
         assert np.isclose(variances[Z], actual_sigma**2, atol=0.01)
+
+
+def test_clamping():
+    # variances can not be negative: ensure that they are clamped
+    mu = {1: -1.0, 2: -2.0}
+    sigma = {1: 0.0, 2: 1.0}
+    batch = _create_batch(mu=mu, sigma=sigma)
+
+    # calculate the per-element mean and variance
+    means, variances = guess_per_element_mean_and_var(batch["energy"], batch)
+
+    # ensure no variance is less than the value we choose to clamp to
+    for value in variances.values():
+        assert value >= MIN_VARIANCE

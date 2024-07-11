@@ -6,6 +6,8 @@ from sklearn.linear_model import Ridge
 from graph_pes.graphs.graph_typing import AtomicGraphBatch
 from graph_pes.graphs.operations import number_of_structures, sum_per_structure
 
+MIN_VARIANCE = 0.01
+
 
 def guess_per_element_mean_and_var(
     per_structure_quantity: torch.Tensor,
@@ -46,7 +48,11 @@ def guess_per_element_mean_and_var(
     # variances for each atom, we can estimate these variances again
     # using Ridge regression
     ridge.fit(N.numpy(), residuals**2)
-    var_Z = ridge.coef_.clip(min=0.01)  # avoid negative variances
-    variances = {int(Z): float(var) for Z, var in zip(unique_Zs, var_Z)}
+    var_Z = ridge.coef_
+    # avoid negative variances by clipping to min value
+    variances = {
+        int(Z): max(float(var), MIN_VARIANCE)
+        for Z, var in zip(unique_Zs, var_Z)
+    }
 
     return means, variances
