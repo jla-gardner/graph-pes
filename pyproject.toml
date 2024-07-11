@@ -24,6 +24,7 @@ dependencies = [
     "rich",
     "dacite",
     "e3nn",
+    "scikit-learn",
 ]
 requires-python = ">=3.8"
 
