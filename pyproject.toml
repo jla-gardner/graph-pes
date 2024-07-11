@@ -17,7 +17,6 @@ classifiers = [
 keywords = []
 dependencies = [
     "torch",
-    "torch-geometric",
     "pytorch-lightning",
     "ase==3.22.1",       # TODO: unpin this? or pin other versions?
     "numpy",
