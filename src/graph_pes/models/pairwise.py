@@ -342,17 +342,14 @@ class LennardJonesMixture(PairPotential):
         return 4 * epsilon * (x**12 - x**6)
 
     def __repr__(self):
-        modules = {
+        kwargs = {
             "sigma": self.sigma,
             "epsilon": self.epsilon,
             "zeta": self.zeta,
         }
         if self.modulate_distances:
-            modules["nu"] = self.nu
+            kwargs["nu"] = self.nu
 
-        kwargs = {
-            k: to_significant_figures(v.item(), 3) for k, v in modules.items()
-        }
         return uniform_repr(
             self.__class__.__name__,
             **kwargs,
