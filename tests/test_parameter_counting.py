@@ -22,6 +22,11 @@ for n in range(5):
     graphs.append(g)
 
 
+# Before a model has been pre_fit, all PerElementParameters should have 0
+# relevant and countable values. After pre_fitting, the PerElementParameter
+# values corresponding to elements seen in the pre-fit data should be counted.
+
+
 def test_fixed():
     model = FixedOffset(H=1.0, C=2.0)
 
