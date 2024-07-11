@@ -86,7 +86,10 @@ class GraphPESModel(nn.Module, ABC):
             The per-atom local energy predictions, with shape :code:`(N,)`.
         """
 
-    def pre_fit(self, graphs: LabelledGraphDataset | Sequence[LabelledGraph]):
+    def pre_fit(
+        self,
+        graphs: LabelledGraphDataset | Sequence[LabelledGraph] | LabelledBatch,
+    ):
         """
         Pre-fit the model to the training data.
 
