@@ -3,11 +3,10 @@ from __future__ import annotations
 from typing import Callable, NamedTuple
 
 import torch
-from torch import Tensor, nn
-
 from graph_pes.graphs import LabelledBatch, keys
 from graph_pes.transform import divide_per_atom
 from graph_pes.util import force_to_single_line, uniform_repr
+from torch import Tensor, nn
 
 
 class Loss(nn.Module):
