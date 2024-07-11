@@ -41,6 +41,9 @@ doc = [
 ]
 publish = ["build", "twine"]
 
+[project.scripts]
+graph-pes-train = "graph_pes.scripts.train:main"
+
 [project.urls]
 Homepage = "https://github.com/jla-gardner/graph-pes"
 
