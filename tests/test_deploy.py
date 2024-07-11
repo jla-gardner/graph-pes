@@ -15,6 +15,10 @@ CUTOFF = 1.5
 graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=CUTOFF)
 
 
+# ignore warnings about lack of energy labels for pre-fitting: not important
+@pytest.mark.filterwarnings(
+    "ignore:.*training data does not contain energy labels.*"
+)
 @pytest.mark.parametrize(
     "model_klass",
     ALL_MODELS,

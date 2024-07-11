@@ -7,9 +7,18 @@ from graph_pes import get_predictions
 from graph_pes.data.io import to_atomic_graphs
 from graph_pes.graphs.operations import to_batch
 from graph_pes.models import LennardJones, Morse, PaiNN, SchNet
+from graph_pes.models.e3nn.nequip import NequIP
+from graph_pes.models.tensornet import TensorNet
 from graph_pes.training.manual import Loss, train_the_model
 
-models = [LennardJones(), Morse(), SchNet(), PaiNN()]
+models = [
+    LennardJones(),
+    Morse(),
+    SchNet(),
+    PaiNN(),
+    TensorNet(),
+    NequIP(n_elements=1),
+]
 
 
 @pytest.mark.parametrize(
@@ -23,6 +32,8 @@ def test_integration(model):
 
     batch = to_batch(graphs)
     assert "energy" in batch
+
+    model.pre_fit(graphs[:8])
 
     loss = Loss("energy")
     before = loss(get_predictions(model, batch), batch)
@@ -38,6 +49,7 @@ def test_integration(model):
             callbacks=[],
             logger=None,
         ),
+        pre_fit_model=False,
     )
 
     after = loss(get_predictions(model, batch), batch)
