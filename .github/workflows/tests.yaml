@@ -7,6 +7,8 @@ permissions:
 
 jobs:
     style:
+        runs-on: ubuntu-latest
+        name: style
         steps:
             - uses: actions/checkout@v4
             - uses: actions/setup-python@v5
