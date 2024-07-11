@@ -7,11 +7,8 @@ from torch import Tensor
 
 from graph_pes.core import GraphPESModel
 from graph_pes.graphs import AtomicGraph, LabelledBatch
-from graph_pes.graphs.operations import (
-    number_of_structures,
-    sum_per_structure,
-)
 from graph_pes.logger import logger
+from graph_pes.models.pre_fit import guess_per_element_mean_and_var
 from graph_pes.nn import PerElementParameter
 
 
@@ -131,23 +128,11 @@ class LearnableOffset(EnergyOffset):
             )
             return
 
-        # use linear regression to estimate the mean energy contribution
+        # use ridge regression to estimate the mean energy contribution
         # from each atomic species
-
-        zs = torch.unique(graphs["atomic_numbers"])
-        E = graphs["energy"]
-        N = torch.zeros(number_of_structures(graphs), len(zs))
-
-        for idx, z in enumerate(zs):
-            N[:, idx] = sum_per_structure(
-                (graphs["atomic_numbers"] == z).float(), graphs
-            )
-
-        shift_vec = torch.linalg.lstsq(N, E).solution
-        for idx, z in enumerate(zs):
-            self._offsets[z] = shift_vec[idx]
-
-        self._offsets.register_elements(map(int, zs))
+        offsets, _ = guess_per_element_mean_and_var(graphs["energy"], graphs)
+        for z, offset in offsets.items():
+            self._offsets[z] = offset
 
         logger.warning(f"""
 Estimated per-element energy offsets from the training data:
