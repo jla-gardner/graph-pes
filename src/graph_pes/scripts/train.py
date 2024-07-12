@@ -117,6 +117,7 @@ def train_from_config(config: Config):
         optimizer=optimizer,
         scheduler=scheduler,
         config_to_log=config.to_nested_dict(),
+        wandb_config=config.wandb,
     )
 
     logger.info(

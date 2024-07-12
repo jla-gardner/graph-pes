@@ -27,6 +27,7 @@ dependencies = [
     "scikit-learn",
     "locache",
     "load-atoms",
+    "wandb",
 ]
 requires-python = ">=3.8"
 
@@ -104,4 +105,5 @@ filterwarnings = [
     "ignore::DeprecationWarning:pkg_resources",
     "ignore::DeprecationWarning:torchmetrics",
     "ignore::UserWarning:pytorch_lightning",
+    "ignore:.*The TorchScript type system doesn't support instance-level annotations on empty non-base types.*",
 ]

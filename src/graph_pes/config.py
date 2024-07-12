@@ -393,6 +393,34 @@ class Config:
     """
 
     fitting: FittingConfig
+    """
+    Configuration for the fitting process: see :class:`FittingConfig`.
+    """
+
+    wandb: Union[Dict[str, Any], None]
+    """
+    Configuration for Weights & Biases logging.
+    
+    If ``None``, logging is disabled. Otherwise, provide a dictionary
+    to pass to  :class:`~pytorch_lightning.loggers.WandbLogger`.
+
+    Examples
+    --------
+    Custom project, entity and tags:
+
+    .. code-block:: yaml
+    
+        wandb:
+            project: my_project
+            entity: my_entity
+            tags: [my_tag]
+
+    Disable weights & biases logging:
+
+    .. code-block:: yaml
+        
+            wandb: null
+    """
 
     ### Methods ###
 

@@ -34,11 +34,12 @@ def train_with_lightning(
     optimizer: Optimizer,
     scheduler: LRScheduler | None = None,
     config_to_log: dict | None = None,
+    wandb_config: dict | None = None,
 ) -> pl.Trainer:
     """Hand off to Lightning."""
 
     # - create the trainer
-    trainer = create_trainer(fit_config, True)
+    trainer = create_trainer(fit_config, wandb_config, val_available=True)
     if config_to_log is not None and trainer.logger is not None:
         trainer.logger.log_hyperparams(config_to_log)
 
@@ -251,18 +252,9 @@ class LearnThePES(pl.LightningModule):
         model.load_state_dict(state_dict)
 
 
-def wandb_available():
-    try:
-        import wandb  # noqa: F401
-        # TODO: login?
-
-        return True
-    except ImportError:
-        return False
-
-
 def create_trainer(
     fit_config: FittingOptions,
+    wandb_config: dict | None = None,
     val_available: bool = False,
 ) -> pl.Trainer:
     if val_available:
@@ -306,7 +298,9 @@ def create_trainer(
     # TODO intelligently override the callbacks
     trainer_kwargs = {**defaults, **fit_config.trainer_kwargs}
 
-    if "logger" not in trainer_kwargs and wandb_available():
-        trainer_kwargs["logger"] = pytorch_lightning.loggers.WandbLogger()
+    if wandb_config is not None:
+        trainer_kwargs["logger"] = pytorch_lightning.loggers.WandbLogger(
+            **wandb_config
+        )
 
     return pl.Trainer(**trainer_kwargs)

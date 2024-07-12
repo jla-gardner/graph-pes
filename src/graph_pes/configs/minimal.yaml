@@ -37,3 +37,8 @@ fitting:
 
     loader_kwargs:
         batch_size: 64
+
+# configure weights and biases
+wandb:
+    project: graph-pes
+    tags: [minimal, qm7, schnet]

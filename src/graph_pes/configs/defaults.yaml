@@ -23,3 +23,5 @@ fitting:
         persistent_workers: false
         batch_size: 4
         pin_memory: false
+
+wandb: {}
