@@ -92,19 +92,22 @@ def extract_config_from_command_line():
 def train_from_config(config: Config):
     logger.info(config)
 
-    model = config.instantiate_model()
+    model = config.instantiate_model()  # gets logged later
 
     data = config.instantiate_data()
     logger.info(data)
 
     optimizer = config.fitting.instantiate_optimizer()
-    logger.info(optimizer)
+    logger.info(f"Optimizer\n{optimizer}")
 
     scheduler = config.fitting.instantiate_scheduler()
-    logger.info(scheduler)
+    if scheduler is not None:
+        logger.info(f"Scheduler\n{scheduler}")
+    else:
+        logger.info("No learning rate scheduler specified.")
 
     total_loss = config.instantiate_loss()
-    logger.info(total_loss)
+    logger.info(f"Loss\n{total_loss}")
 
     train_with_lightning(
         model,
