@@ -63,11 +63,10 @@ def train_with_lightning(
 
     # - maybe do some pre-fitting
     if fit_config.pre_fit_model:
-        # TODO: log
         pre_fit_dataset = data.train
         if fit_config.max_n_pre_fit is not None:
             pre_fit_dataset = pre_fit_dataset.sample(fit_config.max_n_pre_fit)
-        logger.info("Pre-fitting the model")
+        logger.info(f"Pre-fitting the model on {len(pre_fit_dataset)} samples")
         model.pre_fit(pre_fit_dataset)
 
     # - log the model info
