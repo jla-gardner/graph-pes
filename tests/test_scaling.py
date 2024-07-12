@@ -15,8 +15,8 @@ def test_scaling():
 
     # set the scaling terms for H and C
     with torch.no_grad():
-        model._per_element_scaling[1] = 0.5
-        model._per_element_scaling[6] = 2.0
+        model.per_element_scaling[1] = 0.5
+        model.per_element_scaling[6] = 2.0
 
     graph = to_atomic_graph(molecule("CH4"), cutoff=3)
     assert torch.equal(

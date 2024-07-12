@@ -10,6 +10,7 @@ from graph_pes.graphs.operations import (
 )
 from graph_pes.models.scaling import AutoScaledPESModel
 from graph_pes.nn import MLP, PerElementEmbedding, ShiftedSoftplus
+from graph_pes.util import uniform_repr
 
 from .distances import DistanceExpansion, GaussianSmearing
 
@@ -227,3 +228,12 @@ class SchNet(AutoScaledPESModel):
             h = h + interaction(h, d, graph)
 
         return self.read_out(h)
+
+    def __repr__(self) -> str:
+        return uniform_repr(
+            self.__class__.__name__,
+            chemical_embedding=self.chemical_embedding,
+            interactions=self.interactions,
+            read_out=self.read_out,
+            per_element_scaling=self.per_element_scaling,
+        )

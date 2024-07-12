@@ -31,14 +31,14 @@ class AutoScaledPESModel(GraphPESModel, ABC):
 
     def __init__(self):
         super().__init__()
-        self._per_element_scaling = PerElementParameter.of_length(
+        self.per_element_scaling = PerElementParameter.of_length(
             1,
             default_value=1.0,
         )
 
     def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
         raw_energies = self.predict_unscaled_energies(graph).squeeze()
-        scales = self._per_element_scaling[graph["atomic_numbers"]].squeeze()
+        scales = self.per_element_scaling[graph["atomic_numbers"]].squeeze()
         return raw_energies * scales
 
     @abstractmethod
@@ -82,7 +82,7 @@ class AutoScaledPESModel(GraphPESModel, ABC):
                 graph_batch["energy"], graph_batch
             )
             for Z, var in variances.items():
-                self._per_element_scaling[Z] = var**0.5
+                self.per_element_scaling[Z] = var**0.5
 
         else:
             model_name = self.__class__.__name__

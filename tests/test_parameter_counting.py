@@ -47,7 +47,7 @@ def test_scaling():
     # the model should have a single parameter: the _per_element_scaling
     params = list(model.parameters())
     assert len(params) == 1
-    assert params[0] is model._per_element_scaling
+    assert params[0] is model.per_element_scaling
 
     # there should be no countable values in this parameter
     assert params[0].numel() == 0
