@@ -5,12 +5,10 @@ from typing import Literal
 
 import numpy as np
 from load_atoms import load_dataset
-from locache import persist
 
 from graph_pes.data.dataset import ASEDataset, FittingData
 
 
-@persist
 def load_atoms_datasets(
     id: str | Path,
     cutoff: float,

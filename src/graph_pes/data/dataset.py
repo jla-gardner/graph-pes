@@ -6,6 +6,7 @@ from typing import Iterator, Protocol, Sequence, TypeVar
 
 import ase
 import torch.utils.data
+from locache import persist
 
 from graph_pes.graphs import LabelledGraph
 from graph_pes.graphs.keys import ALL_LABEL_KEYS, LabelKey
@@ -202,11 +203,9 @@ class ASEDataset(LabelledGraphDataset):
 
     def setup(self):
         if self.pre_transform:
-            logger.info("Pre-transforming ASE dataset to graphs...")
-            self.graphs = [
-                to_atomic_graph(atoms, cutoff=self.cutoff)
-                for atoms in self.structures
-            ]
+            self.graphs = pre_transform_structures(
+                self.structures, cutoff=self.cutoff
+            )
 
     def __getitem__(self, index: int) -> LabelledGraph:
         if self.pre_transform:
@@ -222,3 +221,15 @@ class ASEDataset(LabelledGraphDataset):
 class FittingData:
     train: LabelledGraphDataset
     valid: LabelledGraphDataset
+
+
+@persist
+def pre_transform_structures(
+    structures: SizedDataset[ase.Atoms],
+    cutoff: float = 5.0,
+) -> list[LabelledGraph]:
+    logger.info(
+        f"Caching neighbour lists for {len(structures)} structures "
+        f"with cutoff {cutoff}"
+    )
+    return [to_atomic_graph(atoms, cutoff=cutoff) for atoms in structures]

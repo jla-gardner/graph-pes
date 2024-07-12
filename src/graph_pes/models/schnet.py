@@ -182,7 +182,7 @@ class SchNet(AutoScaledPESModel):
         Number of features used for the radial basis expansion.
     cutoff
         Neighborhood cutoff radius.
-    num_interactions
+    layers
         Number of interaction blocks to apply.
     expansion
         The type of radial basis expansion to use. Defaults to
