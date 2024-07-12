@@ -47,7 +47,6 @@ def test_integration(model):
             max_epochs=2,
             accelerator="cpu",
             callbacks=[],
-            logger=None,
         ),
         pre_fit_model=False,
     )

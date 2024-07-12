@@ -1,6 +1,7 @@
 # minimal.yaml:
 #    a minimal configuration to pass to graph-pes-train
 #
+#
 # Here we train a SchNet model on the energy labels of QM7 structures
 # There is no need to learn per-atom offsets, since the energy labels on
 # QM7 are **atomisation energies**, and hence the energies of isolated atoms

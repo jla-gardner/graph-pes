@@ -5,6 +5,7 @@ build
 
 docs/build
 dist
+graph-pes-results
 
 .pytest_cache
 coverage.xml

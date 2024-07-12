@@ -1,3 +1,7 @@
+general:
+    seed: 42
+    root_dir: "graph-pes-results"
+
 fitting:
     pre_fit_model: true
     max_n_pre_fit: 5_000

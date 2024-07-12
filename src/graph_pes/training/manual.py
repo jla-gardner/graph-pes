@@ -22,7 +22,7 @@ from graph_pes.graphs.operations import (
 from graph_pes.logger import logger
 from graph_pes.training.loss import RMSE, Loss, TotalLoss
 from graph_pes.training.opt import Adam, Optimizer
-from graph_pes.training.ptl import train_with_lightning
+from graph_pes.training.ptl import create_trainer, train_with_lightning
 
 
 # TODO: add logger folder
@@ -106,17 +106,20 @@ def train_the_model(
         trainer_kwargs=trainer_options,
         loader_kwargs=dict(batch_size=batch_size),
     )
+    trainer = create_trainer(
+        early_stopping_patience=100,
+        val_available=True,
+        kwarg_overloads=trainer_options,
+    )
     train_with_lightning(
+        trainer,
         model,
         data=FittingData(train_data, val_data),
         loss=total_loss,
         fit_config=options,
         optimizer=optimizer,
         scheduler=None,
-        config_to_log=config_to_log,
     )
-
-    # TOOD: need to test too
 
 
 def process_loss(

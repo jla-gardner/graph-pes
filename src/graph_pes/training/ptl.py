@@ -4,8 +4,6 @@ from pathlib import Path
 from typing import Literal
 
 import pytorch_lightning as pl
-import pytorch_lightning.callbacks
-import pytorch_lightning.loggers
 import torch
 from graph_pes.config import FittingOptions
 from graph_pes.core import GraphPESModel, get_predictions
@@ -23,26 +21,19 @@ from pytorch_lightning.callbacks import (
     ModelCheckpoint,
     RichProgressBar,
 )
+from pytorch_lightning.loggers import Logger
 from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
 
 
 def train_with_lightning(
+    trainer: pl.Trainer,
     model: GraphPESModel,
     data: FittingData,
     loss: TotalLoss,
     fit_config: FittingOptions,
     optimizer: Optimizer,
     scheduler: LRScheduler | None = None,
-    config_to_log: dict | None = None,
-    wandb_config: dict | None = None,
-) -> pl.Trainer:
-    """Hand off to Lightning."""
-
-    # - create the trainer
-    trainer = create_trainer(fit_config, wandb_config, val_available=True)
-    if config_to_log is not None and trainer.logger is not None:
-        trainer.logger.log_hyperparams(config_to_log)
-
+):
     # - get the data ready in a way that is compatible with
     #   multi-GPU training
     if trainer.local_rank == 0:
@@ -80,8 +71,6 @@ def train_with_lightning(
 
     # - load the best weights
     task.load_best_weights(model, trainer)
-
-    return trainer
 
 
 class LearnThePES(pl.LightningModule):
@@ -252,12 +241,15 @@ class LearnThePES(pl.LightningModule):
 
 
 def create_trainer(
-    fit_config: FittingOptions,
-    wandb_config: dict | None = None,
+    early_stopping_patience: int | None = None,
+    kwarg_overloads: dict | None = None,
     val_available: bool = False,
+    logger: Logger | None = None,
+    output_dir: Path | None = None,
 ) -> pl.Trainer:
     if val_available:
         default_checkpoint = ModelCheckpoint(
+            dirpath=output_dir,
             monitor="val/loss/total",
             filename="best",
             mode="min",
@@ -266,6 +258,7 @@ def create_trainer(
         )
     else:
         default_checkpoint = ModelCheckpoint(
+            dirpath=output_dir,
             filename="best",
             mode="min",
             save_top_k=1,
@@ -277,29 +270,21 @@ def create_trainer(
         default_checkpoint,
         RichProgressBar(),
     ]
-    if fit_config.early_stopping_patience is not None:
+    if early_stopping_patience is not None:
         callbacks.append(
             EarlyStopping(
                 monitor="val/loss/total",
-                patience=fit_config.early_stopping_patience,
+                patience=early_stopping_patience,
                 mode="min",
                 min_delta=1e-6,
             )
         )
 
     defaults = {
-        "accelerator": "auto",
-        "max_epochs": 100,
         "enable_model_summary": False,
         "callbacks": callbacks,
     }
 
     # TODO intelligently override the callbacks
-    trainer_kwargs = {**defaults, **fit_config.trainer_kwargs}
-
-    if wandb_config is not None:
-        trainer_kwargs["logger"] = pytorch_lightning.loggers.WandbLogger(
-            **wandb_config
-        )
-
-    return pl.Trainer(**trainer_kwargs)
+    trainer_kwargs = {**defaults, **(kwarg_overloads or {})}
+    return pl.Trainer(**trainer_kwargs, logger=logger)

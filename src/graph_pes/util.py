@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import copy
+import random
+import string
 import sys
 import warnings
 from contextlib import contextmanager
@@ -179,3 +181,14 @@ def nested_merge(a: dict, b: dict):
             new_dict[key] = value
 
     return new_dict
+
+
+def random_id():
+    # a random, wandb-style short-ID
+
+    def random_string(n):
+        return "".join(
+            random.choices(string.ascii_lowercase + string.digits, k=n)
+        )
+
+    return random_string(8)
