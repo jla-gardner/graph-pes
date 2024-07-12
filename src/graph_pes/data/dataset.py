@@ -10,7 +10,9 @@ from locache import persist
 
 from graph_pes.graphs import LabelledGraph
 from graph_pes.graphs.keys import ALL_LABEL_KEYS, LabelKey
+from graph_pes.graphs.operations import available_labels
 from graph_pes.logger import logger
+from graph_pes.util import uniform_repr
 
 from .io import to_atomic_graph
 
@@ -208,19 +210,29 @@ class ASEDataset(LabelledGraphDataset):
             )
 
     def __getitem__(self, index: int) -> LabelledGraph:
-        if self.pre_transform:
-            assert self.graphs is not None
+        if self.graphs is not None:
             return self.graphs[index]
         return to_atomic_graph(self.structures[index], cutoff=self.cutoff)
 
     def __len__(self) -> int:
         return len(self.structures)
 
+    def __repr__(self) -> str:
+        labels = available_labels(self[0])
+        return f"ASEDataset({len(self):,}, labels={labels})"
+
 
 @dataclass
 class FittingData:
     train: LabelledGraphDataset
     valid: LabelledGraphDataset
+
+    def __repr__(self) -> str:
+        return uniform_repr(
+            self.__class__.__name__,
+            train=self.train,
+            valid=self.valid,
+        )
 
 
 @persist

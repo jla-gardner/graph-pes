@@ -372,10 +372,6 @@ def structure_sizes(batch: AtomicGraph) -> Tensor:
     return batch[keys.PTR][1:] - batch[keys.PTR][:-1]  # type: ignore
 
 
-def get_existing_properties(graph: LabelledGraph) -> list[keys.LabelKey]:
-    return [p for p in keys.ALL_LABEL_KEYS if p in graph]
-
-
 def split_over_neighbours(
     x: Tensor,  # [n_atoms, dim]
     graph: AtomicGraph,
@@ -384,6 +380,11 @@ def split_over_neighbours(
 
 
 ###################### making things look nice ######################
+
+
+def available_labels(graph: AtomicGraph) -> list[keys.LabelKey]:
+    """Get the labels that are available on the ``graph``."""
+    return [label for label in keys.ALL_LABEL_KEYS if label in graph]
 
 
 class _AtomicGraph_Impl(dict):
@@ -401,7 +402,7 @@ class _AtomicGraph_Impl(dict):
         info["edges"] = self[keys.NEIGHBOUR_INDEX].shape[1]
         info["has_cell"] = has_cell(self)
 
-        labels = [label for label in keys.ALL_LABEL_KEYS if label in self]
+        labels = available_labels(self)
         if labels:
             info["labels"] = labels
 
