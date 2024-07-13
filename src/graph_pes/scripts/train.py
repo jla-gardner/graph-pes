@@ -51,7 +51,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def extract_config_from_command_line():
+def extract_config_from_command_line() -> Config:
     args = parse_args()
 
     # load default config

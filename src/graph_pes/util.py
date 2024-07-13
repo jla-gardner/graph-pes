@@ -184,11 +184,10 @@ def nested_merge(a: dict, b: dict):
 
 
 def random_id():
-    # a random, wandb-style short-ID
+    # a random selection of 8 chars from lower case letters and digits
 
-    def random_string(n):
-        return "".join(
-            random.choices(string.ascii_lowercase + string.digits, k=n)
-        )
+    # seed with the current time
+    rng = random.Random()
+    rng.seed()
 
-    return random_string(8)
+    return "".join(rng.choices(string.ascii_lowercase + string.digits, k=8))
