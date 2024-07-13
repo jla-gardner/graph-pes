@@ -20,12 +20,8 @@ MAX_Z = 118
 
 @overload
 def pairs(a: Sequence[T]) -> Iterator[tuple[T, T]]: ...
-
-
 @overload
 def pairs(a: Tensor) -> Iterator[tuple[Tensor, Tensor]]: ...
-
-
 def pairs(a) -> Iterator[tuple[T, T] | tuple[Tensor, Tensor]]:
     """
     Iterate over pairs of elements in `a`

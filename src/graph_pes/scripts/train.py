@@ -6,14 +6,15 @@ from pathlib import Path
 from typing import Any
 
 import pytorch_lightning
-import wandb
 import yaml
-from graph_pes.config import Config
+from graph_pes.config import Config, get_default_config_values
 from graph_pes.deploy import deploy_model
 from graph_pes.logger import logger
 from graph_pes.training.ptl import create_trainer, train_with_lightning
 from graph_pes.util import nested_merge, random_id
 from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
+
+import wandb
 
 
 def parse_args():
@@ -55,8 +56,7 @@ def extract_config_from_command_line() -> Config:
     args = parse_args()
 
     # load default config
-    with open(Path(__file__).parent.parent / "configs/defaults.yaml") as f:
-        defaults: dict[str, Any] = yaml.safe_load(f)
+    defaults = get_default_config_values()
 
     # load user configs
     user_configs: list[dict[str, Any]] = []

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, TypeVar, Union
 
 import dacite
@@ -534,3 +535,8 @@ class Config:
                 raise ValueError("# TODO")
 
             return TotalLoss(losses, weights)
+
+
+def get_default_config_values() -> dict[str, Any]:
+    with open(Path(__file__).parent / "configs/defaults.yaml") as f:
+        return yaml.safe_load(f)
