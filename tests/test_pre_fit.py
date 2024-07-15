@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
+import pytest
 import torch
+from ase.build import molecule
+from graph_pes.data.io import to_atomic_graph
 from graph_pes.graphs.graph_typing import LabelledBatch, LabelledGraph
 from graph_pes.graphs.operations import number_of_structures, to_batch
+from graph_pes.models import LennardJonesMixture
 from graph_pes.models.pre_fit import (
     MIN_VARIANCE,
     guess_per_element_mean_and_var,
@@ -87,3 +93,26 @@ def test_clamping():
     # ensure no variance is less than the value we choose to clamp to
     for value in variances.values():
         assert value >= MIN_VARIANCE
+
+
+def test(tmp_path: Path):
+    model = LennardJonesMixture()
+    assert model.elements_seen == []
+
+    # show the model C and H
+    methane = molecule("CH4")
+    methane.info["energy"] = 1.0
+    model.pre_fit([to_atomic_graph(methane, cutoff=3.0)])
+    assert model.elements_seen == ["H", "C"]
+
+    # check that these are persisted over save and load
+    torch.save(model, tmp_path / "model.pt")
+    loaded = torch.load(tmp_path / "model.pt")
+    assert loaded.elements_seen == ["H", "C"]
+
+    # show the model C, H, and O
+    acetaldehyde = molecule("CH3CHO")
+    acetaldehyde.info["energy"] = 2.0
+    with pytest.warns(UserWarning, match="has already been pre-fitted"):
+        model.pre_fit([to_atomic_graph(acetaldehyde, cutoff=3.0)])
+    assert model.elements_seen == ["H", "C", "O"]

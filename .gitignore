@@ -3,13 +3,14 @@ __pycache__
 **/*.egg-info
 build
 
+
 docs/build
 dist
 graph-pes-results
 
 .pytest_cache
 coverage.xml
-.coverage
+.coverage*
 
 *.extxyz
 *.npz

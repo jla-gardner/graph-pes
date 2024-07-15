@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Sequence, overload
 
 import torch
+from ase.data import chemical_symbols
 from torch import Tensor, nn
 
 from graph_pes.data.dataset import LabelledGraphDataset
@@ -114,24 +115,7 @@ class GraphPESModel(nn.Module, ABC):
             The training data.
         """
 
-        if self._has_been_pre_fit.item():
-            model_name = self.__class__.__name__
-            warnings.warn(
-                f"This model ({model_name}) has already been pre-fitted. "
-                "This, and any subsequent, call to pre_fit will be ignored.",
-                stacklevel=2,
-            )
-            return
-
-        if len(graphs) > 10_000:
-            warnings.warn(
-                f"Pre-fitting on a large dataset ({len(graphs):,} structures). "
-                "This may take some time. Consider using a smaller, "
-                "representative collection of structures for pre-fitting. "
-                "See LabelledGraphDataset.sample() for more information.",
-                stacklevel=2,
-            )
-
+        # 1. get the graphs as a single batch
         if isinstance(graphs, LabelledGraphDataset):
             graphs = list(graphs)
         if isinstance(graphs, dict):  # noqa: SIM108
@@ -141,10 +125,31 @@ class GraphPESModel(nn.Module, ABC):
             # we have a list of graphs: convert to a batch
             graph_batch = to_batch(graphs)  # type: ignore
 
-        self._has_been_pre_fit.fill_(True)
-        self.model_specific_pre_fit(graph_batch)
+        # 2a. if the graph has already been pre-fitted: warn
+        if self._has_been_pre_fit.item():
+            model_name = self.__class__.__name__
+            warnings.warn(
+                f"This model ({model_name}) has already been pre-fitted. "
+                "This, and any subsequent, call to pre_fit will be ignored.",
+                stacklevel=2,
+            )
 
-        # register all per-element parameters
+        # 2b. if the graph has not been pre-fitted: pre-fit
+        else:
+            if len(graphs) > 10_000:
+                warnings.warn(
+                    f"Pre-fitting on a large dataset ({len(graphs):,} graphs). "
+                    "This may take some time. Consider using a smaller, "
+                    "representative collection of structures for pre-fitting. "
+                    "Set ``max_n_pre_fit`` in your config, or "
+                    "see LabelledGraphDataset.sample() for more information.",
+                    stacklevel=2,
+                )
+
+            self._has_been_pre_fit.fill_(True)
+            self.model_specific_pre_fit(graph_batch)
+
+        # 3. finally, register all per-element parameters
         for param in self.parameters():
             if isinstance(param, PerElementParameter):
                 param.register_elements(
@@ -182,6 +187,17 @@ class GraphPESModel(nn.Module, ABC):
         if isinstance(self, AdditionModel):
             return AdditionModel([*self.models, other])
         return AdditionModel([self, other])
+
+    @torch.jit.unused
+    @property
+    def elements_seen(self) -> list[str]:
+        """The elements that the model has seen during training."""
+
+        Zs = set()
+        for param in self.parameters():
+            if isinstance(param, PerElementParameter):
+                Zs.update(param._accessed_Zs)
+        return [chemical_symbols[Z] for Z in sorted(Zs)]
 
 
 class AdditionModel(GraphPESModel):
