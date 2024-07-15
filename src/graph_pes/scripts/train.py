@@ -15,7 +15,7 @@ from graph_pes.deploy import deploy_model
 from graph_pes.logger import logger
 from graph_pes.training.ptl import create_trainer, train_with_lightning
 from graph_pes.util import nested_merge, random_id
-from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
+from pytorch_lightning.loggers import CSVLogger, WandbLogger
 
 warnings.filterwarnings(
     "ignore", message=".*There is a wandb run already in progress.*"
@@ -101,7 +101,7 @@ def train_from_config(config: Config):
     pytorch_lightning.seed_everything(config.general.seed)
 
     # time to the millisecond
-    now = datetime.now().strftime("%F %T.%f")[:3]
+    now = datetime.now().strftime("%F %T.%f")[:-3]
     logger.info(f"Started training at {now}")
 
     logger.info(config)
@@ -138,7 +138,7 @@ def train_from_config(config: Config):
         if config.wandb is not None:
             lightning_logger = WandbLogger()
         else:
-            lightning_logger = TensorBoardLogger(
+            lightning_logger = CSVLogger(
                 version=run_id, save_dir=output_dir, name=""
             )
 

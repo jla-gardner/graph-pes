@@ -86,13 +86,15 @@ def _instantiate(thing: str | dict[str, Any]) -> Any:
             return _import_and_maybe_call(s), True
         # if we can't import it, return the string and a failure flag
         # if it looks like we should have been able to import it, warn
+        # the user unless its an existing file path
         except ImportError:
-            warnings.warn(
-                f"Encountered a string ({s}) that looks like it "
-                "could be meant to be imported - we couldn't do "
-                "this. This may cause issues later.",
-                stacklevel=2,
-            )
+            if not Path(s).exists():
+                warnings.warn(
+                    f"Encountered a string ({s}) that looks like it "
+                    "could be meant to be imported - we couldn't do "
+                    "this. This may cause issues later.",
+                    stacklevel=2,
+                )
             return s, False
 
     def _from_dict(d: dict[str, Any]) -> tuple[Any, bool]:
