@@ -469,8 +469,11 @@ class AtomicOneHot(torch.nn.Module):
 
         with torch.no_grad():
             if (internal_idx == 1234).any():
+                unknown_Z = torch.unique(Z[internal_idx == 1234])
+
                 raise ValueError(
-                    f"Unknown element. Expected one of {self.elements}"
+                    f"Unknown elements: {unknown_Z}. "
+                    f"Expected one of {self.elements}"
                 )
 
         return torch.nn.functional.one_hot(

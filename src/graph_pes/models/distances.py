@@ -129,7 +129,7 @@ class Bessel(DistanceExpansion):
     def expand(self, r: torch.Tensor) -> torch.Tensor:
         numerator = self.pre_factor * torch.sin(r * self.frequencies)
         # we avoid dividing by zero by replacing any zero elements with 1
-        denominator = torch.where(r == 0, torch.tensor(1.0), r)
+        denominator = torch.where(r == 0, torch.tensor(1.0, device=r.device), r)
         return numerator / denominator
 
 
@@ -374,7 +374,9 @@ class PolynomialEnvelope(Envelope):
     def forward(self, r: torch.Tensor) -> torch.Tensor:
         powers = (r.unsqueeze(-1) / self.cutoff) ** self.powers
         envelope = 1 + (powers * self.coefficients).sum(dim=-1)
-        return torch.where(r <= self.cutoff, envelope, torch.tensor(0.0))
+        return torch.where(
+            r <= self.cutoff, envelope, torch.tensor(0.0, device=r.device)
+        )
 
     def __repr__(self):
         return f"PolynomialEnvelope(cutoff={self.cutoff}, p={self.p})"
