@@ -470,10 +470,12 @@ class AtomicOneHot(torch.nn.Module):
         with torch.no_grad():
             if (internal_idx == 1234).any():
                 raise ValueError(
-                    f"Unknown atomic number. Expected one of {self.elements}"
+                    f"Unknown element. Expected one of {self.elements}"
                 )
 
-        return torch.nn.functional.one_hot(internal_idx, self.n_elements)
+        return torch.nn.functional.one_hot(
+            internal_idx, self.n_elements
+        ).float()
 
     def __repr__(self):
         return uniform_repr(

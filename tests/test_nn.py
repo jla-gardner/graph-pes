@@ -4,6 +4,7 @@ import pytest
 import torch
 from graph_pes.nn import (
     MLP,
+    AtomicOneHot,
     PerElementEmbedding,
     PerElementParameter,
     parse_activation,
@@ -83,3 +84,16 @@ def test_activations():
         ValueError, match="Activation function ZZZ not found in `torch.nn`."
     ):
         parse_activation("ZZZ")
+
+
+def test_one_hot():
+    one_hot = AtomicOneHot(["H", "C", "O"])
+
+    Z = torch.tensor([1, 6, 8])
+    Z_emb = one_hot(Z)
+
+    assert Z_emb.shape == (3, 3)
+    assert Z_emb.allclose(torch.eye(3))
+
+    with pytest.raises(ValueError, match="Unknown element"):
+        one_hot(torch.tensor([2]))
