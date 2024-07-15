@@ -4,8 +4,8 @@ import torch
 
 from graph_pes.graphs import AtomicGraph
 from graph_pes.graphs.operations import (
+    index_over_neighbours,
     neighbour_distances,
-    split_over_neighbours,
     sum_over_neighbours,
 )
 from graph_pes.models.scaling import AutoScaledPESModel
@@ -45,7 +45,7 @@ class CFConv(torch.nn.Module):
 
     Parameters
     ----------
-    filter_generator : nn.Module
+    filter_generator
         The filter function :math:`\mathbb{F}`.
     """
 
@@ -60,7 +60,7 @@ class CFConv(torch.nn.Module):
         graph: AtomicGraph,
     ) -> torch.Tensor:  # (n_atoms, F)
         edge_features = self.filter_generator(edge_distances)  # (E, F)
-        neighbour_features = split_over_neighbours(
+        neighbour_features = index_over_neighbours(
             node_features, graph
         )  # (E, F)
 
@@ -106,7 +106,7 @@ class SchNetInteraction(torch.nn.Module):
 
     def __init__(
         self,
-        n_features: int,
+        node_features: int,
         expansion_features: int,
         cutoff: float,
         basis_type: type[DistanceExpansion],
@@ -116,14 +116,14 @@ class SchNetInteraction(torch.nn.Module):
         # schnet interaction block's are composed of 3 elements
 
         # 1. linear transform to get new node features
-        self.linear = torch.nn.Linear(n_features, n_features, bias=False)
+        self.linear = torch.nn.Linear(node_features, node_features, bias=False)
 
         # 2. cfconv to mix these new features with distances information,
         # and aggregate over neighbors to create completely new node features
         filter_generator = torch.nn.Sequential(
             basis_type(expansion_features, cutoff),
             MLP(
-                [expansion_features, n_features, n_features],
+                [expansion_features, node_features, node_features],
                 activation=ShiftedSoftplus(),
             ),
         )
@@ -131,7 +131,7 @@ class SchNetInteraction(torch.nn.Module):
 
         # 3. mlp to further embed these new node features
         self.mlp = MLP(
-            [n_features, n_features, n_features],
+            [node_features, node_features, node_features],
             activation=ShiftedSoftplus(),
         )
 
@@ -143,9 +143,11 @@ class SchNetInteraction(torch.nn.Module):
     ):
         # 1. linear transform to get new node features
         h = self.linear(node_features)
+
         # 2. cfconv to mix these new features with distances information,
         # and aggregate over neighbors to create completely new node features
         h = self.cfconv(h, neighbour_distances, graph)
+
         # 3. mlp to further embed these new node features
         return self.mlp(h)
 

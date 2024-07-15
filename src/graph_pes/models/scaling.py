@@ -8,12 +8,8 @@ import torch
 
 from graph_pes.core import GraphPESModel
 from graph_pes.data.dataset import LabelledGraphDataset
-from graph_pes.graphs.graph_typing import (
-    AtomicGraph,
-    LabelledBatch,
-    LabelledGraph,
-)
-from graph_pes.graphs.operations import is_batch, to_batch
+from graph_pes.graphs.graph_typing import AtomicGraph, LabelledGraph
+from graph_pes.graphs.operations import to_batch
 from graph_pes.models.pre_fit import guess_per_element_mean_and_var
 from graph_pes.nn import PerElementParameter
 
@@ -60,7 +56,7 @@ class AutoScaledPESModel(GraphPESModel, ABC):
     @torch.no_grad()
     def pre_fit(
         self,
-        graphs: LabelledGraphDataset | Sequence[LabelledGraph] | LabelledBatch,
+        graphs: LabelledGraphDataset | Sequence[LabelledGraph],
     ):
         _was_already_prefit = self._has_been_pre_fit.item()
         super().pre_fit(graphs)
@@ -70,10 +66,7 @@ class AutoScaledPESModel(GraphPESModel, ABC):
 
         if isinstance(graphs, LabelledGraphDataset):
             graphs = list(graphs)
-        if isinstance(graphs, dict) and is_batch(graphs):
-            graph_batch = graphs
-        else:
-            graph_batch = to_batch(graphs)  # type: ignore
+        graph_batch = to_batch(graphs)
 
         # use Ridge regression to calculate standard deviations in the
         # per-element contributions to the total energy

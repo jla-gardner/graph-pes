@@ -8,9 +8,9 @@ import torch
 from e3nn import o3
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import (
+    index_over_neighbours,
     neighbour_distances,
     neighbour_vectors,
-    split_over_neighbours,
     sum_over_neighbours,
 )
 from graph_pes.models import distances
@@ -249,7 +249,7 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         graph: AtomicGraph,
     ) -> Tensor:  # [n_atoms, irreps_out]
         # 1. message creation
-        neighbour_embeddings = split_over_neighbours(
+        neighbour_embeddings = index_over_neighbours(
             self.pre_message_linear(node_embeddings), graph
         )
         weights = self.weight_generator(neighbour_distances.unsqueeze(-1))

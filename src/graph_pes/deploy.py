@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import e3nn
+import e3nn.util.jit
 import torch
 
 from graph_pes.core import GraphPESModel

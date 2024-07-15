@@ -372,7 +372,7 @@ def structure_sizes(batch: AtomicGraph) -> Tensor:
     return batch[keys.PTR][1:] - batch[keys.PTR][:-1]  # type: ignore
 
 
-def split_over_neighbours(
+def index_over_neighbours(
     x: Tensor,  # [n_atoms, dim]
     graph: AtomicGraph,
 ) -> Tensor:  # [n_edges, dim]

@@ -89,7 +89,7 @@ class GraphPESModel(nn.Module, ABC):
 
     def pre_fit(
         self,
-        graphs: LabelledGraphDataset | Sequence[LabelledGraph] | LabelledBatch,
+        graphs: LabelledGraphDataset | Sequence[LabelledGraph],
     ):
         """
         Pre-fit the model to the training data.
@@ -118,12 +118,7 @@ class GraphPESModel(nn.Module, ABC):
         # 1. get the graphs as a single batch
         if isinstance(graphs, LabelledGraphDataset):
             graphs = list(graphs)
-        if isinstance(graphs, dict):  # noqa: SIM108
-            # crude check to see if this is a batch
-            graph_batch = graphs
-        else:
-            # we have a list of graphs: convert to a batch
-            graph_batch = to_batch(graphs)  # type: ignore
+        graph_batch = to_batch(graphs)
 
         # 2a. if the graph has already been pre-fitted: warn
         if self._has_been_pre_fit.item():
