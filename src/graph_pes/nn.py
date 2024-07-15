@@ -448,41 +448,35 @@ class AtomicOneHot(torch.nn.Module):
         The total number of expected atomic numbers.
     """
 
-    def __init__(self, n_elements: int):
+    def __init__(self, elements: list[str]):
         super().__init__()
 
-        self.n_elements = n_elements
+        self.elements = elements
+        self.n_elements = len(elements)
+
         self.Z_to_idx: Tensor
         self.register_buffer(
             "Z_to_idx",
             # deliberately crazy value to catch errors
             torch.full((MAX_Z + 1,), fill_value=1234),
         )
-
-    def register_Zs(self, Zs: list[int]):
-        unique_Zs = sorted(set(Zs))
-        if len(unique_Zs) != self.n_elements:
-            raise ValueError(
-                f"Expected {self.n_elements} elements, got "
-                f"{len(unique_Zs)}: {unique_Zs}"
-            )
-
-        for i, Z in enumerate(unique_Zs):
+        for i, symbol in enumerate(elements):
+            Z = atomic_numbers[symbol]
             self.Z_to_idx[Z] = i
 
     def forward(self, Z: Tensor) -> Tensor:
         internal_idx = self.Z_to_idx[Z]
-        return torch.nn.functional.one_hot(internal_idx, self.n_elements)
-        # try:
-        #     return torch.nn.functional.one_hot(internal_idx, self.n_elements)
-        # except IndexError:
-        #     raise ValueError(
-        #         f"Unknown atomic number: {sorted(set(Z.tolist()))}. "
-        #         f"Expected {self.n_elements} elements. "
-        #         "Did you forget to call `register_Zs`?"
-        #     ) from None
 
-    @torch.jit.unused
-    @property
-    def registered_elements(self) -> list[str]:
-        return [chemical_symbols[Z] for Z in self.Z_to_idx if Z <= MAX_Z]
+        with torch.no_grad():
+            if (internal_idx == 1234).any():
+                raise ValueError(
+                    f"Unknown atomic number. Expected one of {self.elements}"
+                )
+
+        return torch.nn.functional.one_hot(internal_idx, self.n_elements)
+
+    def __repr__(self):
+        return uniform_repr(
+            self.__class__.__name__,
+            elements=self.elements,
+        )

@@ -6,8 +6,13 @@ from ase.io import read
 from graph_pes import get_predictions
 from graph_pes.data.io import to_atomic_graphs
 from graph_pes.graphs.operations import to_batch
-from graph_pes.models import LennardJones, Morse, PaiNN, SchNet
-from graph_pes.models.e3nn.nequip import NequIP
+from graph_pes.models import (
+    LennardJones,
+    Morse,
+    PaiNN,
+    SchNet,
+    ZEmbeddingNequIP,
+)
 from graph_pes.models.tensornet import TensorNet
 from graph_pes.training.manual import Loss, train_the_model
 
@@ -17,7 +22,7 @@ models = [
     SchNet(),
     PaiNN(),
     TensorNet(),
-    NequIP(n_elements=1),
+    ZEmbeddingNequIP(),
 ]
 
 

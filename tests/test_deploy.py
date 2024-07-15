@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from pathlib import Path
 
 import pytest
@@ -26,8 +27,9 @@ graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=CUTOFF)
 )
 def test_deploy(model_klass: type[GraphPESModel], tmp_path: Path):
     # 1. instantiate the model
-    kwargs = {"n_elements": 3} if model_klass is NequIP else {}
-    model = model_klass(**kwargs)
+    required_kwargs = defaultdict(dict)
+    required_kwargs[NequIP] = {"elements": ["C", "H", "O"]}
+    model = model_klass(**required_kwargs[model_klass])
     model.pre_fit([graph])  # required by some models before making predictions
 
     # 2. deploy the model

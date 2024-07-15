@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+from collections import defaultdict
 
 import pytest
 import torch
@@ -60,18 +61,22 @@ def test_pre_fit():
 
 
 @pytest.mark.parametrize(
-    "model",
+    "model_klass",
     ALL_MODELS,
     ids=[m.__name__ for m in ALL_MODELS],
 )
-def test_model_serialisation(model: type[GraphPESModel], tmp_path):
-    kwargs = {} if model is not NequIP else {"n_elements": 1}
-    m1 = model(**kwargs)
-    m1.pre_fit(graphs)
+def test_model_serialisation(model_klass: type[GraphPESModel], tmp_path):
+    # 1. instantiate the model
+    required_kwargs = defaultdict(dict)
+    required_kwargs[NequIP] = {"elements": ["Cu"]}
+    kwargs = required_kwargs[model_klass]
+
+    m1 = model_klass(**kwargs)
+    m1.pre_fit(graphs)  # required by some models before making predictions
 
     torch.save(m1.state_dict(), tmp_path / "model.pt")
 
-    m2 = model(**kwargs)
+    m2 = model_klass(**kwargs)
     # check no errors occur
     m2.load_state_dict(torch.load(tmp_path / "model.pt"))
 

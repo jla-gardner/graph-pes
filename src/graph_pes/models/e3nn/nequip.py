@@ -21,7 +21,6 @@ from graph_pes.nn import (
     HaddamardProduct,
     PerElementEmbedding,
 )
-from graph_pes.util import uniform_repr
 from torch import Tensor
 
 warnings.filterwarnings(
@@ -107,45 +106,6 @@ def _nequip_message_tensor_product(
     )
 
 
-class PerElementSelfInteraction(torch.nn.Module):
-    def __init__(
-        self, input_irreps: o3.Irreps, output_irreps: o3.Irreps, n_elements: int
-    ):
-        super().__init__()
-
-        self.one_hot = AtomicOneHot(n_elements)
-        self.tensor_product = o3.FullyConnectedTensorProduct(
-            input_irreps, f"{n_elements}x0e", output_irreps
-        )
-
-    def register_Zs(self, Zs: list[int]):
-        self.one_hot.register_Zs(Zs)
-
-    def forward(
-        self,
-        node_embeddings: Tensor,  # [n_atoms, irreps_in]
-        graph: AtomicGraph,
-    ) -> Tensor:  # [n_atoms, irreps_out]
-        return self.tensor_product(
-            node_embeddings, self.one_hot(graph["atomic_numbers"])
-        )
-
-    # type hints
-    def __call__(
-        self,
-        node_embeddings: Tensor,
-        graph: AtomicGraph,
-    ) -> Tensor:
-        return super().__call__(node_embeddings, graph)
-
-    def __repr__(self):
-        return uniform_repr(
-            self.__class__.__name__,
-            self.tensor_product,
-            elements=self.one_hot.registered_elements,
-        )
-
-
 def build_gate(output_irreps: o3.Irreps):
     """
     Builds an equivariant non-linearity that produces output_irreps.
@@ -199,12 +159,12 @@ def build_gate(output_irreps: o3.Irreps):
 class NequIPMessagePassingLayer(torch.nn.Module):
     def __init__(
         self,
-        starting_node_irreps: o3.Irreps,
+        input_node_irreps: o3.Irreps,
+        Z_embedding_dim: int,
         edge_irreps: o3.Irreps,
         l_max: int,
         n_channels: int,
         cutoff: float,
-        n_elements: int,
     ):
         super().__init__()
 
@@ -224,14 +184,14 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         # 5. Apply a non-linearity to the new central atom embeddings
 
         # each input irreps should have a multiplicity of n_channels:
-        assert all(i.mul == n_channels for i in starting_node_irreps)
+        assert all(i.mul == n_channels for i in input_node_irreps)
 
         # 1. Message creation
         self.pre_message_linear = o3.Linear(
-            starting_node_irreps, starting_node_irreps
+            input_node_irreps, input_node_irreps
         )
         self.message_tensor_product = _nequip_message_tensor_product(
-            node_embedding_irreps=starting_node_irreps,
+            node_embedding_irreps=input_node_irreps,
             edge_embedding_irreps=edge_irreps,
             l_max=l_max,
         )
@@ -264,9 +224,10 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         # 3. Self-interaction
         # create a self interaction that produces the output irreps that
         # are required for the non-linearity
-        # TODO: there are wasted weights here in the first layer!
-        self.self_interaction = PerElementSelfInteraction(
-            starting_node_irreps, self.non_linearity.irreps_in, n_elements
+        self.self_interaction = o3.FullyConnectedTensorProduct(
+            input_node_irreps,
+            f"{Z_embedding_dim}x0e",
+            self.non_linearity.irreps_in,
         )
 
         # 4. Post-message linear
@@ -276,12 +237,13 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         )
 
         # bookkeeping
-        self.irreps_in = starting_node_irreps
+        self.irreps_in = input_node_irreps
         self.irreps_out = self.non_linearity.irreps_out
 
     def forward(
         self,
         node_embeddings: Tensor,  # [n_atoms, irreps_in]
+        Z_embeddings: Tensor,  # [n_atoms, Z_embedding_dim]
         neighbour_distances: Tensor,  # [n_edges,]
         edge_embedding: Tensor,  # [n_edges, edge_irreps]
         graph: AtomicGraph,
@@ -299,7 +261,7 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         total_message = sum_over_neighbours(messages, graph)
 
         # 3. self-interaction
-        self_interaction = self.self_interaction(node_embeddings, graph)
+        self_interaction = self.self_interaction(node_embeddings, Z_embeddings)
 
         # 4. post-message linear and adding
         new_node_embeddings = (
@@ -313,29 +275,36 @@ class NequIPMessagePassingLayer(torch.nn.Module):
     def __call__(
         self,
         node_embeddings: Tensor,
+        Z_embeddings: Tensor,
         neighbour_distances: Tensor,
         edge_embedding: Tensor,
         graph: AtomicGraph,
     ) -> Tensor:
         return super().__call__(
-            node_embeddings, neighbour_distances, edge_embedding, graph
+            node_embeddings,
+            Z_embeddings,
+            neighbour_distances,
+            edge_embedding,
+            graph,
         )
 
 
 @e3nn.util.jit.compile_mode("script")
-class NequIP(AutoScaledPESModel):
+class _BaseNequIP(AutoScaledPESModel):
     def __init__(
         self,
-        n_elements: int,
-        n_channels: int = 16,
-        n_layers: int = 3,
-        cutoff: float = 3.0,
-        l_max: int = 2,
-        allow_odd_parity: bool = True,
+        Z_embedding: torch.nn.Module,
+        Z_embedding_dim: int,
+        n_channels: int,
+        n_layers: int,
+        cutoff: float,
+        l_max: int,
+        allow_odd_parity: bool,
     ):
         super().__init__()
 
-        self.Z_embedding = PerElementEmbedding(n_channels)
+        self.Z_embedding = Z_embedding
+        self.initial_node_embedding = PerElementEmbedding(n_channels)
 
         edge_embedding_irreps = o3.Irreps.spherical_harmonics(
             l_max, p=-1 if allow_odd_parity else 1
@@ -350,12 +319,12 @@ class NequIP(AutoScaledPESModel):
         layers = []
         for _ in range(n_layers):
             layer = NequIPMessagePassingLayer(
-                starting_node_irreps=current_layer_input,  # type: ignore
+                input_node_irreps=current_layer_input,  # type: ignore
                 edge_irreps=edge_embedding_irreps,  # type: ignore
                 l_max=l_max,
                 n_channels=n_channels,
                 cutoff=cutoff,
-                n_elements=n_elements,
+                Z_embedding_dim=Z_embedding_dim,
             )
             layers.append(layer)
             current_layer_input = layer.irreps_out
@@ -368,19 +337,65 @@ class NequIP(AutoScaledPESModel):
         # pre-compute important quantities
         r = neighbour_distances(graph)
         Y = self.edge_embedding(neighbour_vectors(graph))
+        Z_embed = self.Z_embedding(graph["atomic_numbers"])
 
         # initialise the node embeddings...
-        h = self.Z_embedding(graph["atomic_numbers"])
+        node_embed = self.initial_node_embedding(graph["atomic_numbers"])
 
         # ...iteratively update them...
         for layer in self.layers:
-            h = layer(h, r, Y, graph)
+            node_embed = layer(node_embed, Z_embed, r, Y, graph)
 
         # ...and read out the energy
-        return self.readout(h)
+        return self.readout(node_embed)
 
-    def model_specific_pre_fit(self, graphs: AtomicGraph):
-        for layer in self.layers:
-            layer.self_interaction.register_Zs(
-                graphs["atomic_numbers"].tolist()
-            )
+
+@e3nn.util.jit.compile_mode("script")
+class OneHotNequIP(_BaseNequIP):
+    def __init__(
+        self,
+        elements: list[str],
+        n_channels: int = 16,
+        n_layers: int = 3,
+        cutoff: float = 3.0,
+        l_max: int = 2,
+        allow_odd_parity: bool = True,
+    ):
+        assert len(set(elements)) == len(elements), "Found duplicate elements"
+        Z_embedding = AtomicOneHot(elements)
+        Z_embedding_dim = len(elements)
+        super().__init__(
+            Z_embedding,
+            Z_embedding_dim,
+            n_channels,
+            n_layers,
+            cutoff,
+            l_max,
+            allow_odd_parity,
+        )
+
+
+NequIP = OneHotNequIP
+
+
+@e3nn.util.jit.compile_mode("script")
+class ZEmbeddingNequIP(_BaseNequIP):
+    def __init__(
+        self,
+        Z_embed_dim: int = 8,
+        n_channels: int = 16,
+        n_layers: int = 3,
+        cutoff: float = 3.0,
+        l_max: int = 2,
+        allow_odd_parity: bool = True,
+    ):
+        Z_embedding = PerElementEmbedding(Z_embed_dim)
+        super().__init__(
+            Z_embedding,
+            Z_embed_dim,
+            n_channels,
+            n_layers,
+            cutoff,
+            l_max,
+            allow_odd_parity,
+        )
