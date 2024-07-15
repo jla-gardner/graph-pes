@@ -107,3 +107,4 @@ filterwarnings = [
     "ignore::UserWarning:pytorch_lightning",
     "ignore:.*The TorchScript type system doesn't support instance-level annotations on empty non-base types.*",
 ]
+norecursedirs = "tests/helpers"
