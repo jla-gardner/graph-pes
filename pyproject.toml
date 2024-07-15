@@ -32,7 +32,7 @@ dependencies = [
 requires-python = ">=3.8"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov"]
+test = ["pytest", "pytest-cov", "tensorboard"]
 dev = ["notebook", "ruff", "bumpver"]
 doc = [
     "sphinx",
