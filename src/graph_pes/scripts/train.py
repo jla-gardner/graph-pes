@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import warnings
 from pathlib import Path
 from typing import Any
 
 import pytorch_lightning
+import wandb
 import yaml
 from graph_pes.config import Config, get_default_config_values
 from graph_pes.deploy import deploy_model
@@ -14,7 +16,9 @@ from graph_pes.training.ptl import create_trainer, train_with_lightning
 from graph_pes.util import nested_merge, random_id
 from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
 
-import wandb
+warnings.filterwarnings(
+    "ignore", message=".*There is a wandb run already in progress.*"
+)
 
 
 def parse_args():
