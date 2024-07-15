@@ -15,18 +15,11 @@ CUTOFF = 1.5
 graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=CUTOFF)
 
 
-_names, _models = helpers.all_models(expected_elements=["C", "H"])
-
-
 # ignore warnings about lack of energy labels for pre-fitting: not important
 @pytest.mark.filterwarnings(
     "ignore:.*training data does not contain energy labels.*"
 )
-@pytest.mark.parametrize(
-    "model_klass",
-    _models,
-    ids=_names,
-)
+@helpers.parameterise_all_models(expected_elements=["C", "H", "O"])
 def test_deploy(model: GraphPESModel, tmp_path: Path):
     model.pre_fit([graph])  # required by some models before making predictions
 

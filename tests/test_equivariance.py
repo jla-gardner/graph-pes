@@ -1,16 +1,15 @@
+import helpers
 import numpy as np
-import pytest
 import torch
 from ase.build import molecule
 from graph_pes.core import GraphPESModel, get_predictions
 from graph_pes.data.io import to_atomic_graph
-from helpers import all_models
 
 CUTOFF = 1.0
-names, models = all_models(expected_elements=["C", "H"])
 
 
-@pytest.mark.parametrize("model", models, ids=names)
+# @pytest.mark.parametrize("model", models, ids=names)
+@helpers.parameterise_all_models(expected_elements=["H", "C"])
 def test_equivariance(model: GraphPESModel):
     methane = molecule("CH4")
     methane.center(vacuum=10)
