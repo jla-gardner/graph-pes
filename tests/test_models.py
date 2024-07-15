@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import itertools
-from collections import defaultdict
 
 import pytest
 import torch
@@ -14,7 +13,8 @@ from graph_pes.graphs.operations import (
     number_of_atoms,
     number_of_edges,
 )
-from graph_pes.models import ALL_MODELS, LennardJones, Morse, NequIP
+from graph_pes.models import LennardJones, Morse
+from helpers import all_model_factories
 
 structures: list[Atoms] = read("tests/test.xyz", ":")  # type: ignore
 graphs = to_atomic_graphs(structures, cutoff=3)
@@ -60,23 +60,22 @@ def test_pre_fit():
         model.pre_fit(graphs)
 
 
+_names, _factories = all_model_factories(["Cu"])
+
+
 @pytest.mark.parametrize(
     "model_klass",
-    ALL_MODELS,
-    ids=[m.__name__ for m in ALL_MODELS],
+    _factories,
+    ids=_names,
 )
 def test_model_serialisation(model_klass: type[GraphPESModel], tmp_path):
     # 1. instantiate the model
-    required_kwargs = defaultdict(dict)
-    required_kwargs[NequIP] = {"elements": ["Cu"]}
-    kwargs = required_kwargs[model_klass]
-
-    m1 = model_klass(**kwargs)
+    m1 = model_klass()
     m1.pre_fit(graphs)  # required by some models before making predictions
 
     torch.save(m1.state_dict(), tmp_path / "model.pt")
 
-    m2 = model_klass(**kwargs)
+    m2 = model_klass()
     # check no errors occur
     m2.load_state_dict(torch.load(tmp_path / "model.pt"))
 
