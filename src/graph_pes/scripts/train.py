@@ -145,7 +145,7 @@ def train_from_config(config: Config):
         trainer = create_trainer(
             early_stopping_patience=config.fitting.early_stopping_patience,
             logger=lightning_logger,
-            val_available=True,
+            valid_available=True,
             kwarg_overloads=config.fitting.trainer_kwargs,
             output_dir=output_dir,
         )

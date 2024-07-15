@@ -24,6 +24,8 @@ from pytorch_lightning.callbacks import (
 from pytorch_lightning.loggers import Logger
 from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
 
+VALIDATION_LOSS_KEY = "valid/loss/total"
+
 
 def train_with_lightning(
     trainer: pl.Trainer,
@@ -111,7 +113,7 @@ class LearnThePES(pl.LightningModule):
     def forward(self, graphs: AtomicGraphBatch) -> torch.Tensor:
         return self.model(graphs)
 
-    def _step(self, graph: LabelledBatch, prefix: Literal["train", "val"]):
+    def _step(self, graph: LabelledBatch, prefix: Literal["train", "valid"]):
         """
         Get (and log) the losses for a training/validation step.
         """
@@ -123,9 +125,9 @@ class LearnThePES(pl.LightningModule):
             return self.log(
                 f"{prefix}/{name}",
                 value,
-                prog_bar=prefix == "val" and "loss" in name,
+                prog_bar=prefix == "valid" and "loss" in name,
                 on_step=prefix == "train",
-                on_epoch=prefix == "val",
+                on_epoch=prefix == "valid",
                 batch_size=number_of_structures(graph),
             )
 
@@ -144,7 +146,7 @@ class LearnThePES(pl.LightningModule):
             log(f"loss/{name}_component", loss_pair.weighted_loss_value)
 
         # log additional values during validation
-        if prefix == "val":
+        if prefix == "valid":
             with torch.no_grad():
                 for val_loss in self.validation_metrics:
                     value = val_loss(predictions, graph)
@@ -156,7 +158,7 @@ class LearnThePES(pl.LightningModule):
         return self._step(structure, "train")
 
     def validation_step(self, structure: LabelledBatch, _):
-        return self._step(structure, "val")
+        return self._step(structure, "valid")
 
     def configure_optimizers(
         self,
@@ -177,7 +179,7 @@ class LearnThePES(pl.LightningModule):
                 config = {
                     "interval": "epoch",  # really this means training epoch
                     "frequency": trainer.check_val_every_n_epoch,
-                    "monitor": "val/loss/total",
+                    "monitor": VALIDATION_LOSS_KEY,
                     "strict": True,
                 }
 
@@ -194,7 +196,7 @@ class LearnThePES(pl.LightningModule):
                 config = {
                     "interval": "step",
                     "frequency": trainer.val_check_interval,
-                    "monitor": "val/loss/total",
+                    "monitor": VALIDATION_LOSS_KEY,
                     "strict": True,
                 }
 
@@ -243,14 +245,14 @@ class LearnThePES(pl.LightningModule):
 def create_trainer(
     early_stopping_patience: int | None = None,
     kwarg_overloads: dict | None = None,
-    val_available: bool = False,
+    valid_available: bool = False,
     logger: Logger | None = None,
     output_dir: Path | None = None,
 ) -> pl.Trainer:
-    if val_available:
+    if valid_available:
         default_checkpoint = ModelCheckpoint(
             dirpath=output_dir,
-            monitor="val/loss/total",
+            monitor=VALIDATION_LOSS_KEY,
             filename="best",
             mode="min",
             save_top_k=1,
@@ -273,7 +275,7 @@ def create_trainer(
     if early_stopping_patience is not None:
         callbacks.append(
             EarlyStopping(
-                monitor="val/loss/total",
+                monitor=VALIDATION_LOSS_KEY,
                 patience=early_stopping_patience,
                 mode="min",
                 min_delta=1e-6,

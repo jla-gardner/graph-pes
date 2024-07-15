@@ -17,7 +17,7 @@ data:
         id: QM7
         cutoff: 5.0
         n_train: 5_000
-        n_val: 100
+        n_valid: 100
 
 loss: graph_pes.training.loss.PerAtomEnergyLoss()
 

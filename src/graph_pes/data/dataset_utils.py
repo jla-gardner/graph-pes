@@ -13,7 +13,7 @@ def load_atoms_datasets(
     id: str | Path,
     cutoff: float,
     n_train: int,
-    n_val: int,
+    n_valid: int,
     split: Literal["random", "sequential"] = "random",
     seed: int = 42,
     pre_transform: bool = True,
@@ -31,12 +31,12 @@ def load_atoms_datasets(
         The cutoff radius for the neighbor list.
     n_train:
         The number of training structures.
-    n_val:
+    n_valid:
         The number of validation structures.
     split:
         The split method. ``"random"`` shuffles the structures before
         choosing a non-overlapping split, while ``"sequential"`` takes the
-        first ``n_train`` structures for training and the next ``n_val``
+        first ``n_train`` structures for training and the next ``n_valid``
         structures for validation.
     seed:
         The random seed.
@@ -62,7 +62,7 @@ def load_atoms_datasets(
     ...     "QM9",
     ...     cutoff=5.0,
     ...     n_train=1_000,
-    ...     n_val=100,
+    ...     n_valid=100,
     ...     property_map={"energy": "U0"},
     ... )
     """
@@ -73,13 +73,13 @@ def load_atoms_datasets(
         structures = [structures[i] for i in idxs]
 
     if property_map:
-        for i in range(n_train + n_val):
+        for i in range(n_train + n_valid):
             structure = structures[i]
             for key, value in property_map.items():
                 structure.info[key] = structure.info[value]
 
     train_structures = structures[:n_train]
-    val_structures = structures[n_train : n_train + n_val]
+    val_structures = structures[n_train : n_train + n_valid]
 
     return FittingData(
         ASEDataset(train_structures, cutoff, pre_transform),

@@ -108,7 +108,7 @@ def train_the_model(
     )
     trainer = create_trainer(
         early_stopping_patience=100,
-        val_available=True,
+        valid_available=True,
         kwarg_overloads=trainer_options,
     )
     train_with_lightning(

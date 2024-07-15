@@ -50,7 +50,7 @@ data:
         id: {structure_path}
         cutoff: 3.0
         n_train: 8
-        n_val: 2
+        n_valid: 2
 fitting:
     trainer_kwargs:
         max_epochs: 1
