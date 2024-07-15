@@ -21,10 +21,7 @@ class MultiLineFormatter(logging.Formatter):
 logger = logging.getLogger(name="graph-pes")
 
 # set the formatter
-_formatter = MultiLineFormatter(
-    "%(asctime)s [%(name)s %(levelname)s]: %(message)s",
-    datefmt="%y-%m-%d %H:%M:%S",
-)
+_formatter = MultiLineFormatter("[%(name)s %(levelname)s]: %(message)s")
 
 # log to stdout
 _handler = logging.StreamHandler(stream=sys.stdout)

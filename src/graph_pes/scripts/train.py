@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import warnings
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -97,28 +98,30 @@ def extract_config_from_command_line() -> Config:
 
 
 def train_from_config(config: Config):
-    logger.info(config)
-
-    # set the seed everywhere using lightning
     pytorch_lightning.seed_everything(config.general.seed)
 
-    # set-up the model, data, optimizer and loss
+    # time to the millisecond
+    now = datetime.now().strftime("%F %T.%f")[:3]
+    logger.info(f"Started training at {now}")
+
+    logger.info(config)
+
     model = config.instantiate_model()  # gets logged later
 
     data = config.instantiate_data()
     logger.info(data)
 
     optimizer = config.fitting.instantiate_optimizer()
-    logger.info(f"Optimizer\n{optimizer}")
+    logger.info(optimizer)
 
     scheduler = config.fitting.instantiate_scheduler()
     if scheduler is not None:
-        logger.info(f"Scheduler\n{scheduler}")
+        logger.info(scheduler)
     else:
         logger.info("No learning rate scheduler specified.")
 
     total_loss = config.instantiate_loss()
-    logger.info(f"Loss\n{total_loss}")
+    logger.info(total_loss)
 
     # set-up the trainer
     if config.wandb is not None:
