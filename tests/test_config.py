@@ -1,3 +1,4 @@
+import pytest
 import torch
 import yaml
 from graph_pes.config import Config, get_default_config_values
@@ -14,7 +15,7 @@ def test_import():
     assert obj is SchNet
 
 
-def test_spec_instantiating():
+def test_object_creation():
     # 1. test that we get the object:
     schnet_class = create_from_string("graph_pes.models.SchNet")
     assert schnet_class is SchNet
@@ -75,7 +76,7 @@ def test_model_instantiation():
     assert isinstance(model, SchNet)
     assert model.cutoff == 3.7
 
-    # 3. test a list of models:
+    # 3. test AdditionModel creation
     dummy_data = get_dummy_config_dict()
     dummy_data["model"] = yaml.safe_load(
         """
@@ -90,6 +91,23 @@ many-body:
     assert isinstance(model, AdditionModel)
     assert len(model.models) == 2
     assert isinstance(model.models["many-body"], SchNet)
+
+    # 4. test nice error messages:
+    dummy_data = get_dummy_config_dict()
+    # not a string or dict
+    dummy_data["model"] = 3
+    with pytest.raises(ValueError, match="could not be successfully parsed."):
+        Config.from_dict(dummy_data).instantiate_model()
+
+    # not a GraphPESModel
+    dummy_data["model"] = "torch.nn.ReLU()"
+    with pytest.raises(ValueError):
+        Config.from_dict(dummy_data).instantiate_model()
+
+    # incorrect AdditionModel spec
+    dummy_data["model"] = {"a": "torch.nn.ReLU()"}
+    with pytest.raises(ValueError):
+        Config.from_dict(dummy_data).instantiate_model()
 
 
 def test_optimizer():
