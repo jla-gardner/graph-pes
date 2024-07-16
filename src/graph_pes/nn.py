@@ -44,6 +44,40 @@ class UniformModuleDict(nn.ModuleDict, Generic[V]):
         return super().pop(key)  # type: ignore
 
 
+class UniformModuleList(nn.ModuleList, Generic[V]):
+    """
+    A :class:`torch.nn.ModuleList` sub-class for cases where
+    the values are all of the same type.
+
+    Examples
+    --------
+    >>> from graph_pes.nn import UniformModuleList
+    >>> from torch.nn import Linear
+    >>> linear_list = UniformModuleList(Linear(10, 5), Linear(5, 1))
+    """
+
+    def __init__(self, *modules: V):
+        super().__init__(modules)
+
+    def __getitem__(self, idx: int) -> V:
+        return super().__getitem__(idx)  # type: ignore
+
+    def __setitem__(self, idx: int, value: V) -> None:
+        super().__setitem__(idx, value)
+
+    def append(self, module: V) -> None:
+        super().append(module)
+
+    def extend(self, modules: Iterable[V]) -> None:
+        super().extend(modules)
+
+    def insert(self, idx: int, module: V) -> None:
+        super().insert(idx, module)
+
+    def pop(self, idx: int) -> V:
+        return super().pop(idx)  # type: ignore
+
+
 class MLP(nn.Module):
     """
     A multi-layer perceptron model, alternating linear layers and activations.
