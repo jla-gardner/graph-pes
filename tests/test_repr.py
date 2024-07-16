@@ -1,4 +1,4 @@
-from graph_pes.models.pairwise import LennardJones, Morse
+from graph_pes.models.pairwise import LennardJones
 from graph_pes.nn import MLP
 from graph_pes.training.loss import Loss
 
@@ -14,13 +14,3 @@ def test_reprs():
     )
 
     assert str(Loss("energy")) == 'Loss("energy", metric=MAE())'
-
-    addition = LennardJones() + Morse()
-    assert (
-        str(addition)
-        == """\
-AdditionModel(
-  LennardJones(epsilon=0.1, sigma=1.0),
-  Morse(D=0.1, a=5.0, r0=1.5)
-)"""
-    )

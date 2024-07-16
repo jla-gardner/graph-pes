@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import itertools
-
 import helpers
 import pytest
 import torch
@@ -81,9 +79,7 @@ def test_addition():
     m = Morse()
 
     # test addition of two models
-    addition_model = lj + m
-    assert isinstance(addition_model, AdditionModel)
-    assert set(addition_model.models) == {lj, m}
+    addition_model = AdditionModel(lj=lj, morse=m)
     assert torch.allclose(
         addition_model(graphs[0]),
         lj(graphs[0]) + m(graphs[0]),
@@ -95,12 +91,3 @@ def test_addition():
     assert (
         lj.sigma.item() != original_lj_sigma
     ), "component LJ model was not pre-fitted"
-
-    # test nice errors
-    with pytest.raises(TypeError, match="Can't add"):
-        lj + "hello"  # type: ignore
-
-    # extra addition tests
-    for a, b in itertools.product([lj, addition_model], repeat=2):
-        total = a + b
-        assert isinstance(total, AdditionModel)

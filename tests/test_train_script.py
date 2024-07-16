@@ -14,9 +14,7 @@ from graph_pes.util import nested_merge
 
 
 def test_arg_parse():
-    config_path = (
-        Path(__file__).parent.parent / "src/graph_pes/configs/minimal.yaml"
-    )
+    config_path = Path(__file__).parent.parent / "configs/minimal.yaml"
     command = f"""\
 graph-pes-train --config {config_path} \
     fitting^loader_kwargs^batch_size=32 \

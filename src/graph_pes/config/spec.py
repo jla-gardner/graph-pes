@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import warnings
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Dict, List, TypeVar, Union
 
 import dacite
@@ -15,143 +13,9 @@ from graph_pes.data.dataset import FittingData
 from graph_pes.training.loss import Loss, TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
 
+from .utils import create_from_data, create_from_string
+
 T = TypeVar("T")
-
-
-def _import(thing: str) -> Any:
-    """
-    Import a module or object from a fully qualified name.
-
-    Parameters
-    ----------
-    thing
-        The fully qualified name.
-
-    Returns
-    -------
-    Any
-        The imported object.
-    """
-
-    module_name, obj_name = thing.rsplit(".", 1)
-    module = __import__(module_name, fromlist=[obj_name])
-    return getattr(module, obj_name)
-
-
-def _import_and_maybe_call(thing: str) -> Any:
-    """
-    Import a module or object from a fully qualified name.
-
-    If the name ends with ``()``, the object is called and the result
-    is returned.
-
-    Parameters
-    ----------
-    thing
-        The fully qualified name.
-
-    Returns
-    -------
-    Any
-        The imported object.
-    """
-
-    if thing.endswith("()"):
-        return _import(thing[:-2])()
-    return _import(thing)
-
-
-def _instantiate(thing: str | dict[str, Any]) -> Any:
-    """
-    Instantiate an object from a user-defined specification.
-
-    If the ``thing`` is a string, it is assumed to be a fully qualified
-    name of a module or object. The object is imported, optionally called
-    if the name ends with ``()`` and returned.
-
-    If the ``thing`` is a dictionary, it is assumed to be a specification
-    for an object. The dictionary must have exactly one key, which is the
-    fully qualified name of the object to import. The value is a dictionary
-    of keyword arguments to pass to the object's constructor. We recursively
-    instantiate these arguments, before ultimately instantiating the object
-    and returning it.
-    """
-
-    def _from_string(s: str) -> tuple[Any, bool]:
-        if "." not in s:
-            return s, False
-
-        # try to import the thing: return it and a success flag
-        try:
-            return _import_and_maybe_call(s), True
-        # if we can't import it, return the string and a failure flag
-        # if it looks like we should have been able to import it, warn
-        # the user unless its an existing file path
-        except ImportError:
-            if not Path(s).exists():
-                warnings.warn(
-                    f"Encountered a string ({s}) that looks like it "
-                    "could be meant to be imported - we couldn't do "
-                    "this. This may cause issues later.",
-                    stacklevel=2,
-                )
-            return s, False
-
-    def _from_dict(d: dict[str, Any]) -> tuple[Any, bool]:
-        if len(d) == 1:
-            # this could be a fully qualified name mapping to some arguments
-            og_key, og_value = next(iter(d.items()))
-            if (
-                isinstance(og_key, str)
-                and "." in og_key
-                and isinstance(og_value, dict)
-            ):
-                # try to import the thing
-                new_key, import_success = _from_string(og_key)
-
-                # maybe instantiate the arguments recursively
-                new_values = {}
-                for kk, vv in og_value.items():
-                    if isinstance(vv, str):
-                        new_values[kk], _ = _from_string(vv)
-                    elif isinstance(vv, dict):
-                        new_values[kk], _ = _from_dict(vv)
-                    else:
-                        new_values[kk] = vv
-
-                if import_success:
-                    return new_key(**new_values), True
-
-                return {og_key: new_values}, False
-
-        # not a mapping from a fully qualified name to arguments, so
-        # keep the keys as they are, but still try to instantiate the values
-        new_dict = {}
-        for key, value in d.items():
-            if isinstance(value, str):
-                new_dict[key], _ = _from_string(value)
-            elif isinstance(value, dict):
-                new_dict[key], _ = _from_dict(value)
-            else:
-                new_dict[key] = value
-        return new_dict, False
-
-    if isinstance(thing, str):
-        result, success = _from_string(thing)
-        if not success:
-            raise ValueError(f"Could not import {thing}")
-        return result
-
-    elif isinstance(thing, dict):
-        if len(thing) != 1:
-            raise ValueError("Expected exactly one key in the dictionary.")
-
-        result, success = _from_dict(thing)
-        if not success:
-            raise ValueError(f"Was not able to import {next(iter(thing))}")
-        return result
-
-    raise ValueError("Expected either a string or a dictionary.")
 
 
 @dataclass
@@ -250,18 +114,12 @@ class FittingConfig(FittingOptions):
     ### Methods ###
 
     def instantiate_optimizer(self) -> Optimizer:
-        # check correct input
-        if not isinstance(self.optimizer, (str, dict)):
-            raise ValueError("# TODO")
-
-        # and then instantiate
-        return _instantiate(self.optimizer)
+        return create_from_data(self.optimizer)
 
     def instantiate_scheduler(self) -> LRScheduler | None:
         if self.scheduler is None:
             return None
-
-        return _instantiate(self.scheduler)
+        return create_from_data(self.scheduler)
 
 
 @dataclass
@@ -311,11 +169,7 @@ class Config:
             n_layers: 3
     """
 
-    model: Union[
-        str,
-        Dict[str, Any],
-        List[Union[str, Dict[str, Any]]],
-    ]
+    model: Union[str, Dict[str, Any]]
     """
     Specification for the model.
 
@@ -335,14 +189,14 @@ class Config:
         model: my_model.SpecialModel()
     
     To specify multiple components of an :class:`~graph_pes.core.AdditionModel`,
-    create a list of specications as above:
+    create a list of specications as above, using whatever unique names you
+    please:
     .. code-block:: yaml
     
         model:
-            - graph_pes.models.FixedOffset:
-                  H: -123.4
-                  C: -456.7
-            - graph_pes.models.SchNet()
+            offset:
+                graph_pes.models.FixedOffset: {H: -123.4, C: -456.7}
+            many-body: graph_pes.models.SchNet()
     """
 
     data: Union[str, Dict[str, Any]]
@@ -419,8 +273,8 @@ class Config:
     """
     Configuration for Weights & Biases logging.
     
-    If ``None``, logging is disabled. Otherwise, provide a dictionary
-    to pass to  :class:`~pytorch_lightning.loggers.WandbLogger`.
+    If ``None``, logging is disabled. Otherwise, provide a dictionary of
+    overrides to pass to  :class:`~pytorch_lightning.loggers.WandbLogger`.
 
     Examples
     --------
@@ -476,46 +330,70 @@ class Config:
         return yaml.dump(self.to_nested_dict(), indent=3, sort_keys=False)
 
     def instantiate_model(self) -> GraphPESModel:
-        if isinstance(self.model, (str, dict)):
-            model = _instantiate(self.model)
-            if not isinstance(model, GraphPESModel):
+        obj = create_from_data(self.model)
+        if isinstance(obj, GraphPESModel):
+            return obj
+
+        elif isinstance(obj, dict):
+            all_string_keys = all(isinstance(k, str) for k in obj)
+            all_model_values = all(
+                isinstance(v, GraphPESModel) for v in obj.values()
+            )
+            if not all_string_keys or not all_model_values:
                 raise ValueError(
-                    f"Expected a GraphPESModel, got {type(model)}: {model}"
+                    "Expected a dictionary of named GraphPESModels, but got "
+                    f"{obj}."
                 )
-            return model
 
-        elif isinstance(self.model, list):
-            models = [_instantiate(spec) for spec in self.model]
-            if not all(isinstance(m, GraphPESModel) for m in models):
-                raise ValueError("# TODO")
-            return AdditionModel(models)
+            try:
+                return AdditionModel(**obj)
+            except Exception as e:
+                raise ValueError(
+                    f"Parsed a dictionary, {obj}, from the model config, "
+                    "but could not instantiate an AdditionModel from it."
+                ) from e
 
-        raise ValueError("# TODO")
+        raise ValueError(
+            "Expected to be able to parse a GraphPESModel or a dictionary "
+            "of named GraphPESModels from the model config, but got "
+            "something else: {obj}"
+        )
 
     def instantiate_data(self) -> FittingData:
+        result: Any = None
+
         if isinstance(self.data, str):
-            return _instantiate(self.data)
+            result = create_from_string(self.data)
 
         if isinstance(self.data, dict):
             if len(self.data) == 1:
-                return _instantiate(self.data)
+                result = create_from_data(self.data)
             elif len(self.data) == 2:
                 assert self.data.keys() == {"train", "valid"}
-                return FittingData(
-                    train=_instantiate(self.data["train"]),
-                    valid=_instantiate(self.data["valid"]),
+                result = FittingData(
+                    train=create_from_data(self.data["train"]),
+                    valid=create_from_data(self.data["valid"]),
                 )
 
-        raise ValueError(
-            "Unexpected data specification. "
-            "Please provide a callable or a dictionary containing "
-            "a single key (the fully qualified name of some callable) "
-            "or two keys ('train' and 'valid') mapping to callables."
-        )
+        if result is None:
+            raise ValueError(
+                "Unexpected data specification. "
+                "Please provide a callable or a dictionary containing "
+                "a single key (the fully qualified name of some callable) "
+                "or two keys ('train' and 'valid') mapping to callables."
+            )
+
+        if not isinstance(result, FittingData):
+            raise ValueError(
+                "Expected to parse a FittingData instance from the data "
+                f"config, but got {result}."
+            )
+
+        return result
 
     def instantiate_loss(self) -> TotalLoss:
         if isinstance(self.loss, (str, dict)):
-            loss = _instantiate(self.loss)
+            loss = create_from_data(self.loss)
             if isinstance(loss, Loss):
                 return TotalLoss([loss])
             elif isinstance(loss, TotalLoss):
@@ -528,7 +406,7 @@ class Config:
                 raise ValueError("# TODO")
 
             weights = [l.weight for l in self.loss]
-            losses = [_instantiate(l.component) for l in self.loss]
+            losses = [create_from_data(l.component) for l in self.loss]
 
             if not all(isinstance(w, (int, float)) for w in weights):
                 raise ValueError("# TODO")
@@ -537,8 +415,3 @@ class Config:
                 raise ValueError("# TODO")
 
             return TotalLoss(losses, weights)
-
-
-def get_default_config_values() -> dict[str, Any]:
-    with open(Path(__file__).parent / "configs/defaults.yaml") as f:
-        return yaml.safe_load(f)

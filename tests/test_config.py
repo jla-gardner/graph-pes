@@ -1,42 +1,26 @@
-from pathlib import Path
-
 import torch
 import yaml
-from graph_pes.config import Config, _import_and_maybe_call, _instantiate
+from graph_pes.config import Config, get_default_config_values
+from graph_pes.config.utils import _import, create_from_dict, create_from_string
 from graph_pes.core import AdditionModel
 from graph_pes.models import SchNet
 from graph_pes.training.loss import RMSE, Loss
 from graph_pes.util import nested_merge
 
-# TODO: package this with graph_pes
-with open(
-    Path(__file__).parent.parent / "src/graph_pes/configs/defaults.yaml"
-) as f:
-    DEFAULT_CONFIG_DICT = yaml.safe_load(f)
-
-
-def dict_from_yaml(yaml_str: str) -> dict:
-    return yaml.safe_load(yaml_str)
-
 
 def test_import():
     # test that we can import:
-    # 1. an object
-    obj = _import_and_maybe_call("graph_pes.models.SchNet")
+    obj = _import("graph_pes.models.SchNet")
     assert obj is SchNet
-
-    # 2. the returned object from a function
-    obj = _import_and_maybe_call("graph_pes.models.SchNet()")
-    assert isinstance(obj, SchNet)
 
 
 def test_spec_instantiating():
     # 1. test that we get the object:
-    schnet_class = _instantiate("graph_pes.models.SchNet")
+    schnet_class = create_from_string("graph_pes.models.SchNet")
     assert schnet_class is SchNet
 
     # 2. test that we get the object returned from a function:
-    schnet_obj = _instantiate("graph_pes.models.SchNet()")
+    schnet_obj = create_from_string("graph_pes.models.SchNet()")
     assert isinstance(schnet_obj, SchNet)
 
     # 3. test that we get the returned object from a function with params:
@@ -44,7 +28,7 @@ def test_spec_instantiating():
     graph_pes.models.SchNet:
         cutoff: 3.7
     """
-    schnet_obj = _instantiate(dict_from_yaml(spec))
+    schnet_obj = create_from_dict(yaml.safe_load(spec))
     assert isinstance(schnet_obj, SchNet)
     assert schnet_obj.cutoff == 3.7
 
@@ -54,7 +38,7 @@ def test_spec_instantiating():
         property_key: energy
         metric: graph_pes.training.loss.RMSE()
     """
-    loss_obj = _instantiate(dict_from_yaml(spec))
+    loss_obj = create_from_dict(yaml.safe_load(spec))
     print(loss_obj)
     assert isinstance(loss_obj, Loss)
     assert loss_obj.property_key == "energy"
@@ -62,7 +46,7 @@ def test_spec_instantiating():
 
 
 def get_dummy_config_dict():
-    config = DEFAULT_CONFIG_DICT.copy()
+    config = get_default_config_values()
     config["data"] = "dummy"
     config["model"] = "dummy"
     config["loss"] = "dummy"
@@ -93,20 +77,24 @@ def test_model_instantiation():
 
     # 3. test a list of models:
     dummy_data = get_dummy_config_dict()
-    dummy_data["model"] = [
-        {"graph_pes.models.SchNet": {"cutoff": 3.7}},
-        "graph_pes.models.LearnableOffset()",
-    ]
+    dummy_data["model"] = yaml.safe_load(
+        """
+offset: graph_pes.models.LearnableOffset()
+many-body: 
+   graph_pes.models.SchNet:
+       cutoff: 3.7
+"""
+    )
     dummy_data = Config.from_dict(dummy_data)
     model = dummy_data.instantiate_model()
     assert isinstance(model, AdditionModel)
     assert len(model.models) == 2
-    assert isinstance(model.models[0], SchNet)
+    assert isinstance(model.models["many-body"], SchNet)
 
 
 def test_optimizer():
     dummy_data = get_dummy_config_dict()
-    user_data = dict_from_yaml("""
+    user_data = yaml.safe_load("""
     fitting:
         optimizer:
             graph_pes.training.opt.Optimizer:
@@ -130,7 +118,7 @@ def test_scheduler():
     assert scheduler is None
 
     # with default scheduler
-    user_data = dict_from_yaml("""
+    user_data = yaml.safe_load("""
     fitting:
         scheduler:
             graph_pes.training.opt.LRScheduler:

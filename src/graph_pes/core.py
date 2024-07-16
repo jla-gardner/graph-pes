@@ -170,19 +170,6 @@ class GraphPESModel(nn.Module, ABC):
     def __call__(self, graph: AtomicGraph) -> Tensor:
         return super().__call__(graph)
 
-    def __add__(self, other: GraphPESModel | AdditionModel) -> AdditionModel:
-        if not isinstance(other, GraphPESModel):
-            raise TypeError(f"Can't add {type(self)} and {type(other)}")
-
-        if isinstance(other, AdditionModel):
-            if isinstance(self, AdditionModel):
-                return AdditionModel([*self.models, *other.models])
-            return AdditionModel([self, *other.models])
-
-        if isinstance(self, AdditionModel):
-            return AdditionModel([*self.models, other])
-        return AdditionModel([self, other])
-
     @torch.jit.unused
     @property
     def elements_seen(self) -> list[str]:
@@ -219,25 +206,30 @@ class AdditionModel(GraphPESModel):
         model = AdditionModel([LennardJones(), SchNet()])
     """
 
-    def __init__(self, models: Sequence[GraphPESModel]):
+    def __init__(self, **models: GraphPESModel):
         super().__init__()
-        self.models: list[GraphPESModel] = nn.ModuleList(models)  # type: ignore
+        self.models = nn.ModuleDict(models)
 
     def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
         predictions = torch.stack(
             [
                 model.predict_local_energies(graph).squeeze()
-                for model in self.models
+                for model in self.models.values()
             ]
         )  # (atoms, models)
         return torch.sum(predictions, dim=0)  # (atoms,) sum over models
 
     def model_specific_pre_fit(self, graphs: LabelledBatch) -> None:
-        for model in self.models:
+        for model in self.models.values():
             model.model_specific_pre_fit(graphs)
 
     def __repr__(self):
-        return uniform_repr(self.__class__.__name__, *self.models)
+        return uniform_repr(
+            self.__class__.__name__,
+            **self.models,
+            stringify=True,
+            max_width=80,
+        )
 
 
 @overload

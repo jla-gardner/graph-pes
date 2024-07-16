@@ -12,7 +12,7 @@ import wandb
 import yaml
 from graph_pes.config import Config, get_default_config_values
 from graph_pes.deploy import deploy_model
-from graph_pes.logger import logger
+from graph_pes.logger import log_to_file, logger
 from graph_pes.training.ptl import create_trainer, train_with_lightning
 from graph_pes.util import nested_merge, random_id
 from pytorch_lightning.loggers import CSVLogger, WandbLogger
@@ -134,6 +134,8 @@ def train_from_config(config: Config):
     try:
         output_dir = Path(config.general.root_dir) / run_id
         logger.info(f"Output directory: {output_dir}")
+
+        log_to_file(output_dir / "log.txt")
 
         if config.wandb is not None:
             lightning_logger = WandbLogger()

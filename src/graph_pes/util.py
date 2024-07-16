@@ -155,6 +155,8 @@ def uniform_repr(
 
 
 def force_to_single_line(s: str) -> str:
+    # TODO: yuck: replace leading and trailing white space with single?
+    # or just use tabulate
     lines = [line.strip() for line in s.split("\n")]
     return " ".join(lines)
 

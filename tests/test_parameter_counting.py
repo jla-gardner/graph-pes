@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ase
 import torch
+from graph_pes.core import AdditionModel
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.models import (
@@ -58,9 +59,12 @@ def test_scaling():
     assert params[0].numel() == 2
 
 
-def test_coutning():
+def test_counting():
     _schnet_dim = 50
-    model = LearnableOffset() + SchNet(node_features=_schnet_dim)
+    model = AdditionModel(
+        offset=LearnableOffset(),
+        schnet=SchNet(node_features=_schnet_dim),
+    )
 
     non_pre_fit_params = sum(p.numel() for p in model.parameters())
 
