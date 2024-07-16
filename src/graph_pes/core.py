@@ -23,7 +23,7 @@ from .graphs.operations import (
     to_batch,
 )
 from .nn import PerElementParameter
-from .util import differentiate, require_grad, uniform_repr
+from .util import differentiate, require_grad
 
 
 class GraphPESModel(nn.Module, ABC):
@@ -180,56 +180,6 @@ class GraphPESModel(nn.Module, ABC):
             if isinstance(param, PerElementParameter):
                 Zs.update(param._accessed_Zs)
         return [chemical_symbols[Z] for Z in sorted(Zs)]
-
-
-class AdditionModel(GraphPESModel):
-    """
-    A wrapper that makes predictions as the sum of the predictions
-    of its constituent models.
-
-    Parameters
-    ----------
-    models
-        the models to sum.
-
-    Examples
-    --------
-    Create a model with explicit two-body and multi-body terms:
-
-    .. code-block:: python
-
-        from graph_pes.models.zoo import LennardJones, SchNet
-        from graph_pes.core import AdditionModel
-
-        # create a model that sums two models
-        # equivalent to LennardJones() + SchNet()
-        model = AdditionModel([LennardJones(), SchNet()])
-    """
-
-    def __init__(self, **models: GraphPESModel):
-        super().__init__()
-        self.models = nn.ModuleDict(models)
-
-    def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
-        predictions = torch.stack(
-            [
-                model.predict_local_energies(graph).squeeze()
-                for model in self.models.values()
-            ]
-        )  # (atoms, models)
-        return torch.sum(predictions, dim=0)  # (atoms,) sum over models
-
-    def model_specific_pre_fit(self, graphs: LabelledBatch) -> None:
-        for model in self.models.values():
-            model.model_specific_pre_fit(graphs)
-
-    def __repr__(self):
-        return uniform_repr(
-            self.__class__.__name__,
-            **self.models,
-            stringify=True,
-            max_width=80,
-        )
 
 
 @overload

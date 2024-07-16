@@ -5,7 +5,7 @@ import pytest
 import torch
 from ase import Atoms
 from ase.io import read
-from graph_pes.core import AdditionModel, GraphPESModel, get_predictions
+from graph_pes.core import GraphPESModel, get_predictions
 from graph_pes.data.io import to_atomic_graph, to_atomic_graphs
 from graph_pes.graphs.operations import (
     has_cell,
@@ -13,6 +13,7 @@ from graph_pes.graphs.operations import (
     number_of_edges,
 )
 from graph_pes.models import LennardJones, Morse
+from graph_pes.models.addition import AdditionModel
 
 structures: list[Atoms] = read("tests/test.xyz", ":")  # type: ignore
 graphs = to_atomic_graphs(structures, cutoff=3)

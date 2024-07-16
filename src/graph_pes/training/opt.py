@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import torch
-from graph_pes.core import AdditionModel, GraphPESModel
+from graph_pes.core import GraphPESModel
+from graph_pes.models.addition import AdditionModel
 from graph_pes.models.offsets import LearnableOffset
 from graph_pes.util import uniform_repr
 

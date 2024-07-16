@@ -1,21 +1,22 @@
 # ruff: noqa: UP006, UP007
-
+# ^^ NB: dacite parsing requires the old type hint syntax in
+#        order to be compatible with all versions of Python that
+#         we are targeting (3.8+)
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, TypeVar, Union
+from typing import Any, Dict, List, Union
 
 import dacite
 import yaml
 
-from graph_pes.core import AdditionModel, GraphPESModel
+from graph_pes.core import GraphPESModel
 from graph_pes.data.dataset import FittingData
+from graph_pes.models.addition import AdditionModel
 from graph_pes.training.loss import Loss, TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
 
 from .utils import create_from_data, create_from_string
-
-T = TypeVar("T")
 
 
 @dataclass
@@ -137,9 +138,6 @@ class GeneralConfig:
     """
 
 
-# NB: dacite parsing requires the old type hint syntax in
-# order to be compatible with all versions of Python that
-# we are targeting (3.8+)
 @dataclass
 class Config:
     """
@@ -339,6 +337,7 @@ class Config:
             all_model_values = all(
                 isinstance(v, GraphPESModel) for v in obj.values()
             )
+
             if not all_string_keys or not all_model_values:
                 raise ValueError(
                     "Expected a dictionary of named GraphPESModels, but got "
@@ -392,6 +391,7 @@ class Config:
         return result
 
     def instantiate_loss(self) -> TotalLoss:
+        # TODO: simplify
         if isinstance(self.loss, (str, dict)):
             loss = create_from_data(self.loss)
             if isinstance(loss, Loss):

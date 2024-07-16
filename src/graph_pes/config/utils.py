@@ -23,16 +23,6 @@ def _import(thing: str) -> Any:
     """
     Import a module or object from a fully qualified name.
 
-    Parameters
-    ----------
-    thing
-        The fully qualified name.
-
-    Returns
-    -------
-    Any
-        The imported object.
-
     Example
     -------
     >>> _import("torch.nn.Tanh")
@@ -150,7 +140,7 @@ def _create_from_dict(d: dict[str, Any], depth: int) -> dict[str, Any] | Any:
 
 
 def looks_importable(s: str):
-    return s.endswith("()") or "." in s
+    return "." in s
 
 
 def create_from_string(s: str):

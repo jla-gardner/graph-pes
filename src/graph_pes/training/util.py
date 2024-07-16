@@ -1,5 +1,6 @@
-from graph_pes.core import AdditionModel, GraphPESModel
+from graph_pes.core import GraphPESModel
 from graph_pes.logger import logger
+from graph_pes.models.addition import AdditionModel
 
 
 def log_model_info(model: GraphPESModel):

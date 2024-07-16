@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import ase
 import torch
-from graph_pes.core import AdditionModel
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.models import (
@@ -12,6 +11,7 @@ from graph_pes.models import (
     LennardJonesMixture,
     SchNet,
 )
+from graph_pes.models.addition import AdditionModel
 from graph_pes.models.scaling import AutoScaledPESModel
 from graph_pes.nn import PerElementParameter
 from torch import Tensor
