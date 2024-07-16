@@ -1,8 +1,9 @@
 import torch
-from torch import Tensor, nn
+from torch import Tensor
 
 from graph_pes.core import GraphPESModel
 from graph_pes.graphs import AtomicGraph, LabelledBatch
+from graph_pes.nn import UniformModuleDict
 from graph_pes.util import uniform_repr
 
 
@@ -32,7 +33,7 @@ class AdditionModel(GraphPESModel):
 
     def __init__(self, **models: GraphPESModel):
         super().__init__()
-        self.models = nn.ModuleDict(models)
+        self.models = UniformModuleDict(**models)
 
     def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
         predictions = torch.stack(
