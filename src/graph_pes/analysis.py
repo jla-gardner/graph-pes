@@ -14,7 +14,7 @@ from .core import GraphPESModel, get_predictions
 from .data.io import to_atomic_graph
 from .graphs import AtomicGraph, AtomicGraphBatch, keys
 from .graphs.operations import to_batch
-from .transform import Identity, Transform
+from .transform import Transform, identity
 
 _my_style = {
     "figure.figsize": (3.5, 3),
@@ -130,7 +130,7 @@ def parity_plot(
         :align: center
     """
     # deal with defaults
-    transform = transform or Identity()
+    transform = transform or identity
     if property_label is None:
         property_label = property
 
