@@ -7,6 +7,8 @@ from graph_pes.nn import (
     AtomicOneHot,
     PerElementEmbedding,
     PerElementParameter,
+    UniformModuleDict,
+    UniformModuleList,
     parse_activation,
 )
 from graph_pes.util import MAX_Z
@@ -97,3 +99,49 @@ def test_one_hot():
 
     with pytest.raises(ValueError, match="Unknown element"):
         one_hot(torch.tensor([2]))
+
+
+def test_module_dict():
+    umd = UniformModuleDict(
+        a=torch.nn.Linear(10, 10),
+        b=torch.nn.Linear(10, 10),
+    )
+
+    assert len(umd) == 2
+
+    for k, v in umd.items():
+        assert isinstance(k, str)
+        assert isinstance(v, torch.nn.Linear)
+
+    assert "a" in umd
+
+    b = umd.pop("b")
+    assert b is not None
+    assert len(umd) == 1
+
+
+def test_module_list():
+    uml = UniformModuleList(
+        [
+            torch.nn.Linear(10, 10),
+            torch.nn.Linear(10, 10),
+        ]
+    )
+
+    assert len(uml) == 2
+    assert isinstance(uml[0], torch.nn.Linear)
+
+    uml[1] = torch.nn.Linear(100, 100)
+    assert isinstance(uml[1], torch.nn.Linear)
+    assert uml[1].in_features == 100
+
+    uml.append(torch.nn.Linear(1000, 1000))
+    assert len(uml) == 3
+
+    lin = uml.pop(-1)
+    assert len(uml) == 2
+    assert lin.in_features == 1000
+
+    uml.insert(1, torch.nn.Linear(10000, 10000))
+    assert len(uml) == 3
+    assert uml[1].in_features == 10000

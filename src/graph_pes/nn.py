@@ -56,8 +56,8 @@ class UniformModuleList(nn.ModuleList, Sequence[V]):
     >>> linear_list = UniformModuleList(Linear(10, 5), Linear(5, 1))
     """
 
-    def __init__(self, modules: Iterable[V], *more_modules: V):
-        super().__init__(list(modules) + list(more_modules))
+    def __init__(self, modules: Iterable[V]):
+        super().__init__(modules)
 
     def __getitem__(self, idx: int) -> V:
         return super().__getitem__(idx)  # type: ignore
