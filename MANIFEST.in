@@ -1,0 +1,3 @@
+# MANIFEST.in
+
+include src/graph_pes/config/defaults.yaml

@@ -42,7 +42,7 @@ jobs:
             - name: update pip
               run: pip install --upgrade pip
             - name: Install graph-pes
-              run: pip install -e ".[test]"
+              run: pip install ".[test]"
             - name: Useful info
               run: pip freeze
             - name: Run tests
