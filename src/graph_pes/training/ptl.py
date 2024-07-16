@@ -63,7 +63,7 @@ def train_with_lightning(
         model.pre_fit(pre_fit_dataset)
 
     # - log the model info
-    log_model_info(model)
+    log_model_info(model, trainer.logger)
 
     # - create the task (a pytorch lightning module)
     task = LearnThePES(model, loss, optimizer, scheduler)

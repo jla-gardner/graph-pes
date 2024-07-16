@@ -116,10 +116,7 @@ def train_from_config(config: Config):
     logger.info(optimizer)
 
     scheduler = config.fitting.instantiate_scheduler()
-    if scheduler is not None:
-        logger.info(scheduler)
-    else:
-        logger.info("No learning rate scheduler specified.")
+    logger.info(scheduler if scheduler is not None else "No LR scheduler.")
 
     total_loss = config.instantiate_loss()
     logger.info(total_loss)
