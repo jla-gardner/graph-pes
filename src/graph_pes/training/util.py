@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from graph_pes.core import GraphPESModel
 from graph_pes.logger import logger
 from graph_pes.models.addition import AdditionModel
@@ -34,7 +36,7 @@ def log_model_info(
     if ptl_logger is not None:
         all_params = sum(p.numel() for p in model.parameters())
         learnable_params = learnable_parameters(model)
-        ptl_logger.log_hyperparams(
+        ptl_logger.log_metrics(
             {
                 "n_parameters": all_params,
                 "n_learnable_parameters": learnable_params,
