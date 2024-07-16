@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import reduce
-from typing import Any, Iterable
+from typing import Any, Generic, Iterable, TypeVar
 
 import torch
 import torch.nn as nn
@@ -9,6 +9,39 @@ from ase.data import atomic_numbers, chemical_symbols, covalent_radii
 from torch import Tensor
 
 from .util import MAX_Z, pairs, to_significant_figures, uniform_repr
+
+V = TypeVar("V", bound=nn.Module)
+
+
+class UniformModuleDict(nn.ModuleDict, Generic[V]):
+    """
+    A :class:`torch.nn.ModuleDict` sub-class for cases where
+    the values are all of the same type.
+
+    Examples
+    --------
+    >>> from graph_pes.nn import UniformModuleDict
+    >>> from torch.nn import Linear
+    >>> linear_dict = UniformModuleDict(a=Linear(10, 5), b=Linear(5, 1))
+    """
+
+    def __init__(self, **modules: V):
+        super().__init__(modules)
+
+    def values(self) -> Iterable[V]:
+        return super().values()  # type: ignore
+
+    def items(self) -> Iterable[tuple[str, V]]:
+        return super().items()  # type: ignore
+
+    def __getitem__(self, key: str) -> V:
+        return super().__getitem__(key)  # type: ignore
+
+    def __setitem__(self, key: str, value: V) -> None:
+        super().__setitem__(key, value)
+
+    def pop(self, key: str) -> V:
+        return super().pop(key)  # type: ignore
 
 
 class MLP(nn.Module):
