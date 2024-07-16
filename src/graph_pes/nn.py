@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import reduce
-from typing import Any, Generic, Iterable, TypeVar
+from typing import Any, Generic, Iterable, Iterator, Sequence, TypeVar
 
 import torch
 import torch.nn as nn
@@ -44,7 +44,7 @@ class UniformModuleDict(nn.ModuleDict, Generic[V]):
         return super().pop(key)  # type: ignore
 
 
-class UniformModuleList(nn.ModuleList, Generic[V]):
+class UniformModuleList(nn.ModuleList, Sequence[V]):
     """
     A :class:`torch.nn.ModuleList` sub-class for cases where
     the values are all of the same type.
@@ -56,8 +56,8 @@ class UniformModuleList(nn.ModuleList, Generic[V]):
     >>> linear_list = UniformModuleList(Linear(10, 5), Linear(5, 1))
     """
 
-    def __init__(self, *modules: V):
-        super().__init__(modules)
+    def __init__(self, modules: Iterable[V], *more_modules: V):
+        super().__init__(list(modules) + list(more_modules))
 
     def __getitem__(self, idx: int) -> V:
         return super().__getitem__(idx)  # type: ignore
@@ -76,6 +76,9 @@ class UniformModuleList(nn.ModuleList, Generic[V]):
 
     def pop(self, idx: int) -> V:
         return super().pop(idx)  # type: ignore
+
+    def __iter__(self) -> Iterator[V]:
+        return super().__iter__()  # type: ignore
 
 
 class MLP(nn.Module):
@@ -423,6 +426,9 @@ class PerElementEmbedding(torch.nn.Module):
             dim=self._embeddings.shape[1],
             elements=[chemical_symbols[Z] for Z in Zs],
         )
+
+    def __call__(self, Z: Tensor) -> Tensor:
+        return super().__call__(Z)
 
 
 class HaddamardProduct(nn.Module):

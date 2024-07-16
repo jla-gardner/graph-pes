@@ -10,7 +10,12 @@ from graph_pes.graphs.operations import (
     number_of_atoms,
 )
 from graph_pes.models.scaling import AutoScaledPESModel
-from graph_pes.nn import MLP, HaddamardProduct, PerElementEmbedding
+from graph_pes.nn import (
+    MLP,
+    HaddamardProduct,
+    PerElementEmbedding,
+    UniformModuleList,
+)
 
 from .distances import Bessel, PolynomialEnvelope
 
@@ -196,15 +201,13 @@ class PaiNN(AutoScaledPESModel):
         super().__init__()
         self.internal_dim = internal_dim
         self.layers = layers
-        self.interactions: list[Interaction] = nn.ModuleList(
-            [
-                Interaction(radial_features, internal_dim, cutoff)
-                for _ in range(layers)
-            ]
-        )  # type: ignore
-        self.updates: list[Update] = nn.ModuleList(
-            [Update(internal_dim) for _ in range(layers)]
-        )  # type: ignore
+        self.interactions = UniformModuleList(
+            Interaction(radial_features, internal_dim, cutoff)
+            for _ in range(layers)
+        )
+        self.updates = UniformModuleList(
+            Update(internal_dim) for _ in range(layers)
+        )
         self.z_embedding = PerElementEmbedding(internal_dim)
         self.read_out = MLP(
             [internal_dim, internal_dim, 1],

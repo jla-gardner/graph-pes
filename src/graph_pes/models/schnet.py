@@ -9,7 +9,12 @@ from graph_pes.graphs.operations import (
     sum_over_neighbours,
 )
 from graph_pes.models.scaling import AutoScaledPESModel
-from graph_pes.nn import MLP, PerElementEmbedding, ShiftedSoftplus
+from graph_pes.nn import (
+    MLP,
+    PerElementEmbedding,
+    ShiftedSoftplus,
+    UniformModuleList,
+)
 from graph_pes.util import uniform_repr
 
 from .distances import DistanceExpansion, GaussianSmearing
@@ -210,7 +215,7 @@ class SchNet(AutoScaledPESModel):
 
         self.chemical_embedding = PerElementEmbedding(node_features)
 
-        self.interactions = torch.nn.ModuleList(
+        self.interactions = UniformModuleList(
             SchNetInteraction(
                 node_features, expansion_features, cutoff, expansion
             )

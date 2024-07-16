@@ -11,7 +11,12 @@ from graph_pes.graphs.operations import (
     number_of_edges,
 )
 from graph_pes.models.scaling import AutoScaledPESModel
-from graph_pes.nn import MLP, HaddamardProduct, PerElementEmbedding
+from graph_pes.nn import (
+    MLP,
+    HaddamardProduct,
+    PerElementEmbedding,
+    UniformModuleList,
+)
 
 from .distances import CosineEnvelope, ExponentialRBF
 
@@ -320,16 +325,14 @@ class TensorNet(AutoScaledPESModel):
         radial_features: int = 32,
         embedding_size: int = 32,
         cutoff: float = 5.0,
-        layers: int = 1,
+        layers: int = 2,
     ):
         super().__init__()
         self.embedding = Embedding(radial_features, embedding_size, cutoff)
-        self.interactions: list[Interaction] = nn.ModuleList(
-            [
-                Interaction(radial_features, embedding_size, cutoff)
-                for _ in range(layers)
-            ]
-        )  # type: ignore
+        self.interactions = UniformModuleList(
+            Interaction(radial_features, embedding_size, cutoff)
+            for _ in range(layers)
+        )
         self.read_out = ScalarOutput(embedding_size)
 
     def predict_unscaled_energies(self, graph: AtomicGraph):

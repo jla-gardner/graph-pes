@@ -20,6 +20,7 @@ from graph_pes.nn import (
     AtomicOneHot,
     HaddamardProduct,
     PerElementEmbedding,
+    UniformModuleList,
 )
 from torch import Tensor
 
@@ -316,7 +317,7 @@ class _BaseNequIP(AutoScaledPESModel):
         # first layer recieves an even parity, scalar embedding
         # of the atomic number
         current_layer_input = o3.Irreps(f"{n_channels}x0e")
-        layers = []
+        layers: list[NequIPMessagePassingLayer] = []
         for _ in range(n_layers):
             layer = NequIPMessagePassingLayer(
                 input_node_irreps=current_layer_input,  # type: ignore
@@ -329,7 +330,7 @@ class _BaseNequIP(AutoScaledPESModel):
             layers.append(layer)
             current_layer_input = layer.irreps_out
 
-        self.layers = torch.nn.ModuleList(layers)
+        self.layers = UniformModuleList(layers)
 
         self.readout = o3.Linear(current_layer_input, "1x0e")
 

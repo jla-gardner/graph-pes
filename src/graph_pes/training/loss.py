@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Callable, NamedTuple
+from typing import Callable, NamedTuple, Sequence
 
 import torch
 from graph_pes.graphs import LabelledBatch, keys
+from graph_pes.nn import UniformModuleList
 from graph_pes.transform import divide_per_atom
 from graph_pes.util import force_to_single_line, uniform_repr
 from torch import Tensor, nn
@@ -149,11 +150,11 @@ class TotalLoss(torch.nn.Module):
 
     def __init__(
         self,
-        losses: list[Loss],
-        weights: list[float | int] | None = None,
+        losses: Sequence[Loss],
+        weights: Sequence[float | int] | None = None,
     ):
         super().__init__()
-        self.losses: list[Loss] = nn.ModuleList(losses)  # type: ignore
+        self.losses = UniformModuleList(losses)
         self.weights = weights or [1.0] * len(losses)
 
     def __add__(self, other: TotalLoss | Loss) -> TotalLoss:
