@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Callable
 
 import pytest
 import pytorch_lightning
+from ase import Atoms
+from ase.io import read
 from graph_pes.core import GraphPESModel
 from graph_pes.models import ALL_MODELS, OneHotNequIP
 
@@ -51,3 +54,9 @@ def parameterise_model_classes(
         )
 
     return decorator
+
+
+CU_STRUCTURES_FILE = Path(__file__).parent / "test.xyz"
+CU_TEST_STRUCTURES: list[Atoms] = read(CU_STRUCTURES_FILE, ":")  # type: ignore
+
+CONFIGS_DIR = Path(__file__).parent.parent.parent / "configs"

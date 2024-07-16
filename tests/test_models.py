@@ -4,7 +4,6 @@ import helpers
 import pytest
 import torch
 from ase import Atoms
-from ase.io import read
 from graph_pes.core import GraphPESModel, get_predictions
 from graph_pes.data.io import to_atomic_graph, to_atomic_graphs
 from graph_pes.graphs.operations import (
@@ -15,8 +14,7 @@ from graph_pes.graphs.operations import (
 from graph_pes.models import LennardJones, Morse
 from graph_pes.models.addition import AdditionModel
 
-structures: list[Atoms] = read("tests/test.xyz", ":")  # type: ignore
-graphs = to_atomic_graphs(structures, cutoff=3)
+graphs = to_atomic_graphs(helpers.CU_TEST_STRUCTURES, cutoff=3)
 
 
 def test_model():
@@ -59,7 +57,7 @@ def test_pre_fit():
         model.pre_fit(graphs)
 
 
-@helpers.parameterise_model_classes(["Cu"])
+@helpers.parameterise_model_classes(expected_elements=["Cu"])
 def test_model_serialisation(model_class: type[GraphPESModel], tmp_path):
     # 1. instantiate the model
     m1 = model_class()

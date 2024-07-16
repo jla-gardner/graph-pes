@@ -8,7 +8,6 @@ from graph_pes.data.io import to_atomic_graph
 CUTOFF = 1.0
 
 
-# @pytest.mark.parametrize("model", models, ids=names)
 @helpers.parameterise_all_models(expected_elements=["H", "C"])
 def test_equivariance(model: GraphPESModel):
     methane = molecule("CH4")

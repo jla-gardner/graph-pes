@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import helpers
 import yaml
 from graph_pes.config import Config, get_default_config_values
 from graph_pes.scripts.train import (
@@ -14,7 +15,7 @@ from graph_pes.util import nested_merge
 
 
 def test_arg_parse():
-    config_path = Path(__file__).parent.parent / "configs/minimal.yaml"
+    config_path = helpers.CONFIGS_DIR / "minimal.yaml"
     command = f"""\
 graph-pes-train --config {config_path} \
     fitting^loader_kwargs^batch_size=32 \
@@ -35,7 +36,6 @@ graph-pes-train --config {config_path} \
 
 
 def test_train_script(tmp_path: Path):
-    structure_path = Path(__file__).parent / "test.xyz"
     root = tmp_path / "root"
     config_str = f"""\
 general:
@@ -45,7 +45,7 @@ loss: graph_pes.training.loss.PerAtomEnergyLoss()
 model: graph_pes.models.LennardJones()    
 data:
     graph_pes.data.load_atoms_datasets:
-        id: {structure_path}
+        id: {helpers.CU_STRUCTURES_FILE}
         cutoff: 3.0
         n_train: 8
         n_valid: 2

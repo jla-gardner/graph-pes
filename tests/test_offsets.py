@@ -1,17 +1,16 @@
 from __future__ import annotations
 
+import helpers
 import numpy as np
 import pytest
 import torch
 from ase import Atoms
-from ase.io import read
 from graph_pes.core import get_predictions
 from graph_pes.data.io import to_atomic_graphs
 from graph_pes.graphs.operations import number_of_atoms, to_batch
 from graph_pes.models.offsets import EnergyOffset, FixedOffset, LearnableOffset
 
-structures: list[Atoms] = read("tests/test.xyz", ":")  # type: ignore
-graphs = to_atomic_graphs(structures, cutoff=3)
+graphs = to_atomic_graphs(helpers.CU_TEST_STRUCTURES, cutoff=3)
 
 
 @pytest.mark.parametrize(
@@ -56,7 +55,7 @@ def test_offset_behaviour(offset_model: EnergyOffset, trainable: bool):
     assert torch.all(predictions["forces"] == 0)
 
 
-def test_energy_offset_fitting(caplog: pytest.LogCaptureFixture):
+def test_energy_offset_fitting():
     # create some fake structures to test shift and scale fitting
 
     structures = []

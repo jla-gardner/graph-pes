@@ -1,8 +1,7 @@
 from __future__ import annotations
 
+import helpers
 import pytest
-from ase import Atoms
-from ase.io import read
 from graph_pes import get_predictions
 from graph_pes.data.io import to_atomic_graphs
 from graph_pes.graphs.operations import to_batch
@@ -32,8 +31,7 @@ models = [
     ids=[model.__class__.__name__ for model in models],
 )
 def test_integration(model):
-    structures: list[Atoms] = read("tests/test.xyz", ":")  # type: ignore
-    graphs = to_atomic_graphs(structures, cutoff=3)
+    graphs = to_atomic_graphs(helpers.CU_TEST_STRUCTURES, cutoff=3)
 
     batch = to_batch(graphs)
     assert "energy" in batch
