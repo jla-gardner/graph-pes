@@ -4,6 +4,7 @@ import helpers
 import numpy as np
 import pytest
 from graph_pes.data import load_atoms_datasets
+from graph_pes.graphs.operations import number_of_atoms
 
 
 @pytest.mark.parametrize("split", ["random", "sequential"])
@@ -22,9 +23,10 @@ def test_shuffling(split: Literal["random", "sequential"]):
             helpers.CU_TEST_STRUCTURES[0].positions,
         )
     else:
-        assert not np.allclose(
-            dataset.train[0]["_positions"],
-            helpers.CU_TEST_STRUCTURES[0].positions,
+        # different structures with different sizes in the first
+        # position of the training set after shuffling
+        assert number_of_atoms(dataset.train[0]) != len(
+            helpers.CU_TEST_STRUCTURES[0]
         )
 
 
@@ -47,6 +49,7 @@ def test_property_map():
         n_train=8,
         n_valid=2,
         property_map={"forces": "positions"},
+        split="sequential",
     )
 
     assert "forces" in dataset.train[0]
