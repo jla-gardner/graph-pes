@@ -6,6 +6,7 @@ from pathlib import Path
 import helpers
 import yaml
 from graph_pes.config import Config, get_default_config_values
+from graph_pes.models.__init__ import STR_ALL_MODELS
 from graph_pes.scripts.train import (
     extract_config_from_command_line,
     parse_args,
@@ -33,6 +34,43 @@ graph-pes-train --config {config_path} \
     config = extract_config_from_command_line()
     assert config.fitting.loader_kwargs["batch_size"] == 32
     assert config.data["graph_pes.data.load_atoms_dataset"]["n_train"] == 10  # type: ignore
+
+
+def mimic_autogen_inputs(prompt):
+    responses = {
+        f"Enter the model type. Must be one of {STR_ALL_MODELS} (Required, Case Sensitive): ": "LennardJones",
+        "Data type, 'ase_database' or 'load_atoms_datasets' (Required): ": "load_atoms_datasets",
+        "Data Source (Required): ": "QM7",
+        "Neighbour List Cutoff Radius (Default: 4): ": 3,
+        "Number of training structures (Default: 500): ": "480",
+        "Number of validation structures (Default: 100): ": 100,
+        "Convert labels to energy, forces, stress by writing in dict form e.g. {'energy': 'U0'}: ": "",
+        "Max Epochs (Default: 100): ": 1,
+        "Learning Rate (Default: 0.001): ": "0.005",
+        "Optimizer Name (Default: AdamW): ": "",
+        "Loss Function, check docs for options (Default: per atom): ": "",
+    }
+    return responses[prompt]
+
+
+def test_autogen(monkeypatch):
+    command = "graph-pes-train --autogen"
+    sys.argv = command.split()
+
+    args = parse_args()
+    assert args.autogen
+    # TODO: Mimic user input to test the auto-generation of config
+    monkeypatch.setattr("builtins.input", mimic_autogen_inputs)
+    config = extract_config_from_command_line()
+    assert config.model == {"graph_pes.models.LennardJones": {}}
+    assert config.data == {
+        "graph_pes.data.load_atoms_datasets": {
+            "id": "QM7",
+            "cutoff": 3.0,
+            "n_train": 480,
+            "n_valid": 100,
+        }
+    }
 
 
 def test_train_script(tmp_path: Path):
