@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import Callable, Union
 
 import e3nn.util.jit
+import graph_pes.models.distances
 import torch
 from e3nn import o3
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import neighbour_distances, neighbour_vectors
 from graph_pes.models.distances import (
-    Bessel,
     DistanceExpansion,
     PolynomialEnvelope,
 )
@@ -50,14 +50,25 @@ class NonLinearReadOut(torch.nn.Module):
 ReadOut = Union[LinearReadOut, NonLinearReadOut]
 
 
+def _get_distance_expansion(name: str) -> type[DistanceExpansion]:
+    try:
+        return getattr(graph_pes.models.distances, name)
+    except AttributeError:
+        raise ValueError(f"Unknown distance expansion type: {name}") from None
+
+
 @e3nn.util.jit.compile_mode("script")
 class _BaseMACE(AutoScaledPESModel):
+    """
+    Base class for MACE models.
+    """
+
     def __init__(
         self,
         # radial things
         cutoff: float,
         n_radial: int,
-        radial_expansion_type: type[DistanceExpansion],
+        radial_expansion_type: type[DistanceExpansion] | str,
         # node attributes
         z_embed_dim: int,
         z_embedding: Callable[[torch.Tensor], torch.Tensor],
@@ -70,6 +81,11 @@ class _BaseMACE(AutoScaledPESModel):
         use_self_connection: bool,
     ):
         super().__init__()
+
+        if isinstance(radial_expansion_type, str):
+            radial_expansion_type = _get_distance_expansion(
+                radial_expansion_type
+            )
 
         self.radial_expansion = HaddamardProduct(
             radial_expansion_type(
@@ -127,13 +143,70 @@ class _BaseMACE(AutoScaledPESModel):
 
 @e3nn.util.jit.compile_mode("script")
 class MACE(_BaseMACE):
+    r"""
+    Vanilla MACE model.
+
+    One-hot encodings of the atomic numbers are used to condition the
+    ``TensorProduct`` update in the residual connection of the message passing
+    layers.
+
+    Parameters
+    ----------
+    elements
+        list of elements that this MACE model will be able to handle.
+    cutoff
+        radial cutoff (in Å) for the radial expansion (and message passing)
+    n_radial
+        number of bases to expand the radial distances into
+    radial_expansion_type
+        type of radial expansion to use
+    layers
+        number of message passing layers
+    max_ell
+        :math:`l_\max` for the spherical harmonics
+    correlation
+        maximum correlation order of the messages
+    hidden_irreps
+        :class:`~e3nn.o3.Irreps` string for the node features at each
+        message passing layer
+    neighbour_scaling
+        scaling factor used to scale the neighbour message aggregation
+    use_self_connection
+        whether to use self-connections in the message passing layers
+
+    Examples
+    --------
+    Basic usage:
+
+    .. code-block:: python
+
+        >>> from graph_pes.models import MACE
+        >>> from graph_pes.models.distances import Bessel
+        >>> model = MACE(
+        ...     elements=["H", "C", "N", "O"],
+        ...     cutoff=5.0,
+        ...     radial_expansion_type=Bessel,
+        ... )
+
+    Specification in a YAML file:
+
+    .. code-block:: yaml
+
+        model:
+            graph_pes.models.MACE:
+                elements: [H, C, N, O]
+                cutoff: 5.0
+                hidden_irreps: "128x0e + 128x1o"
+                radial_expansion_type: GaussianSmearing
+    """
+
     def __init__(
         self,
         elements: list[str],
         # radial things
         cutoff: float = 5.0,
         n_radial: int = 8,
-        radial_expansion_type: type[DistanceExpansion] = Bessel,
+        radial_expansion_type: type[DistanceExpansion] | str = "Bessel",
         # message passing
         layers: int = 2,
         max_ell: int = 3,
@@ -162,12 +235,61 @@ class MACE(_BaseMACE):
 
 @e3nn.util.jit.compile_mode("script")
 class ZEmbeddingMACE(_BaseMACE):
+    r"""
+    MACE model that uses a learnable embedding of atomic number to
+    condition the ``TensorProduct`` update in the residual connection of the
+    message passing layers.
+
+    Parameters
+    ----------
+    cutoff
+        radial cutoff (in Å) for the radial expansion (and message passing)
+    n_radial
+        number of bases to expand the radial distances into
+    radial_expansion_type
+        type of radial expansion to use
+    z_embed_dim
+        dimension of the atomic number embedding
+    layers
+        number of message passing layers
+    max_ell
+        :math:`l_\max` for the spherical harmonics
+    correlation
+        maximum correlation order of the messages
+    hidden_irreps
+        :class:`~e3nn.o3.Irreps` string for the node features at each
+        message passing layer
+    neighbour_scaling
+        scaling factor used to scale the neighbour message aggregation
+    use_self_connection
+        whether to use self-connections in the message passing layers
+
+    Examples
+    --------
+    Basic usage:
+
+    .. code-block:: python
+
+        >>> model = ZEmbeddingMACE(
+        ...     cutoff=5.0,
+        ... )
+
+    Specification in a YAML file:
+
+    .. code-block:: yaml
+
+        model:
+            graph_pes.models.ZEmbeddingMACE:
+                cutoff: 5.0
+                hidden_irreps: "128x0e + 128x1o"
+    """
+
     def __init__(
         self,
         # radial things
         cutoff: float = 5.0,
         n_radial: int = 8,
-        radial_expansion_type: type[DistanceExpansion] = Bessel,
+        radial_expansion_type: type[DistanceExpansion] | str = "Bessel",
         # node attributes
         z_embed_dim: int = 16,
         # message passing

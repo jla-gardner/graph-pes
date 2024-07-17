@@ -27,6 +27,7 @@ Available Models
    models/pairwise
    models/schnet
    models/painn
+   models/mace
 
 
 Helper Classes and Functions
