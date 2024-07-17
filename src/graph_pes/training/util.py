@@ -15,13 +15,10 @@ def log_model_info(
 
     logger.info(f"Model:\n{model}")
 
-    if not isinstance(model, AdditionModel):
-        params = sum(p.numel() for p in model.parameters())
-        logger.info(f"Number of learnable params : {params:,}")
-
-    else:
+    if isinstance(model, AdditionModel):
         model_names = [
-            component.__class__.__name__ for component in model.models
+            f"{given_name} ({component.__class__.__name__})"
+            for given_name, component in model.models.items()
         ]
         params = [
             learnable_parameters(component)
@@ -32,6 +29,10 @@ def log_model_info(
         for name, param in zip(model_names, params):
             info_str += f"\n    {name:<{width}}: {param:,}"
         logger.info(info_str)
+
+    else:
+        params = sum(p.numel() for p in model.parameters())
+        logger.info(f"Number of learnable params : {params:,}")
 
     if ptl_logger is not None:
         all_params = sum(p.numel() for p in model.parameters())
