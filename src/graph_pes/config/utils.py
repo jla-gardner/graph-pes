@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import copy
+import importlib
+import importlib.util
+import sys
 import warnings
 from pathlib import Path
 from typing import Any
@@ -30,7 +33,30 @@ def _import(thing: str) -> Any:
     """
 
     module_name, obj_name = thing.rsplit(".", 1)
-    module = __import__(module_name, fromlist=[obj_name])
+    try:
+        module = importlib.import_module(module_name)
+    except ImportError:
+        assumed_file = Path(module_name).with_suffix(".py")
+        if not assumed_file.exists():
+            raise ImportError(
+                f"While attempting to import {obj_name} from {module_name}, "
+                "we could not find the module or the file "
+                f"belonging to {module_name}."
+            ) from None
+
+        logger.debug(
+            f"Could not directly import '{module_name}' - "
+            f"trying to load it from {assumed_file}"
+        )
+        spec = importlib.util.spec_from_file_location(
+            name=module_name, location=assumed_file
+        )
+        assert spec is not None
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
     return getattr(module, obj_name)
 
 
@@ -131,8 +157,9 @@ def _create_from_dict(d: dict[str, Any], depth: int) -> dict[str, Any] | Any:
                 log(f"successfully created {result}")
                 log(f"final result: {result}")
                 return result
-            except ImportError:
+            except ImportError as e:
                 warn_about_import_error(k)
+                raise e
 
     # 3. if dict has more than one key, return it as is
     log(f"final result: {new_d}")

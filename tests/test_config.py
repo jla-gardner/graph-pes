@@ -9,10 +9,20 @@ from graph_pes.training.loss import RMSE, Loss
 from graph_pes.util import nested_merge
 
 
-def test_import():
-    # test that we can import:
+def test_import(tmp_path):
+    # test that we can import an object from our own modules
     obj = _import("graph_pes.models.SchNet")
     assert obj is SchNet
+
+    # test that we can import an object from some other module
+    assert _import("torch.nn.ReLU") is torch.nn.ReLU
+
+    # finally, try to import something from a local file
+    (tmp_path / "test.py").write_text("""
+class Test:
+    a = 3
+""")
+    assert _import(str(tmp_path / "test.Test")).a == 3
 
 
 def test_object_creation():
