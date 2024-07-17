@@ -6,7 +6,6 @@ from pathlib import Path
 import helpers
 import yaml
 from graph_pes.config import Config, get_default_config_values
-from graph_pes.models.__init__ import STR_ALL_MODELS
 from graph_pes.scripts.train import (
     extract_config_from_command_line,
     parse_args,
