@@ -150,6 +150,10 @@ class MACE(_BaseMACE):
     ``TensorProduct`` update in the residual connection of the message passing
     layers.
 
+    Internally, we rely on the `mace-layer <https://github.com/ACEsuit/mace-layer>`_
+    implementation for the message passing layers, using the
+    ``RealAgnosticResidualInteractionBlock``.
+
     Parameters
     ----------
     elements
@@ -198,7 +202,7 @@ class MACE(_BaseMACE):
                 cutoff: 5.0
                 hidden_irreps: "128x0e + 128x1o"
                 radial_expansion_type: GaussianSmearing
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -239,6 +243,10 @@ class ZEmbeddingMACE(_BaseMACE):
     MACE model that uses a learnable embedding of atomic number to
     condition the ``TensorProduct`` update in the residual connection of the
     message passing layers.
+
+    Internally, we rely on the `mace-layer <https://github.com/ACEsuit/mace-layer>`_
+    implementation for the message passing layers, using the
+    ``RealAgnosticResidualInteractionBlock``.
 
     Parameters
     ----------
@@ -282,7 +290,7 @@ class ZEmbeddingMACE(_BaseMACE):
             graph_pes.models.ZEmbeddingMACE:
                 cutoff: 5.0
                 hidden_irreps: "128x0e + 128x1o"
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
