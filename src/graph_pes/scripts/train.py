@@ -14,7 +14,7 @@ import yaml
 from graph_pes.config import Config, get_default_config_values
 from graph_pes.deploy import deploy_model
 from graph_pes.logger import log_to_file, logger
-from graph_pes.models.__init__ import STR_ALL_MODELS
+from graph_pes.scripts.generation import config_auto_generation
 from graph_pes.training.ptl import create_trainer, train_with_lightning
 from graph_pes.util import nested_merge, random_id
 from pytorch_lightning.loggers import CSVLogger, WandbLogger
@@ -36,24 +36,14 @@ def parse_args():
         ),
     )
 
-    config_type = parser.add_mutually_exclusive_group(required=True)
-    config_type.add_argument(
+    parser.add_argument(
         "--config",
         action="append",
         help=(
             "Path to the configuration file. "
             "This argument can be used multiple times, with later files "
-            "taking precedence over earlier ones in the case of conflicts."
-            "Mutually exclusive with --autogen."
-        ),
-    )
-
-    config_type.add_argument(
-        "--autogen",
-        action="store_true",
-        help=(
-            "Generate a config file through the command line."
-            "Mutually exclusive with --config."
+            "taking precedence over earlier ones in the case of conflicts. "
+            "If no config files are provided, the script will auto-generate."
         ),
     )
 
@@ -63,106 +53,17 @@ def parse_args():
         help=(
             "Config overrides in the form nested^key=value, "
             "separated by spaces, e.g. fitting^loader_kwargs^batch_size=32. "
-            " Overwrites are invalid if autogen is used."
         ),
     )
 
     return parser.parse_args()
 
 
-def auto_generate_config() -> Config:
-    defaults = get_default_config_values()
-    autogen_dict = {}
-
-    # 1. Query model type
-    while True:
-        try:
-            model_strings = STR_ALL_MODELS
-            model_type = input(
-                f"Enter the model type. Must be one of {model_strings} "
-                "(Required, Case Sensitive): "
-            )
-            if model_type not in model_strings:
-                raise ValueError("Invalid model type. Enter input again.")
-        except ValueError:
-            continue
-        else:
-            break
-
-    autogen_dict["model"] = {f"graph_pes.models.{model_type}": {}}
-
-    # 2. Query the data section.
-    data_type = input(
-        "Data type, 'ase_database' or 'load_atoms_datasets' (Required): "
-    )
-    id = input("Data Source (Required): ")
-    cutoff = float(input("Neighbour List Cutoff Radius (Default: 4): ")) or 4
-    n_train = (
-        int(input("Number of training structures (Default: 500): ")) or 500
-    )
-    n_valid = (
-        int(input("Number of validation structures (Default: 100): ")) or 100
-    )
-    property_map = input(
-        "Convert labels to energy, forces, stress "
-        "by writing in dict form e.g. {'energy': 'U0'}: "
-    )
-    autogen_dict["data"] = {
-        f"graph_pes.data.{data_type}": {
-            "id": id,
-            "cutoff": cutoff,
-            "n_train": n_train,
-            "n_valid": n_valid,
-        }
-    }
-    if property_map:
-        autogen_dict["data"][f"graph_pes.data.{data_type}"]["property_map"] = (
-            property_map
-        )
-
-    # 3. Query the fitting section.
-    max_epochs = (
-        float(input("Max Epochs (Default: 100): "))
-        or defaults["fitting"]["trainer_kwargs"]["max_epochs"]
-    )
-    lr = (
-        float(input("Learning Rate (Default: 0.001): "))
-        or defaults["fitting"]["optimizer"]["graph_pes.training.opt.Optimizer"][
-            "lr"
-        ]
-    )
-    optimizer = (
-        input("Optimizer Name (Default: AdamW): ")
-        or defaults["fitting"]["optimizer"]["graph_pes.training.opt.Optimizer"][
-            "name"
-        ]
-    )
-    autogen_dict["fitting"] = {
-        "trainer_kwargs": {
-            "max_epochs": max_epochs,
-        },
-        "optimizer": {
-            "name": optimizer,
-            "lr": lr,
-        },
-    }
-
-    # 4. Query the loss section.
-    loss = (
-        input("Loss Function, check docs for options (Default: per atom): ")
-        or "graph_pes.training.loss.PerAtomEnergyLoss()"
-    )
-    autogen_dict["loss"] = loss
-
-    final_config_dict = nested_merge(defaults, autogen_dict)
-    return Config.from_dict(final_config_dict)
-
-
 def extract_config_from_command_line() -> Config:
     args = parse_args()
-
-    if args.autogen:
-        return auto_generate_config()
+    print(args.config)
+    if not args.config:
+        return config_auto_generation()
 
     # load default config
     defaults = get_default_config_values()

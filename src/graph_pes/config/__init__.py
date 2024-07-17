@@ -7,7 +7,11 @@ import yaml
 
 from .spec import Config, FittingOptions
 
-__all__ = ["Config", "get_default_config_values", "FittingOptions"]
+__all__ = [
+    "Config",
+    "get_default_config_values",
+    "FittingOptions",
+]
 
 
 def get_default_config_values() -> dict[str, Any]:

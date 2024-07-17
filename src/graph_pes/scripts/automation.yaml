@@ -1,0 +1,64 @@
+model:
+      prompt: >
+          Select a model to train. Must be a member of 
+          {[_class.__name__ for _class in ALL_MODELS]}. Default: SchNet 
+      type: str
+      value: "SchNet()"
+      prefix: "graph_pes.models." 
+
+loss:
+    prompt: >
+        Select a loss function to use. Check documentation for options. 
+        Default: PerAtomEnergyLoss
+    type: str
+    value: "PerAtomEnergyLoss()"
+    prefix: "graph_pes.training.loss."
+
+data:
+    graph_pes.data.load_atoms_datasets:
+        id:
+            prompt: > 
+                Select a dataset to train on.  This must be either a) a path to 
+                an ASE-readable file, or b) an id from load-atoms. Default: QM7
+            type: str
+            value: "QM7"
+        cutoff:
+            prompt: "Select a cutoff for the dataset. Default: 4.0"
+            type: float
+            value: 4.0
+        n_train:
+            prompt: "Select the number of training samples. Default: 500"
+            type: int
+            value: 500
+        n_valid:
+            prompt: "Select the number of validation samples. Default: 100"
+            type: int
+            value: 100
+
+fitting:
+    optimizer:
+        graph_pes.training.opt.Optimizer:
+            name:
+                prompt: > 
+                    Select an optimizer, check documentation for options.
+                    Default: AdamW
+                type: str
+                value: "AdamW"
+            lr:
+                prompt: "Select learning rate for optimizer. Default: 0.001 "
+                type: float
+                value: 0.001
+
+    # train for 100 epochs on the best device available
+    trainer_kwargs:
+        max_epochs:
+            prompt: >
+                Select the maximum number of epochs to train for. Default: 100
+            type: int
+            value: 100
+
+    loader_kwargs:
+        batch_size:
+            prompt: "Select the batch size for training. Default: 4 "
+            type: int
+            value: 4

@@ -38,12 +38,6 @@ ALL_MODELS: list[type[GraphPESModel]] = [
     if model not in ["FixedOffset", "LearnableOffset", "load_model"]
 ]
 
-STR_ALL_MODELS: list[str] = [
-    model
-    for model in __all__
-    if model not in ["FixedOffset", "LearnableOffset", "load_model"]
-]
-
 
 def load_model(path: str | Path):
     path = Path(path)
