@@ -76,7 +76,12 @@ def load_atoms_datasets(
         for i in range(n_train + n_valid):
             structure = structures[i]
             for key, value in property_map.items():
-                structure.info[key] = structure.info[value]
+                if value in structure.info:
+                    structure.info[key] = structure.info[value]
+                elif value in structure.arrays:
+                    structure.info[key] = structure.arrays[value]
+                else:
+                    raise ValueError(f"Property {value} not found in structure")
 
     train_structures = structures[:n_train]
     val_structures = structures[n_train : n_train + n_valid]
