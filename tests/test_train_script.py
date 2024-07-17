@@ -38,13 +38,16 @@ graph-pes-train --config {config_path} \
 
 def mimic_autogen_inputs(prompt):
     responses = {
-        f"Enter the model type. Must be one of {STR_ALL_MODELS} (Required, Case Sensitive): ": "LennardJones",
-        "Data type, 'ase_database' or 'load_atoms_datasets' (Required): ": "load_atoms_datasets",
+        f"Enter the model type. Must be one of {STR_ALL_MODELS} "
+        "(Required, Case Sensitive): ": "LennardJones",
+        "Data type, 'ase_database' or 'load_atoms_datasets' "
+        "(Required): ": "load_atoms_datasets",
         "Data Source (Required): ": "QM7",
         "Neighbour List Cutoff Radius (Default: 4): ": 3,
         "Number of training structures (Default: 500): ": "480",
         "Number of validation structures (Default: 100): ": 100,
-        "Convert labels to energy, forces, stress by writing in dict form e.g. {'energy': 'U0'}: ": "",
+        "Convert labels to energy, forces, stress by writing in dict form "
+        "e.g. {'energy': 'U0'}: ": "",
         "Max Epochs (Default: 100): ": 1,
         "Learning Rate (Default: 0.001): ": "0.005",
         "Optimizer Name (Default: AdamW): ": "",
