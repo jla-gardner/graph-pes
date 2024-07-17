@@ -18,7 +18,7 @@ keywords = []
 dependencies = [
     "torch",
     "pytorch-lightning",
-    "ase==3.22.1",                                                                            # TODO: unpin this? or pin other versions?
+    "ase==3.22.1",                                                                                           # TODO: unpin this? or pin other versions?
     "numpy",
     "jaxtyping",
     "rich",
@@ -28,7 +28,7 @@ dependencies = [
     "locache",
     "load-atoms",
     "wandb",
-    "git+https://github.com/ACEsuit/mace-layer.git@ddc076bf6e9f24fa5007dfafeefea8e1d9cb2226",
+    "mace_layer@git+https://github.com/ACEsuit/mace-layer.git#egg=ddc076bf6e9f24fa5007dfafeefea8e1d9cb2226",
 ]
 requires-python = ">=3.8"
 
