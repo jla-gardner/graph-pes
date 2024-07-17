@@ -81,7 +81,7 @@ def load_atoms_datasets(
                 elif value in structure.arrays:
                     structure.info[key] = structure.arrays[value]
                 else:
-                    raise ValueError(f"Property {value} not found in structure")
+                    raise KeyError(f"Property {value} not found in structure")
 
     train_structures = structures[:n_train]
     val_structures = structures[n_train : n_train + n_valid]

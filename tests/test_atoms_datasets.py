@@ -57,3 +57,14 @@ def test_property_map():
         dataset.train[0]["forces"],
         helpers.CU_TEST_STRUCTURES[0].positions,
     )
+
+    with pytest.raises(
+        KeyError, match="Property UNKNOWN KEY not found in structure"
+    ):
+        load_atoms_datasets(
+            id=helpers.CU_STRUCTURES_FILE,
+            cutoff=3.7,
+            n_train=8,
+            n_valid=2,
+            property_map={"energy": "UNKNOWN KEY"},
+        )

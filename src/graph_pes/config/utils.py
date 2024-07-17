@@ -157,9 +157,8 @@ def _create_from_dict(d: dict[str, Any], depth: int) -> dict[str, Any] | Any:
                 log(f"successfully created {result}")
                 log(f"final result: {result}")
                 return result
-            except ImportError as e:
+            except ImportError:
                 warn_about_import_error(k)
-                raise e
 
     # 3. if dict has more than one key, return it as is
     log(f"final result: {new_d}")
