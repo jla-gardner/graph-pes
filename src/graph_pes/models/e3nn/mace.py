@@ -163,7 +163,8 @@ class MACE(_BaseMACE):
     n_radial
         number of bases to expand the radial distances into
     radial_expansion_type
-        type of radial expansion to use
+        type of radial expansion to use. See :class:`~graph_pes.models.distances.DistanceExpansion`
+        for available options
     layers
         number of message passing layers
     max_ell
@@ -174,7 +175,9 @@ class MACE(_BaseMACE):
         :class:`~e3nn.o3.Irreps` string for the node features at each
         message passing layer
     neighbour_scaling
-        scaling factor used to scale the neighbour message aggregation
+        normalisation factor, :math:`\lambda`, for use in message aggregation:
+        :math:`m_i = \frac{1}{\lambda} \sum_j m_{j \rightarrow i}`. Typically
+        set to the average number of neighbours
     use_self_connection
         whether to use self-connections in the message passing layers
 
@@ -255,7 +258,8 @@ class ZEmbeddingMACE(_BaseMACE):
     n_radial
         number of bases to expand the radial distances into
     radial_expansion_type
-        type of radial expansion to use
+        type of radial expansion to use. See :class:`~graph_pes.models.distances.DistanceExpansion`
+        for available options
     z_embed_dim
         dimension of the atomic number embedding
     layers
@@ -268,7 +272,9 @@ class ZEmbeddingMACE(_BaseMACE):
         :class:`~e3nn.o3.Irreps` string for the node features at each
         message passing layer
     neighbour_scaling
-        scaling factor used to scale the neighbour message aggregation
+        normalisation factor, :math:`\lambda`, for use in message aggregation:
+        :math:`m_i = \frac{1}{\lambda} \sum_j m_{j \rightarrow i}`. Typically
+        set to the average number of neighbours
     use_self_connection
         whether to use self-connections in the message passing layers
 
