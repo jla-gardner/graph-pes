@@ -96,6 +96,16 @@ exclude_also = [
     "if __name__ == '__main__':",
 ]
 
+# allow for coverage to find relevant files in both src/ and */site-packages
+# so that we can install the package both normally and in editable mode, and 
+# still get coverage for both cases using `pytest --cov`
+[tool.coverage.paths]
+source = ["src", "*/site-packages"]
+
+[tool.coverage.run]
+branch = true
+source = ["graph_pes"]
+
 [tool.pytest.ini_options]
 # ignore all warnings coming from the pytorch_lightning package
 filterwarnings = [
