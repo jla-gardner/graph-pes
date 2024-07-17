@@ -150,6 +150,10 @@ class MACE(_BaseMACE):
     ``TensorProduct`` update in the residual connection of the message passing
     layers.
 
+    During the ``pre_fit`` stage, this model guesses an initial scale for
+    the energies of each element in the training set (see :class:`~graph_pes.models.scaling.AutoScaledPESModel`).
+    To disable this feature, turn off pre-fitting.
+
     Internally, we rely on the `mace-layer <https://github.com/ACEsuit/mace-layer>`_
     implementation for the message passing layers, using the
     ``RealAgnosticResidualInteractionBlock``.
@@ -205,6 +209,33 @@ class MACE(_BaseMACE):
                 cutoff: 5.0
                 hidden_irreps: "128x0e + 128x1o"
                 radial_expansion_type: GaussianSmearing
+
+    Citation
+    --------
+    Please cite the following papers if you use this model in your research:
+
+    .. code-block:: bibtex
+
+        @misc{Batatia2022MACE,
+            title = {MACE: Higher Order Equivariant Message Passing Neural Networks for Fast and Accurate Force Fields},
+            author = {Batatia, Ilyes and Kov{\'a}cs, D{\'a}vid P{\'e}ter and Simm, Gregor N. C. and Ortner, Christoph and Cs{\'a}nyi, G{\'a}bor},
+            year = {2022},
+            number = {arXiv:2206.07697},
+            eprint = {2206.07697},
+            eprinttype = {arxiv},
+            doi = {10.48550/ARXIV.2206.07697},
+            archiveprefix = {arXiv}
+        }
+        @misc{Batatia2022Design,
+            title = {The Design Space of E(3)-Equivariant Atom-Centered Interatomic Potentials},
+            author = {Batatia, Ilyes and Batzner, Simon and Kov{\'a}cs, D{\'a}vid P{\'e}ter and Musaelian, Albert and Simm, Gregor N. C. and Drautz, Ralf and Ortner, Christoph and Kozinsky, Boris and Cs{\'a}nyi, G{\'a}bor},
+            year = {2022},
+            number = {arXiv:2205.06643},
+            eprint = {2205.06643},
+            eprinttype = {arxiv},
+            doi = {10.48550/arXiv.2205.06643},
+            archiveprefix = {arXiv}
+        }
     """  # noqa: E501
 
     def __init__(
@@ -246,6 +277,10 @@ class ZEmbeddingMACE(_BaseMACE):
     MACE model that uses a learnable embedding of atomic number to
     condition the ``TensorProduct`` update in the residual connection of the
     message passing layers.
+
+    During the ``pre_fit`` stage, this model guesses an initial scale for
+    the energies of each element in the training set (see :class:`~graph_pes.models.scaling.AutoScaledPESModel`).
+    To disable this feature, turn off pre-fitting.
 
     Internally, we rely on the `mace-layer <https://github.com/ACEsuit/mace-layer>`_
     implementation for the message passing layers, using the
@@ -296,6 +331,34 @@ class ZEmbeddingMACE(_BaseMACE):
             graph_pes.models.ZEmbeddingMACE:
                 cutoff: 5.0
                 hidden_irreps: "128x0e + 128x1o"
+
+
+    Citation
+    --------
+    Please cite the following papers if you use this model in your research:
+
+    .. code-block:: bibtex
+
+        @misc{Batatia2022MACE,
+            title = {MACE: Higher Order Equivariant Message Passing Neural Networks for Fast and Accurate Force Fields},
+            author = {Batatia, Ilyes and Kov{\'a}cs, D{\'a}vid P{\'e}ter and Simm, Gregor N. C. and Ortner, Christoph and Cs{\'a}nyi, G{\'a}bor},
+            year = {2022},
+            number = {arXiv:2206.07697},
+            eprint = {2206.07697},
+            eprinttype = {arxiv},
+            doi = {10.48550/ARXIV.2206.07697},
+            archiveprefix = {arXiv}
+        }
+        @misc{Batatia2022Design,
+            title = {The Design Space of E(3)-Equivariant Atom-Centered Interatomic Potentials},
+            author = {Batatia, Ilyes and Batzner, Simon and Kov{\'a}cs, D{\'a}vid P{\'e}ter and Musaelian, Albert and Simm, Gregor N. C. and Drautz, Ralf and Ortner, Christoph and Kozinsky, Boris and Cs{\'a}nyi, G{\'a}bor},
+            year = {2022},
+            number = {arXiv:2205.06643},
+            eprint = {2205.06643},
+            eprinttype = {arxiv},
+            doi = {10.48550/arXiv.2205.06643},
+            archiveprefix = {arXiv}
+        }
     """  # noqa: E501
 
     def __init__(
