@@ -457,33 +457,6 @@ class HaddamardProduct(nn.Module):
         return out
 
 
-# NB: we have to repeat code here somewhat because torchsript doesn't support
-# typing for callable
-
-
-# TODO: sort out this mess
-def left_aligned_add(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    """
-    Assume:
-    x.shape: (n, ...)
-    y.shape: (n, )
-
-    We broadcast y to the left of x and add the two tensors elementwise.
-    """
-    if x.dim() == 1 or x.dim() == 0:
-        return x + y
-    # add a fake dimension to x to make it (n, 1, ...)
-    x = x.unsqueeze(1)
-    # transpose x to make it (1, ..., n)
-    x = x.transpose(0, -1)
-    # apply the operation
-    result = x - y  # shape: (1, ..., n)
-    # transpose back to the original shape
-    result = result.transpose(0, -1)
-    # remove the fake dimension
-    return result.squeeze(1)
-
-
 def left_aligned_mul(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     r"""
     Calculate :math:`z = x \odot y` such that:

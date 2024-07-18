@@ -7,8 +7,38 @@ from graph_pes.models.offsets import LearnableOffset
 from graph_pes.util import uniform_repr
 
 
-# TODO: document
 class Optimizer:
+    """
+    A factory class for delayed instantiation of :class:`torch.optim.Optimizer`
+    objects.
+
+    The generated optimizer splits the parameters of the model into two groups:
+    - those that belong to some form of energy-offset modelling (e.g.
+      :class:`LearnableOffset`), and
+    - those that belong to the main model.
+    Any specified weight decay is applied only to the main model parameters.
+
+    Parameters
+    ----------
+    name
+        The name of the :class:`torch.optim.Optimizer` class to use, e.g.
+        ``"Adam"`` or ``"SGD"``. Alternatively, provide any subclass of
+        :class:`torch.optim.Optimizer`.
+    **kwargs
+        Additional keyword arguments to pass to the specified optimizer's
+        constructor.
+
+    Examples
+    --------
+    >>> from graph_pes.training.opt import Optimizer
+    >>> from graph_pes.models import LearnableOffset
+    >>> ...
+    >>> optimizer_factory = Optimizer("Adam", lr=1e-3)
+    >>> model = LearnableOffset()
+    >>> model.pre_fit(train_loader)
+    >>> opttimizer_instance = optimizer_factory(model)
+    """
+
     def __init__(
         self,
         name: str | type[torch.optim.Optimizer],
@@ -46,13 +76,36 @@ class Optimizer:
         if isinstance(model, LearnableOffset):
             offset_params += list(model.parameters())
         elif isinstance(model, AdditionModel):
-            for component in model.models:
+            for component in model.models.values():
                 if isinstance(component, LearnableOffset):
                     offset_params += list(component.parameters())
 
+        model_params = [
+            p
+            for p in model.parameters()
+            if not any(p is op for op in offset_params)
+        ]
+
+        assert (
+            offset_params or model_params
+        ), "No parameters found in the model. "
+
         if not offset_params:
             return self.optimizer_class(
-                [{"name": "model", "params": model.parameters()}],
+                [{"name": "model", "params": model_params}],
+                **self.kwargs,
+            )
+
+        if not model_params:
+            # override weight decay for offset parameters
+            return self.optimizer_class(
+                [
+                    {
+                        "name": "offset",
+                        "params": offset_params,
+                        "weight_decay": 0.0,
+                    }
+                ],
                 **self.kwargs,
             )
 
@@ -60,7 +113,6 @@ class Optimizer:
             {
                 "name": "offset",
                 "params": offset_params,
-                "lr": min(self.kwargs["lr"] * 10, 1e-1),
                 "weight_decay": 0.0,
             },
             {
@@ -68,8 +120,6 @@ class Optimizer:
                 "params": [
                     p
                     for p in model.parameters()
-                    # can't use simple "is in" due to pytorch's automated
-                    # casting to strange tensor types
                     if not any(p is t for t in offset_params)
                 ],
             },
@@ -85,6 +135,30 @@ class Optimizer:
 
 
 class LRScheduler:
+    """
+    A factory class for delayed instantiation of
+    :class:`torch.optim.lr_scheduler.LRScheduler` objects.
+
+    Parameters
+    ----------
+    name
+        The name of the :class:`torch.optim.lr_scheduler.LRScheduler` class to
+        use, e.g. ``"ReduceLROnPlateau"``. Alternatively, provide any subclass
+        of :class:`torch.optim.lr_scheduler.LRScheduler`.
+    **kwargs
+        Additional keyword arguments to pass to the specified scheduler's
+        constructor.
+
+    Examples
+    --------
+    >>> from graph_pes.training.opt import LRScheduler
+    >>> ...
+    >>> scheduler_factory = LRScheduler(
+    ...     "LambdaLR", lr_lambda=lambda epoch: 0.95 ** epoch
+    ... )
+    >>> scheduler_instance = scheduler_factory(optimizer)
+    """
+
     def __init__(
         self,
         name: str | type[torch.optim.lr_scheduler.LRScheduler],
@@ -140,6 +214,8 @@ class LRScheduler:
 
 
 class Adam(Optimizer):
+    """A convenience class for creating an Adam :class:`Optimizer`."""
+
     def __init__(
         self,
         lr: float = 3e-4,
@@ -149,6 +225,8 @@ class Adam(Optimizer):
 
 
 class SGD(Optimizer):
+    """A convenience class for creating an SGD :class:`Optimizer`."""
+
     def __init__(
         self,
         lr: float = 3e-4,
@@ -158,6 +236,10 @@ class SGD(Optimizer):
 
 
 class ReduceLROnPlateau(LRScheduler):
+    """
+    A convenience class for creating a ReduceLROnPlateau :class:`LRScheduler`.
+    """
+
     def __init__(
         self,
         factor: float = 0.5,
