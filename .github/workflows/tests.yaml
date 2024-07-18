@@ -44,13 +44,13 @@ jobs:
         with:
           path: ${{ env.pythonLocation }}
           key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
-      - name: Install pip dependencies
+      - name: Install graph-pes and required dependencies
         # if: steps.cache.outputs.cache-hit != 'true'
         # run: |
         #   pip install ".[test]"
         #   pip cache purge
         # else:
-        run: pip install --upgrade ".[test]"
+        run: pip install --upgrade --upgrade-strategy eager ".[test]"
       - name: Useful info
         run: pip freeze
       # - name: Run pytest checks
