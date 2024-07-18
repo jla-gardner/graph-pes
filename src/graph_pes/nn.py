@@ -315,7 +315,7 @@ class PerElementParameter(torch.nn.Parameter):
         )
 
     @torch.no_grad()
-    def __repr(
+    def _repr(
         self,
         alias: str | None = None,
         more_info: dict[str, Any] | None = None,
@@ -394,7 +394,7 @@ class PerElementParameter(torch.nn.Parameter):
         )
 
     def __repr__(self, *, tensor_contents=None):
-        return self.__repr()
+        return self._repr()
 
 
 def _rebuild_per_element_parameter(data, requires_grad, state):
