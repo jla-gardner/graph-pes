@@ -29,7 +29,6 @@ jobs:
         python-version:
           - 3.8
           # TODO: re-enable these once go public: otherwise expensive
-          # temp comment
           # - 3.9
           # - "3.10"
           # - 3.11
@@ -46,10 +45,12 @@ jobs:
           path: ${{ env.pythonLocation }}
           key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
       - name: Install pip dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          pip install ".[test]"
-          pip cache purge
+        # if: steps.cache.outputs.cache-hit != 'true'
+        # run: |
+        #   pip install ".[test]"
+        #   pip cache purge
+        # else:
+        run: pip install --upgrade ".[test]"
       - name: Useful info
         run: pip freeze
       # - name: Run pytest checks
