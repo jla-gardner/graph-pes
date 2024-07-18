@@ -6,10 +6,12 @@ import numpy as np
 import pytest
 import torch
 from ase.build import molecule
+from graph_pes import GraphPESModel
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.graphs.graph_typing import LabelledBatch, LabelledGraph
 from graph_pes.graphs.operations import number_of_structures, to_batch
 from graph_pes.models import LennardJonesMixture
+from graph_pes.models.addition import AdditionModel
 from graph_pes.models.pre_fit import (
     MIN_VARIANCE,
     guess_per_element_mean_and_var,
@@ -95,8 +97,15 @@ def test_clamping():
         assert value >= MIN_VARIANCE
 
 
-def test(tmp_path: Path):
-    model = LennardJonesMixture()
+models = [
+    LennardJonesMixture(),
+    AdditionModel(a=LennardJonesMixture(), b=LennardJonesMixture()),
+]
+names = ["LennardJonesMixture", "AdditionModel"]
+
+
+@pytest.mark.parametrize("model", models, ids=names)
+def test(tmp_path: Path, model: GraphPESModel):
     assert model.elements_seen == []
 
     # show the model C and H
