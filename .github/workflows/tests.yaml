@@ -39,7 +39,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
+      - name: Cache dependencies
+        uses: actions/cache@v4.0.2
+        id: cache
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
       - name: update pip
         run: pip install --upgrade pip
       - name: Install graph-pes
