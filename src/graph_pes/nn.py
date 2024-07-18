@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 from functools import reduce
-from typing import Any, Generic, Iterable, Iterator, Sequence, TypeVar
+from typing import (
+    Any,
+    Generic,
+    Iterable,
+    Iterator,
+    Sequence,
+    TypeVar,
+)
 
 import torch
 import torch.nn as nn
@@ -37,8 +44,8 @@ class UniformModuleDict(nn.ModuleDict, Generic[V]):
     def __getitem__(self, key: str) -> V:
         return super().__getitem__(key)  # type: ignore
 
-    def __setitem__(self, key: str, value: V) -> None:
-        super().__setitem__(key, value)
+    def __setitem__(self, key: str, module: V) -> None:  # type: ignore
+        super().__setitem__(key, module)
 
     def pop(self, key: str) -> V:
         return super().pop(key)  # type: ignore
@@ -59,22 +66,22 @@ class UniformModuleList(nn.ModuleList, Sequence[V]):
     def __init__(self, modules: Iterable[V]):
         super().__init__(modules)
 
-    def __getitem__(self, idx: int) -> V:
+    def __getitem__(self, idx: int) -> V:  # type: ignore
         return super().__getitem__(idx)  # type: ignore
 
-    def __setitem__(self, idx: int, value: V) -> None:
+    def __setitem__(self, idx: int, value: V) -> None:  # type: ignore
         super().__setitem__(idx, value)
 
-    def append(self, module: V) -> None:
+    def append(self, module: V) -> None:  # type: ignore
         super().append(module)
 
-    def extend(self, modules: Iterable[V]) -> None:
+    def extend(self, modules: Iterable[V]) -> None:  # type: ignore
         super().extend(modules)
 
-    def insert(self, idx: int, module: V) -> None:
+    def insert(self, idx: int, module: V) -> None:  # type: ignore
         super().insert(idx, module)
 
-    def pop(self, idx: int) -> V:
+    def pop(self, idx: int) -> V:  # type: ignore
         return super().pop(idx)  # type: ignore
 
     def __iter__(self) -> Iterator[V]:
@@ -308,7 +315,7 @@ class PerElementParameter(torch.nn.Parameter):
         )
 
     @torch.no_grad()
-    def __repr__(
+    def __repr(
         self,
         alias: str | None = None,
         more_info: dict[str, Any] | None = None,
@@ -385,6 +392,9 @@ class PerElementParameter(torch.nn.Parameter):
             shape=tuple(self.shape[self._index_dims :]),
             **more_info,
         )
+
+    def __repr__(self, *, tensor_contents=None):
+        return self.__repr()
 
 
 def _rebuild_per_element_parameter(data, requires_grad, state):

@@ -55,7 +55,7 @@ class EnergyOffset(GraphPESModel):
         return self._offsets[graph["atomic_numbers"]].squeeze()
 
     def __repr__(self):
-        return self._offsets.__repr__(alias=self.__class__.__name__)
+        return self._offsets.__repr(alias=self.__class__.__name__)
 
 
 class FixedOffset(EnergyOffset):

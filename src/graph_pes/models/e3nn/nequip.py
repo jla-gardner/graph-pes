@@ -3,6 +3,7 @@ from __future__ import annotations
 import warnings
 
 import e3nn
+import e3nn.nn
 import e3nn.util.jit
 import torch
 from e3nn import o3

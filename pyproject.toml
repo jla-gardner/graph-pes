@@ -122,4 +122,5 @@ norecursedirs = "tests/helpers"
 
 [tool.pyright]
 include = ["."]
-reportUnnecessaryTypeIgnoreComments = "true"
+reportUnnecessaryTypeIgnoreComment = "error"
+reportPrivateImportUsage = "none"

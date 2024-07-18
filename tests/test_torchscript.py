@@ -29,10 +29,11 @@ def test_distance_expansions(
     expansion = expansion_klass(n_features, cutoff, trainable=True)
 
     scripted = torch.jit.script(expansion)
+    assert isinstance(scripted, torch.jit.ScriptModule)
     r = torch.linspace(0, cutoff, 10)
     x = scripted(r)
 
     torch.jit.save(scripted, tmp_path / "expansion.pt")
-    loaded = torch.jit.load(tmp_path / "expansion.pt")
+    loaded: torch.jit.ScriptModule = torch.jit.load(tmp_path / "expansion.pt")
 
     assert torch.allclose(x, loaded(r))
