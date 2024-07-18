@@ -88,6 +88,7 @@ convention = "numpy"
 [tool.coverage.report]
 exclude_also = [
     "def __repr__",
+    "def _repr",
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
     "\\.\\.\\.",

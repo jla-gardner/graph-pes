@@ -1,5 +1,6 @@
 import helpers
 import numpy as np
+import pytest
 import torch
 from ase.build import molecule
 from graph_pes.core import GraphPESModel, get_predictions
@@ -50,3 +51,12 @@ def test_equivariance(model: GraphPESModel):
         atol=1e-6,
         rtol=1e-6,
     )
+
+    # 4. molecule is symetric: forces should ~0 on the central C,
+    #    and of equal magnitude on the H atoms
+    force_norms = new_predictions["forces"].norm(dim=-1)
+    c_force = force_norms[new_graph["atomic_numbers"] == 6]
+    assert c_force.item() == pytest.approx(0.0)
+
+    h_forces = force_norms[new_graph["atomic_numbers"] == 1]
+    assert h_forces.min().item() == pytest.approx(h_forces.max().item())
