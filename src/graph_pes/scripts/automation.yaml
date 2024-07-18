@@ -1,12 +1,12 @@
 model:
-      prompt: >
-          Select a model to train. Must be a member of
-          [PaiNN(), LennardJones(), SchNet(), TensorNet(), Morse(),
-          LennardJonesMixture(), NequIP(), OneHotNequIP(), ZEmbeddingNequIP(),
-          MACE(), ZEmbeddingMACE()]. Default: SchNet()
-      type: str
-      value: "SchNet()"
-      prefix: "graph_pes.models." 
+    prompt: >
+        Select a model to train. Must be a member of
+        [PaiNN(), LennardJones(), SchNet(), TensorNet(), Morse(),
+        LennardJonesMixture(), NequIP(), ZEmbeddingNequIP(),
+        MACE(), ZEmbeddingMACE()]. Default: SchNet()
+    type: str
+    value: "SchNet()"
+    prefix: "graph_pes.models."
 
 loss:
     prompt: >
@@ -19,7 +19,7 @@ loss:
 data:
     graph_pes.data.load_atoms_datasets:
         id:
-            prompt: > 
+            prompt: >
                 Select a dataset to train on.  This must be either a) a path to
                 an ASE-readable file, or b) an id from load-atoms. Default: QM7
             type: str
@@ -41,7 +41,7 @@ fitting:
     optimizer:
         graph_pes.training.opt.Optimizer:
             name:
-                prompt: > 
+                prompt: >
                     Select an optimizer, check documentation for options.
                     Default: AdamW
                 type: str
