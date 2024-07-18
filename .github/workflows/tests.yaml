@@ -45,14 +45,22 @@ jobs:
         with:
           path: ${{ env.pythonLocation }}
           key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
-      - name: update pip
-        run: pip install --upgrade pip
-      - name: Install graph-pes
-        run: pip install ".[test]"
-      - name: Install pyright
-        run: pip install pyright
+      - name: Install pip dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          pip install ".[test]"
+          pip cache purge
       - name: Useful info
         run: pip freeze
+      # - name: Run pytest checks
+      # - name: update pip
+      #   run: pip install --upgrade pip
+      # - name: Install graph-pes
+      #   run: pip install ".[test]"
+      # - name: Install pyright
+      #   run: pip install pyright
+      # - name: Useful info
+      #   run: pip freeze
       - name: Run pyright
         run: pyright --verbose
       - name: Run tests
