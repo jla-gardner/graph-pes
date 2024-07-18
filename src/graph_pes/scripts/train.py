@@ -9,7 +9,6 @@ from typing import Any
 
 import pytorch_lightning
 import torch
-import wandb
 import yaml
 from graph_pes.config import Config, get_default_config_values
 from graph_pes.deploy import deploy_model
@@ -18,6 +17,8 @@ from graph_pes.scripts.generation import config_auto_generation
 from graph_pes.training.ptl import create_trainer, train_with_lightning
 from graph_pes.util import nested_merge, random_id
 from pytorch_lightning.loggers import CSVLogger, WandbLogger
+
+import wandb
 
 warnings.filterwarnings(
     "ignore", message=".*There is a wandb run already in progress.*"

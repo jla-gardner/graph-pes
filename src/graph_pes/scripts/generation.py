@@ -37,7 +37,6 @@ def recursive_search(in_dict: dict, target_dict: dict) -> None:
 def clean_dict(in_dict: dict) -> dict:
     out_dict = {}
     for k, v in in_dict.items():
-        print(k, v)
         if all(i in v for i in ["prompt", "type", "value"]):
             out_dict[k] = v["value"]
         elif isinstance(v, dict) and v.keys() != {"prompt", "type", "value"}:
