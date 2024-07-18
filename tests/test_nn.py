@@ -9,6 +9,8 @@ from graph_pes.nn import (
     PerElementParameter,
     UniformModuleDict,
     UniformModuleList,
+    left_aligned_div,
+    left_aligned_mul,
     parse_activation,
 )
 from graph_pes.util import MAX_Z
@@ -145,3 +147,23 @@ def test_module_list():
     uml.insert(1, torch.nn.Linear(10000, 10000))
     assert len(uml) == 3
     assert uml[1].in_features == 10000
+
+
+@pytest.mark.parametrize("x_dim", [0, 1, 2, 3])
+def test_left_aligned_ops(x_dim: int):
+    N = 10
+
+    y = torch.ones((N,)) * 5
+
+    if x_dim == 0:
+        x = torch.randn(N)
+    else:
+        x = torch.randn(N, *[i + 1 for i in range(x_dim)])
+
+    z = left_aligned_mul(x, y)
+    assert z.shape == x.shape
+    assert z.allclose(x * 5)
+
+    z = left_aligned_div(x, y)
+    assert z.shape == x.shape
+    assert z.allclose(x / 5)

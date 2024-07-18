@@ -484,35 +484,70 @@ def left_aligned_add(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return result.squeeze(1)
 
 
-def left_aligned_sub(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    if x.dim() == 1 or x.dim() == 0:
-        return x - y
-    x = x.unsqueeze(1)
-    x = x.transpose(0, -1)
-    result = x - y  # shape: (1, ..., n)
-    result = result.transpose(0, -1)
-    return result.squeeze(1)
-
-
 def left_aligned_mul(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    r"""
+    Calculate :math:`z = x \odot y` such that:
+
+    .. math::
+
+            z_{i, j, \dots} = x_{i, j, \dots} \cdot y_i
+
+    That is, broadcast :math:`y` to the far left of :math:`x` (the opposite
+    sense of normal broadcasting in torch), and multiply the two tensors
+    elementwise.
+
+    Parameters
+    ----------
+    x
+        of shape (n, ...)
+    y
+        of shape (n, )
+
+    Returns
+    -------
+    torch.Tensor
+        of same shape as x
+    """
     if x.dim() == 1 or x.dim() == 0:
         return x * y
-    x = x.unsqueeze(1)
-    x = x.transpose(0, -1)
-    result = x * y  # shape: (1, ..., n)
-    result = result.transpose(0, -1)
-    return result.squeeze(1)
+
+    # x of shape (n, ..., a)
+    x = x.transpose(0, -1)  # shape: (a, ..., n)
+    result = x * y  # shape: (a, ..., n)
+    return result.transpose(0, -1)  # shape: (n, ..., a)
 
 
-# TODO: tests for this!
 def left_aligned_div(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    r"""
+    Calculate :math:`z = x \oslash y` such that:
+
+    .. math::
+
+            z_{i, j, \dots} = x_{i, j, \dots} / y_i
+
+    That is, broadcast :math:`y` to the far left of :math:`x` (the opposite
+    sense of normal broadcasting in torch), and divide the two tensors
+    elementwise.
+
+    Parameters
+    ----------
+    x
+        of shape (n, ...)
+    y
+        of shape (n, )
+
+    Returns
+    -------
+    torch.Tensor
+        of same shape as x
+    """
     if x.dim() == 1 or x.dim() == 0:
         return x / y
-    x = x.unsqueeze(1)
-    x = x.transpose(0, -1)
-    result = x / y  # shape: (1, ..., n)
-    result = result.transpose(0, -1)
-    return result.squeeze(1)
+
+    # x of shape (n, ..., a)
+    x = x.transpose(0, -1)  # shape: (a, ..., n)
+    result = x / y  # shape: (a, ..., n)
+    return result.transpose(0, -1)  # shape: (n, ..., a)
 
 
 def learnable_parameters(module: nn.Module) -> int:
