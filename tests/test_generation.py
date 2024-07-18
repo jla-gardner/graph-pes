@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 
 from graph_pes.scripts.generation import get_automation_options
