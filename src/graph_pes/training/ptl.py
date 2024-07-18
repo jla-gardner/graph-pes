@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Literal
 
@@ -19,6 +20,7 @@ from pytorch_lightning.callbacks import (
     EarlyStopping,
     LearningRateMonitor,
     ModelCheckpoint,
+    ProgressBar,
     RichProgressBar,
 )
 from pytorch_lightning.loggers import Logger
@@ -249,44 +251,85 @@ def create_trainer(
     logger: Logger | None = None,
     output_dir: Path | None = None,
 ) -> pl.Trainer:
-    if valid_available:
-        default_checkpoint = ModelCheckpoint(
+    # create the default callbacks
+    callbacks: dict[str, pl.Callback] = dict(
+        lr=LearningRateMonitor(logging_interval="epoch"),
+        checkpoint=ModelCheckpoint(
             dirpath=output_dir,
-            monitor=VALIDATION_LOSS_KEY,
+            monitor=VALIDATION_LOSS_KEY if valid_available else None,
             filename="best",
             mode="min",
             save_top_k=1,
             save_weights_only=True,
-        )
-    else:
-        default_checkpoint = ModelCheckpoint(
-            dirpath=output_dir,
-            filename="best",
-            mode="min",
-            save_top_k=1,
-            save_weights_only=True,
-        )
-
-    callbacks = [
-        LearningRateMonitor(logging_interval="epoch"),
-        default_checkpoint,
-        RichProgressBar(),
-    ]
+        ),
+        progress_bar=RichProgressBar(),
+        timer=ModelTimer(),
+    )
     if early_stopping_patience is not None:
-        callbacks.append(
-            EarlyStopping(
-                monitor=VALIDATION_LOSS_KEY,
-                patience=early_stopping_patience,
-                mode="min",
-                min_delta=1e-6,
-            )
+        callbacks["early_stopping"] = EarlyStopping(
+            monitor=VALIDATION_LOSS_KEY,
+            patience=early_stopping_patience,
+            mode="min",
+            min_delta=1e-6,
         )
 
-    defaults = {
-        "enable_model_summary": False,
-        "callbacks": callbacks,
-    }
+    # find any user defined callbacks
+    overloads = kwarg_overloads or {}
+    overloaded_callbacks = overloads.pop("callbacks", [])
 
-    # TODO intelligently override the callbacks
-    trainer_kwargs = {**defaults, **(kwarg_overloads or {})}
-    return pl.Trainer(**trainer_kwargs, logger=logger)
+    # and overwrite the default callbacks where necessary
+    for cb in overloaded_callbacks:
+        # we don't want two progress bars: use the non-default one
+        if isinstance(cb, ProgressBar):
+            callbacks["progress_bar"] = cb
+        # all other callbacks are just added on as extras
+        else:
+            callbacks[str(cb)] = cb
+
+    return pl.Trainer(
+        **overloads,
+        logger=logger,
+        callbacks=list(callbacks.values()),
+    )
+
+
+class ModelTimer(pl.Callback):
+    def __init__(self):
+        super().__init__()
+        self.tick_ms: float | None = None
+
+    def start(self):
+        self.tick_ms = time.time_ns() // 1_000_000
+
+    def stop(self, pl_module: LearnThePES, stage: Literal["train", "valid"]):
+        assert self.tick_ms is not None
+        duration_ms = time.time_ns() // 1_000_000 - self.tick_ms
+        self.tick_ms = None
+
+        for name, x in (
+            ("step_duration_ms", duration_ms),
+            ("its_per_s", 1_000 / duration_ms),
+        ):
+            pl_module.log(
+                f"timer/{name}/{stage}",
+                x,
+                batch_size=1,
+                on_epoch=stage == "valid",
+                on_step=stage == "train",
+            )
+
+    def on_train_batch_start(self, *args, **kwargs):
+        self.start()
+
+    def on_train_batch_end(
+        self, trainer: pl.Trainer, pl_module: LearnThePES, *args, **kwargs
+    ):
+        self.stop(pl_module, "train")
+
+    def on_validation_batch_start(self, *args, **kwargs):
+        self.start()
+
+    def on_validation_batch_end(
+        self, trainer: pl.Trainer, pl_module: LearnThePES, *args, **kwargs
+    ):
+        self.stop(pl_module, "valid")
