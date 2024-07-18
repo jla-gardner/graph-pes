@@ -44,7 +44,7 @@ def test_autogen(monkeypatch):
     monkeypatch.setattr("builtins.input", mimic_autogen_inputs)
     config = extract_config_from_command_line()
     assert config.loss == "graph_pes.training.loss.PerAtomEnergyLoss()"
-    assert config.data["graph_pes.data.load_atoms_datasets"]["cutoff"] == 3.5
+    assert config.data["graph_pes.data.load_atoms_datasets"]["cutoff"] == 3.5  # type: ignore
 
 
 # def test_autogen(monkeypatch):

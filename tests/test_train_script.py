@@ -32,7 +32,7 @@ graph-pes-train --config {config_path} \
 
     config = extract_config_from_command_line()
     assert config.fitting.loader_kwargs["batch_size"] == 32
-    assert config.data["graph_pes.data.load_atoms_dataset"]["n_train"] == 10
+    assert config.data["graph_pes.data.load_atoms_dataset"]["n_train"] == 10  # type: ignore
 
 
 def test_train_script(tmp_path: Path):

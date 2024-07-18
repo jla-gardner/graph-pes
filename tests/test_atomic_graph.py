@@ -91,7 +91,7 @@ def test_sum_over_neighbours(structure):
     # (b) compatible with torch.jit.script
 
     torchscript_sum: Callable[[torch.Tensor, AtomicGraph], torch.Tensor] = (
-        torch.jit.script(sum_over_neighbours)  # type: ignore
+        torch.jit.script(sum_over_neighbours)
     )
     for shape in [(E,), (E, 2), (E, 2, 3), (E, 2, 2, 2)]:
         for summing_fn in (
