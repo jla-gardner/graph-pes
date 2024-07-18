@@ -6,9 +6,8 @@ permissions:
   contents: read
 
 jobs:
-  style:
+  code-checks:
     runs-on: ubuntu-latest
-    name: code-checks
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
