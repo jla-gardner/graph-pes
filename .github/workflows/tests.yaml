@@ -42,12 +42,12 @@ jobs:
         run: pip install --upgrade pip
       - name: Install graph-pes
         run: pip install ".[test]"
-      - name: Useful info
-        run: pip freeze
       - name: Install pyright
         run: pip install pyright
+      - name: Useful info
+        run: pip freeze
       - name: Run pyright
-        run: pyright
+        run: pyright --verbose
       - name: Run tests
         run: pytest --cov --cov-report xml
       - name: Upload coverage reports to Codecov
