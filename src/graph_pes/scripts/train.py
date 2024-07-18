@@ -12,7 +12,7 @@ import torch
 import yaml
 from graph_pes.config import Config, get_default_config_values
 from graph_pes.deploy import deploy_model
-from graph_pes.logger import log_to_file, logger
+from graph_pes.logger import log_to_file, logger, set_level
 from graph_pes.scripts.generation import config_auto_generation
 from graph_pes.training.ptl import create_trainer, train_with_lightning
 from graph_pes.util import nested_merge, random_id
@@ -105,6 +105,7 @@ def extract_config_from_command_line() -> Config:
 
 def train_from_config(config: Config):
     pytorch_lightning.seed_everything(config.general.seed)
+    set_level(config.general.log_level)
 
     # time to the millisecond
     now = datetime.now().strftime("%F %T.%f")[:-3]

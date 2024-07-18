@@ -1,8 +1,13 @@
+from __future__ import annotations
+
+from typing import Sequence
+
 import torch
 from torch import Tensor
 
 from graph_pes.core import GraphPESModel
-from graph_pes.graphs import AtomicGraph, LabelledBatch
+from graph_pes.data.dataset import LabelledGraphDataset
+from graph_pes.graphs import AtomicGraph, LabelledGraph
 from graph_pes.nn import UniformModuleDict
 from graph_pes.util import uniform_repr
 
@@ -23,12 +28,10 @@ class AdditionModel(GraphPESModel):
 
     .. code-block:: python
 
-        from graph_pes.models.zoo import LennardJones, SchNet
+        from graph_pes.models import LennardJones, SchNet
         from graph_pes.core import AdditionModel
 
-        # create a model that sums two models
-        # equivalent to LennardJones() + SchNet()
-        model = AdditionModel([LennardJones(), SchNet()])
+        model = AdditionModel(pair_wise=LennardJones(), many_body=SchNet())
     """
 
     def __init__(self, **models: GraphPESModel):
@@ -41,12 +44,12 @@ class AdditionModel(GraphPESModel):
                 model.predict_local_energies(graph).squeeze()
                 for model in self.models.values()
             ]
-        )  # (atoms, models)
-        return torch.sum(predictions, dim=0)  # (atoms,) sum over models
+        )  # (models, atoms)
+        return torch.sum(predictions, dim=0)  # (atoms,)
 
-    def model_specific_pre_fit(self, graphs: LabelledBatch) -> None:
+    def pre_fit(self, graphs: LabelledGraphDataset | Sequence[LabelledGraph]):
         for model in self.models.values():
-            model.model_specific_pre_fit(graphs)
+            model.pre_fit(graphs)
 
     def __repr__(self):
         return uniform_repr(

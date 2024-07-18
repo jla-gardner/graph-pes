@@ -114,7 +114,7 @@ class LennardJones(PairPotential):
     .. code-block:: python
 
         from graph_pes.analysis import dimer_curve
-        from graph_pes.models.zoo import LennardJones
+        from graph_pes.models import LennardJones
 
         dimer_curve(LennardJones(), system="H2", rmax=3.5)
 
@@ -160,10 +160,10 @@ class LennardJones(PairPotential):
         x = self.sigma / r
         return 4 * self.epsilon * (x**12 - x**6)
 
-    def model_specific_pre_fit(self, graph: AtomicGraphBatch):
+    def model_specific_pre_fit(self, graphs: AtomicGraphBatch):
         # set the distance at which the potential is zero to be
         # close to the minimum pair-wise distance
-        d = torch.quantile(neighbour_distances(graph), 0.01)
+        d = torch.quantile(neighbour_distances(graphs), 0.01)
         self._log_sigma = torch.nn.Parameter(d.log())
 
     def __repr__(self):
@@ -199,7 +199,7 @@ class Morse(PairPotential):
     .. code-block:: python
 
         from graph_pes.analysis import dimer_curve
-        from graph_pes.models.zoo import Morse
+        from graph_pes.models import Morse
 
         dimer_curve(Morse(), system="H2", rmax=3.5)
 
@@ -246,10 +246,10 @@ class Morse(PairPotential):
         """
         return self.D * (1 - torch.exp(-self.a * (r - self.r0))) ** 2
 
-    def model_specific_pre_fit(self, graph: AtomicGraphBatch):
+    def model_specific_pre_fit(self, graphs: AtomicGraphBatch):
         # set the center of the well to be close to the minimum pair-wise
         # distance: the 10th percentile plus a small offset
-        d = torch.quantile(neighbour_distances(graph), 0.1) + 0.1
+        d = torch.quantile(neighbour_distances(graphs), 0.1) + 0.1
         self._log_r0 = torch.nn.Parameter(d.log())
 
     def __repr__(self):

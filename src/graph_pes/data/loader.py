@@ -56,6 +56,5 @@ class GraphDataLoader(TorchDataLoader):
             **kwargs,
         )
 
-    # add typing for mypy purposes
-    def __iter__(self) -> Iterator[AtomicGraphBatch]:
+    def __iter__(self) -> Iterator[AtomicGraphBatch]:  # type: ignore
         return super().__iter__()

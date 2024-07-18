@@ -209,7 +209,7 @@ class LearnThePES(pl.LightningModule):
 
         logger.debug(f"Using LR scheduler config:\n{config}")
         config["scheduler"] = scheduler
-        return {"optimizer": opt, "lr_scheduler": config}
+        return {"optimizer": opt, "lr_scheduler": config}  # type: ignore
 
     def on_validation_model_eval(self, *args, **kwargs):
         super().on_validation_model_eval(*args, **kwargs)

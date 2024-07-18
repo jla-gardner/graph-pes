@@ -5,6 +5,7 @@ from graph_pes.core import get_predictions
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.deploy import LAMMPSModel
 from graph_pes.graphs import keys
+from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.models import LennardJones
 
 CUTOFF = 1.5
@@ -34,7 +35,7 @@ def test_lammps_model(compute_virial: bool):
 
     assert lammps_model.get_cutoff() == torch.tensor(CUTOFF)
 
-    lammps_graph: dict[str, torch.Tensor] = {
+    lammps_graph: AtomicGraph = {
         **graph,
         "compute_virial": torch.tensor(compute_virial),
         "debug": torch.tensor(False),
@@ -63,7 +64,7 @@ def test_debug_logging(capsys):
     # create a LAMMPS model, and get LAMMPS predictions
     lammps_model = LAMMPSModel(LennardJones(), cutoff=CUTOFF)
 
-    lammps_graph: dict[str, torch.Tensor] = {
+    lammps_graph: AtomicGraph = {
         **graph,
         "compute_virial": torch.tensor(True),
         "debug": torch.tensor(True),

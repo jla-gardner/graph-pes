@@ -40,7 +40,7 @@ class GraphPESCalculator(Calculator):
 
     def calculate(
         self,
-        atoms: Atoms,
+        atoms: Atoms | None = None,
         properties: list[str] | None = None,
         system_changes: list[str] = all_changes,
     ):
@@ -48,9 +48,10 @@ class GraphPESCalculator(Calculator):
             properties = ["energy"]
 
         # call to base-class to set atoms attribute
-        Calculator.calculate(self, atoms)
+        super().calculate(atoms)
+        assert self.atoms is not None and isinstance(self.atoms, Atoms)
 
-        graph = to_atomic_graph(atoms, self.cutoff)
+        graph = to_atomic_graph(self.atoms, self.cutoff)
         graph: AtomicGraph = {k: v.to(self.device) for k, v in graph.items()}  # type: ignore
 
         self.results = {
