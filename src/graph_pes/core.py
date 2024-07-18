@@ -9,6 +9,7 @@ from ase.data import chemical_symbols
 from torch import Tensor, nn
 
 from graph_pes.data.dataset import LabelledGraphDataset
+from graph_pes.logger import logger
 
 from .graphs import (
     AtomicGraph,
@@ -114,6 +115,9 @@ class GraphPESModel(nn.Module, ABC):
         graphs
             The training data.
         """
+
+        model_name = self.__class__.__name__
+        logger.debug(f"Attempting to pre-fit {model_name}")
 
         # 1. get the graphs as a single batch
         if isinstance(graphs, LabelledGraphDataset):

@@ -1,6 +1,7 @@
 general:
     seed: 42
     root_dir: "graph-pes-results"
+    log_level: "INFO"
 
 fitting:
     pre_fit_model: true

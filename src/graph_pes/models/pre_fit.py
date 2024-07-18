@@ -5,6 +5,7 @@ from sklearn.linear_model import Ridge
 
 from graph_pes.graphs.graph_typing import AtomicGraphBatch
 from graph_pes.graphs.operations import number_of_structures, sum_per_structure
+from graph_pes.logger import logger
 
 MIN_VARIANCE = 0.01
 
@@ -54,5 +55,8 @@ def guess_per_element_mean_and_var(
         int(Z): max(float(var), MIN_VARIANCE)
         for Z, var in zip(unique_Zs, var_Z)
     }
+
+    logger.debug(f"Per-element means: {means}")
+    logger.debug(f"Per-element variances: {variances}")
 
     return means, variances
