@@ -22,6 +22,7 @@ fitting:
     trainer_kwargs:
         max_epochs: 100
         accelerator: auto
+        enable_model_summary: false
 
     loader_kwargs:
         num_workers: 0
