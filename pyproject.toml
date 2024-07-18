@@ -34,7 +34,7 @@ requires-python = ">=3.8"
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-cov"]
-dev = ["notebook", "ruff", "bumpver"]
+dev = ["notebook", "ruff", "bumpver", "pyright"]
 doc = [
     "sphinx",
     "furo",
@@ -119,3 +119,7 @@ filterwarnings = [
     "ignore:.*The TorchScript type system doesn't support instance-level annotations on empty non-base types.*",
 ]
 norecursedirs = "tests/helpers"
+
+[tool.pyright]
+include = ["."]
+reportUnnecessaryTypeIgnoreComments = "true"

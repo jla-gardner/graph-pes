@@ -3,53 +3,57 @@ name: Source Code Tests
 on: [push]
 
 permissions:
-    contents: read
+  contents: read
 
 jobs:
-    style:
-        runs-on: ubuntu-latest
-        name: style
-        steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-python@v5
-              with:
-                  python-version: 3.8
-            - name: update pip
-              run: pip install --upgrade pip
-            - name: Install ruff
-              run: pip install ruff
-            - name: Run ruff
-              run: ruff check
+  style:
+    runs-on: ubuntu-latest
+    name: code-checks
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.8
+      - name: update pip
+        run: pip install --upgrade pip
+      - name: Install ruff
+        run: pip install ruff
+      - name: Run ruff
+        run: ruff check
+      - name: Install pyright
+        run: pip install pyright
+      - name: Run pyright
+        run: pyright
 
-    tests:
-        needs: style
-        runs-on: ubuntu-latest
-        strategy:
-            fail-fast: false
-            matrix:
-                python-version:
-                    - 3.8
-                    # TODO: re-enable these once go public: otherwise expensive
-                    # - 3.9
-                    # - "3.10"
-                    # - 3.11
-        name: test - ${{ matrix.python-version }}
-        steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-python@v5
-              with:
-                  python-version: ${{ matrix.python-version }}
-            - name: update pip
-              run: pip install --upgrade pip
-            - name: Install graph-pes
-              run: pip install ".[test]"
-            - name: Useful info
-              run: pip freeze
-            - name: Run tests
-              run: pytest --cov --cov-report xml
-            - name: Upload coverage reports to Codecov
-              uses: codecov/codecov-action@v3
-              # only upload coverage reports for the first python version
-              if: matrix.python-version == '3.8'
-              with:
-                  token: ${{secrets.CODECOV_TOKEN}}
+  tests:
+    needs: code-checks
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - 3.8
+          # TODO: re-enable these once go public: otherwise expensive
+          # - 3.9
+          # - "3.10"
+          # - 3.11
+    name: test - ${{ matrix.python-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: update pip
+        run: pip install --upgrade pip
+      - name: Install graph-pes
+        run: pip install ".[test]"
+      - name: Useful info
+        run: pip freeze
+      - name: Run tests
+        run: pytest --cov --cov-report xml
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        # only upload coverage reports for the first python version
+        if: matrix.python-version == '3.8'
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
