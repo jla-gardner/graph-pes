@@ -65,7 +65,8 @@ def train_with_lightning(
     trainer.strategy.barrier("pre-fit")
 
     # - log the model info
-    log_model_info(model, trainer.logger)
+    if trainer.global_rank == 0:
+        log_model_info(model, trainer.logger)
 
     # - create the task (a pytorch lightning module)
     task = LearnThePES(model, loss, optimizer, scheduler)
