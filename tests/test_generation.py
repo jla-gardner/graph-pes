@@ -10,7 +10,7 @@ def mimic_autogen_inputs(prompt):
     responses = {
         "Select a model to train. Must be a member of [PaiNN(), LennardJones(),"
         " SchNet(), TensorNet(), Morse(), LennardJonesMixture(), NequIP(), "
-        "OneHotNequIP(), ZEmbeddingNequIP(), MACE(), ZEmbeddingMACE()]. "
+        "ZEmbeddingNequIP(), MACE(), ZEmbeddingMACE()]. "
         "Default: SchNet()\n": "LennardJones()",
         "Select a loss function to use. Check documentation for options."
         " Default: PerAtomEnergyLoss()\n": "",

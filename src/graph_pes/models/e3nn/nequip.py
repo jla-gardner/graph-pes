@@ -353,7 +353,7 @@ class _BaseNequIP(AutoScaledPESModel):
 
 
 @e3nn.util.jit.compile_mode("script")
-class OneHotNequIP(_BaseNequIP):
+class NequIP(_BaseNequIP):
     def __init__(
         self,
         elements: list[str],
@@ -375,9 +375,6 @@ class OneHotNequIP(_BaseNequIP):
             l_max,
             allow_odd_parity,
         )
-
-
-NequIP = OneHotNequIP
 
 
 @e3nn.util.jit.compile_mode("script")

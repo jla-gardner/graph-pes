@@ -8,7 +8,7 @@ import pytorch_lightning
 from ase import Atoms
 from ase.io import read
 from graph_pes.core import GraphPESModel
-from graph_pes.models import ALL_MODELS, MACE, OneHotNequIP
+from graph_pes.models import ALL_MODELS, MACE, NequIP
 
 
 def all_model_factories(
@@ -16,7 +16,7 @@ def all_model_factories(
 ) -> tuple[list[str], list[Callable[[], GraphPESModel]]]:
     pytorch_lightning.seed_everything(42)
     required_kwargs = {
-        OneHotNequIP: {"elements": expected_elements},
+        NequIP: {"elements": expected_elements},
         MACE: {"elements": expected_elements},
     }
 

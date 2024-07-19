@@ -457,62 +457,70 @@ class HaddamardProduct(nn.Module):
         return out
 
 
-# NB: we have to repeat code here somewhat because torchsript doesn't support
-# typing for callable
-
-
-# TODO: sort out this mess
-def left_aligned_add(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    """
-    Assume:
-    x.shape: (n, ...)
-    y.shape: (n, )
-
-    We broadcast y to the left of x and add the two tensors elementwise.
-    """
-    if x.dim() == 1 or x.dim() == 0:
-        return x + y
-    # add a fake dimension to x to make it (n, 1, ...)
-    x = x.unsqueeze(1)
-    # transpose x to make it (1, ..., n)
-    x = x.transpose(0, -1)
-    # apply the operation
-    result = x - y  # shape: (1, ..., n)
-    # transpose back to the original shape
-    result = result.transpose(0, -1)
-    # remove the fake dimension
-    return result.squeeze(1)
-
-
-def left_aligned_sub(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    if x.dim() == 1 or x.dim() == 0:
-        return x - y
-    x = x.unsqueeze(1)
-    x = x.transpose(0, -1)
-    result = x - y  # shape: (1, ..., n)
-    result = result.transpose(0, -1)
-    return result.squeeze(1)
-
-
 def left_aligned_mul(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    r"""
+    Calculate :math:`z = x \odot y` such that:
+
+    .. math::
+
+            z_{i, j, \dots} = x_{i, j, \dots} \cdot y_i
+
+    That is, broadcast :math:`y` to the far left of :math:`x` (the opposite
+    sense of normal broadcasting in torch), and multiply the two tensors
+    elementwise.
+
+    Parameters
+    ----------
+    x
+        of shape (n, ...)
+    y
+        of shape (n, )
+
+    Returns
+    -------
+    torch.Tensor
+        of same shape as x
+    """
     if x.dim() == 1 or x.dim() == 0:
         return x * y
-    x = x.unsqueeze(1)
-    x = x.transpose(0, -1)
-    result = x * y  # shape: (1, ..., n)
-    result = result.transpose(0, -1)
-    return result.squeeze(1)
+
+    # x of shape (n, ..., a)
+    x = x.transpose(0, -1)  # shape: (a, ..., n)
+    result = x * y  # shape: (a, ..., n)
+    return result.transpose(0, -1)  # shape: (n, ..., a)
 
 
-# TODO: tests for this!
 def left_aligned_div(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    r"""
+    Calculate :math:`z = x \oslash y` such that:
+
+    .. math::
+
+            z_{i, j, \dots} = x_{i, j, \dots} / y_i
+
+    That is, broadcast :math:`y` to the far left of :math:`x` (the opposite
+    sense of normal broadcasting in torch), and divide the two tensors
+    elementwise.
+
+    Parameters
+    ----------
+    x
+        of shape (n, ...)
+    y
+        of shape (n, )
+
+    Returns
+    -------
+    torch.Tensor
+        of same shape as x
+    """
     if x.dim() == 1 or x.dim() == 0:
         return x / y
-    x = x.unsqueeze(1)
-    x = x.transpose(0, -1)
-    result = x / y  # shape: (1, ..., n)
-    result = result.transpose(0, -1)
-    return result.squeeze(1)
+
+    # x of shape (n, ..., a)
+    x = x.transpose(0, -1)  # shape: (a, ..., n)
+    result = x / y  # shape: (a, ..., n)
+    return result.transpose(0, -1)  # shape: (n, ..., a)
 
 
 def learnable_parameters(module: nn.Module) -> int:
