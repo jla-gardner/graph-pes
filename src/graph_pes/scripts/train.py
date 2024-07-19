@@ -41,9 +41,11 @@ OUTPUT_DIR = "graph-pes-output-dir"
 class Communication:
     """A class to manage communication between ranks."""
 
-    def __init__(self, dir: Path):
-        assert dir.is_dir() and not dir.exists()
-        dir.mkdir()
+    def __init__(self, id: str):
+        dir = Path(".communication") / id
+        self.is_rank_0 = not dir.exists()
+
+        dir.mkdir(exist_ok=True, parents=True)
         self.dir = dir
 
     def send(self, key: str, value: Any):
@@ -55,7 +57,12 @@ class Communication:
             return f.read()
 
     def cleanup(self):
-        shutil.rmtree(self.dir)
+        with contextlib.suppress(FileNotFoundError):
+            shutil.rmtree(self.dir)
+
+    def rank_0_log(self, *args, **kwargs):
+        if self.is_rank_0:
+            logger.info(*args, **kwargs)
 
 
 def parse_args():
@@ -139,7 +146,7 @@ def extract_config_from_command_line() -> Config:
 
 def train_from_config(config: Config):
     # hash the config to get a unique identifier using sha256
-    communication = Communication(dir=Path(config.hash()))
+    communication = Communication(id=config.hash())
 
     # general things: seed and logging
     pytorch_lightning.seed_everything(config.general.seed)
@@ -148,7 +155,7 @@ def train_from_config(config: Config):
     logger.info(f"Started training at {now_ms}")
 
     # rank-0 only things
-    if rank() == 0:
+    if communication.is_rank_0:
         # set up directory structure
         output_dir = random_dir(root=Path(config.general.root_dir))
         assert not output_dir.exists()
@@ -167,27 +174,29 @@ def train_from_config(config: Config):
     log_to_file(file=output_dir / "logs" / f"rank-{rank()}.log")
 
     # instantiate and log things
-    logger.info(config)
+    communication.rank_0_log(config)
 
     model = config.instantiate_model()  # gets logged later
 
     data = config.instantiate_data()
-    logger.info(data)
+    communication.rank_0_log(data)
 
     optimizer = config.fitting.instantiate_optimizer()
-    logger.info(optimizer)
+    communication.rank_0_log(optimizer)
 
     scheduler = config.fitting.instantiate_scheduler()
-    logger.info(scheduler if scheduler is not None else "No LR scheduler.")
+    communication.rank_0_log(
+        scheduler if scheduler is not None else "No LR scheduler."
+    )
 
     total_loss = config.instantiate_loss()
-    logger.info(total_loss)
+    communication.rank_0_log(total_loss)
 
     if config.wandb is not None:
         lightning_logger = WandbLogger(output_dir, **config.wandb)
     else:
         lightning_logger = CSVLogger(save_dir=output_dir, name="")
-    logger.info(f"Logging using {lightning_logger}")
+    communication.rank_0_log(f"Logging using {lightning_logger}")
 
     trainer = create_trainer(
         early_stopping_patience=config.fitting.early_stopping_patience,
@@ -214,28 +223,29 @@ def train_from_config(config: Config):
         communication.cleanup()
         raise e
 
-    logger.info("Training complete.")
+    communication.rank_0_log("Training complete.")
 
-    try:
-        # log the final path to the trainer.logger.summary
-        model_path = output_dir / "model.pt"
-        lammps_model_path = output_dir / "lammps_model.pt"
+    if communication.is_rank_0:
+        try:
+            # log the final path to the trainer.logger.summary
+            model_path = output_dir / "model.pt"
+            lammps_model_path = output_dir / "lammps_model.pt"
 
-        trainer.logger.log_hyperparams(
-            {
-                "model_path": model_path,
-                "lammps_model_path": lammps_model_path,
-            }
-        )
-        logger.info(f"Model saved to {model_path}")
-        torch.save(model, model_path)
-        logger.info(
-            f"Deploying model for use with LAMMPS to {lammps_model_path}"
-        )
-        deploy_model(model, cutoff=5.0, path=lammps_model_path)
+            trainer.logger.log_hyperparams(
+                {
+                    "model_path": model_path,
+                    "lammps_model_path": lammps_model_path,
+                }
+            )
+            communication.rank_0_log(f"Model saved to {model_path}")
+            torch.save(model, model_path)
+            communication.rank_0_log(
+                f"Deploying model for use with LAMMPS to {lammps_model_path}"
+            )
+            deploy_model(model, cutoff=5.0, path=lammps_model_path)
 
-    except Exception as e:
-        logger.error(f"Failed to save model: {e}")
+        except Exception as e:
+            logger.error(f"Failed to save model: {e}")
 
     communication.cleanup()
 
