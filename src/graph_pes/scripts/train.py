@@ -21,8 +21,25 @@ from graph_pes.util import (
     nested_merge,
     random_dir,
     rank,
+    uniform_repr,
 )
-from pytorch_lightning.loggers import CSVLogger, WandbLogger
+from pytorch_lightning.loggers import CSVLogger
+from pytorch_lightning.loggers import WandbLogger as PTLWandbLogger
+
+
+class WandbLogger(PTLWandbLogger):
+    """A subclass of WandbLogger that automatically sets the id and save_dir."""
+
+    def __init__(self, output_dir: Path, **kwargs):
+        if "id" not in kwargs:
+            kwargs["id"] = output_dir.name
+        if "save_dir" not in kwargs:
+            kwargs["save_dir"] = str(output_dir.parent)
+        super().__init__(**kwargs)
+        self._kwargs = kwargs
+
+    def __repr__(self):
+        return uniform_repr(self.__class__.__name__, **self._kwargs)
 
 
 class CommunicationFlags(Enum):
@@ -161,8 +178,7 @@ def train_from_config(config: Config):
     logger.info(total_loss)
 
     if config.wandb is not None:
-        run_id = config.wandb.pop("id", output_dir.name)
-        lightning_logger = WandbLogger(id=run_id, **config.wandb)
+        lightning_logger = WandbLogger(output_dir, **config.wandb)
     else:
         lightning_logger = CSVLogger(save_dir=output_dir, name="")
     logger.info(f"Logging using {lightning_logger}")
