@@ -237,6 +237,7 @@ def train_from_config(config: Config):
     total_loss = config.instantiate_loss()
     log(total_loss)
 
+    logger.info(f"Starting training on rank {trainer.global_rank}.")
     try:
         train_with_lightning(
             trainer,
