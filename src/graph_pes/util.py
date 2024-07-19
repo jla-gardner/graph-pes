@@ -6,9 +6,11 @@ import string
 import sys
 import warnings
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any, Iterator, Sequence, TypeVar, overload
 
 import torch
+import torch.distributed
 from torch import Tensor
 
 T = TypeVar("T")
@@ -181,11 +183,64 @@ def nested_merge(a: dict, b: dict):
     return new_dict
 
 
-def random_id():
-    # a random selection of 8 chars from lower case letters and digits
+def random_id(
+    lengths: list[int] | None = None,
+    use_existing: bool = False,
+) -> str:
+    """
+    Generate a random ID of the form ``abdc123-efgh456-...``.
 
-    # seed with the current time
-    rng = random.Random()
-    rng.seed()
+    Parameters
+    ----------
+    lengths
+        The lengths of the individual parts of the ID.
+    use_existing
+        Whether to use the existing random number generator in ``random``,
+        or to create a new one.
 
-    return "".join(rng.choices(string.ascii_lowercase + string.digits, k=8))
+    Example
+    -------
+    >>> random_id(lengths=[4, 4])
+    "abcd-1234"
+    """
+
+    if lengths is None:
+        lengths = [8]
+
+    if use_existing:
+        rng = random
+    else:
+        # seed with the current time
+        rng = random.Random()
+        rng.seed()
+
+    return "-".join(
+        "".join(rng.choices(string.ascii_lowercase + string.digits, k=k))
+        for k in lengths
+    )
+
+
+def random_dir(root: Path) -> Path:
+    """Find a random directory that doesn't exist in `root`."""
+
+    while True:
+        new_dir = root / random_id(lengths=[8, 8, 8])
+        if not new_dir.exists():
+            return new_dir
+
+
+def is_global_rank_zero() -> bool:
+    """Check if the current process is the global rank zero process."""
+    return rank() == 0
+
+
+def rank() -> int:
+    """Get the rank of the current process."""
+    if torch.distributed.is_initialized():
+        return torch.distributed.get_rank()
+    return 0
+
+
+def is_distributed() -> bool:
+    """Check if the current process is part of a distributed computation."""
+    return torch.distributed.is_initialized()

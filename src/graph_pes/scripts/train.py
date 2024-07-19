@@ -2,26 +2,37 @@ from __future__ import annotations
 
 import argparse
 import contextlib
-import warnings
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
 import pytorch_lightning
 import torch
-import wandb
 import yaml
 from graph_pes.config import Config, get_default_config_values
 from graph_pes.deploy import deploy_model
 from graph_pes.logger import log_to_file, logger, set_level
 from graph_pes.scripts.generation import config_auto_generation
 from graph_pes.training.ptl import create_trainer, train_with_lightning
-from graph_pes.util import nested_merge, random_id
+from graph_pes.util import (
+    is_distributed,
+    is_global_rank_zero,
+    nested_merge,
+    random_dir,
+    rank,
+)
 from pytorch_lightning.loggers import CSVLogger, WandbLogger
 
-warnings.filterwarnings(
-    "ignore", message=".*There is a wandb run already in progress.*"
-)
+
+class CommunicationFlags(Enum):
+    OUTPUT_DIR = ".graph-pes-output-dir"
+
+    @classmethod
+    def cleanup(cls):
+        for flag in cls:
+            with contextlib.suppress(FileNotFoundError):
+                Path(flag.value).unlink()
 
 
 def parse_args():
@@ -61,8 +72,9 @@ def parse_args():
 
 def extract_config_from_command_line() -> Config:
     args = parse_args()
-    print(args.config)
+
     if not args.config:
+        # TODO: change this to just an alternative way to get user_config
         return config_auto_generation()
 
     # load default config
@@ -103,13 +115,35 @@ def extract_config_from_command_line() -> Config:
 
 
 def train_from_config(config: Config):
+    # general things: seed and logging
     pytorch_lightning.seed_everything(config.general.seed)
     set_level(config.general.log_level)
+    now_ms = datetime.now().strftime("%F %T.%f")[:-3]
+    logger.info(f"Started training at {now_ms}")
 
-    # time to the millisecond
-    now = datetime.now().strftime("%F %T.%f")[:-3]
-    logger.info(f"Started training at {now}")
+    # rank-0 only things
+    if is_global_rank_zero():
+        # set up directory structure
+        output_dir = random_dir(root=Path(config.general.root_dir))
+        assert not output_dir.exists()
+        output_dir.mkdir(parents=True)
+        # save the config
+        with open(output_dir / "train-config.yaml", "w") as f:
+            yaml.dump(config.to_nested_dict(), f)
 
+        # communicate the output directory by saving it to a file
+        with open(CommunicationFlags.OUTPUT_DIR.value, "w") as f:
+            f.write(str(output_dir))
+
+    else:
+        with open(CommunicationFlags.OUTPUT_DIR.value) as f:
+            output_dir = Path(f.read().strip())
+
+    # route logs to file
+    fname = "log.txt" if not is_distributed() else f"logs/rank-{rank()}"
+    log_to_file(file=output_dir / fname)
+
+    # instantiate and log things
     logger.info(config)
 
     model = config.instantiate_model()  # gets logged later
@@ -126,37 +160,24 @@ def train_from_config(config: Config):
     total_loss = config.instantiate_loss()
     logger.info(total_loss)
 
-    # set-up the trainer
     if config.wandb is not None:
-        wandb.init(**config.wandb)
-        assert wandb.run is not None
-        run_id = wandb.run.id
+        run_id = config.wandb.pop("id", output_dir.name)
+        lightning_logger = WandbLogger(id=run_id, **config.wandb)
     else:
-        run_id = random_id()
+        lightning_logger = CSVLogger(save_dir=output_dir, name="")
+    logger.info(f"Logging using {lightning_logger}")
+
+    trainer = create_trainer(
+        early_stopping_patience=config.fitting.early_stopping_patience,
+        logger=lightning_logger,
+        valid_available=True,
+        kwarg_overloads=config.fitting.trainer_kwargs,
+        output_dir=output_dir,
+    )
+    assert trainer.logger is not None
+    trainer.logger.log_hyperparams(config.to_nested_dict())
 
     try:
-        output_dir = Path(config.general.root_dir) / run_id
-        logger.info(f"Output directory: {output_dir}")
-
-        log_to_file(output_dir / "log.txt")
-
-        if config.wandb is not None:
-            lightning_logger = WandbLogger()
-        else:
-            lightning_logger = CSVLogger(
-                version=run_id, save_dir=output_dir, name=""
-            )
-
-        trainer = create_trainer(
-            early_stopping_patience=config.fitting.early_stopping_patience,
-            logger=lightning_logger,
-            valid_available=True,
-            kwarg_overloads=config.fitting.trainer_kwargs,
-            output_dir=output_dir,
-        )
-        if trainer.logger is not None:
-            trainer.logger.log_hyperparams(config.to_nested_dict())
-
         train_with_lightning(
             trainer,
             model,
@@ -167,30 +188,34 @@ def train_from_config(config: Config):
             scheduler=scheduler,
         )
 
+    except Exception as e:
+        CommunicationFlags.cleanup()
+        raise e
+
+    logger.info("Training complete.")
+
+    try:
         # log the final path to the trainer.logger.summary
         model_path = output_dir / "model.pt"
         lammps_model_path = output_dir / "lammps_model.pt"
 
-        if trainer.logger is not None:
-            trainer.logger.log_hyperparams(
-                {
-                    "model_path": model_path,
-                    "lammps_model_path": lammps_model_path,
-                }
-            )
-
+        trainer.logger.log_hyperparams(
+            {
+                "model_path": model_path,
+                "lammps_model_path": lammps_model_path,
+            }
+        )
+        logger.info(f"Model saved to {model_path}")
         torch.save(model, model_path)
         logger.info(
-            "Training complete: deploying model for use with "
-            f"LAMMPS to {model_path}"
+            f"Deploying model for use with LAMMPS to {lammps_model_path}"
         )
         deploy_model(model, cutoff=5.0, path=lammps_model_path)
 
     except Exception as e:
-        logger.error(f"Training failed with error: {e}")
-        if config.wandb is not None:
-            wandb.finish()
-        raise e
+        logger.error(f"Failed to save model: {e}")
+
+    CommunicationFlags.cleanup()
 
 
 def main():

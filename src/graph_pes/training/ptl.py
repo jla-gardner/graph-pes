@@ -255,7 +255,7 @@ def create_trainer(
     callbacks: dict[str, pl.Callback] = dict(
         lr=LearningRateMonitor(logging_interval="epoch"),
         checkpoint=ModelCheckpoint(
-            dirpath=output_dir,
+            dirpath=None if not output_dir else output_dir / "checkpoints",
             monitor=VALIDATION_LOSS_KEY if valid_available else None,
             filename="best",
             mode="min",
