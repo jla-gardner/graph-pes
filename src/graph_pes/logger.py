@@ -4,8 +4,6 @@ import logging
 import sys
 from pathlib import Path
 
-from graph_pes.util import is_global_rank_zero
-
 __all__ = ["logger", "log_to_file", "set_level"]
 
 
@@ -27,15 +25,11 @@ logger = logging.getLogger(name="graph-pes")
 # capture all logs
 logger.setLevel(logging.DEBUG)
 
-# set the formatter
-
-# log to stdout on global rank 0
-if is_global_rank_zero():
-    _handler = logging.StreamHandler(stream=sys.stdout)
-    _handler.setFormatter(MultiLineFormatter())
-    logger.addHandler(_handler)
-
-# but only show INFO and above in stdout (by default)
+# log to stdout
+_handler = logging.StreamHandler(stream=sys.stdout)
+_handler.setFormatter(MultiLineFormatter())
+logger.addHandler(_handler)
+# only show INFO and above in stdout (by default)
 _handler.setLevel(logging.INFO)
 
 

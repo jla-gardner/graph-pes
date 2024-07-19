@@ -227,20 +227,3 @@ def random_dir(root: Path) -> Path:
         new_dir = root / random_id(lengths=[8, 8, 8])
         if not new_dir.exists():
             return new_dir
-
-
-def is_global_rank_zero() -> bool:
-    """Check if the current process is the global rank zero process."""
-    return rank() == 0
-
-
-def rank() -> int:
-    """Get the rank of the current process."""
-    if torch.distributed.is_initialized():
-        return torch.distributed.get_rank()
-    return 0
-
-
-def is_distributed() -> bool:
-    """Check if the current process is part of a distributed computation."""
-    return torch.distributed.is_initialized()

@@ -38,9 +38,8 @@ def train_with_lightning(
     optimizer: Optimizer,
     scheduler: LRScheduler | None = None,
 ):
-    # - get the data ready in a way that is compatible with
-    #   multi-GPU training
-    if trainer.local_rank == 0:
+    # - prepare the data
+    if trainer.global_rank == 0:
         logger.info("Preparing data")
         data.train.prepare_data()
         data.valid.prepare_data()
@@ -57,12 +56,13 @@ def train_with_lightning(
     valid_loader = GraphDataLoader(data.valid, **loader_kwargs)
 
     # - maybe do some pre-fitting
-    if fit_config.pre_fit_model:
+    if trainer.global_rank == 0 and fit_config.pre_fit_model:
         pre_fit_dataset = data.train
         if fit_config.max_n_pre_fit is not None:
             pre_fit_dataset = pre_fit_dataset.sample(fit_config.max_n_pre_fit)
         logger.info(f"Pre-fitting the model on {len(pre_fit_dataset)} samples")
         model.pre_fit(pre_fit_dataset)
+    trainer.strategy.barrier("pre-fit")
 
     # - log the model info
     log_model_info(model, trainer.logger)

@@ -15,7 +15,7 @@ from graph_pes.deploy import deploy_model
 from graph_pes.logger import log_to_file, logger, set_level
 from graph_pes.scripts.generation import config_auto_generation
 from graph_pes.training.ptl import create_trainer, train_with_lightning
-from graph_pes.util import nested_merge, random_dir, rank, uniform_repr
+from graph_pes.util import nested_merge, random_dir, uniform_repr
 from pytorch_lightning.loggers import CSVLogger
 from pytorch_lightning.loggers import WandbLogger as PTLWandbLogger
 
@@ -170,8 +170,24 @@ def train_from_config(config: Config):
     else:
         output_dir = Path(communication.receive(OUTPUT_DIR))
 
+    if config.wandb is not None:
+        lightning_logger = WandbLogger(output_dir, **config.wandb)
+    else:
+        lightning_logger = CSVLogger(save_dir=output_dir, name="")
+    communication.rank_0_log(f"Logging using {lightning_logger}")
+
+    trainer = create_trainer(
+        early_stopping_patience=config.fitting.early_stopping_patience,
+        logger=lightning_logger,
+        valid_available=True,
+        kwarg_overloads=config.fitting.trainer_kwargs,
+        output_dir=output_dir,
+    )
+    assert trainer.logger is not None
+    trainer.logger.log_hyperparams(config.to_nested_dict())
+
     # route logs to file
-    log_to_file(file=output_dir / "logs" / f"rank-{rank()}.log")
+    log_to_file(file=output_dir / "logs" / f"rank-{trainer.global_rank}.log")
 
     # instantiate and log things
     communication.rank_0_log(config)
@@ -191,22 +207,6 @@ def train_from_config(config: Config):
 
     total_loss = config.instantiate_loss()
     communication.rank_0_log(total_loss)
-
-    if config.wandb is not None:
-        lightning_logger = WandbLogger(output_dir, **config.wandb)
-    else:
-        lightning_logger = CSVLogger(save_dir=output_dir, name="")
-    communication.rank_0_log(f"Logging using {lightning_logger}")
-
-    trainer = create_trainer(
-        early_stopping_patience=config.fitting.early_stopping_patience,
-        logger=lightning_logger,
-        valid_available=True,
-        kwarg_overloads=config.fitting.trainer_kwargs,
-        output_dir=output_dir,
-    )
-    assert trainer.logger is not None
-    trainer.logger.log_hyperparams(config.to_nested_dict())
 
     try:
         train_with_lightning(
