@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import Any, Dict, List, Literal, Union
 
 import dacite
@@ -324,6 +325,17 @@ class Config:
                 "Please check that it is formatted correctly. For examples, "
                 "please see ..."  # TODO
             ) from e
+
+    def hash(self) -> str:
+        """
+        Get a unique identifier for this configuration.
+
+        Returns
+        -------
+        str
+            The SHA-256 hash of the configuration.
+        """
+        return sha256(str(self.to_nested_dict()).encode()).hexdigest()
 
     def __repr__(self):
         # yaml dump the nested config, complete with defaults,

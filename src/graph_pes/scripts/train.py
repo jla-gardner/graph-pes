@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import shutil
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -15,14 +15,7 @@ from graph_pes.deploy import deploy_model
 from graph_pes.logger import log_to_file, logger, set_level
 from graph_pes.scripts.generation import config_auto_generation
 from graph_pes.training.ptl import create_trainer, train_with_lightning
-from graph_pes.util import (
-    is_distributed,
-    is_global_rank_zero,
-    nested_merge,
-    random_dir,
-    rank,
-    uniform_repr,
-)
+from graph_pes.util import nested_merge, random_dir, rank, uniform_repr
 from pytorch_lightning.loggers import CSVLogger
 from pytorch_lightning.loggers import WandbLogger as PTLWandbLogger
 
@@ -42,14 +35,27 @@ class WandbLogger(PTLWandbLogger):
         return uniform_repr(self.__class__.__name__, **self._kwargs)
 
 
-class CommunicationFlags(Enum):
-    OUTPUT_DIR = ".graph-pes-output-dir"
+OUTPUT_DIR = "graph-pes-output-dir"
 
-    @classmethod
-    def cleanup(cls):
-        for flag in cls:
-            with contextlib.suppress(FileNotFoundError):
-                Path(flag.value).unlink()
+
+class Communication:
+    """A class to manage communication between ranks."""
+
+    def __init__(self, dir: Path):
+        assert dir.is_dir() and not dir.exists()
+        dir.mkdir()
+        self.dir = dir
+
+    def send(self, key: str, value: Any):
+        with open(self.dir / key, "w") as f:
+            f.write(str(value))
+
+    def receive(self, key: str) -> Any:
+        with open(self.dir / key) as f:
+            return f.read()
+
+    def cleanup(self):
+        shutil.rmtree(self.dir)
 
 
 def parse_args():
@@ -132,6 +138,9 @@ def extract_config_from_command_line() -> Config:
 
 
 def train_from_config(config: Config):
+    # hash the config to get a unique identifier using sha256
+    communication = Communication(dir=Path(config.hash()))
+
     # general things: seed and logging
     pytorch_lightning.seed_everything(config.general.seed)
     set_level(config.general.log_level)
@@ -139,7 +148,7 @@ def train_from_config(config: Config):
     logger.info(f"Started training at {now_ms}")
 
     # rank-0 only things
-    if is_global_rank_zero():
+    if rank() == 0:
         # set up directory structure
         output_dir = random_dir(root=Path(config.general.root_dir))
         assert not output_dir.exists()
@@ -149,16 +158,13 @@ def train_from_config(config: Config):
             yaml.dump(config.to_nested_dict(), f)
 
         # communicate the output directory by saving it to a file
-        with open(CommunicationFlags.OUTPUT_DIR.value, "w") as f:
-            f.write(str(output_dir))
+        communication.send(OUTPUT_DIR, output_dir)
 
     else:
-        with open(CommunicationFlags.OUTPUT_DIR.value) as f:
-            output_dir = Path(f.read().strip())
+        output_dir = Path(communication.receive(OUTPUT_DIR))
 
     # route logs to file
-    fname = "log.txt" if not is_distributed() else f"logs/rank-{rank()}"
-    log_to_file(file=output_dir / fname)
+    log_to_file(file=output_dir / "logs" / f"rank-{rank()}.log")
 
     # instantiate and log things
     logger.info(config)
@@ -205,7 +211,7 @@ def train_from_config(config: Config):
         )
 
     except Exception as e:
-        CommunicationFlags.cleanup()
+        communication.cleanup()
         raise e
 
     logger.info("Training complete.")
@@ -231,7 +237,7 @@ def train_from_config(config: Config):
     except Exception as e:
         logger.error(f"Failed to save model: {e}")
 
-    CommunicationFlags.cleanup()
+    communication.cleanup()
 
 
 def main():
