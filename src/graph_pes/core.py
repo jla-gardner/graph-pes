@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
+from contextlib import nullcontext
 from typing import Sequence, overload
 
 import torch
@@ -247,27 +248,36 @@ def get_predictions(
     tensor(-12.3)
     """
 
-    # check correctly called
-    if property is not None and properties is not None:
-        raise ValueError("Can't specify both `property` and `properties`")
-
+    # [boring] setup, check correct usage and type checking
     if isinstance(graph, Sequence):
         graph = to_batch(graph)
-
+    if property is not None:
+        if properties is not None:
+            raise ValueError("Can't specify both `property` and `properties`")
+        properties = [property]
     if properties is None:
         if has_cell(graph):
             properties = [keys.ENERGY, keys.FORCES, keys.STRESS]
         else:
             properties = [keys.ENERGY, keys.FORCES]
-
-    want_stress = keys.STRESS in properties or property == keys.STRESS
+    want_stress = keys.STRESS in properties
     if want_stress and not has_cell(graph):
         raise ValueError("Can't predict stress without cell information.")
 
+    # [interesting] calculate the predictions
+    # we do this in a conservative manner:
+    # 1. always predict the energy
+    # 2. if forces are requested, make sure that the graph's positions
+    #    have gradients enabled **before** calling the model. Then use
+    #    autograd to calculate the forces by differentiating the energy
+    #    wrt the positions.
+    # 3. if stress is requested, make sure that the graph's cell has gradients
+    #    enabled **before** calling the model. Then use autograd to calculate
+    #    the stress by differentiating the energy wrt a distortion of the cell.
+
     predictions: dict[keys.LabelKey, Tensor] = {}
 
-    # setup for calculating stress:
-    if keys.STRESS in properties:
+    if want_stress:
         # The virial stress tensor is the gradient of the total energy wrt
         # an infinitesimal change in the cell parameters.
         # We therefore add this change to the cell, such that
@@ -280,12 +290,20 @@ def get_predictions(
             change_to_cell + change_to_cell.transpose(-1, -2)
         )
         graph[keys.CELL] = actual_cell + symmetric_change
+        stress_context = require_grad(change_to_cell)
     else:
         change_to_cell = torch.zeros_like(graph[keys.CELL])
+        stress_context = nullcontext()
+
+    force_context = (
+        require_grad(graph[keys._POSITIONS])
+        if keys.FORCES in properties
+        else nullcontext()
+    )
 
     # use the autograd machinery to auto-magically
     # calculate forces and stress from the energy
-    with require_grad(graph[keys._POSITIONS], change_to_cell):
+    with force_context, stress_context:
         energy = model(graph)
 
         if keys.ENERGY in properties:
