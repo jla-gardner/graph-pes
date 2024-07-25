@@ -221,8 +221,8 @@ class PerElementParameter(torch.nn.Parameter):
         cls, data: Tensor, requires_grad: bool = True
     ) -> PerElementParameter:
         pep = super().__new__(cls, data, requires_grad=requires_grad)
-        pep._is_per_element_param = True  # type: ignore[assignment]
-        return pep  # type: ignore[return-value]
+        pep._is_per_element_param = True  # type: ignore
+        return pep
 
     def __init__(self, data: Tensor, requires_grad: bool = True):
         super().__init__()

@@ -209,6 +209,9 @@ class ASEDataset(LabelledGraphDataset):
         self.property_mapping = property_mapping
         self.graphs = None
 
+        # raise errors on instantiation if accessing a datapoint would fail
+        _ = self[0]
+
     def prepare_data(self):
         # bit of a hack: pre_transformed_structures is cached to disk
         # for each unique combination of structures and cutoff: calling this

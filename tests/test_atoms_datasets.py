@@ -58,9 +58,7 @@ def test_property_map():
         helpers.CU_TEST_STRUCTURES[0].positions,
     )
 
-    with pytest.raises(
-        KeyError, match="Property UNKNOWN KEY not found in structure"
-    ):
+    with pytest.raises(KeyError, match="Property UNKNOWN KEY not found for"):
         load_atoms_datasets(
             id=helpers.CU_STRUCTURES_FILE,
             cutoff=3.7,

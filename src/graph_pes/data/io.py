@@ -67,6 +67,10 @@ def to_atomic_graph(
             graph[label] = torch.FloatTensor(
                 structure.arrays[name_on_structure]
             )
+        else:
+            raise KeyError(
+                f"Property {name_on_structure} not found for {structure}"
+            )
 
     return graph  # type: ignore
 
