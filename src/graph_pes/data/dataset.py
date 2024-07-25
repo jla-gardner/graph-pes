@@ -219,13 +219,19 @@ class ASEDataset(LabelledGraphDataset):
     def setup(self):
         if self.pre_transform:
             self.graphs = pre_transform_structures(
-                self.structures, cutoff=self.cutoff
+                self.structures,
+                cutoff=self.cutoff,
+                property_mapping=self.property_mapping,
             )
 
     def __getitem__(self, index: int) -> LabelledGraph:
         if self.graphs is not None:
             return self.graphs[index]
-        return to_atomic_graph(self.structures[index], cutoff=self.cutoff)
+        return to_atomic_graph(
+            self.structures[index],
+            cutoff=self.cutoff,
+            property_mapping=self.property_mapping,
+        )
 
     def __len__(self) -> int:
         return len(self.structures)
