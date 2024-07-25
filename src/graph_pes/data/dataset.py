@@ -8,13 +8,13 @@ import ase
 import torch.utils.data
 from locache import persist
 
-from graph_pes.graphs import LabelledGraph
+from graph_pes.graphs import LabelledGraph, keys
 from graph_pes.graphs.keys import ALL_LABEL_KEYS, LabelKey
 from graph_pes.graphs.operations import available_labels
 from graph_pes.logger import logger
 from graph_pes.util import uniform_repr
 
-from .io import to_atomic_graph
+from .io import to_atomic_graph, to_atomic_graphs
 
 T = TypeVar("T", covariant=True)
 
@@ -22,6 +22,7 @@ T = TypeVar("T", covariant=True)
 class SizedDataset(Protocol[T]):
     def __getitem__(self, index: int) -> T: ...
     def __len__(self) -> int: ...
+    def __iter__(self) -> Iterator[T]: ...
 
 
 class LabelledGraphDataset(torch.utils.data.Dataset, ABC):
@@ -189,19 +190,31 @@ class ASEDataset(LabelledGraphDataset):
         The cutoff to use when creating neighbour indexes for the graphs.
     pre_transform
         Whether to precompute the neighbour indexes for the graphs.
+    property_mapping
+        A mapping from properties expected in ``graph-pes`` to their names
+        in the dataset.
     """
 
     def __init__(
         self,
         structures: SizedDataset[ase.Atoms] | Sequence[ase.Atoms],
-        cutoff: float = 5.0,
+        cutoff: float,
         pre_transform: bool = False,
+        property_mapping: dict[keys.LabelKey, str] | None = None,
     ):
         self.structures = structures
         self.cutoff = cutoff
 
         self.pre_transform = pre_transform
+        self.property_mapping = property_mapping
         self.graphs = None
+
+    def prepare_data(self):
+        # bit of a hack: pre_transformed_structures is cached to disk
+        # for each unique combination of structures and cutoff: calling this
+        # on rank-0 before any other rank ensures a cache hit for all ranks
+        # in the distributed setup
+        self.setup()
 
     def setup(self):
         if self.pre_transform:
@@ -239,9 +252,10 @@ class FittingData:
 def pre_transform_structures(
     structures: SizedDataset[ase.Atoms],
     cutoff: float = 5.0,
+    property_mapping: dict[keys.LabelKey, str] | None = None,
 ) -> list[LabelledGraph]:
     logger.info(
         f"Caching neighbour lists for {len(structures)} structures "
         f"with cutoff {cutoff}"
     )
-    return [to_atomic_graph(atoms, cutoff=cutoff) for atoms in structures]
+    return to_atomic_graphs(structures, cutoff, property_mapping)

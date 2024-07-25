@@ -7,6 +7,7 @@ import numpy as np
 from load_atoms import load_dataset
 
 from graph_pes.data.dataset import ASEDataset, FittingData
+from graph_pes.graphs import keys
 
 
 def load_atoms_datasets(
@@ -17,7 +18,7 @@ def load_atoms_datasets(
     split: Literal["random", "sequential"] = "random",
     seed: int = 42,
     pre_transform: bool = True,
-    property_map: dict[str, str] | None = None,
+    property_map: dict[keys.LabelKey, str] | None = None,
 ) -> FittingData:
     """
     Load an ``ASE``/``load-atoms`` dataset and split into train and valid sets.
@@ -72,21 +73,10 @@ def load_atoms_datasets(
         idxs = np.random.default_rng(seed).permutation(len(structures))
         structures = [structures[i] for i in idxs]
 
-    if property_map:
-        for i in range(n_train + n_valid):
-            structure = structures[i]
-            for key, value in property_map.items():
-                if value in structure.info:
-                    structure.info[key] = structure.info[value]
-                elif value in structure.arrays:
-                    structure.info[key] = structure.arrays[value]
-                else:
-                    raise KeyError(f"Property {value} not found in structure")
-
     train_structures = structures[:n_train]
     val_structures = structures[n_train : n_train + n_valid]
 
     return FittingData(
-        ASEDataset(train_structures, cutoff, pre_transform),
-        ASEDataset(val_structures, cutoff, pre_transform),
+        ASEDataset(train_structures, cutoff, pre_transform, property_map),
+        ASEDataset(val_structures, cutoff, pre_transform, property_map),
     )
