@@ -175,6 +175,12 @@ def train_from_config(config: Config):
 
     # general things: seed and logging
     pytorch_lightning.seed_everything(config.general.seed)
+
+    # a nice setting for e3nn components that get scripted upon instantiation
+    # - DYNAMIC refers to the fact that they will expect different input sizes
+    #   at every iteration (graphs are not all the same size)
+    # - 4 is the number of times we attempt to recompile before giving up
+    torch.jit.set_fusion_strategy([("DYNAMIC", 4)])
     set_level(config.general.log_level)
     now_ms = datetime.now().strftime("%F %T.%f")[:-3]
     logger.info(f"Started training at {now_ms}")
@@ -197,6 +203,7 @@ def train_from_config(config: Config):
         # get the output directory from rank 0
         with open(training_run_dir / OUTPUT_DIR) as f:
             output_dir = Path(f.read())
+    log(f"Output directory: {output_dir}")
 
     # set up a logger on every rank - PTL handles this gracefully so that
     # e.g. we don't spin up >1 wandb experiment

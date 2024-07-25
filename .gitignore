@@ -3,22 +3,22 @@ __pycache__
 **/*.egg-info
 build
 
-
+exclude
 docs/build
 dist
-graph-pes-results
+**/*results*
+.communication
+logs
 
 .pytest_cache
 coverage.xml
 .coverage*
-
 *.extxyz
 *.npz
 *.ipynb
 *.pt
 *.pth
 **/wandb
-
 .vscode
 .isort.cfg
 .DS_Store
