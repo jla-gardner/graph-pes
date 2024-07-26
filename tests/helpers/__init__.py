@@ -26,7 +26,7 @@ def all_model_factories(
     def _model_factory(
         model_klass: type[GraphPESModel],
     ) -> Callable[[], GraphPESModel]:
-        return lambda: model_klass(**required_kwargs.get(model_klass, {}))
+        return lambda: model_klass(**required_kwargs.get(model_klass, {}))  # type: ignore
 
     names = [model.__name__ for model in ALL_MODELS]
     factories = [_model_factory(model) for model in ALL_MODELS]
