@@ -11,7 +11,7 @@ from graph_pes.graphs.operations import (
     number_of_atoms,
     number_of_edges,
 )
-from graph_pes.models import LennardJones, Morse
+from graph_pes.models import LennardJones, Morse, SchNet
 from graph_pes.models.addition import AdditionModel
 
 graphs = to_atomic_graphs(helpers.CU_TEST_STRUCTURES, cutoff=3)
@@ -71,6 +71,15 @@ def test_model_serialisation(model_class: type[GraphPESModel], tmp_path):
 
     # check predictions are the same
     assert torch.allclose(m1(graphs[0]), m2(graphs[0]))
+
+
+def test_cutoff_save_and_load():
+    model_4 = SchNet(cutoff=4.0)
+    model_5 = SchNet(cutoff=5.0)
+    model_5.load_state_dict(model_4.state_dict())
+    # cutoff is part of the model's state: as such, it should be
+    # saved and loaded as part of a state-dict process
+    assert model_5.cutoff == 4.0
 
 
 def test_addition():

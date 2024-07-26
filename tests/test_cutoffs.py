@@ -24,13 +24,13 @@ class Stats:
 
 class DummyModel(GraphPESModel):
     def __init__(self, name: str, cutoff: float, info: dict[str, Stats]):
-        super().__init__()
+        super().__init__(cutoff)
         self.name = name
-        self.cutoff = cutoff
         self.info = info
 
     def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
-        # insert statistics here
+        # insert statistics here: `GraphPESModel` should automatically
+        # trim the input graph based on the model's cutoff
         self.info[self.name] = Stats(
             n_neighbours=number_of_edges(graph),
             max_edge_length=neighbour_distances(graph).max().item(),

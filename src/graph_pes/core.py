@@ -49,12 +49,16 @@ class GraphPESModel(nn.Module, ABC):
     def __init__(self, cutoff: float | None = None):
         super().__init__()
 
-        self.cutoff = cutoff
+        self.cutoff: Tensor | None
         r"""
         The cutoff radius for the model (if applicable). During the forward 
         pass, only edges between atoms that are closer than this distance 
         will be considered.
         """
+        if cutoff is not None:
+            self.register_buffer("cutoff", torch.scalar_tensor(cutoff))
+        else:
+            self.cutoff = None
 
         # save as a buffer so that this is de/serialized
         # with the model
