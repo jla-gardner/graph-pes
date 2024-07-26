@@ -304,7 +304,7 @@ class ModelTimer(pl.Callback):
 
     def stop(self, pl_module: LearnThePES, stage: Literal["train", "valid"]):
         assert self.tick_ms is not None
-        duration_ms = time.time_ns() // 1_000_000 - self.tick_ms
+        duration_ms = max((time.time_ns() // 1_000_000) - self.tick_ms, 1)
         self.tick_ms = None
 
         for name, x in (

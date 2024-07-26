@@ -250,7 +250,7 @@ def structure_sizes(batch: AtomicGraph) -> Tensor:
 ############################### ACTIONS ###############################
 
 
-def trim_edges(graph: AtomicGraph, cutoff: float | Tensor) -> AtomicGraph:
+def trim_edges(graph: AtomicGraph, cutoff: float) -> AtomicGraph:
     """
     Remove edges from the graph where the distance between the atoms
     is greater than the ``cutoff``.

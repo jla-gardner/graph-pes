@@ -83,7 +83,7 @@ class GraphPESModel(nn.Module, ABC):
             will be returned.
         """
         if self.cutoff is not None:
-            graph = trim_edges(graph, self.cutoff)
+            graph = trim_edges(graph, self.cutoff.item())
 
         local_energies = self.predict_local_energies(graph).squeeze()
         return sum_per_structure(local_energies, graph)
