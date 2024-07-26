@@ -268,19 +268,20 @@ def trim_edges(graph: AtomicGraph, cutoff: float | Tensor) -> AtomicGraph:
     # is clean.
 
     _RMAX: str = "_rmax"
-    cutoff_T = torch.tensor(cutoff, dtype=graph[keys._POSITIONS].dtype)
+
     # make a shallow copy of the graph to prevent modifying the original
     graph_dict: dict[str, torch.Tensor] = dict(graph)  # type: ignore
 
-    if "_rmax" in graph_dict:
-        if graph_dict[_RMAX] < cutoff_T:
+    if _RMAX in graph_dict:
+        existing_cutoff = graph_dict[_RMAX].item()
+        if existing_cutoff < cutoff:
             warnings.warn(
                 f"Graph already has a cutoff of {graph_dict[_RMAX]} which is "
                 "less than the requested cutoff of {cutoff}.",
                 stacklevel=2,
             )
             return graph
-        elif graph_dict[_RMAX] == cutoff_T:
+        elif existing_cutoff == cutoff:
             return graph
 
     distances = neighbour_distances(graph_dict)  # type: ignore
@@ -290,7 +291,7 @@ def trim_edges(graph: AtomicGraph, cutoff: float | Tensor) -> AtomicGraph:
     graph_dict[keys._NEIGHBOUR_CELL_OFFSETS] = graph_dict[
         keys._NEIGHBOUR_CELL_OFFSETS
     ][mask, :]
-    graph_dict[_RMAX] = cutoff_T
+    graph_dict[_RMAX] = torch.tensor(cutoff, dtype=graph[keys._POSITIONS].dtype)
 
     return graph_dict  # type: ignore
 

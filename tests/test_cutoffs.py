@@ -39,7 +39,7 @@ class DummyModel(GraphPESModel):
         return graph["atomic_numbers"].float()
 
 
-def test_cutoff_trimming():
+def test_auto_trimming():
     info = {}
     graph = graph_from_molecule("CH3CH2OCH3", cutoff=5.0)
 
@@ -84,3 +84,19 @@ def test_warning():
     model = SchNet(cutoff=6.0)
     with pytest.warns(UserWarning, match="Graph already has a cutoff of"):
         model(trimmed_graph)
+
+
+def test_cutoff_trimming():
+    graph = graph_from_molecule("CH4", cutoff=5)
+
+    trimmed_graph = trim_edges(graph, cutoff=3.0)
+    assert graph is not trimmed_graph
+
+    # check that trimming a second time with the same cutoff is a no-op
+    doubly_trimmed_graph = trim_edges(trimmed_graph, cutoff=3.0)
+    assert doubly_trimmed_graph is trimmed_graph
+
+    # but that if the cutoff is further reduced then the trimming occurs
+    doubly_trimmed_graph = trim_edges(trimmed_graph, cutoff=2.0)
+    assert doubly_trimmed_graph is not trimmed_graph
+    assert doubly_trimmed_graph["_rmax"].item() == 2.0  # type: ignore
