@@ -262,29 +262,37 @@ def trim_edges(graph: AtomicGraph, cutoff: float) -> AtomicGraph:
     cutoff
         The maximum distance between atoms to keep the edge.
     """
-    _RMAX = "_rmax"
+    # unfortunately this function is a bit ugly: since this is part of
+    # the forward pass, we need to ensure that this is torchscriptable
+    # Hence we have a bunch of `type: ignore`s so that the external API
+    # is clean.
+
+    _RMAX: str = "_rmax"
+    cutoff_T = torch.tensor(cutoff, dtype=graph[keys._POSITIONS].dtype)
     # make a shallow copy of the graph to prevent modifying the original
     graph_dict: dict[str, torch.Tensor] = dict(graph)  # type: ignore
 
     if "_rmax" in graph_dict:
-        if graph_dict[_RMAX] < cutoff:
+        if graph_dict[_RMAX] < cutoff_T:
             warnings.warn(
                 f"Graph already has a cutoff of {graph_dict[_RMAX]} which is "
                 "less than the requested cutoff of {cutoff}.",
                 stacklevel=2,
             )
             return graph
-        elif graph_dict[_RMAX] == cutoff:
+        elif graph_dict[_RMAX] == cutoff_T:
             return graph
 
     distances = neighbour_distances(graph_dict)  # type: ignore
     mask = distances <= cutoff
+
     graph_dict[keys.NEIGHBOUR_INDEX] = graph_dict[keys.NEIGHBOUR_INDEX][:, mask]
     graph_dict[keys._NEIGHBOUR_CELL_OFFSETS] = graph_dict[
         keys._NEIGHBOUR_CELL_OFFSETS
     ][mask, :]
-    graph_dict[_RMAX] = cutoff  # type: ignore
-    return with_nice_repr(graph_dict)  # type: ignore
+    graph_dict[_RMAX] = cutoff_T
+
+    return graph_dict  # type: ignore
 
 
 def sum_over_neighbours(p: Tensor, graph: AtomicGraph) -> Tensor:

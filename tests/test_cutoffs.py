@@ -2,9 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import pytest
 from graph_pes.core import GraphPESModel
 from graph_pes.graphs.graph_typing import AtomicGraph
-from graph_pes.graphs.operations import neighbour_distances, number_of_edges
+from graph_pes.graphs.operations import (
+    neighbour_distances,
+    number_of_edges,
+    trim_edges,
+)
 from graph_pes.models import AdditionModel, SchNet
 from graph_pes.models.offsets import FixedOffset
 from helpers import graph_from_molecule
@@ -70,3 +75,12 @@ def test_model_cutoffs():
 
     model = FixedOffset()
     assert model.cutoff is None
+
+
+def test_warning():
+    graph = graph_from_molecule("CH4", cutoff=3.0)
+    trimmed_graph = trim_edges(graph, cutoff=3.0)
+
+    model = SchNet(cutoff=6.0)
+    with pytest.warns(UserWarning, match="Graph already has a cutoff of"):
+        model(trimmed_graph)
