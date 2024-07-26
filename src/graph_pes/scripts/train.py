@@ -265,6 +265,9 @@ def train_from_config(config: Config):
     # only save things on rank 0
     if is_rank_0:
         try:
+            # place model onto cpu
+            model = model.to("cpu")
+
             # log the final path to the trainer.logger.summary
             model_path = output_dir / "model.pt"
             lammps_model_path = output_dir / "lammps_model.pt"
