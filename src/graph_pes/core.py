@@ -23,6 +23,7 @@ from .graphs.operations import (
     has_cell,
     sum_per_structure,
     to_batch,
+    trim_edges,
 )
 from .nn import PerElementParameter
 from .util import differentiate, require_grad
@@ -43,6 +44,13 @@ class GraphPESModel(nn.Module, ABC):
     and returns a per-atom prediction of the local energy. For a simple example,
     see the :class:`PairPotential <graph_pes.models.pairwise.PairPotential>`
     `implementation <_modules/graph_pes/models/pairwise.html#PairPotential>`_.
+    """
+
+    cutoff: float | None
+    r"""
+    The cutoff radius for the model (if applicable). During the forward pass,
+    only edges between atoms that are closer than this distance will be
+    considered.
     """
 
     def __init__(self):
@@ -70,6 +78,9 @@ class GraphPESModel(nn.Module, ABC):
             where :code:`B` is the batch size. Otherwise, a scalar tensor
             will be returned.
         """
+        if self.cutoff is not None:
+            graph = trim_edges(graph, self.cutoff)
+
         local_energies = self.predict_local_energies(graph).squeeze()
         return sum_per_structure(local_energies, graph)
 

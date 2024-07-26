@@ -6,6 +6,7 @@ import torch
 
 from graph_pes.core import GraphPESModel
 
+from .addition import AdditionModel
 from .e3nn.mace import MACE, ZEmbeddingMACE
 from .e3nn.nequip import NequIP, ZEmbeddingNequIP
 from .offsets import FixedOffset, LearnableOffset
@@ -15,6 +16,7 @@ from .schnet import SchNet
 from .tensornet import TensorNet
 
 __all__ = [
+    "AdditionModel",
     "PaiNN",
     "LennardJones",
     "SchNet",
@@ -34,7 +36,8 @@ __all__ = [
 ALL_MODELS: list[type[GraphPESModel]] = [
     globals()[model]
     for model in __all__
-    if model not in ["FixedOffset", "LearnableOffset", "load_model"]
+    if model
+    not in ["FixedOffset", "LearnableOffset", "load_model", "AdditionModel"]
 ]
 
 

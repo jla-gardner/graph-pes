@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import Dict, Sequence, TypeVar, no_type_check, overload
 
 import torch
@@ -99,7 +100,7 @@ def to_batch(
     return graph  # type: ignore
 
 
-############################### OPERATIONS ###############################
+############################### PROPERTIES ###############################
 
 
 def number_of_atoms(graph: AtomicGraph) -> int:
@@ -205,6 +206,87 @@ def neighbour_distances(graph: AtomicGraph) -> Tensor:
     return torch.linalg.norm(neighbour_vectors(graph), dim=-1)
 
 
+def number_of_structures(batch: AtomicGraph) -> int:
+    """
+    Get the number of structures in the ``batch``.
+
+    Parameters
+    ----------
+    batch
+        The batch to get the number of structures for.
+    """
+
+    if not is_batch(batch):
+        return 1
+    return batch[keys.PTR].shape[0] - 1  # type: ignore
+
+
+def structure_sizes(batch: AtomicGraph) -> Tensor:
+    """
+    Get the number of atoms in each structure in the ``batch``, of shape
+    ``(S,)`` where ``S`` is the number of structures.
+
+    Parameters
+    ----------
+    batch
+        The batch to get the structure sizes for.
+
+    Examples
+    --------
+    >>> len(graphs)
+    3
+    >>> [number_of_atoms(g) for g in graphs]
+    [3, 4, 5]
+    >>> structure_sizes(to_batch(graphs))
+    tensor([3, 4, 5])
+    """
+
+    if not is_batch(batch):
+        return torch.scalar_tensor(number_of_atoms(batch))
+
+    return batch[keys.PTR][1:] - batch[keys.PTR][:-1]  # type: ignore
+
+
+############################### ACTIONS ###############################
+
+
+def trim_edges(graph: AtomicGraph, cutoff: float) -> AtomicGraph:
+    """
+    Remove edges from the graph where the distance between the atoms
+    is greater than the ``cutoff``.
+
+    Parameters
+    ----------
+    graph
+        The graph to trim the edges of.
+    cutoff
+        The maximum distance between atoms to keep the edge.
+    """
+    _RMAX = "_rmax"
+    # make a shallow copy of the graph to prevent modifying the original
+    graph_dict: dict[str, torch.Tensor] = dict(graph)  # type: ignore
+
+    if "_rmax" in graph_dict:
+        if graph_dict[_RMAX] < cutoff:
+            warnings.warn(
+                f"Graph already has a cutoff of {graph_dict[_RMAX]} which is "
+                "less than the requested cutoff of {cutoff}.",
+                stacklevel=2,
+            )
+            return graph
+        elif graph_dict[_RMAX] == cutoff:
+            return graph
+
+    distances = neighbour_distances(graph_dict)  # type: ignore
+    mask = distances <= cutoff
+    graph_dict[keys.NEIGHBOUR_INDEX] = graph_dict[keys.NEIGHBOUR_INDEX][:, mask]
+    graph_dict[keys._NEIGHBOUR_CELL_OFFSETS] = graph_dict[
+        keys._NEIGHBOUR_CELL_OFFSETS
+    ][mask, :]
+    graph_dict[_RMAX] = cutoff  # type: ignore
+    return with_nice_repr(graph_dict)  # type: ignore
+
+
 def sum_over_neighbours(p: Tensor, graph: AtomicGraph) -> Tensor:
     r"""
     Shape-preserving sum over neighbours of a per-edge property, :math:`p_{ij}`,
@@ -257,21 +339,6 @@ def sum_over_neighbours(p: Tensor, graph: AtomicGraph) -> Tensor:
     ones = torch.ones_like(zeros)
     index = left_aligned_mul(ones, central_atoms).long()
     return zeros.scatter_add(0, index, p)
-
-
-def number_of_structures(batch: AtomicGraph) -> int:
-    """
-    Get the number of structures in the ``batch``.
-
-    Parameters
-    ----------
-    batch
-        The batch to get the number of structures for.
-    """
-
-    if not is_batch(batch):
-        return 1
-    return batch[keys.PTR].shape[0] - 1  # type: ignore
 
 
 def sum_per_structure(x: Tensor, graph: AtomicGraph) -> Tensor:
@@ -344,32 +411,6 @@ def sum_per_structure(x: Tensor, graph: AtomicGraph) -> Tensor:
         return zeros.scatter_add(0, batch, x)
     else:
         return x.sum(dim=0)
-
-
-def structure_sizes(batch: AtomicGraph) -> Tensor:
-    """
-    Get the number of atoms in each structure in the ``batch``, of shape
-    ``(S,)`` where ``S`` is the number of structures.
-
-    Parameters
-    ----------
-    batch
-        The batch to get the structure sizes for.
-
-    Examples
-    --------
-    >>> len(graphs)
-    3
-    >>> [number_of_atoms(g) for g in graphs]
-    [3, 4, 5]
-    >>> structure_sizes(to_batch(graphs))
-    tensor([3, 4, 5])
-    """
-
-    if not is_batch(batch):
-        return torch.scalar_tensor(number_of_atoms(batch))
-
-    return batch[keys.PTR][1:] - batch[keys.PTR][:-1]  # type: ignore
 
 
 def index_over_neighbours(

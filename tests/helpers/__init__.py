@@ -3,11 +3,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
+import ase.build
 import pytest
 import pytorch_lightning
 from ase import Atoms
 from ase.io import read
 from graph_pes.core import GraphPESModel
+from graph_pes.data.io import to_atomic_graph
+from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.models import ALL_MODELS, MACE, NequIP
 
 
@@ -57,6 +60,10 @@ def parameterise_model_classes(
         )
 
     return decorator
+
+
+def graph_from_molecule(molecule: str, cutoff: float = 3.7) -> AtomicGraph:
+    return to_atomic_graph(ase.build.molecule(molecule), cutoff)
 
 
 CU_STRUCTURES_FILE = Path(__file__).parent / "test.xyz"

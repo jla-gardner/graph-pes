@@ -37,6 +37,9 @@ class AdditionModel(GraphPESModel):
     def __init__(self, **models: GraphPESModel):
         super().__init__()
         self.models = UniformModuleDict(**models)
+        self.cutoff = (
+            max(model.cutoff or 0.0 for model in self.models.values()) or None
+        )
 
     def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
         predictions = torch.stack(
