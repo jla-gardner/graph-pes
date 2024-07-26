@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="38.21368mm"
+   height="10.117659mm"
+   viewBox="0 0 38.21368 10.117659"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.1 (9c6d41e, 2022-07-14)"
+   sodipodi:docname="logo.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="4.4375493"
+     inkscape:cx="46.534694"
+     inkscape:cy="51.605061"
+     inkscape:window-width="1512"
+     inkscape:window-height="916"
+     inkscape:window-x="0"
+     inkscape:window-y="38"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-22.310724,-67.9109)">
+    <text
+       xml:space="preserve"
+       style="font-style:italic;font-variant:normal;font-weight:500;font-stretch:normal;font-size:7.7611px;font-family:'CMU Serif';-inkscape-font-specification:'CMU Serif, Medium Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;fill:#000000;stroke:none;stroke-width:0.499999;stroke-linecap:round;paint-order:fill markers stroke"
+       x="43.801128"
+       y="75.193153"
+       id="text236"><tspan
+         sodipodi:role="line"
+         id="tspan234"
+         style="font-style:italic;font-variant:normal;font-weight:500;font-stretch:normal;font-size:7.7611px;font-family:'CMU Serif';-inkscape-font-specification:'CMU Serif, Medium Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;stroke:none;stroke-width:0.5"
+         x="43.801128"
+         y="75.193153">raphPES</tspan></text>
+    <g
+       id="g3511"
+       transform="matrix(1.2326763,0,0,1.2326763,-6.0560027,-16.902289)"
+       style="stroke-width:0.811243">
+      <circle
+         style="fill:#000000;stroke:none;stroke-width:0.405621;stroke-linecap:round;paint-order:fill markers stroke"
+         id="path477-6"
+         cx="26.449928"
+         cy="75.235474"
+         r="0.53672999" />
+      <circle
+         style="fill:#000000;stroke:none;stroke-width:0.405621;stroke-linecap:round;paint-order:fill markers stroke"
+         id="path477"
+         cx="27.923283"
+         cy="71.717651"
+         r="0.53672999" />
+      <circle
+         style="fill:#000000;stroke:none;stroke-width:0.405621;stroke-linecap:round;paint-order:fill markers stroke"
+         id="path477-0"
+         cx="26.449928"
+         cy="70.050377"
+         r="0.53672999" />
+      <circle
+         style="fill:#000000;stroke:none;stroke-width:0.405621;stroke-linecap:round;paint-order:fill markers stroke"
+         id="path477-3"
+         cx="24.131886"
+         cy="70.87999"
+         r="0.53672999" />
+      <circle
+         style="fill:#000000;stroke:none;stroke-width:0.405621;stroke-linecap:round;paint-order:fill markers stroke"
+         id="path477-2"
+         cx="24.131886"
+         cy="73.966652"
+         r="0.53672999" />
+      <circle
+         style="fill:#000000;stroke:none;stroke-width:0.405621;stroke-linecap:round;paint-order:fill markers stroke"
+         id="path477-9"
+         cx="27.923283"
+         cy="73.356636"
+         r="0.53672999" />
+      <circle
+         style="fill:#000000;stroke:none;stroke-width:0.405621;stroke-linecap:round;paint-order:fill markers stroke"
+         id="path477-4"
+         cx="25.952248"
+         cy="73.356636"
+         r="0.53672999" />
+      <path
+         style="fill:none;stroke:#000000;stroke-width:0.243373;stroke-linecap:round;stroke-dasharray:none;paint-order:fill markers stroke"
+         d="m 27.923283,71.717651 -1.473355,-1.667274 c 0,0 -2.318042,0.829613 -2.318042,0.829613 v 3.086662 l 2.318042,1.268822 1.473355,-1.878838 h -1.971035"
+         id="path595"
+         sodipodi:nodetypes="ccccccc" />
+    </g>
+  </g>
+</svg>

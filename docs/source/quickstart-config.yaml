@@ -1,0 +1,30 @@
+# train a SchNet model ...
+model:
+  graph_pes.models.SchNet: # or NequIP, MACE, TensorNet etc.
+    layers: 3
+    node_features: 64
+
+# ... on structures from data.xyz ...
+data:
+  graph_pes.data.load_atoms_datasets:
+    id: path/to/data.xyz
+    cutoff: 4.5 # radial cutoff in Å
+    n_train: 1_000
+    n_valid: 100
+
+# ... using a simple energy loss function ...
+loss: graph_pes.training.loss.PerAtomEnergyLoss()
+
+# ... with the following settings ...
+fitting:
+  trainer_kwargs: # passed straight to the lightning trainer
+    max_epochs: 1_000
+    accelerator: auto # use a gpu if available
+
+    loader_kwargs: # passed straight to the data loader
+      batch_size: 16
+
+# ... and log to Weights & Biases
+wandb:
+  project: graph-pes
+  name: trial-run
