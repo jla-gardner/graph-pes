@@ -80,7 +80,7 @@ class _BaseMACE(AutoScaledPESModel):
         neighbour_scaling: float,
         use_self_connection: bool,
     ):
-        super().__init__()
+        super().__init__(cutoff=cutoff)
 
         if isinstance(radial_expansion_type, str):
             radial_expansion_type = _get_distance_expansion(

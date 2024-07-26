@@ -327,7 +327,7 @@ class TensorNet(AutoScaledPESModel):
         cutoff: float = 5.0,
         layers: int = 2,
     ):
-        super().__init__()
+        super().__init__(cutoff)
         self.embedding = Embedding(radial_features, embedding_size, cutoff)
         self.interactions = UniformModuleList(
             Interaction(radial_features, embedding_size, cutoff)

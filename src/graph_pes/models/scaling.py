@@ -25,8 +25,8 @@ class AutoScaledPESModel(GraphPESModel, ABC):
     as calculated from the training data.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, cutoff: float | None = None):
+        super().__init__(cutoff=cutoff)
         self.per_element_scaling = PerElementParameter.of_length(
             1,
             default_value=1.0,

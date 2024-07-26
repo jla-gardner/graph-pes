@@ -303,7 +303,7 @@ class _BaseNequIP(AutoScaledPESModel):
         l_max: int,
         allow_odd_parity: bool,
     ):
-        super().__init__()
+        super().__init__(cutoff=cutoff)
 
         self.Z_embedding = Z_embedding
         self.initial_node_embedding = PerElementEmbedding(n_channels)

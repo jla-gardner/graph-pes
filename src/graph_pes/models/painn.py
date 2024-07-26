@@ -198,7 +198,8 @@ class PaiNN(AutoScaledPESModel):
         layers: int = 3,
         cutoff: float = 5.0,
     ):
-        super().__init__()
+        super().__init__(cutoff=cutoff)
+
         self.internal_dim = internal_dim
         self.layers = layers
         self.interactions = UniformModuleList(

@@ -46,15 +46,15 @@ class GraphPESModel(nn.Module, ABC):
     `implementation <_modules/graph_pes/models/pairwise.html#PairPotential>`_.
     """
 
-    cutoff: float | None
-    r"""
-    The cutoff radius for the model (if applicable). During the forward pass,
-    only edges between atoms that are closer than this distance will be
-    considered.
-    """
-
-    def __init__(self):
+    def __init__(self, cutoff: float | None = None):
         super().__init__()
+
+        self.cutoff = cutoff
+        r"""
+        The cutoff radius for the model (if applicable). During the forward 
+        pass, only edges between atoms that are closer than this distance 
+        will be considered.
+        """
 
         # save as a buffer so that this is de/serialized
         # with the model

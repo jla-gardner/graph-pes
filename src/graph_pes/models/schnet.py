@@ -206,9 +206,7 @@ class SchNet(AutoScaledPESModel):
         layers: int = 3,
         expansion: type[DistanceExpansion] | None = None,
     ):
-        super().__init__()
-
-        self.cutoff = cutoff
+        super().__init__(cutoff=cutoff)
 
         if expansion is None:
             expansion = GaussianSmearing
