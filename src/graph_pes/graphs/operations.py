@@ -322,7 +322,7 @@ def sum_over_neighbours(p: Tensor, graph: AtomicGraph) -> Tensor:
     graph
         The graph to sum the property for.
     """
-    # TODO: double check that torch scatter add doesn't work here
+
     N = number_of_atoms(graph)
     central_atoms = graph[keys.NEIGHBOUR_INDEX][0]  # shape: (E,)
 
@@ -343,9 +343,9 @@ def sum_over_neighbours(p: Tensor, graph: AtomicGraph) -> Tensor:
         # return all zeros if there are no atoms
         return zeros
 
-    # create `index`, where index[e].shape = p.shape[1:]
+    # create `index`, where index.shape = p.shape
     # and (index[e] == central_atoms[e]).all()
-    ones = torch.ones_like(zeros)
+    ones = torch.ones_like(p)
     index = left_aligned_mul(ones, central_atoms).long()
     return zeros.scatter_add(0, index, p)
 

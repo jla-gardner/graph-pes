@@ -5,9 +5,11 @@ from torch import Tensor, nn
 
 from graph_pes.graphs import AtomicGraph
 from graph_pes.graphs.operations import (
+    index_over_neighbours,
     neighbour_distances,
     neighbour_vectors,
     number_of_atoms,
+    sum_over_neighbours,
 )
 from graph_pes.models.scaling import AutoScaledPESModel
 from graph_pes.nn import (
@@ -74,28 +76,24 @@ class Interaction(nn.Module):
         scalar_embeddings: Tensor,
         graph: AtomicGraph,
     ) -> tuple[Tensor, Tensor]:
-        neighbours = graph["neighbour_index"][1]  # (E,)
         d = neighbour_distances(graph).unsqueeze(-1)  # (E, 1)
         unit_vectors = neighbour_vectors(graph) / d  # (E, 3)
 
         # continous filter message creation
-        x_ij = (
-            self.filter_generator(d) * self.Phi(scalar_embeddings)[neighbours]
-        )
+        new_features = self.Phi(scalar_embeddings)  # (N, 3D)
+        edge_embeddings = self.filter_generator(d)  # (E, 3D)
+        x_ij = index_over_neighbours(new_features, graph) * edge_embeddings
         a, b, c = torch.split(x_ij, self.internal_dim, dim=-1)  # (E, D)
 
         # simple sum over neighbours to get scalar messages
-        delta_s = torch.zeros_like(scalar_embeddings)  # (N, D)
-        delta_s.scatter_add_(0, neighbours.view(-1, 1).expand_as(a), a)
+        delta_s = sum_over_neighbours(a, graph)
 
         # create vector messages
         v_ij = b.unsqueeze(-1) * unit_vectors.unsqueeze(1)  # (E, D, 3)
-        v_ij = v_ij + c.unsqueeze(-1) * vector_embeddings[neighbours]
-
-        delta_v = torch.zeros_like(vector_embeddings)  # (N, D, 3)
-        delta_v.scatter_add_(
-            0, neighbours.unsqueeze(-1).unsqueeze(-1).expand_as(v_ij), v_ij
+        v_ij = v_ij + c.unsqueeze(-1) * index_over_neighbours(
+            vector_embeddings, graph
         )
+        delta_v = sum_over_neighbours(v_ij, graph)
 
         return delta_v, delta_s  # (N, D, 3), (N, D)
 
@@ -103,7 +101,7 @@ class Interaction(nn.Module):
 class VectorLinear(nn.Module):
     def __init__(self, in_features: int, out_features: int):
         super().__init__()
-        self._linear = nn.Linear(in_features, out_features)
+        self._linear = nn.Linear(in_features, out_features, bias=False)
 
     def forward(self, x: Tensor) -> Tensor:
         # a hack to swap the vector and channel dimensions
@@ -201,7 +199,7 @@ class PaiNN(AutoScaledPESModel):
         super().__init__(cutoff=cutoff)
 
         self.internal_dim = internal_dim
-        self.layers = layers
+        self.z_embedding = PerElementEmbedding(internal_dim)
         self.interactions = UniformModuleList(
             Interaction(radial_features, internal_dim, cutoff)
             for _ in range(layers)
@@ -209,19 +207,22 @@ class PaiNN(AutoScaledPESModel):
         self.updates = UniformModuleList(
             Update(internal_dim) for _ in range(layers)
         )
-        self.z_embedding = PerElementEmbedding(internal_dim)
         self.read_out = MLP(
             [internal_dim, internal_dim, 1],
             activation=nn.SiLU(),
         )
 
     def predict_unscaled_energies(self, graph: AtomicGraph) -> Tensor:
+        # initialise embbedings:
+        # - scalars as an embedding of the atomic numbers
+        scalar_embeddings = self.z_embedding(graph["atomic_numbers"])
+        # - vectors as all 0s:
         vector_embeddings = torch.zeros(
             (number_of_atoms(graph), self.internal_dim, 3),
             device=graph["atomic_numbers"].device,
         )
-        scalar_embeddings = self.z_embedding(graph["atomic_numbers"])
 
+        # iteratively interact and update the scalar and vector embeddings
         for interaction, update in zip(self.interactions, self.updates):
             delta_v, delta_s = interaction(
                 vector_embeddings, scalar_embeddings, graph
@@ -233,4 +234,5 @@ class PaiNN(AutoScaledPESModel):
             vector_embeddings = vector_embeddings + delta_v
             scalar_embeddings = scalar_embeddings + delta_s
 
+        # mlp read out
         return self.read_out(scalar_embeddings)
