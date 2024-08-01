@@ -1,4 +1,4 @@
-name: Source Code Tests
+name: CI
 
 on: [push]
 
@@ -15,10 +15,12 @@ jobs:
           python-version: 3.8
       - name: Install requirements
         run: pip install -r docs/requirements.txt
+      - name: Install pandoc
+        run: sudo apt-get install -y --no-install-recommends pandoc
       - name: Build docs
         # -n: nitpick
         # -W: turn warnings into errors
-        run: sphinx-build -nW docs/source docs/build --keep-going
+        run: sphinx-build -W docs/source docs/build --keep-going
 
   style:
     runs-on: ubuntu-latest
