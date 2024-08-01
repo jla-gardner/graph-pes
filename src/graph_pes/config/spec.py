@@ -164,6 +164,7 @@ class Config:
 
     To point to a class or function with arguments, use a nested dictionary
     structure like so:
+
     .. code-block:: yaml
 
         graph_pes.models.SchNet:

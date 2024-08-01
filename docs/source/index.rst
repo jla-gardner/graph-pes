@@ -4,6 +4,14 @@
 
     quickstart/root
 
+
+.. toctree::
+    :maxdepth: 2
+    :hidden:
+    :caption: CLI Reference
+
+    graph-pes-train/root
+
 .. toctree::
     :maxdepth: 4
     :hidden:
@@ -12,7 +20,7 @@
     models/root
     building-blocks/root
     data
-    training
+    losses
 
 .. toctree::
     :maxdepth: 2
@@ -94,8 +102,3 @@ See the menu-bar on the left for a complete API and usage guide, or jump straigh
 * run MD simulations using LAMMPS
 * fine-tune a model
 * sweep?
-
-
-.. about GraphPES 
-Tech stack
-==========
