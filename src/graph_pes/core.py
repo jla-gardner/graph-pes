@@ -39,8 +39,8 @@ class GraphPESModel(nn.Module, ABC):
         E(\mathcal{G}) = \sum_i \varepsilon_i
 
     To create such a model, implement :meth:`predict_local_energies`,
-    which takes an :class:`~graph_pes.data.AtomicGraph`, or an
-    :class:`~graph_pes.data.AtomicGraphBatch`,
+    which takes an :class:`~graph_pes.graphs.AtomicGraph`, or an
+    :class:`~graph_pes.graphs.AtomicGraphBatch`,
     and returns a per-atom prediction of the local energy. For a simple example,
     see the :class:`PairPotential <graph_pes.models.pairwise.PairPotential>`
     `implementation <_modules/graph_pes/models/pairwise.html#PairPotential>`_.

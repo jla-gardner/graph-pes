@@ -1,59 +1,101 @@
+.. toctree::
+    :hidden:
+    :maxdepth: 2
+
+    quickstart/root
 
 .. toctree::
-   :maxdepth: 4
-   :hidden:
-   :caption: Contents:
+    :maxdepth: 4
+    :hidden:
+    :caption: API Reference
 
-   Home <self>
-   models
-   data
-   training
-   analysis
-   examples
+    models/root
+    building-blocks/root
+    data
+    training
 
-.. image:: _static/logo.svg
-   :align: center
-   :alt: load-atoms logo
-   :width: 400px
-   :target: .
+.. toctree::
+    :maxdepth: 2
+    :caption: Tools
+    :hidden:
 
-################################
-:code:`graph-pes` Documentation
-################################
+    md/root
+    analysis
+    examples
 
 
-:code:`graph-pes` is a framework for building, training and analysing potential energy surface (PES) models that act on
-graph representations of atomic structures.
+.. toctree::
+    :maxdepth: 2
+    :caption: About
+    :hidden:
 
-Quickstart
-==========
+    tech-stack
+    development
 
-Install ``graph-pes`` from PyPI (we reccomend doing this in a new environment via e.g. ``conda create -n graph-pes python=3.10 -y``)
+
+.. image:: _static/logo-light.svg
+    :align: center
+    :alt: graph-pes logo
+    :width: 90%
+    :target: .
+    :class: only-light
+
+.. image:: _static/logo-dark.svg
+    :align: center
+    :alt: graph-pes logo
+    :width: 90%
+    :target: .
+    :class: only-dark
+
+#########
+graph-pes
+#########
+
+.. raw:: html
+    :file: hide-title.html
+
+``graph-pes`` is a framework built to accelerate the development of machine-learned potential energy surface (PES) models that act on graph representations of atomic structures.
+
+Use ``graph-pes`` to easily do the following:
+
+#. experiment with new model architectures by inheriting from our :class:`~graph_pes.core.GraphPESModel` or :class:`~graph_pes.models.scaling.AutoScaledPESModel` base classes
+#. train your own or existing (e.g. SchNet, NequIP, PaiNN, MACE, etc.) models. Easily configure distributed training, learning rate scheduling, weights and biases logging, and other features using our ``graph-pes-train`` command line interface, or use our data-loading pipeline within your own training loop
+#. run molecular dynamics simulations via LAMMPS (or ASE) using any :class:`~graph_pes.core.GraphPESModel` and the ``pair_style graph_pes`` LAMMPS command
+
+
+Installation
+============
+
+Install ``graph-pes`` from PyPI using pip (installs all dependencies):
 
 .. code-block:: bash
 
     pip install graph-pes
 
+.. tip::
 
-Train a model
--------------
+    We recommend installing ``graph-pes`` in a new environment, e.g. using `conda <https://conda.io/projects/conda/en/latest/user-guide/getting-started.html>`_:
 
-Point ``graph-pes`` to the model architecture you want to create, the data you want to train on, the loss function you want to use and any other training hyperparameters you care about:
+    .. code-block:: bash
 
-.. literalinclude:: quickstart-config.yaml
-    :language: yaml
-
-and then run ``graph-pes-train --config config.yaml``. For more info see [TODO].
+        conda create -n graph-pes python=3.10 -y
+        conda activate graph-pes
 
 
-:code:`graph-pes` aims to provide sensible defaults to allow for getting started quickly:
+Quickstart
+==========
 
-.. literalinclude:: quickstart.py
-    :language: python
+See the menu-bar on the left for a complete API and usage guide, or jump straight in with the following quickstart guides:
 
-.. image:: quickstart.svg
-    :align: center
+* :doc:`train a model from the command line <quickstart/train-a-model>`
+* implement your own model in xxx lines, and train it
+* implement a custom training loop
+* load a trained model into a python notebook for analysis
+* run MD simulations using LAMMPS
+* fine-tune a model
+* sweep?
 
-For a more detailed introduction, see an example notebook `here <notebooks/example.html>`_. 
-For under-the-hood details see :func:`train_model() <graph_pes.training.train_model>`.
 
+.. about GraphPES 
+Tech stack
+==========

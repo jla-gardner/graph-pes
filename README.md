@@ -1,4 +1,13 @@
-# `graph-pes` - Potential Energy Surfaces on Graphs
+<div align="center">
+    <a href="https://jla-gardner.github.io/graph-pes/">
+        <!-- <img src="https://raw.githubusercontent.com/jla-gardner/graph-pes/main/docs/source/_static/logo.svg" width="50%"/> -->
+        <img src="docs/source/_static/logo-all.svg" width="90%"/>
+    </a>
+</div>
+
+---
+
+## `graph-pes` - Potential Energy Surfaces on Graphs
 
 `graph-pes` is a Python framework for training Potential Energy Surface (PES) 
 models that operate on graph representations of atomic structures.

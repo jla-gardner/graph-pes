@@ -2,12 +2,12 @@
 Losses
 ######
 
-.. autoclass:: graph_pes.loss.Loss
-.. autoclass:: graph_pes.loss.TotalLoss()
-.. autoclass:: graph_pes.loss.PerAtomEnergyLoss
+.. autoclass:: graph_pes.training.loss.Loss
+.. autoclass:: graph_pes.training.loss.TotalLoss()
+.. autoclass:: graph_pes.training.loss.PerAtomEnergyLoss
     
 Metrics
 =======
 
-.. autoclass:: graph_pes.loss.RMSE()
-.. autoclass:: graph_pes.loss.MAE()
+.. autoclass:: graph_pes.training.loss.RMSE()
+.. autoclass:: graph_pes.training.loss.MAE()

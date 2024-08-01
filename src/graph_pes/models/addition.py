@@ -20,7 +20,7 @@ class AdditionModel(GraphPESModel):
     Parameters
     ----------
     models
-        the models to sum.
+        the models (given with arbitrary names) to sum.
 
     Examples
     --------

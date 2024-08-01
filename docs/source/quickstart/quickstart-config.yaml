@@ -1,14 +1,14 @@
-# train a SchNet model ...
+# train a PaiNN model ...
 model:
-  graph_pes.models.SchNet: # or NequIP, MACE, TensorNet etc.
+  graph_pes.models.PaiNN: # or NequIP, MACE, TensorNet etc.
     layers: 3
-    node_features: 64
+    cutoff: 3.0 # radial cutoff in Å
 
-# ... on structures from data.xyz ...
+# ... on structures from the QM7 dataset ...
 data:
   graph_pes.data.load_atoms_datasets:
-    id: path/to/data.xyz
-    cutoff: 4.5 # radial cutoff in Å
+    id: QM7
+    cutoff: 3.0 # radial cutoff in Å
     n_train: 1_000
     n_valid: 100
 

@@ -11,7 +11,7 @@ from graph_pes.nn import left_aligned_div
 Transform = Callable[[Tensor, AtomicGraph], Tensor]
 r"""
 ``Transform``s map a property, :math:`x`, to a target property, :math:`y`,
-conditioned on an :class:`~graph_pes.data.AtomicGraph`, :math:`\mathcal{G}`:
+conditioned on an :class:`~graph_pes.graphs.AtomicGraph`, :math:`\mathcal{G}`:
 
 .. math::
 

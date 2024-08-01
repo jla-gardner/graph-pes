@@ -8,6 +8,7 @@ import torch
 from ase import Atoms
 from cycler import cycler
 from matplotlib.axes import Axes
+from matplotlib.lines import Line2D
 from matplotlib.ticker import MaxNLocator
 
 from .core import GraphPESModel, get_predictions
@@ -178,7 +179,7 @@ def dimer_curve(
     rmax: float = 5.0,
     ax: plt.Axes | None = None,  # type: ignore
     **plot_kwargs,
-):
+) -> Line2D:
     r"""
     A nicely formatted dimer curve plot for the given :code:`system`.
 
@@ -234,7 +235,8 @@ def dimer_curve(
 
     default_kwargs = dict(lw=1, c="k")
     plot_kwargs = {**default_kwargs, **plot_kwargs}
-    ax.plot(rs, energy, **plot_kwargs)
+    line = ax.plot(rs, energy, **plot_kwargs)[0]
+    assert isinstance(line, Line2D)
 
     limiting_energy = energy[-1]
     if (energy[:-1] < limiting_energy).any():
@@ -254,3 +256,5 @@ def dimer_curve(
     # 5 ticks each
     ax.xaxis.set_major_locator(MaxNLocator(5))
     ax.yaxis.set_major_locator(MaxNLocator(5))
+
+    return line
