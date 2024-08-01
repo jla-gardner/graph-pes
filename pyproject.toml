@@ -34,15 +34,7 @@ requires-python = ">=3.8"
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-cov", "pyright"]
-dev = ["notebook", "ruff", "bumpver", "pyright"]
-doc = [
-    "sphinx",
-    "furo",
-    "nbsphinx",
-    "sphinx-autobuild",
-    "sphinxext-opengraph",
-    "sphinx-copybutton",
-]
+dev = ["notebook", "ruff", "bumpver", "pyright", "sphinx-autobuild"]
 publish = ["build", "twine"]
 
 [project.scripts]

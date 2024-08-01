@@ -6,6 +6,20 @@ permissions:
   contents: read
 
 jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.8
+      - name: Install requirements
+        run: pip install -r docs/requirements.txt
+      - name: Build docs
+        # -n: nitpick
+        # -W: turn warnings into errors
+        run: sphinx-build -nW docs/source docs/build --keep-going
+
   style:
     runs-on: ubuntu-latest
     steps:
@@ -39,18 +53,18 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Cache dependencies
-      # Cacheing the python environment. This is different to just cacheing the
-      # pip wheels, as we save on the installation time of large packages such
-      # as torch.
+        # Cacheing the python environment. This is different to just cacheing the
+        # pip wheels, as we save on the installation time of large packages such
+        # as torch.
         uses: actions/cache@v4.0.2
         id: cache
         with:
           path: ${{ env.pythonLocation }}
           key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
       - name: Install graph-pes and required dependencies
-      # Install graph-pes and update any dependencies that are not up to date in
-      # the cached environment. We use the --upgrade-strategy eager flag to get
-      # the latest version of the dependencies.
+        # Install graph-pes and update any dependencies that are not up to date in
+        # the cached environment. We use the --upgrade-strategy eager flag to get
+        # the latest version of the dependencies.
         run: pip install --upgrade --upgrade-strategy eager ".[test]"
       - name: Useful info
         run: pip freeze
@@ -64,3 +78,7 @@ jobs:
         if: matrix.python-version == '3.8'
         with:
           token: ${{secrets.CODECOV_TOKEN}}
+      - name: Build docs
+        run: |
+          pip install -e ".[docs]"
+          sphinx-build -M html docs/source docs/build
