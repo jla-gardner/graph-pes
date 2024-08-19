@@ -1,5 +1,0 @@
-sphinx
-furo
-nbsphinx
-sphinxext-opengraph
-sphinx-copybutton
