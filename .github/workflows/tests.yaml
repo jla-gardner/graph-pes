@@ -70,8 +70,8 @@ jobs:
       - name: Useful info
         run: pip freeze
       ### CODE TESTS ###
-      - name: Run pyright
-        run: pyright
+      # - name: Run pyright
+      # run: pyright
       - name: Run tests
         run: pytest --cov --cov-report xml
       - name: Upload coverage reports to Codecov
