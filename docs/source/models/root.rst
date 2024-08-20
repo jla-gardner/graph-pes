@@ -4,7 +4,7 @@
 Models
 ######
 
-All models implemented in ``graph_pes`` are subclasses of
+All models implemented in ``graph-pes`` are subclasses of
 :class:`~graph_pes.ConservativePESModel`. Pass these models an :class:`~graph_pes.graphs.AtomicGraph` to get
 the predicted total energy.
 To get a full set of predictions (energy, forces, stress), use :func:`~graph_pes.core.get_predictions`.
@@ -23,7 +23,7 @@ Available Models
 ================
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    offsets
    pairwise
