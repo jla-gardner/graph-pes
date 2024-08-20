@@ -3,14 +3,14 @@ import numpy as np
 import pytest
 import torch
 from ase.build import molecule
-from graph_pes.core import GraphPESModel, get_predictions
+from graph_pes.core import ConservativePESModel, get_predictions
 from graph_pes.data.io import to_atomic_graph
 
 CUTOFF = 1.0
 
 
 @helpers.parameterise_all_models(expected_elements=["H", "C"])
-def test_equivariance(model: GraphPESModel):
+def test_equivariance(model: ConservativePESModel):
     methane = molecule("CH4")
     methane.center(vacuum=10)
     og_graph = to_atomic_graph(methane, cutoff=CUTOFF)

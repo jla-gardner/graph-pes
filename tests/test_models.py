@@ -4,7 +4,7 @@ import helpers
 import pytest
 import torch
 from ase import Atoms
-from graph_pes.core import GraphPESModel, get_predictions
+from graph_pes.core import ConservativePESModel, get_predictions
 from graph_pes.data.io import to_atomic_graph, to_atomic_graphs
 from graph_pes.graphs.operations import (
     has_cell,
@@ -58,7 +58,7 @@ def test_pre_fit():
 
 
 @helpers.parameterise_model_classes(expected_elements=["Cu"])
-def test_model_serialisation(model_class: type[GraphPESModel], tmp_path):
+def test_model_serialisation(model_class: type[ConservativePESModel], tmp_path):
     # 1. instantiate the model
     m1 = model_class()
     m1.pre_fit(graphs)  # required by some models before making predictions

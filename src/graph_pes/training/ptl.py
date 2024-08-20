@@ -7,7 +7,7 @@ from typing import Literal
 import pytorch_lightning as pl
 import torch
 from graph_pes.config import FittingOptions
-from graph_pes.core import GraphPESModel, get_predictions
+from graph_pes.core import ConservativePESModel, get_predictions
 from graph_pes.data.dataset import FittingData
 from graph_pes.data.loader import GraphDataLoader
 from graph_pes.graphs import AtomicGraphBatch, LabelledBatch, keys
@@ -31,7 +31,7 @@ VALIDATION_LOSS_KEY = "valid/loss/total"
 
 def train_with_lightning(
     trainer: pl.Trainer,
-    model: GraphPESModel,
+    model: ConservativePESModel,
     data: FittingData,
     loss: TotalLoss,
     fit_config: FittingOptions,
@@ -81,7 +81,7 @@ def train_with_lightning(
 class LearnThePES(pl.LightningModule):
     def __init__(
         self,
-        model: GraphPESModel,
+        model: ConservativePESModel,
         loss: TotalLoss,
         optimizer: Optimizer,
         scheduler: LRScheduler | None,
@@ -223,7 +223,7 @@ class LearnThePES(pl.LightningModule):
     @classmethod
     def load_best_weights(
         cls,
-        model: GraphPESModel,
+        model: ConservativePESModel,
         trainer: pl.Trainer | None = None,
         checkpoint_path: Path | str | None = None,
     ):

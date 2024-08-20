@@ -5,14 +5,14 @@ import warnings
 import torch
 from torch import Tensor
 
-from graph_pes.core import GraphPESModel
+from graph_pes.core import ConservativePESModel
 from graph_pes.graphs import AtomicGraph, LabelledBatch
 from graph_pes.logger import logger
 from graph_pes.models.pre_fit import guess_per_element_mean_and_var
 from graph_pes.nn import PerElementParameter
 
 
-class EnergyOffset(GraphPESModel):
+class EnergyOffset(ConservativePESModel):
     r"""
     A model that predicts the total energy as a sum of per-species offsets:
 

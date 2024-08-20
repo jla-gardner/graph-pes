@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Literal, Union
 import dacite
 import yaml
 
-from graph_pes.core import GraphPESModel
+from graph_pes.core import ConservativePESModel
 from graph_pes.data.dataset import FittingData
 from graph_pes.models.addition import AdditionModel
 from graph_pes.training.loss import Loss, TotalLoss
@@ -146,7 +146,7 @@ class GeneralConfig:
 class Config:
     """
     A schema for a configuration file to train a
-    :class:`~graph_pes.core.GraphPESModel`.
+    :class:`~graph_pes.core.ConservativePESModel`.
 
     While parsing your configuration file, we will attempt to import
     any class, object or function that you specify via a fully qualified
@@ -343,20 +343,20 @@ class Config:
         # as it would appear in a config.yaml file
         return yaml.dump(self.to_nested_dict(), indent=3, sort_keys=False)
 
-    def instantiate_model(self) -> GraphPESModel:
+    def instantiate_model(self) -> ConservativePESModel:
         obj = create_from_data(self.model)
-        if isinstance(obj, GraphPESModel):
+        if isinstance(obj, ConservativePESModel):
             return obj
 
         elif isinstance(obj, dict):
             all_string_keys = all(isinstance(k, str) for k in obj)
             all_model_values = all(
-                isinstance(v, GraphPESModel) for v in obj.values()
+                isinstance(v, ConservativePESModel) for v in obj.values()
             )
 
             if not all_string_keys or not all_model_values:
                 raise ValueError(
-                    "Expected a dictionary of named GraphPESModels, but got "
+                    "Expected a dictionary of named ConservativePESModels, but got "
                     f"{obj}."
                 )
 
@@ -369,8 +369,8 @@ class Config:
                 ) from e
 
         raise ValueError(
-            "Expected to be able to parse a GraphPESModel or a dictionary "
-            "of named GraphPESModels from the model config, but got "
+            "Expected to be able to parse a ConservativePESModel or a dictionary "
+            "of named ConservativePESModels from the model config, but got "
             "something else: {obj}"
         )
 

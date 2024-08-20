@@ -1,7 +1,7 @@
 Train a model
 =============
 
-``graph-pes-train`` provides a unified interface to train any :class:`~graph_pes.core.GraphPESModel`, including those packaged within ``graph_pes.models`` [todo link] and those defined by you, the user [TODO: link].
+``graph-pes-train`` provides a unified interface to train any :class:`~graph_pes.core.ConservativePESModel`, including those packaged within ``graph_pes.models`` [todo link] and those defined by you, the user [TODO: link].
 
 .. seealso::
 

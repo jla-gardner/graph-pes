@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 import torch
 from ase.build import molecule
-from graph_pes import GraphPESModel
+from graph_pes import ConservativePESModel
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.graphs.graph_typing import LabelledBatch, LabelledGraph
 from graph_pes.graphs.operations import number_of_structures, to_batch
@@ -105,7 +105,7 @@ names = ["LennardJonesMixture", "AdditionModel"]
 
 
 @pytest.mark.parametrize("model", models, ids=names)
-def test(tmp_path: Path, model: GraphPESModel):
+def test(tmp_path: Path, model: ConservativePESModel):
     assert model.elements_seen == []
 
     # show the model C and H

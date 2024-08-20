@@ -5,14 +5,14 @@ from typing import Sequence
 import torch
 from torch import Tensor
 
-from graph_pes.core import GraphPESModel
+from graph_pes.core import ConservativePESModel
 from graph_pes.data.dataset import LabelledGraphDataset
 from graph_pes.graphs import AtomicGraph, LabelledGraph
 from graph_pes.nn import UniformModuleDict
 from graph_pes.util import uniform_repr
 
 
-class AdditionModel(GraphPESModel):
+class AdditionModel(ConservativePESModel):
     """
     A wrapper that makes predictions as the sum of the predictions
     of its constituent models.
@@ -34,7 +34,7 @@ class AdditionModel(GraphPESModel):
         model = AdditionModel(pair_wise=LennardJones(), many_body=SchNet())
     """
 
-    def __init__(self, **models: GraphPESModel):
+    def __init__(self, **models: ConservativePESModel):
         cutoffs = [
             m.cutoff.view(-1) for m in models.values() if m.cutoff is not None
         ]

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pytest
-from graph_pes.core import GraphPESModel
+from graph_pes.core import ConservativePESModel
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import (
     neighbour_distances,
@@ -22,14 +22,14 @@ class Stats:
     max_edge_length: float
 
 
-class DummyModel(GraphPESModel):
+class DummyModel(ConservativePESModel):
     def __init__(self, name: str, cutoff: float, info: dict[str, Stats]):
         super().__init__(cutoff)
         self.name = name
         self.info = info
 
     def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
-        # insert statistics here: `GraphPESModel` should automatically
+        # insert statistics here: `ConservativePESModel` should automatically
         # trim the input graph based on the model's cutoff
         self.info[self.name] = Stats(
             n_neighbours=number_of_edges(graph),

@@ -29,7 +29,7 @@ from .nn import PerElementParameter
 from .util import differentiate, require_grad
 
 
-class GraphPESModel(nn.Module, ABC):
+class ConservativePESModel(nn.Module, ABC):
     r"""
     An abstract base class for all graph-based, energy-conserving models of the
     PES that make predictions of the total energy of a structure as a sum
@@ -204,14 +204,14 @@ class GraphPESModel(nn.Module, ABC):
 
 @overload
 def get_predictions(
-    model: GraphPESModel,
+    model: ConservativePESModel,
     graph: AtomicGraph | AtomicGraphBatch | Sequence[AtomicGraph],
     *,
     training: bool = False,
 ) -> dict[keys.LabelKey, Tensor]: ...
 @overload
 def get_predictions(
-    model: GraphPESModel,
+    model: ConservativePESModel,
     graph: AtomicGraph | AtomicGraphBatch | Sequence[AtomicGraph],
     *,
     properties: Sequence[keys.LabelKey],
@@ -219,14 +219,14 @@ def get_predictions(
 ) -> dict[keys.LabelKey, Tensor]: ...
 @overload
 def get_predictions(
-    model: GraphPESModel,
+    model: ConservativePESModel,
     graph: AtomicGraph | AtomicGraphBatch | Sequence[AtomicGraph],
     *,
     property: keys.LabelKey,
     training: bool = False,
 ) -> Tensor: ...
 def get_predictions(
-    model: GraphPESModel,
+    model: ConservativePESModel,
     graph: AtomicGraph | AtomicGraphBatch | Sequence[AtomicGraph],
     *,
     properties: Sequence[keys.LabelKey] | None = None,

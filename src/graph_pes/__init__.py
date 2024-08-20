@@ -1,3 +1,3 @@
-from graph_pes.core import GraphPESModel, get_predictions
+from graph_pes.core import ConservativePESModel, get_predictions
 
-__all__ = ["GraphPESModel", "get_predictions"]
+__all__ = ["ConservativePESModel", "get_predictions"]

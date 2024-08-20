@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Sequence
 
 from graph_pes.config import FittingOptions
-from graph_pes.core import GraphPESModel
+from graph_pes.core import ConservativePESModel
 from graph_pes.data.dataset import (
     FittingData,
     LabelledGraphDataset,
@@ -27,7 +27,7 @@ from graph_pes.training.ptl import create_trainer, train_with_lightning
 
 # TODO: add logger folder
 def train_the_model(
-    model: GraphPESModel,
+    model: ConservativePESModel,
     train_data: Sequence[LabelledGraph] | LabelledGraphDataset,
     val_data: Sequence[LabelledGraph] | LabelledGraphDataset,
     optimizer: Optimizer | None = None,  # TODO change to factory

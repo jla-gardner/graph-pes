@@ -6,7 +6,7 @@ from typing import Sequence
 
 import torch
 
-from graph_pes.core import GraphPESModel
+from graph_pes.core import ConservativePESModel
 from graph_pes.data.dataset import LabelledGraphDataset
 from graph_pes.graphs.graph_typing import AtomicGraph, LabelledGraph
 from graph_pes.graphs.operations import to_batch
@@ -14,11 +14,11 @@ from graph_pes.models.pre_fit import guess_per_element_mean_and_var
 from graph_pes.nn import PerElementParameter
 
 
-class AutoScaledPESModel(GraphPESModel, ABC):
+class AutoScaledPESModel(ConservativePESModel, ABC):
     """
     An abstract base class for all PES models implementations that are best
     suited to making raw predictions that with ~unit variance. By inheriting
-    from this sub-class (as opposed to directly GraphPESModel) and implementing
+    from this sub-class (as opposed to directly ConservativePESModel) and implementing
     :meth:`predict_unscaled_energies` (as opposed to
     :meth:`predict_local_energies`), the model will automatically scale the
     raw predictions (unit variance) by the per-element scaling factors

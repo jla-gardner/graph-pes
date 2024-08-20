@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import torch
-from graph_pes.core import GraphPESModel
+from graph_pes.core import ConservativePESModel
 from graph_pes.models.addition import AdditionModel
 from graph_pes.models.offsets import LearnableOffset
 from graph_pes.util import uniform_repr
@@ -71,7 +71,7 @@ class Optimizer:
 
         self.optimizer_class = optimizer_class
 
-    def __call__(self, model: GraphPESModel) -> torch.optim.Optimizer:
+    def __call__(self, model: ConservativePESModel) -> torch.optim.Optimizer:
         offset_params = []
         if isinstance(model, LearnableOffset):
             offset_params += list(model.parameters())

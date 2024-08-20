@@ -7,7 +7,7 @@ import torch
 from jaxtyping import Float
 from torch import Tensor
 
-from graph_pes.core import GraphPESModel
+from graph_pes.core import ConservativePESModel
 from graph_pes.graphs import (
     AtomicGraph,
     AtomicGraphBatch,
@@ -21,7 +21,7 @@ from graph_pes.nn import PerElementParameter
 from graph_pes.util import to_significant_figures, uniform_repr
 
 
-class PairPotential(GraphPESModel, ABC):
+class PairPotential(ConservativePESModel, ABC):
     r"""
     An abstract base class for PES models that calculate system energy as
     a sum over pairwise interactions:

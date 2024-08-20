@@ -11,7 +11,7 @@ from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
 from matplotlib.ticker import MaxNLocator
 
-from .core import GraphPESModel, get_predictions
+from .core import ConservativePESModel, get_predictions
 from .data.io import to_atomic_graph
 from .graphs import AtomicGraph, AtomicGraphBatch, keys
 from .graphs.operations import to_batch
@@ -55,7 +55,7 @@ def move_axes(ax: plt.Axes | None = None):  # type: ignore
 # TODO per-property default transforms
 # energy: per-atom with arbitrary shift
 def parity_plot(
-    model: GraphPESModel,
+    model: ConservativePESModel,
     graphs: AtomicGraphBatch | Sequence[AtomicGraph],
     property: keys.LabelKey = keys.ENERGY,
     property_label: str | None = None,
@@ -171,7 +171,7 @@ def parity_plot(
 
 
 def dimer_curve(
-    model: GraphPESModel,
+    model: ConservativePESModel,
     system: str,
     units: str | None = None,
     set_to_zero: bool = True,

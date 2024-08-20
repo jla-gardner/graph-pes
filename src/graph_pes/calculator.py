@@ -3,14 +3,14 @@ from __future__ import annotations
 from ase import Atoms
 from ase.calculators.calculator import Calculator, all_changes
 
-from graph_pes.core import GraphPESModel, get_predictions
+from graph_pes.core import ConservativePESModel, get_predictions
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.graphs import AtomicGraph
 
 
 class GraphPESCalculator(Calculator):
     """
-    ASE calculator wrapping any GraphPESModel.
+    ASE calculator wrapping any ConservativePESModel.
 
     Parameters
     ----------
@@ -28,7 +28,7 @@ class GraphPESCalculator(Calculator):
 
     def __init__(
         self,
-        model: GraphPESModel,
+        model: ConservativePESModel,
         cutoff: float,
         device: str = "cpu",
         **kwargs,

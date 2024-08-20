@@ -4,7 +4,7 @@ from pathlib import Path
 
 import torch
 
-from graph_pes.core import GraphPESModel
+from graph_pes.core import ConservativePESModel
 
 from .addition import AdditionModel
 from .e3nn.mace import MACE, ZEmbeddingMACE
@@ -33,7 +33,7 @@ __all__ = [
 ]
 
 # TODO: nicer way to do this?
-ALL_MODELS: list[type[GraphPESModel]] = [
+ALL_MODELS: list[type[ConservativePESModel]] = [
     globals()[model]
     for model in __all__
     if model

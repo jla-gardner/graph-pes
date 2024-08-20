@@ -5,7 +5,7 @@ from pathlib import Path
 import e3nn.util.jit
 import torch
 
-from graph_pes.core import GraphPESModel
+from graph_pes.core import ConservativePESModel
 from graph_pes.graphs import keys
 from graph_pes.graphs.graph_typing import AtomicGraph
 
@@ -24,7 +24,7 @@ def differentiate(y: torch.Tensor, x: torch.Tensor):
 
 
 class LAMMPSModel(torch.nn.Module):
-    def __init__(self, model: GraphPESModel, cutoff: float = 3.7):
+    def __init__(self, model: ConservativePESModel, cutoff: float = 3.7):
         super().__init__()
         self.model = model
         self.cutoff = cutoff
@@ -84,7 +84,7 @@ class LAMMPSModel(torch.nn.Module):
         return super().__call__(graph)
 
 
-def deploy_model(model: GraphPESModel, cutoff: float, path: str | Path):
+def deploy_model(model: ConservativePESModel, cutoff: float, path: str | Path):
     lammps_model = LAMMPSModel(model, cutoff)
     scripted_model = e3nn.util.jit.script(lammps_model)
     torch.jit.save(scripted_model, path)
