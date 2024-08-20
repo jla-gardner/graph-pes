@@ -18,8 +18,8 @@ class AutoScaledPESModel(ConservativePESModel, ABC):
     """
     An abstract base class for all PES models implementations that are best
     suited to making raw predictions that with ~unit variance. By inheriting
-    from this sub-class (as opposed to directly ConservativePESModel) and implementing
-    :meth:`predict_unscaled_energies` (as opposed to
+    from this sub-class (as opposed to directly ConservativePESModel) and
+    implementing :meth:`predict_unscaled_energies` (as opposed to
     :meth:`predict_local_energies`), the model will automatically scale the
     raw predictions (unit variance) by the per-element scaling factors
     as calculated from the training data.

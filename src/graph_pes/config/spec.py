@@ -356,8 +356,8 @@ class Config:
 
             if not all_string_keys or not all_model_values:
                 raise ValueError(
-                    "Expected a dictionary of named ConservativePESModels, but got "
-                    f"{obj}."
+                    "Expected a dictionary of named ConservativePESModels, "
+                    f"but got {obj}."
                 )
 
             try:
@@ -369,9 +369,9 @@ class Config:
                 ) from e
 
         raise ValueError(
-            "Expected to be able to parse a ConservativePESModel or a dictionary "
-            "of named ConservativePESModels from the model config, but got "
-            "something else: {obj}"
+            "Expected to be able to parse a ConservativePESModel or a "
+            "dictionary of named ConservativePESModels from the model config, "
+            f"but got something else: {obj}"
         )
 
     def instantiate_data(self) -> FittingData:
