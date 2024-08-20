@@ -43,3 +43,8 @@ fitting:
 wandb:
     project: graph-pes
     tags: [minimal, qm7, schnet]
+
+# save model, logs, checkpoints, etc. to `graph-pes-results/schnet+qm7`
+general:
+    root_dir: graph-pes-results
+    run_id: schnet+qm7

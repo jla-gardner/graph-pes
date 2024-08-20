@@ -57,8 +57,9 @@ class ConservativePESModel(nn.Module, ABC):
     auto_scale
         Whether to automatically scale raw predictions by (learnable)
         per-element scaling factors as calculated from the data passed to
-        :meth:`pre_fit` (typically the training data).
-
+        :meth:`pre_fit` (typically the training data). If ``True``,
+        :math:`\varepsilon_i = \sigma_Z_i \cdot \varepsilon_i`, where
+        :math:`\sigma_Z_i` is the scaling factor for element :math:`Z_i`.
     """
 
     def __init__(self, cutoff: float | None, auto_scale: bool):
@@ -79,8 +80,7 @@ class ConservativePESModel(nn.Module, ABC):
         else:
             self.per_element_scaling = None
 
-        # save as a buffer so that this is de/serialized
-        # with the model
+        # save as a buffer so that this is de/serialized with the model
         self._has_been_pre_fit: Tensor
         self.register_buffer("_has_been_pre_fit", torch.tensor(False))
 

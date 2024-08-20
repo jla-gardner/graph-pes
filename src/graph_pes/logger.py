@@ -22,14 +22,14 @@ class MultiLineFormatter(logging.Formatter):
 
 # create the graph-pes logger
 logger = logging.getLogger(name="graph-pes")
-# capture all logs
-logger.setLevel(logging.DEBUG)
 
 # log to stdout
 _handler = logging.StreamHandler(stream=sys.stdout)
 _handler.setFormatter(MultiLineFormatter())
 logger.addHandler(_handler)
-# only show INFO and above in stdout (by default)
+
+# capture all logs but only show INFO and above in stdout (by default)
+logger.setLevel(logging.DEBUG)
 _handler.setLevel(logging.INFO)
 
 

@@ -188,10 +188,26 @@ def train_from_config(config: Config):
     # generate / look up the output directory for this training run
     if is_rank_0:
         # set up directory structure
-        output_dir = random_dir(root=Path(config.general.root_dir))
-        assert not output_dir.exists()
+        if config.general.run_id is None:
+            output_dir = random_dir(Path(config.general.root_dir))
+        else:
+            output_dir = Path(config.general.root_dir) / config.general.run_id
+            version = 0
+            while output_dir.exists():
+                version += 1
+                output_dir = (
+                    Path(config.general.root_dir)
+                    / f"{config.general.run_id}_{version}"
+                )
+
+            if version > 0:
+                logger.warning(
+                    f"Specified run ID {config.general.run_id} already exists. "
+                    f"Using {output_dir.name} instead."
+                )
         output_dir.mkdir(parents=True)
-        # save the config
+        # save the config, but with the run ID updated
+        config.general.run_id = output_dir.name
         with open(output_dir / "train-config.yaml", "w") as f:
             yaml.dump(config.to_nested_dict(), f)
 
