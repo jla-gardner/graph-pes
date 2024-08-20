@@ -12,9 +12,8 @@ from graph_pes.models import (
     SchNet,
 )
 from graph_pes.models.addition import AdditionModel
-from graph_pes.models.scaling import AutoScaledPESModel
 from graph_pes.nn import PerElementParameter
-from torch import Tensor
+from helpers import DoesNothingModel
 
 graphs: list[AtomicGraph] = []
 for n in range(5):
@@ -40,12 +39,8 @@ def test_fixed():
 
 
 def test_scaling():
-    class StupidModel(AutoScaledPESModel):
-        def predict_unscaled_energies(self, graph: AtomicGraph) -> Tensor:
-            return torch.ones(len(graph["atomic_numbers"]))
-
-    model = StupidModel()
-    # the model should have a single parameter: the _per_element_scaling
+    model = DoesNothingModel(cutoff=None, auto_scale=True)
+    # the model should have a single parameter: the per_element_scaling
     params = list(model.parameters())
     assert len(params) == 1
     assert params[0] is model.per_element_scaling

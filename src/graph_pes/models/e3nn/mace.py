@@ -6,13 +6,13 @@ import e3nn.util.jit
 import graph_pes.models.distances
 import torch
 from e3nn import o3
+from graph_pes.core import ConservativePESModel
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import neighbour_distances, neighbour_vectors
 from graph_pes.models.distances import (
     DistanceExpansion,
     PolynomialEnvelope,
 )
-from graph_pes.models.scaling import AutoScaledPESModel
 from graph_pes.nn import (
     AtomicOneHot,
     HaddamardProduct,
@@ -58,7 +58,7 @@ def _get_distance_expansion(name: str) -> type[DistanceExpansion]:
 
 
 @e3nn.util.jit.compile_mode("script")
-class _BaseMACE(AutoScaledPESModel):
+class _BaseMACE(ConservativePESModel):
     """
     Base class for MACE models.
     """
@@ -80,7 +80,7 @@ class _BaseMACE(AutoScaledPESModel):
         neighbour_scaling: float,
         use_self_connection: bool,
     ):
-        super().__init__(cutoff=cutoff)
+        super().__init__(cutoff=cutoff, auto_scale=True)
 
         if isinstance(radial_expansion_type, str):
             radial_expansion_type = _get_distance_expansion(
@@ -118,7 +118,7 @@ class _BaseMACE(AutoScaledPESModel):
             + [NonLinearReadOut(hidden_irreps)]
         )
 
-    def predict_unscaled_energies(self, graph: AtomicGraph) -> torch.Tensor:
+    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
         vectors = neighbour_vectors(graph)
         Z_embedding = self.z_embedding(graph["atomic_numbers"])
 
@@ -151,7 +151,7 @@ class MACE(_BaseMACE):
     layers.
 
     During the ``pre_fit`` stage, this model guesses an initial scale for
-    the energies of each element in the training set (see :class:`~graph_pes.models.scaling.AutoScaledPESModel`).
+    the energies of each element in the training set.
     To disable this feature, turn off pre-fitting.
 
     Internally, we rely on the `mace-layer <https://github.com/ACEsuit/mace-layer>`_
@@ -279,7 +279,7 @@ class ZEmbeddingMACE(_BaseMACE):
     message passing layers.
 
     During the ``pre_fit`` stage, this model guesses an initial scale for
-    the energies of each element in the training set (see :class:`~graph_pes.models.scaling.AutoScaledPESModel`).
+    the energies of each element in the training set.
     To disable this feature, turn off pre-fitting.
 
     Internally, we rely on the `mace-layer <https://github.com/ACEsuit/mace-layer>`_

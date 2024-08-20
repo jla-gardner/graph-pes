@@ -7,6 +7,7 @@ import e3nn.nn
 import e3nn.util.jit
 import torch
 from e3nn import o3
+from graph_pes.core import ConservativePESModel
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import (
     index_over_neighbours,
@@ -15,7 +16,6 @@ from graph_pes.graphs.operations import (
     sum_over_neighbours,
 )
 from graph_pes.models import distances
-from graph_pes.models.scaling import AutoScaledPESModel
 from graph_pes.nn import (
     MLP,
     AtomicOneHot,
@@ -292,7 +292,7 @@ class NequIPMessagePassingLayer(torch.nn.Module):
 
 
 @e3nn.util.jit.compile_mode("script")
-class _BaseNequIP(AutoScaledPESModel):
+class _BaseNequIP(ConservativePESModel):
     def __init__(
         self,
         Z_embedding: torch.nn.Module,
@@ -303,7 +303,7 @@ class _BaseNequIP(AutoScaledPESModel):
         l_max: int,
         allow_odd_parity: bool,
     ):
-        super().__init__(cutoff=cutoff)
+        super().__init__(cutoff=cutoff, auto_scale=True)
 
         self.Z_embedding = Z_embedding
         self.initial_node_embedding = PerElementEmbedding(n_channels)
@@ -335,7 +335,7 @@ class _BaseNequIP(AutoScaledPESModel):
 
         self.readout = o3.Linear(current_layer_input, "1x0e")
 
-    def predict_unscaled_energies(self, graph: AtomicGraph) -> Tensor:
+    def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
         # pre-compute important quantities
         r = neighbour_distances(graph)
         Y = self.edge_embedding(neighbour_vectors(graph))

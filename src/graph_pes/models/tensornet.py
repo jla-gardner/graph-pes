@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 from torch import Tensor, nn
 
+from graph_pes.core import ConservativePESModel
 from graph_pes.graphs import AtomicGraph
 from graph_pes.graphs.operations import (
     neighbour_distances,
@@ -10,7 +11,6 @@ from graph_pes.graphs.operations import (
     number_of_atoms,
     number_of_edges,
 )
-from graph_pes.models.scaling import AutoScaledPESModel
 from graph_pes.nn import (
     MLP,
     HaddamardProduct,
@@ -319,7 +319,7 @@ class ScalarOutput(nn.Module):
         return self.mlp(X)  # (N, 1)
 
 
-class TensorNet(AutoScaledPESModel):
+class TensorNet(ConservativePESModel):
     def __init__(
         self,
         radial_features: int = 32,
@@ -327,7 +327,7 @@ class TensorNet(AutoScaledPESModel):
         cutoff: float = 5.0,
         layers: int = 2,
     ):
-        super().__init__(cutoff)
+        super().__init__(cutoff, auto_scale=True)
         self.embedding = Embedding(radial_features, embedding_size, cutoff)
         self.interactions = UniformModuleList(
             Interaction(radial_features, embedding_size, cutoff)
@@ -335,7 +335,7 @@ class TensorNet(AutoScaledPESModel):
         )
         self.read_out = ScalarOutput(embedding_size)
 
-    def predict_unscaled_energies(self, graph: AtomicGraph):
+    def predict_local_energies(self, graph: AtomicGraph):
         X = self.embedding(graph)  # (N, C, 3, 3)
         for interaction in self.interactions:
             X = interaction(X, graph) + X  # residual connection

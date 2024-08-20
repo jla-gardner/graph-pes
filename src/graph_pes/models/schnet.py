@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import torch
 
+from graph_pes.core import ConservativePESModel
 from graph_pes.graphs import AtomicGraph
 from graph_pes.graphs.operations import (
     index_over_neighbours,
     neighbour_distances,
     sum_over_neighbours,
 )
-from graph_pes.models.scaling import AutoScaledPESModel
 from graph_pes.nn import (
     MLP,
     PerElementEmbedding,
@@ -157,7 +157,7 @@ class SchNetInteraction(torch.nn.Module):
         return self.mlp(h)
 
 
-class SchNet(AutoScaledPESModel):
+class SchNet(ConservativePESModel):
     r"""
     The `SchNet <https://arxiv.org/abs/1706.08566>`_ model: a pairwise, scalar,
     message passing GNN.
@@ -206,7 +206,7 @@ class SchNet(AutoScaledPESModel):
         layers: int = 3,
         expansion: type[DistanceExpansion] | None = None,
     ):
-        super().__init__(cutoff=cutoff)
+        super().__init__(cutoff=cutoff, auto_scale=True)
 
         if expansion is None:
             expansion = GaussianSmearing
@@ -225,7 +225,7 @@ class SchNet(AutoScaledPESModel):
             activation=ShiftedSoftplus(),
         )
 
-    def predict_unscaled_energies(self, graph: AtomicGraph) -> torch.Tensor:
+    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
         h = self.chemical_embedding(graph["atomic_numbers"])
         d = neighbour_distances(graph)
 

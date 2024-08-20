@@ -6,6 +6,7 @@ from typing import Callable
 import ase.build
 import pytest
 import pytorch_lightning
+import torch
 from ase import Atoms
 from ase.io import read
 from graph_pes.core import ConservativePESModel
@@ -70,3 +71,8 @@ CU_STRUCTURES_FILE = Path(__file__).parent / "test.xyz"
 CU_TEST_STRUCTURES: list[Atoms] = read(CU_STRUCTURES_FILE, ":")  # type: ignore
 
 CONFIGS_DIR = Path(__file__).parent.parent.parent / "configs"
+
+
+class DoesNothingModel(ConservativePESModel):
+    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
+        return torch.zeros(len(graph["atomic_numbers"]))

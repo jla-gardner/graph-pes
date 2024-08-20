@@ -39,7 +39,7 @@ class AdditionModel(ConservativePESModel):
             m.cutoff.view(-1) for m in models.values() if m.cutoff is not None
         ]
         max_cutoff = None if not cutoffs else torch.cat(cutoffs).max().item()
-        super().__init__(cutoff=max_cutoff)
+        super().__init__(cutoff=max_cutoff, auto_scale=False)
         self.models = UniformModuleDict(**models)
 
     def predict_local_energies(self, graph: AtomicGraph) -> Tensor:

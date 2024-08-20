@@ -66,7 +66,7 @@ graph-pes
 
 Use ``graph-pes`` to easily do the following:
 
-#. experiment with new model architectures by inheriting from our :class:`~graph_pes.core.ConservativePESModel` or :class:`~graph_pes.models.scaling.AutoScaledPESModel` base classes
+#. experiment with new model architectures by inheriting from our :class:`~graph_pes.core.ConservativePESModel` base class.
 #. train your own or existing (e.g. SchNet, NequIP, PaiNN, MACE, etc.) models. Easily configure distributed training, learning rate scheduling, weights and biases logging, and other features using our ``graph-pes-train`` command line interface, or use our data-loading pipeline within your own training loop
 #. run molecular dynamics simulations via LAMMPS (or ASE) using any :class:`~graph_pes.core.ConservativePESModel` and the ``pair_style graph_pes`` LAMMPS command
 

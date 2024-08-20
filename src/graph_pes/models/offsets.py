@@ -35,7 +35,7 @@ class EnergyOffset(ConservativePESModel):
     """
 
     def __init__(self, offsets: PerElementParameter):
-        super().__init__()
+        super().__init__(cutoff=None, auto_scale=False)
         self._offsets = offsets
 
     def predict_local_energies(self, graph: AtomicGraph) -> Tensor:

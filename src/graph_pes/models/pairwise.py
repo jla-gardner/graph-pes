@@ -127,7 +127,8 @@ class LennardJones(PairPotential):
         epsilon: float = 0.1,
         sigma: float = 1.0,
     ):
-        super().__init__()
+        # TODO: add optional cutoff
+        super().__init__(cutoff=None, auto_scale=False)
 
         self._log_epsilon = torch.nn.Parameter(torch.tensor(epsilon).log())
         self._log_sigma = torch.nn.Parameter(torch.tensor(sigma).log())
@@ -208,7 +209,7 @@ class Morse(PairPotential):
     """
 
     def __init__(self, D: float = 0.1, a: float = 5.0, r0: float = 1.5):
-        super().__init__()
+        super().__init__(cutoff=None, auto_scale=False)
 
         self._log_D = torch.nn.Parameter(torch.tensor(D).log())
         self._log_a = torch.nn.Parameter(torch.tensor(a).log())
@@ -285,7 +286,7 @@ class LennardJonesMixture(PairPotential):
     """
 
     def __init__(self, modulate_distances: bool = True):
-        super().__init__()
+        super().__init__(cutoff=None, auto_scale=False)
 
         self.modulate_distances: Tensor
         self.register_buffer(

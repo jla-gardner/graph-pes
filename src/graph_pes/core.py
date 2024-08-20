@@ -31,12 +31,15 @@ from .util import differentiate, require_grad
 
 class ConservativePESModel(nn.Module, ABC):
     r"""
-    An abstract base class for all graph-based, energy-conserving models of the
+    An abstract base class for all energy-conserving models of the
     PES that make predictions of the total energy of a structure as a sum
     of local contributions:
 
     .. math::
         E(\mathcal{G}) = \sum_i \varepsilon_i
+
+    where :math:`\varepsilon_i` is the local energy of atom :math:`i`, and
+    :math:`\mathcal{G}` is the atomic graph representation of the structure.
 
     To create such a model, implement :meth:`predict_local_energies`,
     which takes an :class:`~graph_pes.graphs.AtomicGraph`, or an
@@ -44,21 +47,37 @@ class ConservativePESModel(nn.Module, ABC):
     and returns a per-atom prediction of the local energy. For a simple example,
     see the :class:`PairPotential <graph_pes.models.pairwise.PairPotential>`
     `implementation <_modules/graph_pes/models/pairwise.html#PairPotential>`_.
+
+    Parameters
+    ----------
+    cutoff
+        The cutoff radius for the model (if applicable). During the forward
+        pass, only edges between atoms that are closer than this distance will
+        be considered.
+    auto_scale
+        Whether to automatically scale raw predictions by (learnable)
+        per-element scaling factors as calculated from the data passed to
+        :meth:`pre_fit` (typically the training data).
+
     """
 
-    def __init__(self, cutoff: float | None = None):
+    def __init__(self, cutoff: float | None, auto_scale: bool):
         super().__init__()
 
         self.cutoff: Tensor | None
-        r"""
-        The cutoff radius for the model (if applicable). During the forward 
-        pass, only edges between atoms that are closer than this distance 
-        will be considered.
-        """
         if cutoff is not None:
             self.register_buffer("cutoff", torch.scalar_tensor(cutoff))
         else:
             self.cutoff = None
+
+        self.per_element_scaling: PerElementParameter | None
+        if auto_scale:
+            self.per_element_scaling = PerElementParameter.of_length(
+                1,
+                default_value=1.0,
+            )
+        else:
+            self.per_element_scaling = None
 
         # save as a buffer so that this is de/serialized
         # with the model
@@ -86,6 +105,13 @@ class ConservativePESModel(nn.Module, ABC):
             graph = trim_edges(graph, self.cutoff.item())
 
         local_energies = self.predict_local_energies(graph).squeeze()
+
+        if self.per_element_scaling is not None:
+            scales = self.per_element_scaling[
+                graph[keys.ATOMIC_NUMBERS]
+            ].squeeze()
+            local_energies = local_energies * scales
+
         return sum_per_structure(local_energies, graph)
 
     @abstractmethod

@@ -24,7 +24,7 @@ class Stats:
 
 class DummyModel(ConservativePESModel):
     def __init__(self, name: str, cutoff: float, info: dict[str, Stats]):
-        super().__init__(cutoff)
+        super().__init__(cutoff, auto_scale=False)
         self.name = name
         self.info = info
 

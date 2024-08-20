@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 from torch import Tensor, nn
 
+from graph_pes.core import ConservativePESModel
 from graph_pes.graphs import AtomicGraph
 from graph_pes.graphs.operations import (
     index_over_neighbours,
@@ -11,7 +12,6 @@ from graph_pes.graphs.operations import (
     number_of_atoms,
     sum_over_neighbours,
 )
-from graph_pes.models.scaling import AutoScaledPESModel
 from graph_pes.nn import (
     MLP,
     HaddamardProduct,
@@ -158,7 +158,7 @@ class Update(nn.Module):
         return delta_v, delta_s
 
 
-class PaiNN(AutoScaledPESModel):
+class PaiNN(ConservativePESModel):
     r"""
     The `Polarizable Atom Interaction Neural Network (PaiNN)
     <https://arxiv.org/abs/2102.03150>`_ model.
@@ -196,7 +196,7 @@ class PaiNN(AutoScaledPESModel):
         layers: int = 3,
         cutoff: float = 5.0,
     ):
-        super().__init__(cutoff=cutoff)
+        super().__init__(cutoff=cutoff, auto_scale=True)
 
         self.internal_dim = internal_dim
         self.z_embedding = PerElementEmbedding(internal_dim)
@@ -212,7 +212,7 @@ class PaiNN(AutoScaledPESModel):
             activation=nn.SiLU(),
         )
 
-    def predict_unscaled_energies(self, graph: AtomicGraph) -> Tensor:
+    def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
         # initialise embbedings:
         # - scalars as an embedding of the atomic numbers
         scalar_embeddings = self.z_embedding(graph["atomic_numbers"])
