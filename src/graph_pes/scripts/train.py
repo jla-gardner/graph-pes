@@ -197,7 +197,7 @@ def train_from_config(config: Config):
                 version += 1
                 output_dir = (
                     Path(config.general.root_dir)
-                    / f"{config.general.run_id}_{version}"
+                    / f"{config.general.run_id}-{version}"
                 )
 
             if version > 0:

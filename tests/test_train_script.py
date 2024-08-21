@@ -37,9 +37,47 @@ graph-pes-train --config {config_path} \
 
 def test_train_script(tmp_path: Path):
     root = tmp_path / "root"
+    config = _get_quick_train_config(root)
+
+    train_from_config(config)
+
+    assert root.exists()
+    sub_dir = next(root.iterdir())
+    assert (sub_dir / "model.pt").exists()
+
+
+def test_run_id(tmp_path: Path):
+    root = tmp_path / "root"
+
+    # first round: train with no explicit run_id ...
+    config = _get_quick_train_config(root)
+    assert config.general.run_id is None
+
+    train_from_config(config)
+
+    # ... and check that the run_id was set
+    assert config.general.run_id is not None
+    assert (root / config.general.run_id).exists()
+
+    # second round: train with an explicit run_id
+    config = _get_quick_train_config(root)
+    config.general.run_id = "explicit-id"
+    train_from_config(config)
+    assert (root / "explicit-id").exists()
+
+    # third round: train with the same explicit run_id
+    # and check that the collision is avoided
+    config = _get_quick_train_config(root)
+    config.general.run_id = "explicit-id"
+    train_from_config(config)
+    assert (root / "explicit-id-1").exists()
+
+
+def _get_quick_train_config(root):
     config_str = f"""\
 general:
     root_dir: {root}
+    run_id: null
 wandb: null
 loss: graph_pes.training.loss.PerAtomEnergyLoss()
 model: graph_pes.models.LennardJones()    
@@ -54,19 +92,12 @@ fitting:
         max_epochs: 1
         accelerator: cpu
         callbacks: []
-
     loader_kwargs:
         batch_size: 2
 """
-    config = Config.from_dict(
+    return Config.from_dict(
         nested_merge(
             get_default_config_values(),
             yaml.safe_load(config_str),
         )
     )
-
-    train_from_config(config)
-
-    assert root.exists()
-    sub_dir = next(root.iterdir())
-    assert (sub_dir / "model.pt").exists()
