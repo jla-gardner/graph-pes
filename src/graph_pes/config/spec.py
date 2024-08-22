@@ -73,7 +73,9 @@ class FittingOptions:
 class SWAConfig:
     """
     Configuration for Stochastic Weight Averaging.
-    TODO: see PTL docs
+
+    Internally, this is handled by `this PyTorch Lightning callback
+    <https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.StochasticWeightAveraging.html>`__.
     """
 
     lr: float
