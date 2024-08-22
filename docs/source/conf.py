@@ -1,5 +1,5 @@
 project = "graph-pes"
-copyright = "2023, John Gardner"
+copyright = "2023-2024, John Gardner"
 author = "John Gardner"
 release = "0.0.0"
 
@@ -27,8 +27,9 @@ html_theme = "furo"
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
 autodoc_member_order = "bysource"
-maximum_signature_line_length = 100
+maximum_signature_line_length = 70
 autodoc_typehints = "description"
+autodoc_typehints_description_target = "documented_params"
 
 copybutton_prompt_text = (
     r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "

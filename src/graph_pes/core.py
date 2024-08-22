@@ -58,8 +58,8 @@ class ConservativePESModel(nn.Module, ABC):
         Whether to automatically scale raw predictions by (learnable)
         per-element scaling factors as calculated from the data passed to
         :meth:`pre_fit` (typically the training data). If ``True``,
-        :math:`\varepsilon_i = \sigma_Z_i \cdot \varepsilon_i`, where
-        :math:`\sigma_Z_i` is the scaling factor for element :math:`Z_i`.
+        :math:`\varepsilon_i = \sigma_{Z_i} \cdot \varepsilon_i`, where
+        :math:`\sigma_{Z_i}` is the scaling factor for element :math:`Z_i`.
     """
 
     def __init__(self, cutoff: float | None, auto_scale: bool):

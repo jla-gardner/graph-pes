@@ -1,5 +1,62 @@
 Configuration
 =============
 
-.. autoclass:: graph_pes.config.Config
-    :show-inheritance:
+Configuration for the :doc:`graph-pes-train <root>` command line tool is represented as a nested dictionary. The values of this dictionary are sourced from three places:
+
+1. the default values defined in `defaults.yaml <https://github.com/jla-gardner/graph-pes/blob/main/src/graph_pes/config/defaults.yaml>`_
+2. values you define in the config file you pass to ``graph-pes-train --config <config.yaml>``
+3. additional command line arguments you pass to ``graph-pes-train``
+
+Command line arguments overwrite values in your config file, which again overwrite the defaults.
+Hence:
+
+.. code-block:: bash
+
+    graph-pes-train --config minimal.yaml model^graph_pes.model.SchNet^layers=2
+
+
+will train a model :class:`~graph_pes.model.SchNet` model with **2** layers (rather than the 3 specified in :ref:`minimal.yaml <minimal config>`).
+
+
+Under-the-hood, ``graph-pes-train`` uses `dacite <https://github.com/konradhalas/dacite/tree/master/>`_ to convert the configuration dictionary into a series of nested dataclasses, the structure of which is defined in :class:`~graph_pes.config.Config`. 
+
+All available configuration options are documented below. For example config files, see the bottom of this page.
+
+.. autoclass:: graph_pes.config.Config()
+    :members:
+    :exclude-members: hash
+
+.. autoclass:: graph_pes.config.spec.FittingConfig()
+    :members:
+    :inherited-members:
+
+.. autoclass:: graph_pes.config.spec.GeneralConfig()
+    :members:
+
+.. autoclass:: graph_pes.config.spec.LossSpec()
+    :members:
+
+
+Defaults
+========
+
+The default configuration is defined in `defaults.yaml <https://github.com/jla-gardner/graph-pes/blob/main/src/graph_pes/config/defaults.yaml>`_:
+
+.. literalinclude:: ../../../src/graph_pes/config/defaults.yaml
+    :language: yaml
+    :caption: defaults.yaml
+
+
+Examples
+========
+
+.. _minimal config:
+
+Minimal
+-------
+
+Train ...
+
+.. literalinclude:: ../../../configs/minimal.yaml
+    :language: yaml
+    :caption: minimal.yaml

@@ -25,6 +25,7 @@ Available Models
 .. toctree::
    :maxdepth: 2
 
+   addition
    offsets
    pairwise
    many-body/root
