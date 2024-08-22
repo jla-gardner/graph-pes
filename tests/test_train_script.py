@@ -6,6 +6,7 @@ from pathlib import Path
 import helpers
 import yaml
 from graph_pes.config import Config, get_default_config_values
+from graph_pes.config.spec import SWAConfig
 from graph_pes.scripts.train import (
     extract_config_from_command_line,
     parse_args,
@@ -71,6 +72,17 @@ def test_run_id(tmp_path: Path):
     config.general.run_id = "explicit-id"
     train_from_config(config)
     assert (root / "explicit-id-1").exists()
+
+
+def test_swa(tmp_path: Path, caplog):
+    root = tmp_path / "root"
+    config = _get_quick_train_config(root)
+    config.fitting.swa = SWAConfig(lr=0.1, start=1)
+    config.fitting.trainer_kwargs["max_epochs"] = 3
+
+    train_from_config(config)
+
+    assert "SWA: starting SWA" in caplog.text
 
 
 def _get_quick_train_config(root):
