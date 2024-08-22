@@ -275,12 +275,12 @@ class Config:
         
         data: my_module.my_fitting_data()
 
-    Point to :func:`graph_pes.data.load_atoms_datasets` with arguments:
+    Point to :func:`graph_pes.data.load_atoms_dataset` with arguments:
 
     .. code-block:: yaml
 
         data:
-            graph_pes.data.load_atoms_datasets:
+            graph_pes.data.load_atoms_dataset:
                 id: QM9
                 cutoff: 5.0
                 n_train: 10000
@@ -337,7 +337,7 @@ class Config:
     Configuration for Weights & Biases logging.
     
     If ``None``, logging is disabled. Otherwise, provide a dictionary of
-    overrides to pass to  :class:`~pytorch_lightning.loggers.WandbLogger`.
+    overrides to pass to lightning's `WandbLogger <https://lightning.ai/docs/pytorch/stable/extensions/generated/lightning.pytorch.loggers.WandbLogger.html>`__.
 
     Examples
     --------
@@ -355,7 +355,7 @@ class Config:
     .. code-block:: yaml
         
             wandb: null
-    """
+    """  # noqa: E501
 
     ### Methods ###
 

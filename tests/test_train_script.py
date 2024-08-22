@@ -94,7 +94,7 @@ wandb: null
 loss: graph_pes.training.loss.PerAtomEnergyLoss()
 model: graph_pes.models.LennardJones()    
 data:
-    graph_pes.data.load_atoms_datasets:
+    graph_pes.data.load_atoms_dataset:
         id: {helpers.CU_STRUCTURES_FILE}
         cutoff: 3.0
         n_train: 8

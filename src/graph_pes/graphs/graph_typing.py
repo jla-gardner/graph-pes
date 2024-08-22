@@ -50,8 +50,8 @@ class AtomicGraph(TypedDict):
     Direct access of the position and cell-offset properties is discouraged,
     as indicated by the leading underscore. We provide implementations for a
     wide range of derived properties, such as
-    :func:`~graph_pes.data.neighbour_distances`, that correctly handle periodic
-    boundary conditions and other subtleties.
+    :func:`~graph_pes.graphs.operations.neighbour_distances`, that correctly
+    handle periodic boundary conditions and other subtleties.
 
     Example
     -------
@@ -132,7 +132,7 @@ class Labels(TypedDict):
 class LabelledGraph(AtomicGraph, Labels):
     """
     A :class:`LabelledGraph` is an :class:`AtomicGraph` with additional
-    property labels:
+    property labels indexed by :class:`~graph_pes.graphs.keys.LabelKey` s:
 
     .. list-table::
         :header-rows: 1

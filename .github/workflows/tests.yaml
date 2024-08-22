@@ -69,7 +69,6 @@ jobs:
           token: ${{secrets.CODECOV_TOKEN}}
       ### DOCS ###
       - name: Build docs
-        # TODO: turn this on
         # -n: nitpick:
         # -W: turn warnings into errors
-        run: sphinx-build -W docs/source docs/build --keep-going
+        run: sphinx-build -nW docs/source docs/build --keep-going

@@ -1,7 +1,7 @@
 SchNet
 ======
 
-.. autoclass:: graph_pes.models.schnet.SchNet
+.. autoclass:: graph_pes.models.SchNet
 
 Components:
 ------------

@@ -6,7 +6,7 @@ model:
 
 # ... on structures from the QM7 dataset ...
 data:
-  graph_pes.data.load_atoms_datasets:
+  graph_pes.data.load_atoms_dataset:
     id: QM7
     cutoff: 3.0 # radial cutoff in Å
     n_train: 1_000

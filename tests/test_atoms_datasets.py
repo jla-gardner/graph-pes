@@ -3,13 +3,13 @@ from typing import Literal
 import helpers
 import numpy as np
 import pytest
-from graph_pes.data import load_atoms_datasets
+from graph_pes.data import load_atoms_dataset
 from graph_pes.graphs.operations import number_of_atoms
 
 
 @pytest.mark.parametrize("split", ["random", "sequential"])
 def test_shuffling(split: Literal["random", "sequential"]):
-    dataset = load_atoms_datasets(
+    dataset = load_atoms_dataset(
         id=helpers.CU_STRUCTURES_FILE,
         cutoff=3.7,
         n_train=8,
@@ -31,7 +31,7 @@ def test_shuffling(split: Literal["random", "sequential"]):
 
 
 def test_dataset():
-    dataset = load_atoms_datasets(
+    dataset = load_atoms_dataset(
         id=helpers.CU_STRUCTURES_FILE,
         cutoff=3.7,
         n_train=8,
@@ -43,7 +43,7 @@ def test_dataset():
 
 
 def test_property_map():
-    dataset = load_atoms_datasets(
+    dataset = load_atoms_dataset(
         id=helpers.CU_STRUCTURES_FILE,
         cutoff=3.7,
         n_train=8,
@@ -59,7 +59,7 @@ def test_property_map():
     )
 
     with pytest.raises(KeyError, match="Property UNKNOWN KEY not found for"):
-        load_atoms_datasets(
+        load_atoms_dataset(
             id=helpers.CU_STRUCTURES_FILE,
             cutoff=3.7,
             n_train=8,

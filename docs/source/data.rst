@@ -7,4 +7,5 @@ Data
 
     data/atomic_graph
     data/batching
+    data/datasets
 

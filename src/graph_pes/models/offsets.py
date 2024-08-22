@@ -3,7 +3,6 @@ from __future__ import annotations
 import warnings
 
 import torch
-from torch import Tensor
 
 from graph_pes.core import ConservativePESModel
 from graph_pes.graphs import AtomicGraph, LabelledBatch
@@ -38,7 +37,7 @@ class EnergyOffset(ConservativePESModel):
         super().__init__(cutoff=None, auto_scale=False)
         self._offsets = offsets
 
-    def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
+    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
         """
         Index the energy offsets by the atomic numbers in the graph.
 
@@ -49,7 +48,7 @@ class EnergyOffset(ConservativePESModel):
 
         Returns
         -------
-        Tensor
+        torch.Tensor
             The energy offsets for each atom in the graph. Shape: (n_atoms,)
         """
         return self._offsets[graph["atomic_numbers"]].squeeze()
@@ -60,8 +59,8 @@ class EnergyOffset(ConservativePESModel):
 
 class FixedOffset(EnergyOffset):
     """
-    An :class:`EnergyOffset` model with pre-defined and fixed energy offsets
-    for each element.
+    An :class:`~graph_pes.models.offsets.EnergyOffset` model with pre-defined
+    and fixed energy offsets for each element.
 
     Parameters
     ----------
@@ -79,8 +78,8 @@ class FixedOffset(EnergyOffset):
 
 class LearnableOffset(EnergyOffset):
     """
-    An :class:`EnergyOffset` model with learnable energy offsets for each
-    element.
+    An :class:`~graph_pes.models.offsets.EnergyOffset` model with
+    learnable energy offsets for each element.
 
     Parameters
     ----------

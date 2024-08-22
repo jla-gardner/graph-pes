@@ -17,7 +17,7 @@ loss:
     prefix: "graph_pes.training.loss."
 
 data:
-    graph_pes.data.load_atoms_datasets:
+    graph_pes.data.load_atoms_dataset:
         id:
             prompt: >
                 Select a dataset to train on.  This must be either a) a path to

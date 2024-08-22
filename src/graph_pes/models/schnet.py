@@ -162,8 +162,8 @@ class SchNet(ConservativePESModel):
     The `SchNet <https://arxiv.org/abs/1706.08566>`_ model: a pairwise, scalar,
     message passing GNN.
 
-    A stack of :class:`SchNetInteraction` blocks are used to update
-    the node features of each atom, :math:`x_i` by sequentially
+    A stack of :class:`~graph_pes.models.schnet.SchNetInteraction` blocks are
+    used to update the node features of each atom, :math:`x_i` by sequentially
     aggregating over neighbouring atom's features, :math:`x_j`:, and
     distances, :math:`r_{ij}`:.
 

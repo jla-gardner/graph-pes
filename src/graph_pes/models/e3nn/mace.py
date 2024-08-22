@@ -176,7 +176,7 @@ class MACE(_BaseMACE):
     correlation
         maximum correlation order of the messages
     hidden_irreps
-        :class:`~e3nn.o3.Irreps` string for the node features at each
+        :class:`e3nn.o3.Irreps` string for the node features at each
         message passing layer
     neighbour_scaling
         normalisation factor, :math:`\lambda`, for use in message aggregation:

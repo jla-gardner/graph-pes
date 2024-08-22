@@ -35,7 +35,8 @@ class Loss(nn.Module):
     def __init__(
         self,
         property_key: keys.LabelKey,
-        metric: Callable[[Tensor, Tensor], Tensor] | None = None,
+        metric: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
+        | None = None,
     ):
         super().__init__()
         self.property_key: keys.LabelKey = property_key
@@ -201,7 +202,8 @@ class PerAtomEnergyLoss(Loss):
 
     def __init__(
         self,
-        metric: Callable[[Tensor, Tensor], Tensor] | None = None,
+        metric: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
+        | None = None,
     ):
         super().__init__(keys.ENERGY, metric)
 

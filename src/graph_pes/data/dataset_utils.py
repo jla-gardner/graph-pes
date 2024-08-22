@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+import pathlib
 from typing import Literal
 
 import numpy as np
@@ -10,8 +10,8 @@ from graph_pes.data.dataset import ASEDataset, FittingData
 from graph_pes.graphs import keys
 
 
-def load_atoms_datasets(
-    id: str | Path,
+def load_atoms_dataset(
+    id: str | pathlib.Path,
     cutoff: float,
     n_train: int,
     n_valid: int,
@@ -59,7 +59,7 @@ def load_atoms_datasets(
     Load a subset of the QM9 dataset. Ensure that the ``U0`` property is
     mapped to ``energy``:
 
-    >>> load_atoms_datasets(
+    >>> load_atoms_dataset(
     ...     "QM9",
     ...     cutoff=5.0,
     ...     n_train=1_000,

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
+from ..util import _is_being_documented
+
 # graph properties
 ATOMIC_NUMBERS = "atomic_numbers"
 CELL = "cell"
@@ -20,7 +22,7 @@ STRESS = "stress"
 
 # appease torchscript by forcing LabelKey to be a simple string
 # at runtime
-if TYPE_CHECKING:
+if TYPE_CHECKING or _is_being_documented():
     LabelKey = Literal[
         "energy",
         "forces",

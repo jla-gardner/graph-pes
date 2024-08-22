@@ -3,7 +3,7 @@ Atomic Graphs
 =============
 
 We describe atomic graphs using the :class:`~graph_pes.graphs.AtomicGraph` class.
-For convenient ways to create instances of such graphs, see :func:`to_atomic_graph`.
+For convenient ways to create instances of such graphs, see :func:`~graph_pes.data.io.to_atomic_graph`.
 
 
 Definition
@@ -12,6 +12,9 @@ Definition
 .. autoclass:: graph_pes.graphs.AtomicGraph()
 .. autoclass:: graph_pes.graphs.LabelledGraph()
 
+.. class:: graph_pes.graphs.keys.LabelKey
+
+    Type alias for ``Literal["energy", "forces", "stress"]``.
 
 Creation
 --------

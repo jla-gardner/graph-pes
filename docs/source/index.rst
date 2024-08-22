@@ -18,9 +18,9 @@
     :caption: API Reference
 
     models/root
-    building-blocks/root
     data
-    losses
+    fitting/root
+    building-blocks/root
 
 .. toctree::
     :maxdepth: 2

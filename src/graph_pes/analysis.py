@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Sequence
 
+import matplotlib.axes
+import matplotlib.lines
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from ase import Atoms
 from cycler import cycler
-from matplotlib.axes import Axes
-from matplotlib.lines import Line2D
 from matplotlib.ticker import MaxNLocator
 
 from .core import ConservativePESModel, get_predictions
@@ -43,11 +43,11 @@ _my_style = {
 plt.rcParams.update(_my_style)
 
 
-def move_axes(ax: plt.Axes | None = None):  # type: ignore
+def move_axes(ax: matplotlib.axes.Axes | None = None):  # type: ignore
     """
     Move the axes to the center of the figure
     """
-    ax: Axes = ax or plt.gca()
+    ax: plt.Axes = ax or plt.gca()
     ax.spines["left"].set_position(("outward", 10))
     ax.spines["bottom"].set_position(("outward", 10))
 
@@ -61,7 +61,7 @@ def parity_plot(
     property_label: str | None = None,
     transform: Transform | None = None,
     units: str | None = None,
-    ax: Axes | None = None,  # type: ignore
+    ax: matplotlib.axes.Axes | None = None,  # type: ignore
     **scatter_kwargs,
 ):
     r"""
@@ -144,7 +144,7 @@ def parity_plot(
     predictions = transform(pred, graphs).detach()
 
     # plot
-    ax: Axes = ax or plt.gca()
+    ax: plt.Axes = ax or plt.gca()
 
     default_kwargs = dict(lw=0, clip_on=False)
     scatter_kwargs = {**default_kwargs, **scatter_kwargs}
@@ -177,9 +177,9 @@ def dimer_curve(
     set_to_zero: bool = True,
     rmin: float = 0.9,
     rmax: float = 5.0,
-    ax: plt.Axes | None = None,  # type: ignore
+    ax: matplotlib.axes.Axes | None = None,  # type: ignore
     **plot_kwargs,
-) -> Line2D:
+) -> matplotlib.lines.Line2D:
     r"""
     A nicely formatted dimer curve plot for the given :code:`system`.
 
@@ -231,12 +231,12 @@ def dimer_curve(
     if set_to_zero:
         energy -= energy[-1]
 
-    ax: Axes = ax or plt.gca()
+    ax: plt.Axes = ax or plt.gca()
 
     default_kwargs = dict(lw=1, c="k")
     plot_kwargs = {**default_kwargs, **plot_kwargs}
     line = ax.plot(rs, energy, **plot_kwargs)[0]
-    assert isinstance(line, Line2D)
+    assert isinstance(line, matplotlib.lines.Line2D)
 
     limiting_energy = energy[-1]
     if (energy[:-1] < limiting_energy).any():

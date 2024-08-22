@@ -3,6 +3,8 @@
 ``graph-pes-train``
 ===================
 
+``graph-pes-train`` is a command line tool for training graph-based potential energy surface models:
+
 .. code-block:: console
 
     $ graph-pes-train -h

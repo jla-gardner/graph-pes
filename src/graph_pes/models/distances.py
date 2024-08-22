@@ -4,7 +4,6 @@ import math
 from abc import ABC, abstractmethod
 
 import torch
-from jaxtyping import Float
 from torch import Tensor, nn
 
 
@@ -39,9 +38,7 @@ class DistanceExpansion(nn.Module, ABC):
         self.trainable = trainable
 
     @abstractmethod
-    def expand(
-        self, r: Float[Tensor, "... 1"]
-    ) -> Float[Tensor, "... n_features"]:
+    def expand(self, r: torch.Tensor) -> torch.Tensor:
         r"""
         Perform the expansion.
 
@@ -333,7 +330,7 @@ class ExponentialRBF(DistanceExpansion):
 
 
 class Envelope(nn.Module):
-    def forward(self, r: Float[Tensor, "N"]) -> Float[Tensor, "N"]: ...
+    def forward(self, r: torch.Tensor) -> torch.Tensor: ...
 
 
 class PolynomialEnvelope(Envelope):

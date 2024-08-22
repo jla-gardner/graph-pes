@@ -7,7 +7,7 @@ from typing import Sequence, overload
 
 import torch
 from ase.data import chemical_symbols
-from torch import Tensor, nn
+from torch import nn
 
 from graph_pes.data.dataset import LabelledGraphDataset
 from graph_pes.logger import logger
@@ -65,7 +65,7 @@ class ConservativePESModel(nn.Module, ABC):
     def __init__(self, cutoff: float | None, auto_scale: bool):
         super().__init__()
 
-        self.cutoff: Tensor | None
+        self.cutoff: torch.Tensor | None
         if cutoff is not None:
             self.register_buffer("cutoff", torch.scalar_tensor(cutoff))
         else:
@@ -81,10 +81,10 @@ class ConservativePESModel(nn.Module, ABC):
             self.per_element_scaling = None
 
         # save as a buffer so that this is de/serialized with the model
-        self._has_been_pre_fit: Tensor
+        self._has_been_pre_fit: torch.Tensor
         self.register_buffer("_has_been_pre_fit", torch.tensor(False))
 
-    def forward(self, graph: AtomicGraph) -> Tensor:
+    def forward(self, graph: AtomicGraph) -> torch.Tensor:
         """
         Calculate the total energy of the structure.
 
@@ -95,7 +95,7 @@ class ConservativePESModel(nn.Module, ABC):
 
         Returns
         -------
-        Tensor
+        torch.Tensor
             The total energy of the structure/s. If the input is a batch
             of graphs, the result will be a tensor of shape :code:`(B,)`,
             where :code:`B` is the batch size. Otherwise, a scalar tensor
@@ -115,7 +115,7 @@ class ConservativePESModel(nn.Module, ABC):
         return sum_per_structure(local_energies, graph)
 
     @abstractmethod
-    def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
+    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
         """
         Predict the local energy for each atom in the graph.
 
@@ -126,7 +126,7 @@ class ConservativePESModel(nn.Module, ABC):
 
         Returns
         -------
-        Tensor
+        torch.Tensor
             The per-atom local energy predictions, with shape :code:`(N,)`.
         """
 
@@ -213,7 +213,7 @@ class ConservativePESModel(nn.Module, ABC):
         """
 
     # add type hints to play nicely with mypy
-    def __call__(self, graph: AtomicGraph) -> Tensor:
+    def __call__(self, graph: AtomicGraph) -> torch.Tensor:
         return super().__call__(graph)
 
     @torch.jit.unused
@@ -234,7 +234,7 @@ def get_predictions(
     graph: AtomicGraph | AtomicGraphBatch | Sequence[AtomicGraph],
     *,
     training: bool = False,
-) -> dict[keys.LabelKey, Tensor]: ...
+) -> dict[keys.LabelKey, torch.Tensor]: ...
 @overload
 def get_predictions(
     model: ConservativePESModel,
@@ -242,7 +242,7 @@ def get_predictions(
     *,
     properties: Sequence[keys.LabelKey],
     training: bool = False,
-) -> dict[keys.LabelKey, Tensor]: ...
+) -> dict[keys.LabelKey, torch.Tensor]: ...
 @overload
 def get_predictions(
     model: ConservativePESModel,
@@ -250,7 +250,7 @@ def get_predictions(
     *,
     property: keys.LabelKey,
     training: bool = False,
-) -> Tensor: ...
+) -> torch.Tensor: ...
 def get_predictions(
     model: ConservativePESModel,
     graph: AtomicGraph | AtomicGraphBatch | Sequence[AtomicGraph],
@@ -258,7 +258,7 @@ def get_predictions(
     properties: Sequence[keys.LabelKey] | None = None,
     property: keys.LabelKey | None = None,
     training: bool = False,
-) -> dict[keys.LabelKey, Tensor] | Tensor:
+) -> dict[keys.LabelKey, torch.Tensor] | torch.Tensor:
     """
     Evaluate the model on the given structure to get
     the properties requested.
@@ -316,7 +316,7 @@ def get_predictions(
     #    enabled **before** calling the model. Then use autograd to calculate
     #    the stress by differentiating the energy wrt a distortion of the cell.
 
-    predictions: dict[keys.LabelKey, Tensor] = {}
+    predictions: dict[keys.LabelKey, torch.Tensor] = {}
 
     if want_stress:
         # The virial stress tensor is the gradient of the total energy wrt

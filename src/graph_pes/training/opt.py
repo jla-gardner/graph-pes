@@ -13,9 +13,11 @@ class Optimizer:
     objects.
 
     The generated optimizer splits the parameters of the model into two groups:
+
     - those that belong to some form of energy-offset modelling (e.g.
-      :class:`LearnableOffset`), and
+      :class:`~graph_pes.models.LearnableOffset`), and
     - those that belong to the main model.
+
     Any specified weight decay is applied only to the main model parameters.
 
     Parameters

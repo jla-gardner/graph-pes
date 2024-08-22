@@ -27,8 +27,8 @@ class SizedDataset(Protocol[T]):
 
 class LabelledGraphDataset(torch.utils.data.Dataset, ABC):
     """
-    Abstract base class for datasets of :class:`~graph_pes
-    .data.LabelledGraph` instances.
+    Abstract base class for datasets of
+    :class:`~graph_pes.graphs.LabelledGraph` instances.
     """
 
     @abstractmethod
@@ -159,7 +159,7 @@ class ShuffledDataset(ReMappedDataset):
 
 class SequenceDataset(LabelledGraphDataset):
     """
-    A dataset that wraps a sequence of :class:`~graph_pes.data.LabelledGraph`
+    A dataset that wraps a sequence of :class:`~graph_pes.graphs.LabelledGraph`
     instances.
 
     Parameters
@@ -246,8 +246,12 @@ class ASEDataset(LabelledGraphDataset):
 
 @dataclass
 class FittingData:
+    """A convenience container for training and validation datasets."""
+
     train: LabelledGraphDataset
+    """The training dataset."""
     valid: LabelledGraphDataset
+    """The validation dataset."""
 
     def __repr__(self) -> str:
         return uniform_repr(

@@ -163,7 +163,8 @@ class PaiNN(ConservativePESModel):
     The `Polarizable Atom Interaction Neural Network (PaiNN)
     <https://arxiv.org/abs/2102.03150>`_ model.
 
-    Alternating :class:`Interaction` and :class:`Update` blocks
+    Alternating :class:`~graph_pes.models.painn.Interaction` and
+    :class:`~graph_pes.models.painn.Update` blocks
     are used to residually update both vector and scalar per-atom embeddings.
 
     Citation:

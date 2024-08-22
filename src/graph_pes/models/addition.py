@@ -52,6 +52,11 @@ class AdditionModel(ConservativePESModel):
         return torch.sum(predictions, dim=0)  # (atoms,)
 
     def pre_fit(self, graphs: LabelledGraphDataset | Sequence[LabelledGraph]):
+        """
+        Dispatches the graphs to all ``pre_fit`` methods of the
+        constituent models.
+        """
+
         for model in self.models.values():
             model.pre_fit(graphs)
 

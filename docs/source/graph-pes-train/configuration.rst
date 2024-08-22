@@ -15,7 +15,7 @@ Hence:
     graph-pes-train --config minimal.yaml model^graph_pes.model.SchNet^layers=2
 
 
-will train a model :class:`~graph_pes.model.SchNet` model with **2** layers (rather than the 3 specified in :ref:`minimal.yaml <minimal config>`).
+will train a model :class:`~graph_pes.models.SchNet` model with **2** layers (rather than the 3 specified in :ref:`minimal.yaml <minimal config>`).
 
 
 Under-the-hood, ``graph-pes-train`` uses `dacite <https://github.com/konradhalas/dacite/tree/master/>`_ to convert the configuration dictionary into a series of nested dataclasses, the structure of which is defined in :class:`~graph_pes.config.Config`. 

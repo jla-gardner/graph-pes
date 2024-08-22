@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 import torch
-from jaxtyping import Float
 from torch import Tensor
 
 from graph_pes.core import ConservativePESModel
@@ -42,11 +41,8 @@ class PairPotential(ConservativePESModel, ABC):
 
     @abstractmethod
     def interaction(
-        self,
-        r: Float[Tensor, "E"],
-        Z_i: Float[Tensor, "E"],
-        Z_j: Float[Tensor, "E"],
-    ) -> Float[Tensor, "E"]:
+        self, r: torch.Tensor, Z_i: torch.Tensor, Z_j: torch.Tensor
+    ) -> torch.Tensor:
         """
         Compute the interactions between pairs of atoms, given their
         distances and atomic numbers.
@@ -62,7 +58,7 @@ class PairPotential(ConservativePESModel, ABC):
 
         Returns
         -------
-        V: Float[Tensor, "E"]
+        V: torch.Tensor
             The pair-wise interactions.
         """
 

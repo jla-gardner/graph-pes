@@ -11,16 +11,16 @@ from typing import (
 )
 
 import torch
-import torch.nn as nn
+import torch.nn
 from ase.data import atomic_numbers, chemical_symbols, covalent_radii
 from torch import Tensor
 
 from .util import MAX_Z, pairs, to_significant_figures, uniform_repr
 
-V = TypeVar("V", bound=nn.Module)
+V = TypeVar("V", bound=torch.nn.Module)
 
 
-class UniformModuleDict(nn.ModuleDict, Generic[V]):
+class UniformModuleDict(torch.nn.ModuleDict, Generic[V]):
     """
     A :class:`torch.nn.ModuleDict` sub-class for cases where
     the values are all of the same type.
@@ -51,7 +51,7 @@ class UniformModuleDict(nn.ModuleDict, Generic[V]):
         return super().pop(key)  # type: ignore
 
 
-class UniformModuleList(nn.ModuleList, Sequence[V]):
+class UniformModuleList(torch.nn.ModuleList, Sequence[V]):
     """
     A :class:`torch.nn.ModuleList` sub-class for cases where
     the values are all of the same type.
@@ -88,7 +88,7 @@ class UniformModuleList(nn.ModuleList, Sequence[V]):
         return super().__iter__()  # type: ignore
 
 
-class MLP(nn.Module):
+class MLP(torch.nn.Module):
     """
     A multi-layer perceptron model, alternating linear layers and activations.
 
@@ -120,7 +120,7 @@ class MLP(nn.Module):
     def __init__(
         self,
         layers: list[int],
-        activation: str | nn.Module = "CELU",
+        activation: str | torch.nn.Module = "CELU",
         activate_last: bool = False,
         bias: bool = True,
     ):
@@ -133,8 +133,11 @@ class MLP(nn.Module):
         )
         self.activate_last = activate_last
 
-        self.linear_layers = nn.ModuleList(
-            [nn.Linear(_in, _out, bias=bias) for _in, _out in pairs(layers)]
+        self.linear_layers = torch.nn.ModuleList(
+            [
+                torch.nn.Linear(_in, _out, bias=bias)
+                for _in, _out in pairs(layers)
+            ]
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -441,10 +444,12 @@ class PerElementEmbedding(torch.nn.Module):
         return super().__call__(Z)
 
 
-class HaddamardProduct(nn.Module):
-    def __init__(self, *components: nn.Module, left_aligned: bool = False):
+class HaddamardProduct(torch.nn.Module):
+    def __init__(
+        self, *components: torch.nn.Module, left_aligned: bool = False
+    ):
         super().__init__()
-        self.components: list[nn.Module] = nn.ModuleList(components)  # type: ignore
+        self.components: list[torch.nn.Module] = torch.nn.ModuleList(components)  # type: ignore
         self.left_aligned = left_aligned
 
     def forward(self, x):
@@ -523,7 +528,7 @@ def left_aligned_div(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return result.transpose(0, -1)  # shape: (n, ..., a)
 
 
-def learnable_parameters(module: nn.Module) -> int:
+def learnable_parameters(module: torch.nn.Module) -> int:
     """Count the number of **learnable** parameters a module has."""
     return sum(p.numel() for p in module.parameters() if p.requires_grad)
 

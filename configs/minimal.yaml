@@ -13,7 +13,7 @@ model:
         node_features: 64
 
 data:
-    graph_pes.data.load_atoms_datasets:
+    graph_pes.data.load_atoms_dataset:
         id: QM7
         cutoff: 5.0
         n_train: 5_000
