@@ -230,11 +230,16 @@ def train_from_config(config: Config):
     log(f"Logging using {lightning_logger}")
 
     # create the trainer
+    trainer_kwargs = {**config.fitting.trainer_kwargs}
+    if config.fitting.swa is not None:
+        trainer_kwargs.setdefault("callbacks", []).append(
+            config.fitting.swa.instantiate_lightning_callback()
+        )
     trainer = create_trainer(
         early_stopping_patience=config.fitting.early_stopping_patience,
         logger=lightning_logger,
         valid_available=True,
-        kwarg_overloads=config.fitting.trainer_kwargs,
+        kwarg_overloads=trainer_kwargs,
         output_dir=output_dir,
     )
     assert trainer.logger is not None

@@ -7,17 +7,11 @@ general:
 fitting:
     pre_fit_model: true
     max_n_pre_fit: 5_000
-    early_stopping_patience: 100
 
     optimizer:
         graph_pes.training.opt.Optimizer:
             name: AdamW
             lr: 0.001
-            weight_decay: 0.0
-            amsgrad: false
-
-    # no scheduler enabled by default
-    scheduler: null
 
     # train for 100 epochs on the best device available
     trainer_kwargs:
@@ -30,5 +24,10 @@ fitting:
         persistent_workers: false
         batch_size: 4
         pin_memory: false
+
+    # "fancy"/optional training options disabled
+    early_stopping_patience: null
+    scheduler: null
+    swa: null
 
 wandb: {}

@@ -16,6 +16,7 @@ from graph_pes.data.dataset import FittingData
 from graph_pes.models.addition import AdditionModel
 from graph_pes.training.loss import Loss, TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
+from graph_pes.training.ptl_utils import VerboseSWACallback
 
 from .utils import create_from_data, create_from_string
 
@@ -69,6 +70,43 @@ class FittingOptions:
 
 
 @dataclass
+class SWAConfig:
+    """
+    Configuration for Stochastic Weight Averaging.
+    TODO: see PTL docs
+    """
+
+    lr: float
+    """
+    The learning rate to use during the SWA phase. If not specified,
+    the learning rate from the end of the training phase will be used.
+    """
+
+    start: Union[int, float] = 0.8
+    """
+    The epoch at which to start SWA. If a float, it will be interpreted
+    as a fraction of the total number of epochs.
+    """
+
+    anneal_epochs: int = 10
+    """
+    The number of epochs over which to linearly anneal the learning rate
+    to zero.
+    """
+
+    strategy: Literal["linear", "cosine"] = "linear"
+    """The strategy to use for annealing the learning rate."""
+
+    def instantiate_lightning_callback(self):
+        return VerboseSWACallback(
+            swa_lrs=self.lr,
+            swa_epoch_start=self.start,
+            annealing_epochs=self.anneal_epochs,
+            annealing_strategy=self.strategy,
+        )
+
+
+@dataclass
 class FittingConfig(FittingOptions):
     optimizer: Union[str, Dict[str, Any]]
     """
@@ -112,6 +150,9 @@ class FittingConfig(FittingOptions):
                 factor: 0.5
                 patience: 10
     """
+
+    swa: Union[SWAConfig, None]
+    """Configuration for Stochastic Weight Averaging. Optional."""
 
     ### Methods ###
 

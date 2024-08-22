@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time
 from pathlib import Path
 from typing import Literal
 
@@ -15,6 +14,7 @@ from graph_pes.graphs.operations import number_of_structures
 from graph_pes.logger import logger
 from graph_pes.training.loss import RMSE, Loss, PerAtomEnergyLoss, TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
+from graph_pes.training.ptl_utils import ModelTimer
 from graph_pes.training.util import log_model_info
 from pytorch_lightning.callbacks import (
     EarlyStopping,
@@ -267,6 +267,10 @@ def create_trainer(
         timer=ModelTimer(),
     )
     if early_stopping_patience is not None:
+        if not valid_available:
+            raise ValueError(
+                "Early stopping requires validation data to be available"
+            )
         callbacks["early_stopping"] = EarlyStopping(
             monitor=VALIDATION_LOSS_KEY,
             patience=early_stopping_patience,
@@ -274,11 +278,11 @@ def create_trainer(
             min_delta=1e-6,
         )
 
-    # find any user defined callbacks
+    # find any user defined callbacks ...
     overloads = kwarg_overloads or {}
     overloaded_callbacks = overloads.pop("callbacks", [])
 
-    # and overwrite the default callbacks where necessary
+    # ... and overwrite the default callbacks where necessary
     for cb in overloaded_callbacks:
         # we don't want two progress bars: use the non-default one
         if isinstance(cb, ProgressBar):
@@ -292,45 +296,3 @@ def create_trainer(
         logger=logger,
         callbacks=list(callbacks.values()),
     )
-
-
-class ModelTimer(pl.Callback):
-    def __init__(self):
-        super().__init__()
-        self.tick_ms: float | None = None
-
-    def start(self):
-        self.tick_ms = time.time_ns() // 1_000_000
-
-    def stop(self, pl_module: LearnThePES, stage: Literal["train", "valid"]):
-        assert self.tick_ms is not None
-        duration_ms = max((time.time_ns() // 1_000_000) - self.tick_ms, 1)
-        self.tick_ms = None
-
-        for name, x in (
-            ("step_duration_ms", duration_ms),
-            ("its_per_s", 1_000 / duration_ms),
-        ):
-            pl_module.log(
-                f"timer/{name}/{stage}",
-                x,
-                batch_size=1,
-                on_epoch=stage == "valid",
-                on_step=stage == "train",
-            )
-
-    def on_train_batch_start(self, *args, **kwargs):
-        self.start()
-
-    def on_train_batch_end(
-        self, trainer: pl.Trainer, pl_module: LearnThePES, *args, **kwargs
-    ):
-        self.stop(pl_module, "train")
-
-    def on_validation_batch_start(self, *args, **kwargs):
-        self.start()
-
-    def on_validation_batch_end(
-        self, trainer: pl.Trainer, pl_module: LearnThePES, *args, **kwargs
-    ):
-        self.stop(pl_module, "valid")
