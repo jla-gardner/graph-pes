@@ -1,5 +1,13 @@
 from __future__ import annotations
 
+import warnings
+
+warnings.filterwarnings(
+    "ignore",
+    module="e3nn",
+    message=".*you are using `torch.load`.*",
+)
+
 from pathlib import Path
 
 import torch
