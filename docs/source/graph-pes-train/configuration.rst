@@ -30,6 +30,9 @@ All available configuration options are documented below. For example config fil
     :members:
     :inherited-members:
 
+.. autoclass:: graph_pes.config.spec.SWAConfig()
+    :members:
+
 .. autoclass:: graph_pes.config.spec.GeneralConfig()
     :members:
 
