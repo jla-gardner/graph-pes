@@ -1,3 +1,6 @@
+general:
+  run_id: quickstart-run
+
 # train a PaiNN model ...
 model:
   graph_pes.models.PaiNN: # or NequIP, MACE, TensorNet etc.
@@ -21,8 +24,8 @@ fitting:
     max_epochs: 1_000
     accelerator: auto # use a gpu if available
 
-    loader_kwargs: # passed straight to the data loader
-      batch_size: 16
+  loader_kwargs: # passed straight to the data loader
+    batch_size: 16
 
 # ... and log to Weights & Biases
 wandb:
