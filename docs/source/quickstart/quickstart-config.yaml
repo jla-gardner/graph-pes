@@ -24,7 +24,7 @@ fitting:
   trainer_kwargs: # passed straight to the lightning trainer
     max_epochs: 25
     accelerator: auto # use a gpu if available
-  
+
   optimizer:
     graph_pes.training.opt.Optimizer:
       name: AdamW
