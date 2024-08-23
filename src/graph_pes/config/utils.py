@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import importlib
 import importlib.util
+import os
 import sys
 import warnings
 from pathlib import Path
@@ -10,8 +11,61 @@ from typing import Any
 
 from graph_pes.logger import logger
 
+ALLOWED_PACKAGES = {"torch", "graph_pes"}
+
+
+def is_allowed_for_import(nested_module_name: str) -> bool:
+    """
+    Check if a nested module is allowed for import.
+
+    Parameters
+    ----------
+    nested_module_name
+        The name of the nested module.
+
+    Returns
+    -------
+    bool
+        Whether the nested module is allowed for import.
+    """
+
+    if any(
+        nested_module_name.startswith(package) for package in ALLOWED_PACKAGES
+    ):
+        return True
+
+    user_string = os.environ.get("GRAPH_PES_ALLOW_IMPORT", "")
+    if not user_string:
+        return False
+    user_specified = set(user_string.split(","))
+    logger.debug(f"User specified allowed packages: {user_specified}")
+    return any(
+        nested_module_name.startswith(package) for package in user_specified
+    )
+
 
 def create_from_data(thing: Any, type_msg: str | None = None) -> Any:
+    """
+    Create python objects from a data specification.
+
+    Parameters
+    ----------
+    thing
+        A string or a dictionary.
+    type_msg
+        A message to display if the type of ``thing`` is not recognized.
+
+    Returns
+    -------
+    Any
+        The created object.
+
+    Example
+    -------
+    >>> create_from_data("torch.nn.ReLU")
+    ReLU()
+    """
+
     if isinstance(thing, str):
         return create_from_string(thing)
     elif isinstance(thing, dict):
@@ -33,6 +87,15 @@ def _import(thing: str) -> Any:
     """
 
     module_name, obj_name = thing.rsplit(".", 1)
+    if not is_allowed_for_import(module_name):
+        raise ImportError(
+            f"Attempted to import {obj_name} from {module_name}, "
+            "which is not allowed for safety reasons. Do you want to "
+            "allow this import? If so, set the GRAPH_PES_ALLOW_IMPORT "
+            "environment variable to include the package you want to "
+            "import from: e.g. `export GRAPH_PES_ALLOW_IMPORT=my_package`."
+        )
+
     try:
         module = importlib.import_module(module_name)
     except ImportError:

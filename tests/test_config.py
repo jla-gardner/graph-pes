@@ -1,3 +1,5 @@
+import os
+
 import pytest
 import torch
 import yaml
@@ -17,11 +19,16 @@ def test_import(tmp_path):
     # test that we can import an object from some other module
     assert _import("torch.nn.ReLU") is torch.nn.ReLU
 
-    # finally, try to import something from a local file
+    # try to import something from a local file
     (tmp_path / "test.py").write_text("""
 class Test:
     a = 3
 """)
+    # ... testing that the safety mechanism works
+    with pytest.raises(ImportError):
+        _import(str(tmp_path / "test.Test"))
+    # ... testing that we can override the safety mechanism
+    os.environ["GRAPH_PES_ALLOW_IMPORT"] = str(tmp_path.parent)
     assert _import(str(tmp_path / "test.Test")).a == 3
 
 
