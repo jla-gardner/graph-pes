@@ -44,10 +44,7 @@ def parse_args():
             "Train a GraphPES model from a configuration file "
             "using PyTorch Lightning."
         ),
-        epilog=(
-            "Example usage: graph-pes-train --config config1.yaml --config "
-            "config2.yaml fitting^loader_kwargs^batch_size=32 "
-        ),
+        epilog=("Copyright 2023-24, John Gardner"),
     )
 
     parser.add_argument(
@@ -202,9 +199,10 @@ def train_from_config(config: Config):
 
             if version > 0:
                 logger.warning(
-                    f"Specified run ID {config.general.run_id} already exists. "
-                    f"Using {output_dir.name} instead."
+                    f'Specified run ID "{config.general.run_id}"" already '
+                    f"exists. Using {output_dir.name} instead."
                 )
+
         output_dir.mkdir(parents=True)
         # save the config, but with the run ID updated
         config.general.run_id = output_dir.name
@@ -241,6 +239,7 @@ def train_from_config(config: Config):
         valid_available=True,
         kwarg_overloads=trainer_kwargs,
         output_dir=output_dir,
+        progress=config.general.progress,
     )
     assert trainer.logger is not None
     trainer.logger.log_hyperparams(config.to_nested_dict())

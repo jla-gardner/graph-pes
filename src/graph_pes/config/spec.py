@@ -193,6 +193,9 @@ class GeneralConfig:
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     """The logging level for the logger."""
 
+    progress: Literal["rich", "logged"]
+    """The progress bar style to use."""
+
 
 @dataclass
 class Config:

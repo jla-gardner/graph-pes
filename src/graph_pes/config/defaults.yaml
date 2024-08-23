@@ -3,6 +3,7 @@ general:
     root_dir: "graph-pes-results"
     run_id: null
     log_level: "INFO"
+    progress: rich
 
 fitting:
     pre_fit_model: true

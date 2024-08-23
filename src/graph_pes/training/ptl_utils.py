@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import time
-from typing import Literal
+from typing import Any, Literal
 
 import pytorch_lightning as pl
 from graph_pes.logger import logger
-from pytorch_lightning.callbacks import StochasticWeightAveraging
+from pytorch_lightning.callbacks import ProgressBar, StochasticWeightAveraging
 from typing_extensions import override
 
 
@@ -47,6 +47,7 @@ class ModelTimer(pl.Callback):
                 batch_size=1,
                 on_epoch=stage == "valid",
                 on_step=stage == "train",
+                prog_bar=name == "its_per_s",
             )
 
     @override
@@ -76,3 +77,59 @@ class ModelTimer(pl.Callback):
         **kwargs,
     ):
         self.stop(pl_module, "valid")
+
+
+class LoggedProgressBar(ProgressBar):
+    """
+    A progress bar that logs all metrics at the end of each validation epoch.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self._enabled = True
+
+    @override
+    def disable(self):
+        self._enabled = False
+
+    @override
+    def enable(self):
+        self._enabled = True
+
+    @override
+    def on_validation_epoch_end(
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+    ):
+        if not self._enabled or trainer.sanity_checking:
+            return
+
+        metrics = self.get_metrics(trainer, pl_module)
+        widths = {k: max(len(k), len(v)) + 3 for k, v in metrics.items()}
+
+        if trainer.current_epoch == 0:
+            print("".join(f"{k:>{widths[k]}}" for k in metrics))
+        print("".join(f"{v:>{widths[k]}}" for k, v in metrics.items()))
+
+    @override
+    def get_metrics(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
+    ) -> dict[str, str]:
+        def logged_value(v: float | int | Any):
+            return f"{v:.5f}" if isinstance(v, float) else str(v)
+
+        metrics = {"epoch": f"{trainer.current_epoch:>5}"}
+        super_metrics = super().get_metrics(trainer, pl_module)
+        super_metrics.pop("v_num", None)
+        for k, v in super_metrics.items():
+            metrics[k] = logged_value(v)
+
+        # rearrange according to: epoch | valid/* | rest...
+        sorted_metrics = {"epoch": metrics.pop("epoch")}
+        for k in list(metrics):
+            if k.startswith("valid/"):
+                sorted_metrics[k] = metrics.pop(k)
+        sorted_metrics.update(metrics)
+
+        return sorted_metrics
