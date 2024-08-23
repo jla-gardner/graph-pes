@@ -1,5 +1,6 @@
 general:
   run_id: quickstart-run
+  progress: logged
 
 # train a PaiNN model ...
 model:
@@ -21,8 +22,13 @@ loss: graph_pes.training.loss.PerAtomEnergyLoss()
 # ... with the following settings ...
 fitting:
   trainer_kwargs: # passed straight to the lightning trainer
-    max_epochs: 1_000
+    max_epochs: 25
     accelerator: auto # use a gpu if available
+  
+  optimizer:
+    graph_pes.training.opt.Optimizer:
+      name: AdamW
+      lr: 0.01
 
   loader_kwargs: # passed straight to the data loader
     batch_size: 16
@@ -30,4 +36,3 @@ fitting:
 # ... and log to Weights & Biases
 wandb:
   project: graph-pes
-  name: trial-run
