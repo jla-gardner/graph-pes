@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Union
+from typing import Callable
 
 import e3nn.util.jit
 import graph_pes.models.distances
@@ -13,6 +13,7 @@ from graph_pes.models.distances import (
     DistanceExpansion,
     PolynomialEnvelope,
 )
+from graph_pes.models.e3nn.utils import LinearReadOut, NonLinearReadOut, ReadOut
 from graph_pes.nn import (
     AtomicOneHot,
     HaddamardProduct,
@@ -20,34 +21,6 @@ from graph_pes.nn import (
     UniformModuleList,
 )
 from mace_layer import MACE_layer
-
-
-class LinearReadOut(o3.Linear):
-    def __init__(self, input_irreps: str):
-        super().__init__(input_irreps, "1x0e")
-
-    def __call__(self, x: torch.Tensor) -> torch.Tensor:
-        return super().__call__(x)
-
-
-class NonLinearReadOut(torch.nn.Module):
-    def __init__(self, input_irreps: str):
-        super().__init__()
-        hidden_dim = o3.Irreps(input_irreps).count(o3.Irrep("0e"))
-        self.layers = torch.nn.Sequential(
-            o3.Linear(input_irreps, f"{hidden_dim}x0e"),
-            torch.nn.SiLU(),
-            o3.Linear(f"{hidden_dim}x0e", "1x0e"),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.layers(x)
-
-    def __call__(self, x: torch.Tensor) -> torch.Tensor:
-        return self.forward(x)
-
-
-ReadOut = Union[LinearReadOut, NonLinearReadOut]
 
 
 def _get_distance_expansion(name: str) -> type[DistanceExpansion]:

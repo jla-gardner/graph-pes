@@ -16,6 +16,7 @@ from graph_pes.graphs.operations import (
     sum_over_neighbours,
 )
 from graph_pes.models import distances
+from graph_pes.models.e3nn.utils import LinearReadOut
 from graph_pes.nn import (
     MLP,
     AtomicOneHot,
@@ -333,7 +334,7 @@ class _BaseNequIP(ConservativePESModel):
 
         self.layers = UniformModuleList(layers)
 
-        self.readout = o3.Linear(current_layer_input, "1x0e")
+        self.readout = LinearReadOut(current_layer_input)
 
     def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
         # pre-compute important quantities
