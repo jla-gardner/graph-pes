@@ -1,49 +1,60 @@
 <div align="center">
     <a href="https://jla-gardner.github.io/graph-pes/">
-        <!-- <img src="https://raw.githubusercontent.com/jla-gardner/graph-pes/main/docs/source/_static/logo.svg" width="50%"/> -->
         <img src="docs/source/_static/logo-all.svg" width="90%"/>
     </a>
 </div>
 
----
 
-## `graph-pes` - Potential Energy Surfaces on Graphs
 
-`graph-pes` is a Python framework for training Potential Energy Surface (PES) 
-models that operate on graph representations of atomic structures.
-Under-the-hood, this relies on Pytorch/Geometric for efficient tensor operations.
+`graph-pes` is a framework built to accelerate the development of machine-learned potential energy surface (PES) models that act on graph representations of atomic structures.
 
-Batteries are included:
-- **easy data manipulations** : see docs relating to `AtomicGraph`, intuitive batching, easy conversion from ase etc.
-- **easy construction of PES models** : implement `predict_local_energies` , easy to save, load and share
-- **useful primitives** : PerElementParameter
-- **easy training** : forces, energies, well conditioned losses etc.
-- **analysis** : easy to plot, analyse and compare models
+## Features
 
-## Installation
+- Experiment with new model architectures by inheriting from our `ConservativePESModel` base class.
+- Train your own or existing models (e.g., SchNet, NequIP, PaiNN, MACE, etc.).
+- Easily configure distributed training, learning rate scheduling, weights and biases logging, and other features using our `graph-pes-train` command line interface.
+- Use our data-loading pipeline within your own training loop.
+- Run molecular dynamics simulations via LAMMPS (or ASE) using any `ConservativePESModel` and the `pair_style graph_pes` LAMMPS command.
+
+## Quickstart
+
+For a 0-install quickstart experience, please see [this Google colab](TODO), which you can also find in our documentation.
+
+Want to try this out locally? Run the following commands:
 
 ```bash
+# optionally create a new environment
+conda create -n graph-pes python=3.10
+conda activate graph-pes
+
+# install graph-pes
 pip install graph-pes
+
+# download a config file
+curl -0 TODO
+
+# train a model
+graph-pes-train --config TODO
 ```
 
-## Minimal example
 
-```python
-from ase.io import read
-from graph_pes.data import to_atomic_graphs
-from graph_pes.models.pairwise import LennardJones
-from graph_pes.training import train_model
 
-# 1. load some (labelled) structures
-structures = read("structures.xyz", index=":10")
-assert "energy" in structures[0].info
+## Contributing
 
-# 2. convert to graphs (e.g. using a radius cutoff)
-graphs = to_atomic_graphs(structures, cutoff=5.0)
+Contributions are welcome! If you find any issues or have suggestions for new features, please open an issue or submit a pull request on the [GitHub repository](https://github.com/jla-gardner/graph-pes).
 
-# 3. define the model
-model = LennardJones()
+## License
 
-# 4. train
-train_model(model, graphs, max_epochs=100)
-```
+`graph-pes` is licensed under the [MIT License](https://github.com/jla-gardner/graph-pes/blob/main/LICENSE).
+
+## Acknowledgments
+
+`graph-pes` builds upon the following open-source projects:
+
+- [PyTorch](https://pytorch.org/)
+- [LAMMPS](https://lammps.org/)
+- [ASE](https://wiki.fysik.dtu.dk/ase/)
+
+We are grateful for the contributions of the developers and maintainers of these projects.
+
+---
