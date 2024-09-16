@@ -199,7 +199,7 @@ def train_from_config(config: Config):
 
             if version > 0:
                 logger.warning(
-                    f'Specified run ID "{config.general.run_id}"" already '
+                    f'Specified run ID "{config.general.run_id}" already '
                     f"exists. Using {output_dir.name} instead."
                 )
 
