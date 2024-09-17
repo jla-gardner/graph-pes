@@ -26,6 +26,8 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable/", None),
 }
 
+html_logo = "_static/logo-square.svg"
+html_title = "graph-pes"
 html_theme = "furo"
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]

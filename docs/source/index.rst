@@ -98,7 +98,7 @@ See the menu-bar on the left for a complete API and usage guide, or jump straigh
 * :doc:`train a model from the command line <quickstart/train-a-model>`
 * implement your own model in xxx lines, and train it
 * implement a custom training loop
-* load a trained model into a python notebook for analysis
-* run MD simulations using LAMMPS
+* :doc:`load a trained model into a python notebook for analysis <quickstart/model-analysis>`
+* run MD simulations using either :doc:`ASE <md/ase>` or LAMMPS
 * fine-tune a model
 * sweep?

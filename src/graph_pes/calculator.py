@@ -21,7 +21,8 @@ class GraphPESCalculator(Calculator):
     device
         The device to use for the calculation, e.g. "cpu" or "cuda".
     **kwargs
-        Properties passed to the :code:`ase` base class.
+        Properties passed to the :class:`ase.calculators.calculator.Calculator`
+        base class.
     """
 
     implemented_properties = ["energy", "forces", "stress"]
