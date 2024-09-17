@@ -49,7 +49,20 @@ ALL_MODELS: list[type[ConservativePESModel]] = [
 ]
 
 
-def load_model(path: str | Path):
+def load_model(path: str | Path) -> ConservativePESModel:
+    """
+    Load a model from a file.
+
+    Parameters
+    ----------
+    path
+        The path to the file.
+
+    Returns
+    -------
+    ConservativePESModel
+        The model.
+    """
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"Could not find model at {path}")

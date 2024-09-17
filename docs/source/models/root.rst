@@ -19,6 +19,12 @@ To get a full set of predictions (energy, forces, stress), use :func:`~graph_pes
 
 
 
+Loading Models
+==============
+
+.. autofunction:: graph_pes.models.load_model
+
+
 Available Models
 ================
 
