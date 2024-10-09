@@ -350,6 +350,30 @@ def sum_over_neighbours(p: Tensor, graph: AtomicGraph) -> Tensor:
     return zeros.scatter_add(0, index, p)
 
 
+def number_of_neighbours(
+    graph: AtomicGraph,
+    include_central_atom: bool = True,
+) -> Tensor:
+    """
+    Get a tensor, ``T``, of shape ``(N,)``, where ``N`` is the number of atoms
+    in the ``graph``, such that ``T[i]`` gives the number of neighbours of atom
+    ``i``. If ``include_central_atom`` is ``True``, then the central atom is
+    included in the count.
+
+    Parameters
+    ----------
+    graph
+        The graph to get the number of neighbours for.
+    include_central_atom
+        Whether to include the central atom in the count.
+    """
+
+    return sum_over_neighbours(
+        torch.ones_like(graph[keys.NEIGHBOUR_INDEX][0]),
+        graph,
+    ) + int(include_central_atom)
+
+
 def sum_per_structure(x: Tensor, graph: AtomicGraph) -> Tensor:
     r"""
     Shape-preserving sum of a per-atom property, :math:`p`, to get a

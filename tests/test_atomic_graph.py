@@ -13,6 +13,7 @@ from graph_pes.graphs.operations import (
     neighbour_vectors,
     number_of_atoms,
     number_of_edges,
+    number_of_neighbours,
     sum_over_neighbours,
 )
 
@@ -91,7 +92,7 @@ def test_sum_over_neighbours(structure):
     # (b) compatible with torch.jit.script
 
     torchscript_sum: Callable[[torch.Tensor, AtomicGraph], torch.Tensor] = (
-        torch.jit.script(sum_over_neighbours)  # type: ignore
+        torch.jit.script(sum_over_neighbours)
     )
     for shape in [(E,), (E, 2), (E, 2, 3), (E, 2, 2, 2)]:
         for summing_fn in (
@@ -102,3 +103,19 @@ def test_sum_over_neighbours(structure):
             result = summing_fn(edge_property, graph)
             assert result.shape == (N, *shape[1:])
             assert (result == n_neighbours).all()
+
+
+def test_number_of_neighbours():
+    graph = to_atomic_graph(ISOLATED_ATOM, cutoff=1.0)
+    n = number_of_neighbours(graph, include_central_atom=False)
+    assert n.shape == (1,)
+    assert n.item() == 0
+
+    n = number_of_neighbours(graph, include_central_atom=True)
+    assert n.shape == (1,)
+    assert n.item() == 1
+
+    graph = to_atomic_graph(DIMER, cutoff=2.0)
+    n = number_of_neighbours(graph, include_central_atom=False)
+    assert n.shape == (2,)
+    assert (n == 1).all()
