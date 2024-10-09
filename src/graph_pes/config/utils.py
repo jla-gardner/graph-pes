@@ -93,13 +93,18 @@ def _import(thing: str) -> Any:
             "which is not allowed for safety reasons. Do you want to "
             "allow this import? If so, set the GRAPH_PES_ALLOW_IMPORT "
             "environment variable to include the package you want to "
-            "import from: e.g. `export GRAPH_PES_ALLOW_IMPORT=my_package`."
+            "import from: e.g. `export GRAPH_PES_ALLOW_IMPORT=my_package_1,"
+            "my_package_2`."
         )
+
+    dir_command_was_run_from = str(Path(os.getcwd()).resolve())
+    if dir_command_was_run_from not in sys.path:
+        sys.path.append(dir_command_was_run_from)
 
     try:
         module = importlib.import_module(module_name)
     except ImportError:
-        assumed_file = Path(module_name).with_suffix(".py")
+        assumed_file = Path(module_name.replace(".", "/")).with_suffix(".py")
         if not assumed_file.exists():
             raise ImportError(
                 f"While attempting to import {obj_name} from {module_name}, "
