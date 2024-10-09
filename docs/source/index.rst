@@ -42,19 +42,12 @@
     development
 
 
-.. image:: _static/logo-light.svg
+.. image:: _static/logo-text.svg
     :align: center
     :alt: graph-pes logo
     :width: 90%
     :target: .
-    :class: only-light
 
-.. image:: _static/logo-dark.svg
-    :align: center
-    :alt: graph-pes logo
-    :width: 90%
-    :target: .
-    :class: only-dark
 
 #########
 graph-pes
