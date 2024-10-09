@@ -21,6 +21,7 @@ from .graphs import (
 )
 from .graphs.operations import (
     has_cell,
+    is_batch,
     sum_per_structure,
     to_batch,
     trim_edges,
@@ -321,19 +322,50 @@ def get_predictions(
     predictions: dict[keys.LabelKey, torch.Tensor] = {}
 
     if want_stress:
-        # The virial stress tensor is the gradient of the total energy wrt
-        # an infinitesimal change in the cell parameters.
-        # We therefore add this change to the cell, such that
-        # we can calculate the gradient wrt later if required.
+        # See About>Theory in the graph-pes for an explanation of the
+        # maths behind this.
         #
-        # See <> TODO: find reference
-        actual_cell = graph[keys.CELL]
-        change_to_cell = torch.zeros_like(actual_cell, requires_grad=True)
+        # The stress tensor is the gradient of the total energy wrt
+        # a symmetric expansion of the structure (i.e. that acts) on
+        # both the cell and the atomic positions.
+
+        change_to_cell = torch.zeros_like(graph[keys.CELL], requires_grad=True)
         symmetric_change = 0.5 * (
             change_to_cell + change_to_cell.transpose(-1, -2)
-        )
-        graph[keys.CELL] = actual_cell + symmetric_change
+        )  # (n_structures, 3, 3) if batched, else (3, 3)
+        scaling = torch.eye(3) + symmetric_change
+
+        old_positions = graph[keys._POSITIONS]
+        old_cell = graph[keys.CELL]
+
+        if is_batch(graph):
+            scaling_per_atom = torch.index_select(
+                scaling,
+                dim=0,
+                index=graph[keys.BATCH],  # type: ignore
+            )  # (n_atoms, 3, 3)
+
+            # to go from (N, 3) @ (N, 3, 3) -> (N, 3), we need to un/squeeze:
+            # (N, 1, 3) @ (N, 3, 3) -> (N, 1, 3) -> (N, 3)
+            new_positions = (
+                graph[keys._POSITIONS].unsqueeze(-2) @ scaling_per_atom
+            ).squeeze()
+            # (M, 3, 3) @ (M, 3, 3) -> (M, 3, 3)
+            new_cell = graph[keys.CELL] @ scaling
+
+        else:
+            # (N, 3) @ (3, 3) -> (N, 3)
+            new_positions = graph[keys._POSITIONS] @ scaling
+            new_cell = graph[keys.CELL] @ scaling
+
+        # change to positions will be a tensor of all 0's, but will allow
+        # gradients to flow backwards through the energy calculation
+        # and allow us to calculate the stress tensor as the gradient
+        # of the energy wrt the change in cell.
+        graph[keys._POSITIONS] = new_positions
+        graph[keys.CELL] = new_cell
         stress_context = require_grad(change_to_cell)
+
     else:
         change_to_cell = torch.zeros_like(graph[keys.CELL])
         stress_context = nullcontext()
@@ -359,7 +391,12 @@ def get_predictions(
         # TODO: check stress vs virial common definition
         if keys.STRESS in properties:
             stress = differentiate(energy, change_to_cell)
-            predictions[keys.STRESS] = stress
+            graph[keys._POSITIONS] = old_positions
+            graph[keys.CELL] = old_cell
+            cell_volume = torch.det(graph[keys.CELL])
+            if is_batch(graph):
+                cell_volume = cell_volume.view(-1, 1, 1)
+            predictions[keys.STRESS] = stress / cell_volume
 
     if not training:
         for key, value in predictions.items():

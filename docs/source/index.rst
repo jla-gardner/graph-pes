@@ -37,6 +37,7 @@
     :caption: About
     :hidden:
 
+    theory
     tech-stack
     development
 
