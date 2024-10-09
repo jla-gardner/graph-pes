@@ -1,0 +1,42 @@
+general:
+  run_id: fine-tuning
+  progress: logged
+
+# fine-tune an existing model ...
+model:
+  painn:
+    graph_pes.models.load_model:
+      path: ./graph-pes-results/quickstart-run/model.pt
+  
+  offset:
+    graph_pes.models.FixedEnergyOffset:
+      C: -148.65
+
+# ... on structures from the QM7 dataset ...
+data:
+  graph_pes.data.load_atoms_dataset:
+    id: QM7
+    cutoff: 3.0 # radial cutoff in Å
+    n_train: 1_000
+    n_valid: 100
+
+# ... using a simple energy loss function ...
+loss: graph_pes.training.loss.PerAtomEnergyLoss()
+
+# ... with the following settings ...
+fitting:
+  trainer_kwargs: # passed straight to the lightning trainer
+    max_epochs: 25
+    accelerator: auto # use a gpu if available
+
+  optimizer:
+    graph_pes.training.opt.Optimizer:
+      name: AdamW
+      lr: 0.01
+
+  loader_kwargs: # passed straight to the data loader
+    batch_size: 16
+
+# ... and log to Weights & Biases
+wandb:
+  project: graph-pes
