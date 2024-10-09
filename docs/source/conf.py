@@ -11,7 +11,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
-    "sphinxext.opengraph",
+    # "sphinxext.opengraph",
     "sphinx_copybutton",
     "sphinx.ext.viewcode",
 ]
@@ -19,7 +19,7 @@ extensions = [
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "torch": ("https://pytorch.org/docs/master/", None),
+    "torch": ("https://pytorch.org/docs/stable/", None),
     "ase": ("https://wiki.fysik.dtu.dk/ase/", None),
     "e3nn": ("https://docs.e3nn.org/en/latest/", None),
     "pytorch_lightning": ("https://lightning.ai/docs/pytorch/stable/", None),

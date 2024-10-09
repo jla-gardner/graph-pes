@@ -8,7 +8,7 @@ warnings.filterwarnings(
     message=".*you are using `torch.load`.*",
 )
 
-from pathlib import Path
+import pathlib
 
 import torch
 
@@ -49,7 +49,9 @@ ALL_MODELS: list[type[ConservativePESModel]] = [
 ]
 
 
-def load_model(path: str | Path) -> ConservativePESModel:
+def load_model(
+    path: str | pathlib.Path,
+) -> ConservativePESModel:
     """
     Load a model from a file.
 
@@ -63,7 +65,7 @@ def load_model(path: str | Path) -> ConservativePESModel:
     ConservativePESModel
         The model.
     """
-    path = Path(path)
+    path = pathlib.Path(path)
     if not path.exists():
         raise FileNotFoundError(f"Could not find model at {path}")
 
