@@ -1,6 +1,6 @@
 <div align="center">
     <a href="https://jla-gardner.github.io/graph-pes/">
-        <img src="docs/source/_static/logo-all.svg" width="90%"/>
+        <img src="docs/source/_static/logo-text.svg" width="90%"/>
     </a>
 </div>
 
