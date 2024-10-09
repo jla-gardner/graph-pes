@@ -70,3 +70,31 @@ def load_model(
         raise FileNotFoundError(f"Could not find model at {path}")
 
     return torch.load(path)
+
+
+def load_model_component(
+    path: str | pathlib.Path, key: str
+) -> ConservativePESModel:
+    """
+    Load a component from an :class:`~graph_pes.core.AdditionModel`.
+
+    Parameters
+    ----------
+    path
+        The path to the file.
+    key
+        The key to load.
+
+    Returns
+    -------
+    ConservativePESModel
+        The component.
+    """
+
+    base_model = load_model(path)
+    if not isinstance(base_model, AdditionModel):
+        raise ValueError(
+            f"Expected to load an AdditionModel, got {type(base_model)}"
+        )
+
+    return base_model[key]
