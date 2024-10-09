@@ -42,6 +42,15 @@ class AdditionModel(ConservativePESModel):
         super().__init__(cutoff=max_cutoff, auto_scale=False)
         self.models = UniformModuleDict(**models)
 
+    def predict_scaled_local_energies(self, graph: AtomicGraph) -> Tensor:
+        predictions = torch.stack(
+            [
+                model.predict_scaled_local_energies(graph).squeeze()
+                for model in self.models.values()
+            ]
+        )  # (models, atoms)
+        return torch.sum(predictions, dim=0)  # (atoms,)
+
     def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
         predictions = torch.stack(
             [
@@ -67,3 +76,7 @@ class AdditionModel(ConservativePESModel):
             stringify=True,
             max_width=80,
         )
+
+    def __getitem__(self, key: str) -> ConservativePESModel:
+        """Get a named component of the model."""
+        return self.models[key]

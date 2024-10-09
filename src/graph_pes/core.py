@@ -76,6 +76,7 @@ class ConservativePESModel(nn.Module, ABC):
             self.per_element_scaling = PerElementParameter.of_length(
                 1,
                 default_value=1.0,
+                requires_grad=True,
             )
         else:
             self.per_element_scaling = None
@@ -83,6 +84,15 @@ class ConservativePESModel(nn.Module, ABC):
         # save as a buffer so that this is de/serialized with the model
         self._has_been_pre_fit: torch.Tensor
         self.register_buffer("_has_been_pre_fit", torch.tensor(False))
+
+    def predict_scaled_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
+        local_energies = self.predict_local_energies(graph).squeeze()
+        if self.per_element_scaling is not None:
+            scales = self.per_element_scaling[
+                graph[keys.ATOMIC_NUMBERS]
+            ].squeeze()
+            local_energies = local_energies * scales
+        return local_energies
 
     def forward(self, graph: AtomicGraph) -> torch.Tensor:
         """
@@ -103,15 +113,7 @@ class ConservativePESModel(nn.Module, ABC):
         """
         if self.cutoff is not None:
             graph = trim_edges(graph, self.cutoff.item())
-
-        local_energies = self.predict_local_energies(graph).squeeze()
-
-        if self.per_element_scaling is not None:
-            scales = self.per_element_scaling[
-                graph[keys.ATOMIC_NUMBERS]
-            ].squeeze()
-            local_energies = local_energies * scales
-
+        local_energies = self.predict_scaled_local_energies(graph).squeeze()
         return sum_per_structure(local_energies, graph)
 
     @abstractmethod
