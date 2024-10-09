@@ -3,8 +3,10 @@ import pytest
 import torch
 from graph_pes.util import (
     as_possible_tensor,
+    build_single_nested_dict,
     differentiate,
     nested_merge,
+    nested_merge_all,
     require_grad,
 )
 
@@ -92,3 +94,22 @@ def test_nested_merge():
     assert c == {"a": 3, "b": {"c": 4}, "d": 3}, "nested_merge failed"
     assert a == {"a": 1, "b": {"c": 2}, "d": 3}, "nested_merge mutated a"
     assert b == {"a": 3, "b": {"c": 4}}, "nested_merge mutated b"
+
+
+def test_build_single_nested_dict():
+    assert build_single_nested_dict(["a", "b", "c"], 4) == {
+        "a": {"b": {"c": 4}}
+    }
+
+
+def test_nested_merge_all():
+    assert nested_merge_all({"a": 1}, {"a": 2, "b": 1}, {"a": 3}) == {
+        "a": 3,
+        "b": 1,
+    }
+
+    assert nested_merge_all(
+        {"a": {"b": {"c": 1}}},
+        {"a": {"b": {"d": 2}}},
+        {"a": {"b": {"c": 2}}},
+    ) == {"a": {"b": {"c": 2, "d": 2}}}

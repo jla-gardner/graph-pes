@@ -25,8 +25,8 @@ graph-pes-train {config_path} \
     sys.argv = command.split()
 
     args = parse_args()
-    assert args.config == [str(config_path)]
-    assert args.overrides == [
+    assert args.args == [
+        str(config_path),
         "fitting^loader_kwargs^batch_size=32",
         "data^graph_pes.data.load_atoms_dataset^n_train=10",
     ]

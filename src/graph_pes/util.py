@@ -195,6 +195,17 @@ def nested_merge(a: dict, b: dict):
     return new_dict
 
 
+def build_single_nested_dict(keys: list[str], value: Any) -> dict:
+    """
+    Build a single nested dictionary from a list of keys and a value.
+    """
+
+    result = value
+    for key in reversed(keys):
+        result = {key: result}
+    return result
+
+
 def random_id(
     lengths: list[int] | None = None,
     use_existing: bool = False,

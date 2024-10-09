@@ -14,7 +14,12 @@ from graph_pes.deploy import deploy_model
 from graph_pes.logger import log_to_file, logger, set_level
 from graph_pes.scripts.generation import config_auto_generation
 from graph_pes.training.ptl import create_trainer, train_with_lightning
-from graph_pes.util import nested_merge_all, random_dir, uniform_repr
+from graph_pes.util import (
+    build_single_nested_dict,
+    nested_merge_all,
+    random_dir,
+    uniform_repr,
+)
 from pytorch_lightning.loggers import CSVLogger
 from pytorch_lightning.loggers import WandbLogger as PTLWandbLogger
 
@@ -73,12 +78,12 @@ def extract_config_from_command_line() -> Config:
 
     for arg in args.args:
         if arg.endswith(".yaml") or arg.endswith(".yml"):
-            # It's a config file
+            # it's a config file
             with open(arg) as f:
                 parsed_configs.append(yaml.safe_load(f))
 
         elif "=" in arg:
-            # It's an override
+            # it's an override
             key, value = arg.split("=")
             keys = key.split("^")
 
@@ -86,11 +91,7 @@ def extract_config_from_command_line() -> Config:
             with contextlib.suppress(yaml.YAMLError):
                 value = yaml.safe_load(value)
 
-            nested_dict = {}
-            for k in keys[:-1]:
-                nested_dict.setdefault(k, {})
-            nested_dict[keys[-1]] = value
-
+            nested_dict = build_single_nested_dict(keys, value)
             parsed_configs.append(nested_dict)
 
         else:
