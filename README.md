@@ -34,7 +34,7 @@ pip install graph-pes
 curl -0 TODO
 
 # train a model
-graph-pes-train --config TODO
+graph-pes-train TODO
 ```
 
 

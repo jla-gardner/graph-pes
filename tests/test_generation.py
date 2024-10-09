@@ -41,7 +41,7 @@ def test_autogen(monkeypatch):
     sys.argv = command.split()
 
     args = parse_args()
-    assert not args.config
+    assert not args.args
 
     monkeypatch.setattr("builtins.input", mimic_autogen_inputs)
     config = extract_config_from_command_line()

@@ -4,9 +4,6 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from graph_pes.config import get_default_config_values
-from graph_pes.config.spec import Config
-from graph_pes.util import nested_merge
 
 
 def get_automation_options() -> dict[str, Any]:
@@ -48,15 +45,12 @@ def clean_dict(in_dict: dict) -> dict:
     return out_dict
 
 
-def config_auto_generation() -> Config:
+def config_auto_generation() -> dict:
     # Get prompts, types, and default values from automation.yaml
 
     user_inputs = get_automation_options()
     # Recursively search through prompts and update config_dict
     recursive_search(user_inputs, user_inputs)
-    defaults = get_default_config_values()
     user_inputs = clean_dict(user_inputs)
     print(user_inputs)
-    config_dict = nested_merge(defaults, user_inputs)
-    # Generate config
-    return Config.from_dict(config_dict)
+    return user_inputs

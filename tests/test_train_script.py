@@ -18,7 +18,7 @@ from graph_pes.util import nested_merge
 def test_arg_parse():
     config_path = helpers.CONFIGS_DIR / "minimal.yaml"
     command = f"""\
-graph-pes-train --config {config_path} \
+graph-pes-train {config_path} \
     fitting^loader_kwargs^batch_size=32 \
     data^graph_pes.data.load_atoms_dataset^n_train=10
 """

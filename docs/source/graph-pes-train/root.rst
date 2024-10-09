@@ -8,22 +8,23 @@
 .. code-block:: console
 
     $ graph-pes-train -h
-    usage: graph-pes-train [-h] [--config CONFIG] [overrides [overrides ...]]
+    usage: graph-pes-train [-h] [args [args ...]]
 
-    Train a GraphPES model from a configuration file using PyTorch Lightning.
+    Train a GraphPES model using PyTorch Lightning.
 
     positional arguments:
-    overrides        Config overrides in the form nested^key=value, separated by spaces, e.g.
-                     fitting^loader_kwargs^batch_size=32.
+    args        Config files and command line specifications. 
+                Config files should be YAML (.yaml/.yml) files. 
+                Command line specifications should be in the form 
+                nested^key=value. Final config is built up from 
+                these items in a left to right manner, with later 
+                items taking precedence over earlier ones in the 
+                case of conflicts.
 
     optional arguments:
-    -h, --help       show this help message and exit
-    --config CONFIG  Path to the configuration file. This argument can be used multiple times, with later files taking
-                     precedence over earlier ones in the case of conflicts. If no config files are provided, the script
-                     will auto-generate.
+    -h, --help  show this help message and exit
 
-    Example usage: graph-pes-train --config config1.yaml --config config2.yaml fitting^loader_kwargs^batch_size=32
-
+    Copyright 2023-24, John Gardner
 
 .. toctree::
     :hidden:

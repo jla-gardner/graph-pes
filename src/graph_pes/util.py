@@ -163,6 +163,18 @@ def force_to_single_line(s: str) -> str:
     return " ".join(lines)
 
 
+def nested_merge_all(*dicts: dict) -> dict:
+    """
+    Merge multiple nested dictionaries, with later dictionaries
+    taking precedence over earlier ones.
+    """
+
+    result = {}
+    for d in dicts:
+        result = nested_merge(result, d)
+    return result
+
+
 def nested_merge(a: dict, b: dict):
     """
     Merge two nested dictionaries, with `b` taking precedence
