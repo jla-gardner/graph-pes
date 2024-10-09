@@ -298,8 +298,8 @@ def train_from_config(config: Config):
                     "lammps_model_path": lammps_model_path,
                 }
             )
-            log(f"Model saved to {model_path}")
             torch.save(model, model_path)
+            log(f"Model saved to {model_path}")
             log(f"Deploying model for use with LAMMPS to {lammps_model_path}")
             deploy_model(model, cutoff=5.0, path=lammps_model_path)
 
