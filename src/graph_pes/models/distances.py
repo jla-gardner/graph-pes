@@ -329,7 +329,7 @@ class ExponentialRBF(DistanceExpansion):
         return torch.exp(-self.beta * offsets**2)
 
 
-class Envelope(nn.Module):
+class Envelope(torch.nn.Module):
     """
     Any envelope function, :math:`E(r)`, for smoothing potentials
     must implement a forward method that takes in a tensor of distances

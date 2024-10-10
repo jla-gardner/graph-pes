@@ -23,6 +23,7 @@ from .pairwise import (
     LennardJones,
     LennardJonesMixture,
     Morse,
+    PairPotential,
     SmoothedPairPotential,
 )
 from .schnet import SchNet
@@ -39,6 +40,7 @@ __all__ = [
     "Morse",
     "NequIP",
     "PaiNN",
+    "PairPotential",
     "SchNet",
     "SmoothedPairPotential",
     "TensorNet",
