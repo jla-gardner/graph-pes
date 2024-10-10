@@ -12,10 +12,10 @@ def test_parity_plot():
         s.info["energy"] = e
 
     graphs = to_atomic_graphs(structures, cutoff=3.0)
-    model = LennardJones()
+    model = LennardJones(cutoff=3.0)
 
     parity_plot(model, graphs)
 
 
 def test_dimer_curve():
-    dimer_curve(LennardJones(), system="SiO")
+    dimer_curve(LennardJones(cutoff=3.0), system="SiO")

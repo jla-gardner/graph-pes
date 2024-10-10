@@ -8,6 +8,7 @@ import e3nn.util.jit
 import torch
 from e3nn import o3
 from graph_pes.core import ConservativePESModel
+from graph_pes.graphs import DEFAULT_CUTOFF
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import (
     index_over_neighbours,
@@ -358,9 +359,9 @@ class NequIP(_BaseNequIP):
     def __init__(
         self,
         elements: list[str],
+        cutoff: float = DEFAULT_CUTOFF,
         n_channels: int = 16,
         n_layers: int = 3,
-        cutoff: float = 3.0,
         l_max: int = 2,
         allow_odd_parity: bool = True,
     ):
@@ -382,10 +383,10 @@ class NequIP(_BaseNequIP):
 class ZEmbeddingNequIP(_BaseNequIP):
     def __init__(
         self,
+        cutoff: float = DEFAULT_CUTOFF,
         Z_embed_dim: int = 8,
         n_channels: int = 16,
         n_layers: int = 3,
-        cutoff: float = 3.0,
         l_max: int = 2,
         allow_odd_parity: bool = True,
     ):

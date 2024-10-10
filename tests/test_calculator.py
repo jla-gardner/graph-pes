@@ -8,5 +8,5 @@ def test_calc():
     ethanol = molecule("CH3CH2OH")
     ethanol.calc = calc
 
-    assert ethanol.get_potential_energy().shape == ()
+    assert isinstance(ethanol.get_potential_energy(), float)
     assert ethanol.get_forces().shape == (9, 3)

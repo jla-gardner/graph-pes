@@ -19,25 +19,31 @@ from .e3nn.mace import MACE, ZEmbeddingMACE
 from .e3nn.nequip import NequIP, ZEmbeddingNequIP
 from .offsets import FixedOffset, LearnableOffset
 from .painn import PaiNN
-from .pairwise import LennardJones, LennardJonesMixture, Morse
+from .pairwise import (
+    LennardJones,
+    LennardJonesMixture,
+    Morse,
+    SmoothedPairPotential,
+)
 from .schnet import SchNet
 from .tensornet import TensorNet
 
+# TODO get rid of this all business
 __all__ = [
     "AdditionModel",
-    "PaiNN",
-    "LennardJones",
-    "SchNet",
-    "TensorNet",
-    "Morse",
-    "LennardJonesMixture",
-    "NequIP",
-    "ZEmbeddingNequIP",
-    "MACE",
-    "ZEmbeddingMACE",
     "FixedOffset",
     "LearnableOffset",
-    "load_model",
+    "LennardJones",
+    "LennardJonesMixture",
+    "MACE",
+    "Morse",
+    "NequIP",
+    "PaiNN",
+    "SchNet",
+    "SmoothedPairPotential",
+    "TensorNet",
+    "ZEmbeddingMACE",
+    "ZEmbeddingNequIP",
 ]
 
 # TODO: nicer way to do this?
@@ -45,7 +51,12 @@ ALL_MODELS: list[type[ConservativePESModel]] = [
     globals()[model]
     for model in __all__
     if model
-    not in ["FixedOffset", "LearnableOffset", "load_model", "AdditionModel"]
+    not in [
+        "FixedOffset",
+        "LearnableOffset",
+        "AdditionModel",
+        "SmoothedPairPotential",
+    ]  # TODO: remove offsets?
 ]
 
 

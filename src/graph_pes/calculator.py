@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from ase import Atoms
 from ase.calculators.calculator import Calculator, all_changes
+from ase.stress import full_3x3_to_voigt_6_stress
 
 from graph_pes.core import ConservativePESModel, get_predictions
 from graph_pes.data.io import to_atomic_graph
@@ -16,8 +17,6 @@ class GraphPESCalculator(Calculator):
     ----------
     model
         The model to use for the calculation.
-    cutoff
-        The cutoff radius for the atomic environment.
     device
         The device to use for the calculation, e.g. "cpu" or "cuda".
     **kwargs
@@ -30,13 +29,11 @@ class GraphPESCalculator(Calculator):
     def __init__(
         self,
         model: ConservativePESModel,
-        cutoff: float,
         device: str = "cpu",
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.model = model.to(device)
-        self.cutoff = cutoff
         self.device = device
 
     def calculate(
@@ -52,11 +49,19 @@ class GraphPESCalculator(Calculator):
         super().calculate(atoms)
         assert self.atoms is not None and isinstance(self.atoms, Atoms)
 
-        graph = to_atomic_graph(self.atoms, self.cutoff)
+        # account for numerical inprecision by nudging the cutoff up slightly
+        # for all well-implemented models this has no effect
+        graph = to_atomic_graph(self.atoms, self.model.cutoff.item() + 0.001)
         graph: AtomicGraph = {k: v.to(self.device) for k, v in graph.items()}  # type: ignore
 
-        self.results = {
+        results = {
             k: v.detach().cpu().numpy()
             for k, v in get_predictions(self.model, graph).items()
             if k in properties
         }
+        if "energy" in properties:
+            results["energy"] = results["energy"].item()
+        if "stress" in properties:
+            results["stress"] = full_3x3_to_voigt_6_stress(results["stress"])
+
+        self.results = results

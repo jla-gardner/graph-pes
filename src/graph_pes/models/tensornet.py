@@ -4,7 +4,7 @@ import torch
 from torch import Tensor, nn
 
 from graph_pes.core import ConservativePESModel
-from graph_pes.graphs import AtomicGraph
+from graph_pes.graphs import DEFAULT_CUTOFF, AtomicGraph
 from graph_pes.graphs.operations import (
     neighbour_distances,
     neighbour_vectors,
@@ -322,9 +322,9 @@ class ScalarOutput(nn.Module):
 class TensorNet(ConservativePESModel):
     def __init__(
         self,
+        cutoff: float = DEFAULT_CUTOFF,
         radial_features: int = 32,
         embedding_size: int = 32,
-        cutoff: float = 5.0,
         layers: int = 2,
     ):
         super().__init__(cutoff, auto_scale=True)

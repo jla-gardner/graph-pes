@@ -24,21 +24,22 @@ class AdditionModel(ConservativePESModel):
 
     Examples
     --------
-    Create a model with explicit two-body and multi-body terms:
+    Create a model with an explicit offset, two-body and multi-body terms:
 
     .. code-block:: python
 
-        from graph_pes.models import LennardJones, SchNet
+        from graph_pes.models import LennardJones, SchNet, FixedOffset
         from graph_pes.core import AdditionModel
 
-        model = AdditionModel(pair_wise=LennardJones(), many_body=SchNet())
+        model = AdditionModel(
+            offset=FixedOffset(C=-45.6, H=-1.23),
+            pair_wise=LennardJones(cutoff=5.0),
+            many_body=SchNet(cutoff=3.0),
+        )
     """
 
     def __init__(self, **models: ConservativePESModel):
-        cutoffs = [
-            m.cutoff.view(-1) for m in models.values() if m.cutoff is not None
-        ]
-        max_cutoff = None if not cutoffs else torch.cat(cutoffs).max().item()
+        max_cutoff = max([m.cutoff.item() for m in models.values()])
         super().__init__(cutoff=max_cutoff, auto_scale=False)
         self.models = UniformModuleDict(**models)
 

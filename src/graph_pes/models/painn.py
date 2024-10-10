@@ -4,7 +4,7 @@ import torch
 from torch import Tensor, nn
 
 from graph_pes.core import ConservativePESModel
-from graph_pes.graphs import AtomicGraph
+from graph_pes.graphs import DEFAULT_CUTOFF, AtomicGraph
 from graph_pes.graphs.operations import (
     index_over_neighbours,
     neighbour_distances,
@@ -195,7 +195,7 @@ class PaiNN(ConservativePESModel):
         internal_dim: int = 32,
         radial_features: int = 20,
         layers: int = 3,
-        cutoff: float = 5.0,
+        cutoff: float = DEFAULT_CUTOFF,
     ):
         super().__init__(cutoff=cutoff, auto_scale=True)
 

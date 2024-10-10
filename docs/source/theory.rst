@@ -86,14 +86,13 @@ The diagonal terms of this matrix again correspond to the compressive/dilative s
 The **off-diagonal terms** describe the shear stress, *i.e.* the tendency of the structure to slide in one plane relative to another.
 
 In ``graph-pes``, we follow the common definition of the **stress tensor**, :math:`\mathbf{\sigma} \in \mathbb{R}^{3 \times 3}`, as the derivative
-of the total energy with respect to these stretching coefficients, as normalised by the cell's volume, :math:`V = \det(\mathbf{C})`:
+of the total energy with respect to these stretching coefficients, as normalised by the cell's volume, :math:`V = \det(\mathbf{C})`: [1]_
 
 .. math::
 
     \mathbf{\sigma} = \frac{1}{V} \frac{\partial E}{\partial \mathbf{\lambda}} \bigg|_{\mathbf{\lambda} = 0} 
     \quad \quad 
     \sigma_{ij} = \frac{1}{V} \frac{\partial E}{\partial \lambda_{ij}} \bigg|_{\lambda_{ij} = 0}
-
 
 We can again make use of automatic differentiation to calculate these stress tensors. To do this, we:
 
@@ -104,3 +103,8 @@ We can again make use of automatic differentiation to calculate these stress ten
     - again this is a no-op due to evaluating the scaling operation at :math:`\mathbf{\lambda} = 0`, but introduces the scaling coefficients into the computational graph
 3. evaluate the energy
 4. calculate the derivative of the energy with respect to :math:`\mathbf{\lambda}` and normalise by the cell's volume
+
+.. [1] F. Knuth et al. `All-electron formalism for total energy strain
+   derivatives and stress tensor components for numeric atom-centered
+   orbitals <https://www.sciencedirect.com/science/article/pii/S0010465515000090>`__.
+   Computer Physics Communications 190, 33–50 (2015).

@@ -330,7 +330,17 @@ class ExponentialRBF(DistanceExpansion):
 
 
 class Envelope(nn.Module):
+    """
+    Any envelope function, :math:`E(r)`, for smoothing potentials
+    must implement a forward method that takes in a tensor of distances
+    and returns a tensor of the same shape, where the values outside the
+    cutoff are set to zero.
+    """
+
     def forward(self, r: torch.Tensor) -> torch.Tensor: ...
+
+    def __call__(self, r: torch.Tensor) -> torch.Tensor:
+        return super().__call__(r)
 
 
 class PolynomialEnvelope(Envelope):
@@ -405,3 +415,50 @@ class CosineEnvelope(Envelope):
 
     def __repr__(self):
         return f"CosineEnvelope(cutoff={self.cutoff})"
+
+
+class SmoothOnsetEnvelope(Envelope):
+    r"""
+    A smooth cutoff function with an onset.
+
+    .. math::
+
+        f(r, r_o, r_c) = \begin{cases}
+        \hfill 1 \hfill & \text{if } r < r_o \\
+        \frac{(r_c - r)^2 (r_c + 2r - 3r_o)}{(r_c - r_o)^3} & \text{if } r_o \leq r < r_c \\
+        \hfill 0 \hfill & \text{if } r \geq r_c
+        \end{cases}
+
+    where :math:`r_o` is the onset radius and :math:`r_c` is the cutoff radius.
+
+    Parameters
+    ----------
+    cutoff : float
+        The cutoff radius.
+    onset : float
+        The onset radius.
+    """  # noqa: E501
+
+    def __init__(self, cutoff: float, onset: float):
+        super().__init__()
+        if onset >= cutoff:
+            raise ValueError("Onset must be less than cutoff")
+
+        self.register_buffer("cutoff", torch.tensor(cutoff))
+        self.register_buffer("onset", torch.tensor(onset))
+
+    def forward(self, r: torch.Tensor) -> torch.Tensor:
+        return torch.where(
+            r < self.onset,
+            torch.tensor(1.0, device=r.device),
+            torch.where(
+                r < self.cutoff,
+                (self.cutoff - r) ** 2
+                * (self.cutoff + 2 * r - 3 * self.onset)
+                / (self.cutoff - self.onset) ** 3,
+                torch.tensor(0.0, device=r.device),
+            ),
+        )
+
+    def __repr__(self):
+        return f"SmoothOnsetEnvelope(cutoff={self.cutoff}, onset={self.onset})"

@@ -7,12 +7,12 @@ import numpy as np
 import torch
 from ase.neighborlist import neighbor_list
 
-from graph_pes.graphs import LabelledGraph, keys, with_nice_repr
+from graph_pes.graphs import DEFAULT_CUTOFF, LabelledGraph, keys, with_nice_repr
 
 
 def to_atomic_graph(
     structure: ase.Atoms,
-    cutoff: float,
+    cutoff: float = DEFAULT_CUTOFF,
     property_mapping: Mapping[keys.LabelKey, str] | None = None,
 ) -> LabelledGraph:
     """
@@ -77,7 +77,7 @@ def to_atomic_graph(
 
 def to_atomic_graphs(
     structures: Iterable[ase.Atoms],
-    cutoff: float,
+    cutoff: float = DEFAULT_CUTOFF,
     property_mapping: dict[keys.LabelKey, str] | None = None,
 ) -> list[LabelledGraph]:
     """

@@ -21,5 +21,5 @@ We also provide a few common expansions:
 Implementing a new Expansion
 ----------------------------
 
-.. autoclass :: graph_pes.models.distances.DistanceExpansion
+.. autoclass:: graph_pes.models.distances.DistanceExpansion
     :members:

@@ -74,7 +74,7 @@ def test_model_cutoffs():
     assert model.cutoff == 5.0
 
     model = FixedOffset()
-    assert model.cutoff is None
+    assert model.cutoff == 0
 
 
 def test_warning():

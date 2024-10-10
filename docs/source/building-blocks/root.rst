@@ -5,5 +5,6 @@ Building blocks
     :maxdepth: 2
 
     distances
+    envelopes
     nn
     transforms

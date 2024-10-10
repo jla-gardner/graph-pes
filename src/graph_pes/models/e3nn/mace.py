@@ -7,6 +7,7 @@ import graph_pes.models.distances
 import torch
 from e3nn import o3
 from graph_pes.core import ConservativePESModel
+from graph_pes.graphs import DEFAULT_CUTOFF
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import neighbour_distances, neighbour_vectors
 from graph_pes.models.distances import (
@@ -215,7 +216,7 @@ class MACE(_BaseMACE):
         self,
         elements: list[str],
         # radial things
-        cutoff: float = 5.0,
+        cutoff: float = DEFAULT_CUTOFF,
         n_radial: int = 8,
         radial_expansion_type: type[DistanceExpansion] | str = "Bessel",
         # message passing
@@ -337,7 +338,7 @@ class ZEmbeddingMACE(_BaseMACE):
     def __init__(
         self,
         # radial things
-        cutoff: float = 5.0,
+        cutoff: float = DEFAULT_CUTOFF,
         n_radial: int = 8,
         radial_expansion_type: type[DistanceExpansion] | str = "Bessel",
         # node attributes

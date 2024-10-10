@@ -63,14 +63,11 @@ class ConservativePESModel(nn.Module, ABC):
         :math:`\sigma_{Z_i}` is the scaling factor for element :math:`Z_i`.
     """
 
-    def __init__(self, cutoff: float | None, auto_scale: bool):
+    def __init__(self, cutoff: float, auto_scale: bool):
         super().__init__()
 
-        self.cutoff: torch.Tensor | None
-        if cutoff is not None:
-            self.register_buffer("cutoff", torch.scalar_tensor(cutoff))
-        else:
-            self.cutoff = None
+        self.cutoff: torch.Tensor
+        self.register_buffer("cutoff", torch.tensor(cutoff))
 
         self.per_element_scaling: PerElementParameter | None
         if auto_scale:
@@ -83,8 +80,9 @@ class ConservativePESModel(nn.Module, ABC):
             self.per_element_scaling = None
 
         # save as a buffer so that this is de/serialized with the model
+        # need to use int(False) to ensure nice torchscript behaviour
         self._has_been_pre_fit: torch.Tensor
-        self.register_buffer("_has_been_pre_fit", torch.tensor(False))
+        self.register_buffer("_has_been_pre_fit", torch.tensor(int(False)))
 
     def predict_scaled_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
         local_energies = self.predict_local_energies(graph).squeeze()
@@ -112,8 +110,7 @@ class ConservativePESModel(nn.Module, ABC):
             where :code:`B` is the batch size. Otherwise, a scalar tensor
             will be returned.
         """
-        if self.cutoff is not None:
-            graph = trim_edges(graph, self.cutoff.item())
+        graph = trim_edges(graph, self.cutoff.item())
         local_energies = self.predict_scaled_local_energies(graph).squeeze()
         return sum_per_structure(local_energies, graph)
 
@@ -190,7 +187,7 @@ class ConservativePESModel(nn.Module, ABC):
                     stacklevel=2,
                 )
 
-            self._has_been_pre_fit.fill_(True)
+            self._has_been_pre_fit.fill_(int(True))
             self.model_specific_pre_fit(graph_batch)
 
         # 3. finally, register all per-element parameters
@@ -326,8 +323,12 @@ def get_predictions(
         # maths behind this.
         #
         # The stress tensor is the gradient of the total energy wrt
-        # a symmetric expansion of the structure (i.e. that acts) on
-        # both the cell and the atomic positions.
+        # a symmetric expansion of the structure (i.e. that acts on
+        # both the cell and the atomic positions).
+        #
+        # F. Knuth et al. All-electron formalism for total energy strain
+        # derivatives and stress tensor components for numeric atom-centered
+        # orbitals. Computer Physics Communications 190, 33–50 (2015).
 
         change_to_cell = torch.zeros_like(graph[keys.CELL], requires_grad=True)
         symmetric_change = 0.5 * (

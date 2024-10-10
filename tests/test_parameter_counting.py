@@ -39,7 +39,7 @@ def test_fixed():
 
 
 def test_scaling():
-    model = DoesNothingModel(cutoff=None, auto_scale=True)
+    model = DoesNothingModel(cutoff=0, auto_scale=True)
     # the model should have a single parameter: the per_element_scaling
     params = list(model.parameters())
     assert len(params) == 1

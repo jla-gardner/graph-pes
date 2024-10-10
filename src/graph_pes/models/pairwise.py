@@ -8,6 +8,7 @@ from torch import Tensor
 
 from graph_pes.core import ConservativePESModel
 from graph_pes.graphs import (
+    DEFAULT_CUTOFF,
     AtomicGraph,
     AtomicGraphBatch,
     keys,
@@ -16,6 +17,7 @@ from graph_pes.graphs.operations import (
     neighbour_distances,
     sum_over_neighbours,
 )
+from graph_pes.models.distances import SmoothOnsetEnvelope
 from graph_pes.nn import PerElementParameter
 from graph_pes.util import to_significant_figures, uniform_repr
 
@@ -85,21 +87,87 @@ class PairPotential(ConservativePESModel, ABC):
         return energies / 2
 
 
-class LennardJones(PairPotential):
+class SmoothedPairPotential(PairPotential):
     r"""
-    A pair potential of the form:
+    A wrapper around a :class:`~graph_pes.models.PairPotential` that
+    applies a smooth cutoff function, :math:`f` =
+    :class:`~graph_pes.models.distances.SmoothOnsetEnvelope`,
+    to the potential to ensure a continous energy surface:
 
     .. math::
-        V(r_{ij}, Z_i, Z_j) = V(r_{ij}) = 4 \varepsilon \left[ \left(
-        \frac{\sigma}{r_{ij}} \right)^{12} - \left( \frac{\sigma}{r_{ij}}
-        \right)^{6} \right]
 
-    where :math:`r_{ij}` is the distance between atoms :math:`i` and :math:`j`,
-    and :math:`\varepsilon` and :math:`\sigma` are strictly positive
-    paramters that control the depth and width of the potential well,
+        V(r) = f(r, r_o, r_c) \cdot V_{\text{wrapped}}(r)
+
+    where
+
+    .. math::
+
+        f(r, r_o, r_c) = \begin{cases}
+        \hfill 1 \hfill & \text{if } r < r_o \\
+        \frac{(r_c - r)^2 (r_c + 2r - 3r_o)}{(r_c - r_o)^3} & \text{if } r_o \leq r < r_c \\
+        \hfill 0 \hfill & \text{if } r \geq r_c
+        \end{cases}
+
+    and :math:`r_o` and :math:`r_c` are the onset and cutoff radii respectively.
 
     Parameters
     ----------
+    potential
+        The potential to wrap.
+    smoothing_onset
+        The radius at which the smooth cutoff function begins.
+        Defaults to :math:`2r_c / 3`.
+    """  # noqa: E501
+
+    def __init__(
+        self,
+        potential: PairPotential,
+        smoothing_onset: float | None = None,
+    ):
+        cutoff = potential.cutoff.item()
+        super().__init__(cutoff=cutoff, auto_scale=False)
+        if not smoothing_onset:
+            smoothing_onset = 2 * cutoff / 3
+        self.envelope = SmoothOnsetEnvelope(cutoff, smoothing_onset)
+        self.potential = potential
+
+    def interaction(self, r: Tensor, Z_i: Tensor, Z_j: Tensor) -> Tensor:
+        raw_v = self.potential.interaction(r, Z_i, Z_j)
+        return raw_v * self.envelope(r)
+
+
+class LennardJones(PairPotential):
+    r"""
+    A pair potential with an interaction term of the form:
+
+    .. math::
+
+        V_{LJ}(r) = 4 \varepsilon \left[ \left( \frac{\sigma}{r} \right)^{12} -
+        \left( \frac{\sigma}{r} \right)^{6} \right]
+
+    where :math:`r_{ij}` is the distance between atoms :math:`i` and :math:`j`,
+    and :math:`\varepsilon` and :math:`\sigma` are strictly positive
+    paramters that control the depth and width of the potential well.
+
+    To ensure a continous energy surface, the final interaction is shifted
+    by the value of the potential at the cutoff to remove the discontinuity:
+
+    .. math::
+
+        V(r) = V_{LJ}(r) - V_{LJ}(r_c)
+
+    .. warning::
+
+        The derivative of the potential is not continuous at the cutoff,
+        irrespective of whether the potential is shifted or not.
+        This leads to discontinuities in this models's forces. Consider wrapping
+        this potential in :class:`~graph_pes.models.SmoothedPairPotential`
+        to obtain a smooth and continuous potential and force field.
+
+    Parameters
+    ----------
+    cutoff:
+        The cutoff radius.
     epsilon:
         The maximum depth of the potential.
     sigma:
@@ -120,21 +188,29 @@ class LennardJones(PairPotential):
 
     def __init__(
         self,
+        cutoff: float = DEFAULT_CUTOFF,
         epsilon: float = 0.1,
         sigma: float = 1.0,
+        shift: bool = False,
     ):
-        # TODO: add optional cutoff
-        super().__init__(cutoff=None, auto_scale=False)
+        super().__init__(cutoff=cutoff, auto_scale=False)
 
         self._log_epsilon = torch.nn.Parameter(torch.tensor(epsilon).log())
         self._log_sigma = torch.nn.Parameter(torch.tensor(sigma).log())
 
+        # register buffers for loading from state dict
+        self.register_buffer(
+            "_offset", self.V_LJ(torch.tensor(cutoff)).detach()
+        )
+        # save as int to avoid issues with torchscript
+        self.register_buffer("_shift", torch.tensor(int(shift)))
+
     @property
-    def epsilon(self):
+    def epsilon(self) -> torch.Tensor:
         return self._log_epsilon.exp()
 
     @property
-    def sigma(self):
+    def sigma(self) -> torch.Tensor:
         return self._log_sigma.exp()
 
     # don't use Z_i and Z_j, but include them for consistency with the
@@ -145,15 +221,12 @@ class LennardJones(PairPotential):
         Z_i: Optional[torch.Tensor] = None,  # noqa: UP007
         Z_j: Optional[torch.Tensor] = None,  # noqa: UP007
     ):
-        """
-        Evaluate the pair potential.
+        v_lj = self.V_LJ(r)
+        if self._shift.item():
+            return v_lj - self._offset
+        return v_lj
 
-        Parameters
-        ----------
-        r
-            The pair-wise distances between the atoms.
-        """
-
+    def V_LJ(self, r: torch.Tensor) -> torch.Tensor:
         x = self.sigma / r
         return 4 * self.epsilon * (x**12 - x**6)
 
@@ -168,6 +241,43 @@ class LennardJones(PairPotential):
             self.__class__.__name__,
             epsilon=to_significant_figures(self.epsilon.item(), 3),
             sigma=to_significant_figures(self.sigma.item(), 3),
+        )
+
+    @staticmethod
+    def from_ase(
+        sigma: float = 1.0,
+        epsilon: float = 0.1,
+        rc: float | None = None,
+        ro: float | None = None,
+        smooth: bool = False,
+    ):
+        """
+        Create a :class:`LennardJones` potential with an interface
+        identical to the ASE :class:`~ase.calculators.lj.LennardJones`
+        calculator.
+
+        Please refer to the ASE documentation for more details.
+
+        Parameters
+        ----------
+        sigma
+            The distance at which the potential is zero.
+        epsilon
+            The maximum depth of the potential.
+        rc
+            The cutoff radius. If not given, the default value is 3 * sigma.
+        ro
+            The radius at which the smooth cutoff function begins.
+        """
+        if rc is None:
+            rc = 3 * sigma
+        if ro is None:
+            ro = 2 * rc / 3
+
+        if not smooth:
+            return LennardJones(rc, epsilon, sigma, shift=True)
+        return SmoothedPairPotential(
+            LennardJones(rc, epsilon, sigma, shift=False), ro
         )
 
 
@@ -204,8 +314,14 @@ class Morse(PairPotential):
         :align: center
     """
 
-    def __init__(self, D: float = 0.1, a: float = 5.0, r0: float = 1.5):
-        super().__init__(cutoff=None, auto_scale=False)
+    def __init__(
+        self,
+        cutoff: float = DEFAULT_CUTOFF,
+        D: float = 0.1,
+        a: float = 5.0,
+        r0: float = 1.5,
+    ):
+        super().__init__(cutoff=cutoff, auto_scale=False)
 
         self._log_D = torch.nn.Parameter(torch.tensor(D).log())
         self._log_a = torch.nn.Parameter(torch.tensor(a).log())
@@ -281,12 +397,16 @@ class LennardJonesMixture(PairPotential):
     For more details, see `wikipedia <https://en.wikipedia.org/wiki/Lennard-Jones_potential#Mixtures_of_Lennard-Jones_substances>`_.
     """
 
-    def __init__(self, modulate_distances: bool = True):
-        super().__init__(cutoff=None, auto_scale=False)
+    def __init__(
+        self,
+        cutoff: float = DEFAULT_CUTOFF,
+        modulate_distances: bool = True,
+    ):
+        super().__init__(cutoff=cutoff, auto_scale=False)
 
         self.modulate_distances: Tensor
         self.register_buffer(
-            "modulate_distances", torch.tensor(modulate_distances)
+            "modulate_distances", torch.tensor(int(modulate_distances))
         )
 
         self.epsilon = PerElementParameter.of_length(1, default_value=0.1)

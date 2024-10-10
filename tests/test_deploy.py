@@ -10,6 +10,7 @@ from graph_pes.core import ConservativePESModel
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.deploy import deploy_model
 from graph_pes.graphs.operations import number_of_atoms
+from graph_pes.models.pairwise import LennardJones, SmoothedPairPotential
 
 CUTOFF = 1.5
 graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=CUTOFF)
@@ -57,3 +58,8 @@ def test_deploy(model: ConservativePESModel, tmp_path: Path):
     with torch.no_grad():
         original_energy = model(graph).double()
     assert torch.allclose(original_energy, outputs["total_energy"])
+
+
+def test_deploy_smoothed_pair_potential(tmp_path: Path):
+    model = SmoothedPairPotential(LennardJones(cutoff=CUTOFF))
+    test_deploy(model, tmp_path)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 
 from graph_pes.core import ConservativePESModel
-from graph_pes.graphs import AtomicGraph
+from graph_pes.graphs import DEFAULT_CUTOFF, AtomicGraph
 from graph_pes.graphs.operations import (
     index_over_neighbours,
     neighbour_distances,
@@ -200,9 +200,9 @@ class SchNet(ConservativePESModel):
 
     def __init__(
         self,
+        cutoff: float = DEFAULT_CUTOFF,
         node_features: int = 64,
         expansion_features: int = 50,
-        cutoff: float = 5.0,
         layers: int = 3,
         expansion: type[DistanceExpansion] | None = None,
     ):
