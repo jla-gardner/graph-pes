@@ -4,7 +4,7 @@ Pair Potentials
 Base Class
 ----------
 
-.. autoclass:: graph_pes.models.pairwise.PairPotential
+.. autoclass:: graph_pes.models.PairPotential
    :members: interaction
    :show-inheritance:
 

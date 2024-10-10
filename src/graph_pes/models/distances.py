@@ -337,7 +337,16 @@ class Envelope(torch.nn.Module):
     cutoff are set to zero.
     """
 
-    def forward(self, r: torch.Tensor) -> torch.Tensor: ...
+    def forward(self, r: torch.Tensor) -> torch.Tensor:
+        """
+        Perform the envelope function.
+
+        Parameters
+        ----------
+        r : torch.Tensor
+            The distances to envelope.
+        """
+        ...
 
     def __call__(self, r: torch.Tensor) -> torch.Tensor:
         return super().__call__(r)
