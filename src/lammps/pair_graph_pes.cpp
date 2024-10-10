@@ -208,8 +208,7 @@ void PairGraphPES::coeff(int narg, char **arg)
 
   // load metadata
   std::vector<torch::jit::IValue> stack;
-  // cutoff = model.get_method("get_cutoff")(stack).toTensor().item<double>();
-  cutoff = 2;
+  cutoff = model.get_method("get_cutoff")(stack).toTensor().item<double>();
 
   if (debug_mode)
     std::cout << "Model metadata:\n"
@@ -388,6 +387,12 @@ void PairGraphPES::compute(int eflag, int vflag)
 
   auto output = model.forward(input_vector).toGenericDict();
 
+  if (debug_mode)
+  {
+    std::cout << "Output from model:\n"
+              << output << "\n";
+  }
+
   torch::Tensor forces_tensor = output.at("forces").toTensor().cpu();
   auto forces = forces_tensor.accessor<double, 2>();
 
@@ -398,14 +403,13 @@ void PairGraphPES::compute(int eflag, int vflag)
   if (vflag)
   {
     torch::Tensor v_tensor = output.at("virial").toTensor().cpu();
-    auto v = v_tensor.accessor<double, 2>();
-    // Convert from 3x3 symmetric tensor format to the flattened form LAMMPS expects
-    virial[0] = v[0][0];
-    virial[1] = v[1][1];
-    virial[2] = v[2][2];
-    virial[3] = v[0][1];
-    virial[4] = v[0][2];
-    virial[5] = v[1][2];
+    auto v = v_tensor.accessor<double, 1>();
+    
+    // Directly copy the values to the LAMMPS virial array
+    for (int i = 0; i < 6; i++)
+    {
+      virial[i] = v[i];
+    }
   }
   if (vflag_atom)
     error->all(FLERR, "Pair style GraphPES does not support per-atom virial");

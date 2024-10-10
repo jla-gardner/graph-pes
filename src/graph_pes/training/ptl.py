@@ -6,7 +6,7 @@ from typing import Literal
 import pytorch_lightning as pl
 import torch
 from graph_pes.config import FittingOptions
-from graph_pes.core import ConservativePESModel, get_predictions
+from graph_pes.core import ConservativePESModel
 from graph_pes.data.dataset import FittingData
 from graph_pes.data.loader import GraphDataLoader
 from graph_pes.graphs import AtomicGraphBatch, LabelledBatch, keys
@@ -137,8 +137,8 @@ class LearnThePES(pl.LightningModule):
             )
 
         # generate prediction:
-        predictions = get_predictions(
-            self.model, graph, properties=self.properties, training=True
+        predictions = self.model._get_predictions(
+            graph, properties=self.properties, training=True
         )
 
         # compute the loss and its sub-components
@@ -214,7 +214,7 @@ class LearnThePES(pl.LightningModule):
 
         logger.debug(f"Using LR scheduler config:\n{config}")
         config["scheduler"] = scheduler
-        return {"optimizer": opt, "lr_scheduler": config}  # type: ignore
+        return {"optimizer": opt, "lr_scheduler": config}
 
     def on_validation_model_eval(self, *args, **kwargs):
         super().on_validation_model_eval(*args, **kwargs)

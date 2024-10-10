@@ -4,7 +4,7 @@ from ase import Atoms
 from ase.calculators.calculator import Calculator, all_changes
 from ase.stress import full_3x3_to_voigt_6_stress
 
-from graph_pes.core import ConservativePESModel, get_predictions
+from graph_pes.core import ConservativePESModel
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.graphs import AtomicGraph
 
@@ -56,7 +56,10 @@ class GraphPESCalculator(Calculator):
 
         results = {
             k: v.detach().cpu().numpy()
-            for k, v in get_predictions(self.model, graph).items()
+            for k, v in self.model.get_predictions(
+                graph,
+                properties=properties,  # type: ignore
+            ).items()
             if k in properties
         }
         if "energy" in properties:

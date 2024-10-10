@@ -4,8 +4,6 @@ import copy
 import random
 import string
 import sys
-import warnings
-from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator, Sequence, TypeVar, overload
 
@@ -65,32 +63,14 @@ def as_possible_tensor(value: object) -> Tensor | None:
 
 
 def differentiate(y: torch.Tensor, x: torch.Tensor):
-    if y.grad_fn is None:
-        warnings.warn(
-            "Expected the tensor `y` to be the result of a computation "
-            "that requires gradients. Currently, there is no "
-            "grad function associated with this tensor: "
-            f"{y}.",
-            stacklevel=2,
-        )
-        return torch.zeros_like(x, requires_grad=True)
+    """
+    A torchscript-compatible way to differentiate `y` with respect
+    to `x`, handling the (odd) cases where either or both of
+    `y` or `x` do not have a gradient function: in these cases,
+    we return a tensor of zeros with the correct shape and
+    requires_grad set to True.
+    """
 
-    with require_grad(x):
-        grad = torch.autograd.grad(
-            y.sum(),
-            x,
-            create_graph=True,
-            allow_unused=True,
-        )[0]
-
-    default = torch.zeros_like(x, requires_grad=True)
-    return grad if grad is not None else default
-
-
-@contextmanager
-def require_grad(*tensors: torch.Tensor):
-    # check if in a torch.no_grad() context: if so,
-    # raise an error
     if not torch.is_grad_enabled():
         raise RuntimeError(
             "Autograd is disabled, but you are trying to "
@@ -98,12 +78,25 @@ def require_grad(*tensors: torch.Tensor):
             "a torch.enable_grad() context."
         )
 
-    original = [tensor.requires_grad for tensor in tensors]
-    for tensor in tensors:
-        tensor.requires_grad_(True)
-    yield
-    for tensor, req_grad in zip(tensors, original):
-        tensor.requires_grad_(req_grad)
+    x_did_require_grad = x.requires_grad
+    x.requires_grad_(True)
+
+    y_total = y.sum()
+    # ensure y has a grad_fn
+    y_total = y_total + torch.tensor(0.0, requires_grad=True)
+
+    grad = torch.autograd.grad(
+        [y_total],
+        [x],
+        create_graph=True,
+        allow_unused=True,
+    )[0]
+
+    x.requires_grad_(x_did_require_grad)
+
+    default = torch.zeros_like(x)
+    default.requires_grad_(True)
+    return grad if grad is not None else default
 
 
 def to_significant_figures(x: float | int, sf: int = 3) -> float:
