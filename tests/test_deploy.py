@@ -12,9 +12,6 @@ from graph_pes.deploy import deploy_model
 from graph_pes.graphs.operations import number_of_atoms
 from graph_pes.models.pairwise import LennardJones, SmoothedPairPotential
 
-CUTOFF = 1.5
-graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=CUTOFF)
-
 
 # ignore warnings about lack of energy labels for pre-fitting: not important
 @pytest.mark.filterwarnings(
@@ -22,16 +19,24 @@ graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=CUTOFF)
 )
 @helpers.parameterise_all_models(expected_elements=["C", "H", "O"])
 def test_deploy(model: ConservativePESModel, tmp_path: Path):
-    model.pre_fit([graph])  # required by some models before making predictions
+    dummy_graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=1.5)
+    # required by some models before making predictions
+    model.pre_fit([dummy_graph])
+
+    model_cutoff = float(model.cutoff)
+    graph = to_atomic_graph(
+        molecule("CH3CH2OH", vacuum=2),
+        cutoff=model_cutoff,
+    )
 
     # 2. deploy the model
     save_path = tmp_path / "model.pt"
-    deploy_model(model, cutoff=CUTOFF, path=save_path)
+    deploy_model(model, path=save_path)
 
     # 3. load the model back in
     loaded_model = torch.jit.load(save_path)
     assert isinstance(loaded_model, torch.jit.ScriptModule)
-    assert loaded_model.get_cutoff() == CUTOFF
+    assert loaded_model.get_cutoff() == model_cutoff
 
     # 4. test outputs
     outputs = loaded_model(
@@ -44,22 +49,24 @@ def test_deploy(model: ConservativePESModel, tmp_path: Path):
     )
     assert isinstance(outputs, dict)
     assert set(outputs.keys()) == {
-        "total_energy",
+        "energy",
         "local_energies",
         "forces",
         "virial",
+        "stress",
     }
-    assert outputs["total_energy"].shape == torch.Size([])
+    assert outputs["energy"].shape == torch.Size([])
     assert outputs["local_energies"].shape == (number_of_atoms(graph),)
     assert outputs["forces"].shape == graph["_positions"].shape
-    assert outputs["virial"].shape == (3, 3)
+    assert outputs["stress"].shape == (3, 3)
+    assert outputs["virial"].shape == (6,)
 
     # 5. test that the deployment process hasn't changed the model's predictions
     with torch.no_grad():
         original_energy = model(graph).double()
-    assert torch.allclose(original_energy, outputs["total_energy"])
+    assert torch.allclose(original_energy, outputs["energy"])
 
 
 def test_deploy_smoothed_pair_potential(tmp_path: Path):
-    model = SmoothedPairPotential(LennardJones(cutoff=CUTOFF))
+    model = SmoothedPairPotential(LennardJones(cutoff=2.5))
     test_deploy(model, tmp_path)

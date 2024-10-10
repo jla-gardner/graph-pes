@@ -24,14 +24,14 @@ def test_lammps_model(compute_virial: bool):
     graph = to_atomic_graph(structure, cutoff=CUTOFF)
 
     # create a normal model, and get normal predictions
-    model = LennardJones()
+    model = LennardJones(cutoff=CUTOFF)
     props: list[keys.LabelKey] = ["energy", "forces"]
     if compute_virial:
         props.append("stress")
-    outputs = get_predictions(model, graph, properties=props, training=False)
+    outputs = get_predictions(model, graph, properties=props)
 
     # create a LAMMPS model, and get LAMMPS predictions
-    lammps_model = LAMMPSModel(model, cutoff=CUTOFF)
+    lammps_model = LAMMPSModel(model)
 
     assert lammps_model.get_cutoff() == torch.tensor(CUTOFF)
 
@@ -45,13 +45,14 @@ def test_lammps_model(compute_virial: bool):
     # check outputs
     if compute_virial:
         assert "virial" in lammps_outputs
+        assert lammps_outputs["virial"].shape == (6,)
         assert (
-            outputs["stress"].shape == lammps_outputs["virial"].shape == (3, 3)
+            outputs["stress"].shape == lammps_outputs["stress"].shape == (3, 3)
         )
 
     assert torch.allclose(
         outputs["energy"].float(),
-        lammps_outputs["total_energy"].float(),
+        lammps_outputs["energy"].float(),
     )
 
 
@@ -62,7 +63,7 @@ def test_debug_logging(capsys):
     graph = to_atomic_graph(structure, cutoff=CUTOFF)
 
     # create a LAMMPS model, and get LAMMPS predictions
-    lammps_model = LAMMPSModel(LennardJones(), cutoff=CUTOFF)
+    lammps_model = LAMMPSModel(LennardJones())
 
     lammps_graph: AtomicGraph = {
         **graph,

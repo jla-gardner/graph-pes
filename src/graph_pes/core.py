@@ -424,10 +424,27 @@ class ConservativePESModel(nn.Module, ABC):
 
 class FunctionalModel(ConservativePESModel):
     """
-    #TODO: descrobe
+    Wrap a function that returns an energy prediction into a model
+    that can be used in the same way as other
+    :class:`~graph_pes.core.ConservativePESModel` subclasses.
+
+    .. warning::
+
+        This model does not support local energy predictions, and therefore
+        cannot be used for LAMMPS simulations. Force and stress predictions
+        are still supported.
+
+    Parameters
+    ----------
+    func
+        The function to wrap.
+
     """
 
-    def __init__(self, func: Callable[[AtomicGraph], torch.Tensor]):
+    def __init__(
+        self,
+        func: Callable[[AtomicGraph], torch.Tensor],
+    ):
         super().__init__(auto_scale=False, cutoff=0)
         self.func = func
 
