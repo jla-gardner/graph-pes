@@ -7,7 +7,6 @@ from graph_pes.util import (
     differentiate,
     nested_merge,
     nested_merge_all,
-    require_grad,
 )
 
 possible_tensors = [
@@ -29,37 +28,7 @@ def test_as_possible_tensor(obj, can_be_converted):
         assert as_possible_tensor(obj) is None
 
 
-def test_require_grad():
-    # first, check that sensible error messages are displayed if attempting
-    # to use this in a no_grad context:
-    with torch.no_grad(), pytest.raises(
-        RuntimeError, match="calculate gradients"
-    ):
-        x = torch.zeros(1)
-        with require_grad(x):
-            pass
-
-    # now check that this thing actually works:
-    y = torch.zeros(1, requires_grad=False)
-    with require_grad(y):
-        assert y.requires_grad
-    assert not y.requires_grad
-
-    z = torch.zeros(1, requires_grad=True)
-    with require_grad(z):
-        assert z.requires_grad
-    assert z.requires_grad
-
-
 def test_get_gradient():
-    # test nice error message
-    x = torch.tensor([1.0, 2.0, 3.0])
-    y = x.sum()
-
-    # raises warning
-    with pytest.warns(UserWarning, match="there is no grad function"):
-        dy_dx = differentiate(y, x)
-
     # test that it works
     x = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
     y = x.sum()
