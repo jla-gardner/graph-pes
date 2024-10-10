@@ -57,6 +57,7 @@ ALL_MODELS: list[type[ConservativePESModel]] = [
         "FixedOffset",
         "LearnableOffset",
         "AdditionModel",
+        "PairPotential",
         "SmoothedPairPotential",
     ]  # TODO: remove offsets?
 ]
