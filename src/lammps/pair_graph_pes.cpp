@@ -19,6 +19,10 @@
 //   - Anders Johansson's torchscript integration from pair_nequip and pair_allegro
 //     (https://github.com/mir-group/pair_nequip/blob/3dda11b972f1cdf196215ed92ee5bea8d576d37b/pair_nequip.cpp)
 //     (https://github.com/mir-group/pair_allegro/blob/20538c9fd308bd0d066a716805f6f085a979c741/compute_allegro.cpp)
+//   - Yutack Park's pair_e3gnn (https://github.com/MDIL-SNU/SevenNet/blob/main/sevenn/pair_e3gnn/pair_e3gnn.cpp)
+
+// Assumptions:
+//   - LAMMPS is being run in serial mode: there are no "ghost" atoms here!
 
 #include "atom.h"
 #include "comm.h"
@@ -51,6 +55,7 @@
 
 using namespace LAMMPS_NS;
 
+// utilities -------------------------------------------------------------------
 torch::Tensor bool_tensor(bool flag, torch::Device device)
 {
   return torch::tensor(flag, torch::TensorOptions().dtype(torch::kBool).device(device));
@@ -66,7 +71,7 @@ PairGraphPES::PairGraphPES(LAMMPS *lmp) : Pair(lmp)
   this->one_coeff = 1;     // only one pair_coeff command is allowed
 
   // by default, use the GPU if available
-  // this can be over-riden by the user by passing "cpu" as an argument
+  // this can be overriden by the user by passing "cpu" as an argument
   // to the pair_style command
   if (torch::cuda::is_available())
     this->device = torch::kCUDA;
@@ -107,7 +112,7 @@ void PairGraphPES::init_style()
   neighbor->add_request(this, NeighConst::REQ_FULL);
 }
 
-// provide the pair-wise cutoff for each pair of atom types
+// provide the pair-wise cutoff for each pair of atom types:
 // for GraphPES, this is a uniform and global cutoff
 // -----------------------------------------------------------------------------
 double PairGraphPES::init_one(int i, int j)
@@ -206,13 +211,12 @@ void PairGraphPES::coeff(int narg, char **arg)
   std::cout << "Loading model from " << arg[2] << "\n";
   model = torch::jit::load(std::string(arg[2]), device);
 
-  // load metadata
+  // load cutoff
   std::vector<torch::jit::IValue> stack;
   cutoff = model.get_method("get_cutoff")(stack).toTensor().item<double>();
 
   if (debug_mode)
-    std::cout << "Model metadata:\n"
-              << "   cutoff: " << cutoff << "\n";
+    std::cout << "Model cutoff: " << cutoff << "\n";
 
   // eval and freeze the model: speeds things up
   model.eval();
@@ -233,96 +237,121 @@ void PairGraphPES::coeff(int narg, char **arg)
 }
 
 // energy, force and virial calculation ---------------------------------------
-
-// TODO: ensure that we're wrapping all positions into the box?
-// add tests in the python package for this too
 void PairGraphPES::compute(int eflag, int vflag)
 {
   ev_init(eflag, vflag);
 
   if (force->newton_pair == 1)
-  {
     error->all(FLERR, "Pair style GraphPES requires 'newton off'");
-  }
 
-  double **x = atom->x;    // positions of all atoms: real atoms together with
-                           //   ghost atoms due to periodic boundary conditions
-                           //   and ghost atoms due to LAMMPS parallelization
-  double **f = atom->f;    // forces on atoms: unsure if these are just real ones
-                           //   or also ghost atoms too. In either case, we only write
-                           //   to indices corresponding to real atoms
-  tagint *tag = atom->tag; // map from real/ghost atom index to the real atom's tag (1-based)
+  if (vflag_atom)
+    error->all(FLERR, "Pair style GraphPES does not support per-atom virial");
 
-  int *type = atom->type;    // map from real atom index to the atom's type (as defined in the data file)
-  int nlocal = atom->nlocal; // number of real atoms on this processor
+  // Useful info:
+  // 
+  // How LAMMPS stores atoms:
+  // - each atom WITHIN THE UNIT CELL has a unique, 1-based tag that is persistent across time
+  // - LAMMPS will calculate a neighbourlist for each of these atoms
+  // - LAMMPS doesn't necessarily store information about these atoms in tag order: I refer
+  //      to the order that LAMMPS actually uses to access these atoms as the "frame_index".
+  //      this frame_index order is not persisted across timesteps, and also includes atoms that
+  //      are replicates due to PBCs. (see below)
+  // - LAMMPS duplicates atoms that appear in other unit cells, but which are relevant 
+  //      due to PBCs.
+  // - the positions of ALL atoms (including duplicates) are stored in the atom->x and atom->f arrays.
+  //    i.e. len(atom->x) >> # atoms in the structure
+  //
+  // For ease of debugging, we construct all input tensors in "tag" order
 
-  int inum = list->inum; // number of atoms that LAMMPS has calculated neighbours for
-  // check that LAMMPS calculated neighbours for all real atoms
+  double **x = atom->x;                   // positions of each atom (includes replicated atoms due to PBC)
+  double **f = atom->f;                   // forces on each atom
+  tagint *frame_index_to_tag = atom->tag; // each atom's tag is a 1-based identifier that is unique
+                                          //   across the whole system and through time. Atom replicates share the same tag
+                                          //   as the atom in the unit cell from which they were created.
+                                          //   This is a map from the atom's index in the position/force/etc.
+                                          //   arrays to the atom's tag
+  int *type = atom->type;                 // map from frame index to the atom's type (as defined in the data file)
+  int nlocal = atom->nlocal;              // total number of atoms (only using a single processor here, so nlocal == natoms)
+  int inum = list->inum;                  // number of atoms that LAMMPS has calculated neighbours for
+  
+  // check that LAMMPS calculated neighbours for all atoms
   assert(inum == nlocal);
 
-  int nghost = list->gnum;      // number of ghost atoms
-  int ntotal = nlocal + nghost; // number of ghost atoms
+  int nghost = list->gnum;
+  assert(nghost == 0 && "This is currently a serial implementation. Ghost atoms are not supported.");
+  
+  int *numneigh = list->numneigh;         // number of neighbours for each atom
+  int **neighbour_list = list->firstneigh;   // neighbours for each atom
 
-  int *numneigh = list->numneigh;      // number of neighbours for each real atom
-  int **firstneigh = list->firstneigh; // neighbours for each real atom
-
-  int *ilist = list->ilist; // mapping from index in the neighbourlist to the real atom index
-
-  int nedges = std::accumulate(numneigh, numneigh + ntotal, 0);
-
-  torch::Tensor pos_tensor = torch::zeros({nlocal, 3});
-  torch::Tensor Z_tensor = torch::zeros({nlocal}, torch::TensorOptions().dtype(torch::kInt64));
-  torch::Tensor periodic_shift_tensor = torch::zeros({3});
-
-  auto pos = pos_tensor.accessor<float, 2>();
-  long edges[2 * nedges];
-  float edge_cell_shifts[3 * nedges];
-  auto Z = Z_tensor.accessor<long, 1>();
-  auto periodic_shift = periodic_shift_tensor.accessor<float, 1>();
+  int *nl_to_frame_index = list->ilist;   // mapping from index in the neighbourlist to the frame index
 
   // Step 1:
-  // loop over the real atoms, and store their positions and atomic numbers
-  // TODO: parallelisation: this assumes that:
-  //  1. the real atoms are the entire system
-  //  2. the ghost atoms are just replications of the real atoms
-  for (int ii = 0; ii < nlocal; ii++)
-  {
-    int i = ilist[ii];
-    pos[i][0] = x[i][0];
-    pos[i][1] = x[i][1];
-    pos[i][2] = x[i][2];
+  // convert the unit cell of the structure to a tensor
+  torch::Tensor cell_tensor = extract_cell_tensor();
 
-    int itype = type[i];
-    Z[i] = lammps_type_to_Z[itype];
+
+  // Step 2:
+  // loop over the atoms, and store their positions and atomic numbers 
+  // as tensors. Also build up useful reverse maps from:
+  //   atom tag to real frame index
+  //   frame index to atom tag
+  int frame_index_to_atom_tag[nlocal];
+  int atom_tag_to_real_atom_frame_index[nlocal + 1];
+  torch::Tensor pos_tensor = torch::zeros({nlocal, 3});
+  auto pos = pos_tensor.accessor<float, 2>();
+  torch::Tensor Z_tensor = torch::zeros({nlocal}, torch::TensorOptions().dtype(torch::kInt64));
+  auto Z = Z_tensor.accessor<long, 1>();
+
+  // x can be in any order, i.e. some replicates may appear before the atom in the unit cell
+  // BUT lammps only calculates neighbourlists for atoms within the unit cell
+  // therefore we need to loop over the total number of atoms, get the frame_index from the
+  // neighbourlist, and use this to index into the position array
+  for (int nl_index = 0; nl_index < nlocal; nl_index++)
+  {
+    int frame_index = nl_to_frame_index[nl_index];
+    int atom_tag = frame_index_to_tag[frame_index];
+
+    frame_index_to_atom_tag[frame_index] = atom_tag;
+    atom_tag_to_real_atom_frame_index[atom_tag] = frame_index;
+  
+    pos[atom_tag - 1][0] = x[frame_index][0];
+    pos[atom_tag - 1][1] = x[frame_index][1];
+    pos[atom_tag - 1][2] = x[frame_index][2];
+
+    int t = type[frame_index];
+    Z[atom_tag - 1] = lammps_type_to_Z[t];
   }
 
-  torch::Tensor cell_tensor = extract_cell_tensor();
-  auto cell = cell_tensor.accessor<float, 2>();
+
+  // Step 3:
+  // loop over the neighbourlist to build up 
+  // the edge index and cell shift tensors
+  int nedges = std::accumulate(numneigh, numneigh + nlocal, 0);
+
+  torch::Tensor periodic_shift_tensor = torch::zeros({3});
+  auto periodic_shift = periodic_shift_tensor.accessor<float, 1>();
+  long edges[2 * nedges];
+  float edge_cell_shifts[3 * nedges];
   auto cell_inv = cell_tensor.inverse().transpose(0, 1);
-  // Loop over atoms and neighbors,
-  // store edges and _cell_shifts
-  // ii follows the order of the neighbor lists,
-  // i follows the order of x, f, etc.
+  
   int edge_counter = 0;
 
-  for (int ii = 0; ii < nlocal; ii++)
+  for (int central_atom_nl_index = 0; central_atom_nl_index < nlocal; central_atom_nl_index++)
   {
-    // loop over all real atoms, i, ...
-    int i = ilist[ii];
-    int itag = tag[i];
+    int central_atom_frame_index = nl_to_frame_index[central_atom_nl_index];
+    int central_atom_tag = frame_index_to_tag[central_atom_frame_index];
 
-    int jnum = numneigh[i];
-    int *jlist = firstneigh[i];
-    for (int jj = 0; jj < jnum; jj++)
+    int n_neighbours = numneigh[central_atom_frame_index];
+    int *central_atom_neighbours = neighbour_list[central_atom_frame_index];
+    for (int neighbour_nl_index = 0; neighbour_nl_index < n_neighbours; neighbour_nl_index++)
     {
-      // ... and get all of i's real/ghost neighbours, j
-      int j = jlist[jj];
-      j &= NEIGHMASK;
-      int jtag = tag[j];
+      int neighbour_frame_index = central_atom_neighbours[neighbour_nl_index];
+      neighbour_frame_index &= NEIGHMASK;
+      int neighbour_tag = frame_index_to_tag[neighbour_frame_index];
 
-      double dx = x[i][0] - x[j][0];
-      double dy = x[i][1] - x[j][1];
-      double dz = x[i][2] - x[j][2];
+      double dx = x[central_atom_frame_index][0] - x[neighbour_frame_index][0];
+      double dy = x[central_atom_frame_index][1] - x[neighbour_frame_index][1];
+      double dz = x[central_atom_frame_index][2] - x[neighbour_frame_index][2];
 
       double distance_squared = dx * dx + dy * dy + dz * dz;
       if (distance_squared < cutoff * cutoff)
@@ -330,9 +359,9 @@ void PairGraphPES::compute(int eflag, int vflag)
         // if this neighbour is actually within the cutoff:
         //   1. store the edge cell shift
         //   2. store the edge indices
-        periodic_shift[0] = x[j][0] - pos[jtag - 1][0];
-        periodic_shift[1] = x[j][1] - pos[jtag - 1][1];
-        periodic_shift[2] = x[j][2] - pos[jtag - 1][2];
+        periodic_shift[0] = x[neighbour_frame_index][0] - pos[neighbour_tag - 1][0];
+        periodic_shift[1] = x[neighbour_frame_index][1] - pos[neighbour_tag - 1][1];
+        periodic_shift[2] = x[neighbour_frame_index][2] - pos[neighbour_tag - 1][2];
         torch::Tensor cell_shift_tensor = cell_inv.matmul(periodic_shift_tensor);
         auto cell_shift = cell_shift_tensor.accessor<float, 1>();
 
@@ -341,8 +370,8 @@ void PairGraphPES::compute(int eflag, int vflag)
         e_vec[1] = std::round(cell_shift[1]);
         e_vec[2] = std::round(cell_shift[2]);
 
-        edges[edge_counter * 2] = itag - 1;
-        edges[edge_counter * 2 + 1] = jtag - 1;
+        edges[edge_counter * 2] = central_atom_tag - 1;
+        edges[edge_counter * 2 + 1] = neighbour_tag - 1;
         edge_counter++;
       }
     }
@@ -356,6 +385,10 @@ void PairGraphPES::compute(int eflag, int vflag)
     std::cout << "Number of edges counted: " << edge_counter << "\n";
   }
 
+
+  // Step 4:
+  // send the data to the model
+
   // shorten the list before sending to graph-pes
   torch::Tensor edges_tensor =
       torch::zeros({2, edge_counter}, torch::TensorOptions().dtype(torch::kInt64));
@@ -364,7 +397,6 @@ void PairGraphPES::compute(int eflag, int vflag)
   auto new_edge_cell_shifts = edge_cell_shifts_tensor.accessor<float, 2>();
   for (int i = 0; i < edge_counter; i++)
   {
-
     long *e = &edges[i * 2];
     new_edges[0][i] = e[0];
     new_edges[1][i] = e[1];
@@ -388,10 +420,11 @@ void PairGraphPES::compute(int eflag, int vflag)
   auto output = model.forward(input_vector).toGenericDict();
 
   if (debug_mode)
-  {
-    std::cout << "Output from model:\n"
-              << output << "\n";
-  }
+    std::cout << "Output from model:\n" << output << "\n";
+
+
+  // Step 5:
+  // extract the forces, atomic energies and virial from the model output
 
   torch::Tensor forces_tensor = output.at("forces").toTensor().cpu();
   auto forces = forces_tensor.accessor<double, 2>();
@@ -407,25 +440,25 @@ void PairGraphPES::compute(int eflag, int vflag)
     
     // Directly copy the values to the LAMMPS virial array
     for (int i = 0; i < 6; i++)
-    {
       virial[i] = v[i];
-    }
   }
-  if (vflag_atom)
-    error->all(FLERR, "Pair style GraphPES does not support per-atom virial");
 
-  // store the total energy where LAMMPS wants it by summing over non-ghost atoms
+  // store the total energy where LAMMPS wants it
   eng_vdwl = 0.0;
 
-  for (int ii = 0; ii < inum; ii++)
+  // we get back energies and forces for the real 
+  // (non-replicated) atoms only and in tag order.
+  // We need to convert these back to frame_index order in order to write
+  // them to the correct place in the force array
+  for (int atom_tag = 1; atom_tag <= nlocal; atom_tag++)
   {
-    int i = ilist[ii];
-    f[i][0] = forces[i][0];
-    f[i][1] = forces[i][1];
-    f[i][2] = forces[i][2];
-    eng_vdwl += atomic_energies[i];
+    int frame_index = atom_tag_to_real_atom_frame_index[atom_tag];
+    f[frame_index][0] = forces[atom_tag - 1][0];
+    f[frame_index][1] = forces[atom_tag - 1][1];
+    f[frame_index][2] = forces[atom_tag - 1][2];
+    eng_vdwl += atomic_energies[atom_tag - 1];
     if (eflag_atom)
-      eatom[i] = atomic_energies[i];
+      eatom[frame_index] = atomic_energies[atom_tag - 1];
   }
 }
 
