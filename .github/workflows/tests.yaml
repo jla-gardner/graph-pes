@@ -72,3 +72,11 @@ jobs:
         # -n: nitpick:
         # -W: turn warnings into errors
         run: sphinx-build -nW docs/source docs/build --keep-going
+      - name: Publich docs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          publish_branch: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/build/
+          force_orphan: true

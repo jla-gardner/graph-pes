@@ -353,7 +353,9 @@ class ConservativePESModel(nn.Module, ABC):
             symmetric_change = 0.5 * (
                 change_to_cell + change_to_cell.transpose(-1, -2)
             )  # (n_structures, 3, 3) if batched, else (3, 3)
-            scaling = torch.eye(3) + symmetric_change
+            scaling = (
+                torch.eye(3, device=existing_cell.device) + symmetric_change
+            )
 
             if is_batch(graph):
                 scaling_per_atom = torch.index_select(
