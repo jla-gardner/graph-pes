@@ -2,5 +2,5 @@ Addition Model
 ==============
 
 .. autoclass:: graph_pes.models.AdditionModel
-    :members: 
+    :special-members: __getitem__
     :show-inheritance:

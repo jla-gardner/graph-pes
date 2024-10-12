@@ -3,19 +3,18 @@ import numpy as np
 import pytest
 import torch
 from ase.build import molecule
-from graph_pes import get_predictions
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import GraphPESModel
 from graph_pes.data.io import to_atomic_graph
 
 CUTOFF = 1.0
 
 
 @helpers.parameterise_all_models(expected_elements=["H", "C"])
-def test_equivariance(model: ConservativePESModel):
+def test_equivariance(model: GraphPESModel):
     methane = molecule("CH4")
     methane.center(vacuum=10)
     og_graph = to_atomic_graph(methane, cutoff=CUTOFF)
-    og_predictions = get_predictions(model, og_graph)
+    og_predictions = model.get_all_PES_predictions(og_graph)
 
     # get a (repeatably) random rotation matrix
     R, _ = np.linalg.qr(np.random.RandomState(42).randn(3, 3))
@@ -25,7 +24,7 @@ def test_equivariance(model: ConservativePESModel):
     shift = new_methane.positions.mean(axis=0)
     new_methane.positions = (new_methane.positions - shift).dot(R) + shift
     new_graph = to_atomic_graph(new_methane, cutoff=CUTOFF)
-    new_predictions = get_predictions(model, new_graph)
+    new_predictions = model.get_all_PES_predictions(new_graph)
 
     # now checks:
     # 1. invariance of energy prediction

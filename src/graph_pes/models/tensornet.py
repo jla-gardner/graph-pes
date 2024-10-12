@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 from torch import Tensor, nn
 
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import LocalEnergyModel
 from graph_pes.graphs import DEFAULT_CUTOFF, AtomicGraph
 from graph_pes.graphs.operations import (
     neighbour_distances,
@@ -319,7 +319,7 @@ class ScalarOutput(nn.Module):
         return self.mlp(X)  # (N, 1)
 
 
-class TensorNet(ConservativePESModel):
+class TensorNet(LocalEnergyModel):
     def __init__(
         self,
         cutoff: float = DEFAULT_CUTOFF,
@@ -335,7 +335,7 @@ class TensorNet(ConservativePESModel):
         )
         self.read_out = ScalarOutput(embedding_size)
 
-    def predict_local_energies(self, graph: AtomicGraph):
+    def predict_raw_energies(self, graph: AtomicGraph):
         X = self.embedding(graph)  # (N, C, 3, 3)
         for interaction in self.interactions:
             X = interaction(X, graph) + X  # residual connection

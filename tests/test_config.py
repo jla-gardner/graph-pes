@@ -116,7 +116,7 @@ many-body:
     with pytest.raises(ValueError, match="could not be successfully parsed."):
         Config.from_dict(dummy_data).instantiate_model()
 
-    # not a ConservativePESModel
+    # not a GraphPESModel
     dummy_data["model"] = "torch.nn.ReLU()"
     with pytest.raises(ValueError):
         Config.from_dict(dummy_data).instantiate_model()

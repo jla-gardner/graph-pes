@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import Sequence, overload
+from typing import Sequence
 
 import torch
 from ase.data import chemical_symbols
@@ -29,19 +29,251 @@ from .nn import PerElementParameter
 from .util import differentiate
 
 
-class ConservativePESModel(nn.Module, ABC):
+class GraphPESModel(nn.Module, ABC):
     r"""
-    An abstract base class for all energy-conserving models of the
-    PES that make predictions of the total energy of a structure as a sum
-    of local contributions:
+    An abstract base class for all models of the PES that act on
+    graph-representations (:class:`~graph_pes.graphs.AtomicGraph`)
+    of atomic structures.
 
-    .. math::
-        E(\mathcal{G}) = \sum_i \varepsilon_i
+    Parameters
+    ----------
+    cutoff
+        The cutoff radius for the model.
+    """
 
-    where :math:`\varepsilon_i` is the local energy of atom :math:`i`, and
-    :math:`\mathcal{G}` is the atomic graph representation of the structure.
+    def __init__(self, cutoff: float):
+        super().__init__()
 
-    To create such a model, implement :meth:`predict_local_energies`,
+        self.cutoff: torch.Tensor
+        self.register_buffer("cutoff", torch.tensor(cutoff))
+
+    @abstractmethod
+    def predict(
+        self,
+        graph: AtomicGraph | AtomicGraphBatch,
+        properties: list[keys.LabelKey],
+    ) -> dict[keys.LabelKey, torch.Tensor]:
+        """
+        Generate predictions for the given ``properties`` and  ``graph``.
+
+        This method should return a dictionary mapping each requested
+        ``property`` to a tensor of predictions.
+
+        For a single structure with :code:`N` atoms, or a batch of
+        :code:`M` structures with :code:`N` total atoms, the predictions should
+        be of shape:
+
+        .. list-table::
+            :header-rows: 1
+
+            * - Key
+              - Single graph
+              - Batch of graphs
+            * - :code:`"energy"`
+              - :code:`()`
+              - :code:`(M,)`
+            * - :code:`"forces"`
+              - :code:`(N, 3)`
+              - :code:`(N, 3)`
+            * - :code:`"stress"`
+              - :code:`(3, 3)`
+              - :code:`(M, 3, 3)`
+            * - :code:`"local_energies"`
+              - :code:`(N,)`
+              - :code:`(N,)`
+
+        See :doc:`this page <../theory>` for more details, and in particular
+        the convention that ``graph-pes`` uses for stresses.
+
+        Parameters
+        ----------
+        graph
+            The graph representation of the structure/s.
+        properties
+            The properties to predict. Can be any combination of
+            ``"energy"``, ``"forces"``, ``"stress"``, and ``"local_energies"``.
+        """
+        ...
+
+    @torch.no_grad()
+    def pre_fit(
+        self,
+        graphs: LabelledGraphDataset | Sequence[LabelledGraph],
+    ):
+        """
+        Pre-fit the model to the training data.
+
+        Some models require pre-fitting to the training data to set certain
+        parameters. For example, the :class:`~graph_pes.models.pairwise.LennardJones`
+        model uses the distribution of interatomic distances in the training data
+        to set the length-scale parameter.
+
+        In the ``graph-pes-train`` routine, this method is called before
+        "normal" training begins (you can turn this off with a config option).
+
+        This method detects the unique atomic numbers in the training data
+        and registers these with all of the model's
+        :class:`~graph_pes.nn.PerElementParameter`
+        instances to ensure correct parameter counting.
+        To implement model-specific pre-fitting, override the
+        :meth:`model_specific_pre_fit` method.
+
+        If the model has already been pre-fitted, subsequent calls to
+        :meth:`pre_fit` will be ignored (and a warning will be raised).
+
+        Parameters
+        ----------
+        graphs
+            The training data.
+        """  # noqa: E501
+
+        model_name = self.__class__.__name__
+        logger.debug(f"Attempting to pre-fit {model_name}")
+
+        # 1. get the graphs as a single batch
+        if isinstance(graphs, LabelledGraphDataset):
+            graphs = list(graphs)
+        graph_batch = to_batch(graphs)
+
+        # 2a. if the graph has already been pre-fitted: warn
+        if self._has_been_pre_fit:
+            model_name = self.__class__.__name__
+            warnings.warn(
+                f"This model ({model_name}) has already been pre-fitted. "
+                "This, and any subsequent, call to pre_fit will be ignored.",
+                stacklevel=2,
+            )
+
+        # 2b. if the model has not been pre-fitted: pre-fit
+        else:
+            if len(graphs) > 10_000:
+                warnings.warn(
+                    f"Pre-fitting on a large dataset ({len(graphs):,} graphs). "
+                    "This may take some time. Consider using a smaller, "
+                    "representative collection of structures for pre-fitting. "
+                    "Set ``max_n_pre_fit`` in your config, or "
+                    "see LabelledGraphDataset.sample() for more information.",
+                    stacklevel=2,
+                )
+
+            # TODO make this pre-fit process nicer
+            if (
+                hasattr(self, "per_element_scaling")
+                and self.per_element_scaling is not None
+                and "energy" in graph_batch
+            ):
+                from graph_pes.models.pre_fit import (
+                    guess_per_element_mean_and_var,
+                )
+
+                means, variances = guess_per_element_mean_and_var(
+                    graph_batch["energy"], graph_batch
+                )
+                for Z, var in variances.items():
+                    self.per_element_scaling[Z] = torch.sqrt(torch.tensor(var))
+
+            self._has_been_pre_fit = True
+            self.model_specific_pre_fit(graph_batch)
+
+        # 3. finally, register all per-element parameters
+        for param in self.parameters():
+            if isinstance(param, PerElementParameter):
+                param.register_elements(
+                    torch.unique(graph_batch[keys.ATOMIC_NUMBERS]).tolist()
+                )
+
+    def model_specific_pre_fit(self, graphs: LabelledBatch) -> None:
+        """
+        Override this method to perform additional pre-fitting steps.
+
+        Parameters
+        ----------
+        graphs
+            The training data.
+        """
+
+    def forward(self, graph: AtomicGraph) -> torch.Tensor:
+        """
+        The main access point for :class:`~graph_pes.core.GraphPESModel`
+        instances is :meth:`~graph_pes.core.GraphPESModel.predict` (see above).
+
+        For convenience, we alias the forward pass of the model to be the
+        :meth:`~graph_pes.core.GraphPESModel.predict_energy` method.
+        """
+        graph = trim_edges(graph, self.cutoff.item())
+        return self.predict_energy(graph)
+
+    def __call__(self, graph: AtomicGraph) -> torch.Tensor:
+        return super().__call__(graph)
+
+    def get_all_PES_predictions(
+        self, graph: AtomicGraph | AtomicGraphBatch
+    ) -> dict[keys.LabelKey, torch.Tensor]:
+        """
+        Get all the properties that the model can predict
+        for the given ``graph``.
+        """
+        properties: list[keys.LabelKey] = [
+            keys.ENERGY,
+            keys.FORCES,
+            keys.LOCAL_ENERGIES,
+        ]
+        if has_cell(graph):
+            properties.append(keys.STRESS)
+        return self.predict(graph, properties)
+
+    def predict_energy(self, graph: AtomicGraph) -> torch.Tensor:
+        """Convenience method to predict just the energy."""
+
+        return self.predict(graph, ["energy"])["energy"]
+
+    def predict_forces(self, graph: AtomicGraph) -> torch.Tensor:
+        """Convenience method to predict just the forces."""
+        return self.predict(graph, ["forces"])["forces"]
+
+    def predict_stress(self, graph: AtomicGraph) -> torch.Tensor:
+        """Convenience method to predict just the stress."""
+        return self.predict(graph, ["stress"])["stress"]
+
+    def predict_raw_energies(self, graph: AtomicGraph) -> torch.Tensor:
+        """Convenience method to predict just the local energies."""
+        return self.predict(graph, ["local_energies"])["local_energies"]
+
+    @torch.jit.unused
+    @property
+    def elements_seen(self) -> list[str]:
+        """The elements that the model has seen during training."""
+
+        Zs = set()
+        for param in self.parameters():
+            if isinstance(param, PerElementParameter):
+                Zs.update(param._accessed_Zs)
+        return [chemical_symbols[Z] for Z in sorted(Zs)]
+
+    def get_extra_state(self) -> bool:
+        return self._has_been_pre_fit
+
+    def set_extra_state(self, state: bool) -> None:
+        self._has_been_pre_fit = state
+
+
+class LocalEnergyModel(GraphPESModel, ABC):
+    r"""
+    An abstract base class for all models of the PES that:
+
+    1. make predictions of the total energy of a structure as a sum
+       of local contributions:
+
+       .. math::
+           E(\mathcal{G}) = \sum_i \varepsilon_i
+
+       where :math:`\varepsilon_i` is the local energy of atom :math:`i`, and
+       :math:`\mathcal{G}` is the atomic graph representation of the structure.
+    2. make force and stress predictions as the (numerical) gradient of the
+       total energy prediction.
+
+
+    To create such a model, implement :meth:`predict_raw_energies`,
     which takes an :class:`~graph_pes.graphs.AtomicGraph`, or an
     :class:`~graph_pes.graphs.AtomicGraphBatch`,
     and returns a per-atom prediction of the local energy. For a simple example,
@@ -56,18 +288,17 @@ class ConservativePESModel(nn.Module, ABC):
         Whether to automatically scale raw predictions by (learnable)
         per-element scaling factors, :math:`\sigma_{Z_i}`.
         The starting values for these parameters are calculated from the
-        data passed to :meth:`pre_fit` (typically the training data). If
-        ``True``, :math:`\varepsilon_i \rightarrow \sigma_{Z_i} \cdot \varepsilon_i`,
+        data passed to :meth:`~graph_pes.core.GraphPESModel.pre_fit` (typically the
+        training data). If ``True``,
+        :math:`\varepsilon_i = \sigma_{Z_i} \cdot \varepsilon_{\text{raw},i}`,
         where :math:`\varepsilon_i` is the per-atom local energy prediction,
         and :math:`\sigma_{Z_i}` is the scaling factor for element :math:`Z_i`.
     """  # noqa: E501
 
     def __init__(self, cutoff: float, auto_scale: bool):
-        super().__init__()
+        super().__init__(cutoff)
 
-        self.cutoff: torch.Tensor
-        self.register_buffer("cutoff", torch.tensor(cutoff))
-
+        # TODO: default this to 1 and make non-trainable + non-fittable
         self.per_element_scaling: PerElementParameter | None
         if auto_scale:
             self.per_element_scaling = PerElementParameter.of_length(
@@ -78,24 +309,12 @@ class ConservativePESModel(nn.Module, ABC):
         else:
             self.per_element_scaling = None
 
-        # save as a buffer so that this is de/serialized with the model
-        # need to use int(False) to ensure nice torchscript behaviour
-        self._has_been_pre_fit: torch.Tensor
-        self.register_buffer("_has_been_pre_fit", torch.tensor(int(False)))
-
-    def predict_scaled_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
-        local_energies = self.predict_local_energies(graph).squeeze()
-        if self.per_element_scaling is not None:
-            scales = self.per_element_scaling[
-                graph[keys.ATOMIC_NUMBERS]
-            ].squeeze()
-            local_energies = local_energies * scales
-        return local_energies
-
     @abstractmethod
-    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
+    def predict_raw_energies(
+        self, graph: AtomicGraph | AtomicGraphBatch
+    ) -> torch.Tensor:
         """
-        Predict the local energy for each atom in the graph.
+        Predict the (unscaled) local energy for each atom in the graph.
 
         Parameters
         ----------
@@ -108,213 +327,11 @@ class ConservativePESModel(nn.Module, ABC):
             The per-atom local energy predictions, with shape :code:`(N,)`.
         """
 
-    def forward(self, graph: AtomicGraph) -> torch.Tensor:
-        """
-        Calculate the total energy of the structure.
-
-        Parameters
-        ----------
-        graph
-            The atomic structure to evaluate.
-
-        Returns
-        -------
-        torch.Tensor
-            The total energy of the structure/s. If the input is a batch
-            of graphs, the result will be a tensor of shape :code:`(B,)`,
-            where :code:`B` is the batch size. Otherwise, a scalar tensor
-            will be returned.
-        """
-        graph = trim_edges(graph, self.cutoff.item())
-        local_energies = self.predict_scaled_local_energies(graph).squeeze()
-        return sum_per_structure(local_energies, graph)
-
-    def pre_fit(
+    def predict(
         self,
-        graphs: LabelledGraphDataset | Sequence[LabelledGraph],
-    ):
-        """
-        Pre-fit the model to the training data.
-
-        This method detects the unique atomic numbers in the training data
-        and registers these with all of the model's
-        :class:`~graph_pes.nn.PerElementParameter`
-        instances to ensure correct parameter counting.
-
-        Additionally, this method performs any model-specific pre-fitting
-        steps, as implemented in :meth:`model_specific_pre_fit`.
-        As an example of a model-specific pre-fitting process, see the
-        :class:`~graph_pes.models.pairwise.LennardJones`
-        implementation.
-
-        If the model has already been pre-fitted, subsequent calls to
-        :meth:`pre_fit` will be ignored (and a warning will be raised).
-
-        Parameters
-        ----------
-        graphs
-            The training data.
-        """
-
-        model_name = self.__class__.__name__
-        logger.debug(f"Attempting to pre-fit {model_name}")
-
-        # 1. get the graphs as a single batch
-        if isinstance(graphs, LabelledGraphDataset):
-            graphs = list(graphs)
-        graph_batch = to_batch(graphs)
-
-        # 2a. if the graph has already been pre-fitted: warn
-        if self._has_been_pre_fit.item():
-            model_name = self.__class__.__name__
-            warnings.warn(
-                f"This model ({model_name}) has already been pre-fitted. "
-                "This, and any subsequent, call to pre_fit will be ignored.",
-                stacklevel=2,
-            )
-
-        # 2b. if the graph has not been pre-fitted: pre-fit
-        else:
-            if len(graphs) > 10_000:
-                warnings.warn(
-                    f"Pre-fitting on a large dataset ({len(graphs):,} graphs). "
-                    "This may take some time. Consider using a smaller, "
-                    "representative collection of structures for pre-fitting. "
-                    "Set ``max_n_pre_fit`` in your config, or "
-                    "see LabelledGraphDataset.sample() for more information.",
-                    stacklevel=2,
-                )
-
-            self._has_been_pre_fit.fill_(int(True))
-            self.model_specific_pre_fit(graph_batch)
-
-        # 3. finally, register all per-element parameters
-        for param in self.parameters():
-            if isinstance(param, PerElementParameter):
-                param.register_elements(
-                    torch.unique(graph_batch[keys.ATOMIC_NUMBERS]).tolist()
-                )
-
-    def model_specific_pre_fit(self, graphs: LabelledBatch) -> None:
-        """
-        Override this method to perform additional pre-fitting steps.
-
-        As an example, see the
-        :class:`~graph_pes.models.pairwise.LennardJones`
-        `implementation
-        <_modules/graph_pes/models/pairwise.html#LennardJones>`__.
-
-        Parameters
-        ----------
-        graphs
-            The training data.
-        """
-
-    # add type hints to play nicely with mypy
-    def __call__(self, graph: AtomicGraph) -> torch.Tensor:
-        return super().__call__(graph)
-
-    @torch.jit.unused
-    @property
-    def elements_seen(self) -> list[str]:
-        """The elements that the model has seen during training."""
-
-        Zs = set()
-        for param in self.parameters():
-            if isinstance(param, PerElementParameter):
-                Zs.update(param._accessed_Zs)
-        return [chemical_symbols[Z] for Z in sorted(Zs)]
-
-    @overload
-    def get_predictions(
-        self,
-        graph: AtomicGraph | AtomicGraphBatch | Sequence[AtomicGraph],
-        *,
-        properties: list[keys.LabelKey] | None = None,
-    ) -> dict[keys.LabelKey, torch.Tensor]: ...
-    @overload
-    def get_predictions(
-        self,
-        graph: AtomicGraph | AtomicGraphBatch | Sequence[AtomicGraph],
-        *,
-        property: keys.LabelKey,
-    ) -> torch.Tensor: ...
-    @torch.jit.unused
-    def get_predictions(
-        self,
-        graph: AtomicGraph | AtomicGraphBatch | Sequence[AtomicGraph],
-        *,
-        properties: list[keys.LabelKey] | None = None,
-        property: keys.LabelKey | None = None,
-    ) -> dict[keys.LabelKey, torch.Tensor] | torch.Tensor:
-        """
-        Evaluate the model on the given structure to get
-        the properties requested.
-
-        Parameters
-        ----------
-        graph
-            The atomic structure to evaluate.
-        properties
-            The properties to predict. If not provided, defaults to
-            :code:`[Property.ENERGY, Property.FORCES]` if the structure
-            has no cell, and :code:`[Property.ENERGY, Property.FORCES,
-            Property.STRESS]` if it does.
-        property
-            The property to predict. Can't be used when :code:`properties`
-            is also provided.
-        training
-            Whether the model is currently being trained. If :code:`False`,
-            the gradients of the predictions will be detached.
-
-        Examples
-        --------
-
-            >>> get_predictions(model, graph_pbc)
-            {'energy': tensor(-12.3), 'forces': <tensor>, 'stress': <tensor>}
-            >>> get_predictions(model, graph_no_pbc)
-            {'energy': tensor(-12.3), 'forces': <tensor>}
-            >>> get_predictions(model, graph, property="energy")
-            tensor(-12.3)
-        """
-        if isinstance(graph, Sequence):
-            graph = to_batch(graph)
-
-        if property is not None:
-            if properties is not None:
-                raise ValueError(
-                    "Cannot provide both `property` and `properties` arguments."
-                )
-            properties = [property]
-
-        if properties is None:
-            if has_cell(graph):
-                properties = [keys.ENERGY, keys.FORCES, keys.STRESS]
-            else:
-                properties = [keys.ENERGY, keys.FORCES]
-
-        preds = self._get_predictions(graph, properties, training=False)
-        return preds[property] if property is not None else preds
-
-    def _get_predictions(
-        self,
-        graph: AtomicGraph,
+        graph: AtomicGraph | AtomicGraphBatch,
         properties: list[keys.LabelKey],
-        training: bool,
-        get_local_energies: bool = False,
     ) -> dict[keys.LabelKey, torch.Tensor]:
-        # meant for internal use:
-        # unfortunately verbose to ensure torchscript compatibility
-
-        # [boring] setup, check correct usage and type checking
-        # if isinstance(graph, Sequence):
-        # graph = to_batch(graph)
-        # if properties is None:
-        #     if has_cell(graph):
-        #         properties = [keys.ENERGY, keys.FORCES, keys.STRESS]
-        #     else:
-        #         properties = [keys.ENERGY, keys.FORCES]
-
         want_stress = keys.STRESS in properties
         if want_stress and not has_cell(graph):
             raise ValueError("Can't predict stress without cell information.")
@@ -390,34 +407,42 @@ class ConservativePESModel(nn.Module, ABC):
         if keys.FORCES in properties:
             graph[keys._POSITIONS].requires_grad_(True)
 
-        if not get_local_energies:
-            energy = self(graph)
-        else:
-            scaled_local_energies = self.predict_scaled_local_energies(graph)
-            predictions["local_energies"] = scaled_local_energies  # type: ignore
-            energy = sum_per_structure(scaled_local_energies, graph)
+        local_energies = self.predict_raw_energies(graph).squeeze()
+        if self.per_element_scaling is not None:
+            scales = self.per_element_scaling[
+                graph[keys.ATOMIC_NUMBERS]
+            ].squeeze()
+            local_energies = local_energies * scales
 
-        # use the autograd machinery to auto-magically
-        # calculate forces and stress from the energy
+        if keys.LOCAL_ENERGIES in properties:
+            predictions[keys.LOCAL_ENERGIES] = local_energies
+
+        # TODO: scale
+        energy = sum_per_structure(local_energies, graph)
         if keys.ENERGY in properties:
             predictions[keys.ENERGY] = energy
-
+        # use the autograd machinery to auto-magically
+        # calculate forces and stress from the energy
         if keys.FORCES in properties:
             dE_dR = differentiate(energy, graph[keys._POSITIONS])
             predictions[keys.FORCES] = -dE_dR
 
-        # TODO: check stress vs virial common definition
         if keys.STRESS in properties:
-            stress = differentiate(energy, change_to_cell)
-            cell_volume = torch.det(graph[keys.CELL])
-            if is_batch(graph):
-                cell_volume = cell_volume.view(-1, 1, 1)
-            predictions[keys.STRESS] = stress / cell_volume
+            if has_cell(graph):
+                stress = differentiate(energy, change_to_cell)
+                cell_volume = torch.det(graph[keys.CELL])
+                if is_batch(graph):
+                    cell_volume = cell_volume.view(-1, 1, 1)
+                predictions[keys.STRESS] = stress / cell_volume
+            else:
+                predictions[keys.STRESS] = torch.tensor(torch.nan)
 
         graph[keys._POSITIONS] = existing_positions
         graph[keys.CELL] = existing_cell
 
-        if not training:
+        # TODO: move that to differntiate? i.e. no need to keep secdon pass
+        # also check grad enabled if want force or stress
+        if not self.training:
             for key, value in predictions.items():
                 predictions[key] = value.detach()
 

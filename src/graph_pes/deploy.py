@@ -5,13 +5,13 @@ from pathlib import Path
 import e3nn.util.jit
 import torch
 
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import GraphPESModel
 from graph_pes.graphs import keys
 from graph_pes.graphs.graph_typing import AtomicGraph
 
 
 class LAMMPSModel(torch.nn.Module):
-    def __init__(self, model: ConservativePESModel):
+    def __init__(self, model: GraphPESModel):
         super().__init__()
         self.model = model
 
@@ -19,7 +19,7 @@ class LAMMPSModel(torch.nn.Module):
     def get_cutoff(self) -> torch.Tensor:
         return self.model.cutoff
 
-    def forward(self, graph: AtomicGraph) -> dict[str, torch.Tensor]:
+    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
         debug = graph.get("debug", torch.tensor(False)).item()
 
         if debug:
@@ -28,15 +28,17 @@ class LAMMPSModel(torch.nn.Module):
                 print(f"{key}: {value}")
 
         compute_virial = graph["compute_virial"].item()  # type: ignore
-        properties = [keys.ENERGY, keys.FORCES]
+        properties: list[keys.LabelKey] = [
+            keys.ENERGY,
+            keys.FORCES,
+            keys.LOCAL_ENERGIES,
+        ]
         if compute_virial:
             properties.append(keys.STRESS)
 
-        preds: dict[str, torch.Tensor] = self.model._get_predictions(
+        preds = self.model.predict(
             graph,
-            properties=properties,  # type: ignore
-            training=False,
-            get_local_energies=True,
+            properties=properties,
         )
 
         # cast to float64
@@ -61,7 +63,7 @@ class LAMMPSModel(torch.nn.Module):
             virial_voigt[2] = virial_tensor[2, 2]
             virial_voigt[3] = virial_tensor[0, 1]
             virial_voigt[4] = virial_tensor[0, 2]
-            preds["virial"] = virial_voigt
+            preds["virial"] = virial_voigt  # type: ignore
 
         return preds
 
@@ -69,15 +71,15 @@ class LAMMPSModel(torch.nn.Module):
         return super().__call__(graph)
 
 
-def deploy_model(model: ConservativePESModel, path: str | Path):
+def deploy_model(model: GraphPESModel, path: str | Path):
     """
-    Deploy a :class:`~graph_pes.core.ConservativePESModel` for use with LAMMPS.
+    Deploy a :class:`~graph_pes.core.GraphPESModel` for use with LAMMPS.
 
     Use the resulting model with LAMMPS according to:
 
     .. code-block:: bash
 
-        pair_style graph_pes <cpu/cuda>
+        pair_style graph_pes <cpu> <debug>
         pair_coeff * * path/to/model.pt
 
     Parameters

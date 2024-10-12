@@ -4,14 +4,14 @@ from ase import Atoms
 from ase.calculators.calculator import Calculator, all_changes
 from ase.stress import full_3x3_to_voigt_6_stress
 
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import GraphPESModel
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.graphs import AtomicGraph
 
 
 class GraphPESCalculator(Calculator):
     """
-    ASE calculator wrapping any ConservativePESModel.
+    ASE calculator wrapping any GraphPESModel.
 
     Parameters
     ----------
@@ -28,7 +28,7 @@ class GraphPESCalculator(Calculator):
 
     def __init__(
         self,
-        model: ConservativePESModel,
+        model: GraphPESModel,
         device: str = "cpu",
         **kwargs,
     ):
@@ -56,7 +56,7 @@ class GraphPESCalculator(Calculator):
 
         results = {
             k: v.detach().cpu().numpy()
-            for k, v in self.model.get_predictions(
+            for k, v in self.model.predict(
                 graph,
                 properties=properties,  # type: ignore
             ).items()

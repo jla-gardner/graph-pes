@@ -6,7 +6,7 @@ from typing import Optional
 import torch
 from torch import Tensor
 
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import LocalEnergyModel
 from graph_pes.graphs import (
     DEFAULT_CUTOFF,
     AtomicGraph,
@@ -22,7 +22,7 @@ from graph_pes.nn import PerElementParameter
 from graph_pes.util import to_significant_figures, uniform_repr
 
 
-class PairPotential(ConservativePESModel, ABC):
+class PairPotential(LocalEnergyModel, ABC):
     r"""
     An abstract base class for PES models that calculate system energy as
     a sum over pairwise interactions:
@@ -64,7 +64,7 @@ class PairPotential(ConservativePESModel, ABC):
             The pair-wise interactions.
         """
 
-    def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
+    def predict_raw_energies(self, graph: AtomicGraph) -> Tensor:
         """
         Predict the local energies as half the sum of the pair-wise
         interactions that each atom participates in.

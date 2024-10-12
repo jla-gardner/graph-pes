@@ -9,15 +9,22 @@ import pytorch_lightning
 import torch
 from ase import Atoms
 from ase.io import read
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import GraphPESModel, LocalEnergyModel
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.graphs.graph_typing import AtomicGraph
-from graph_pes.models import ALL_MODELS, MACE, NequIP
+from graph_pes.models import (
+    ALL_MODELS,
+    MACE,
+    AdditionModel,
+    FixedOffset,
+    LennardJones,
+    NequIP,
+)
 
 
 def all_model_factories(
     expected_elements: list[str],
-) -> tuple[list[str], list[Callable[[], ConservativePESModel]]]:
+) -> tuple[list[str], list[Callable[[], GraphPESModel]]]:
     pytorch_lightning.seed_everything(42)
     required_kwargs = {
         NequIP: {"elements": expected_elements},
@@ -25,18 +32,22 @@ def all_model_factories(
     }
 
     def _model_factory(
-        model_klass: type[ConservativePESModel],
-    ) -> Callable[[], ConservativePESModel]:
+        model_klass: type[GraphPESModel],
+    ) -> Callable[[], GraphPESModel]:
         return lambda: model_klass(**required_kwargs.get(model_klass, {}))  # type: ignore
 
     names = [model.__name__ for model in ALL_MODELS]
     factories = [_model_factory(model) for model in ALL_MODELS]
+    names.append("AdditionModel")
+    factories.append(
+        lambda: AdditionModel(lj=LennardJones(), offset=FixedOffset())
+    )
     return names, factories
 
 
 def all_models(
     expected_elements: list[str],
-) -> tuple[list[str], list[ConservativePESModel]]:
+) -> tuple[list[str], list[GraphPESModel]]:
     names, factories = all_model_factories(expected_elements)
     return names, [factory() for factory in factories]
 
@@ -73,6 +84,6 @@ CU_TEST_STRUCTURES: list[Atoms] = read(CU_STRUCTURES_FILE, ":")  # type: ignore
 CONFIGS_DIR = Path(__file__).parent.parent.parent / "configs"
 
 
-class DoesNothingModel(ConservativePESModel):
-    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
+class DoesNothingModel(LocalEnergyModel):
+    def predict_raw_energies(self, graph: AtomicGraph) -> torch.Tensor:
         return torch.zeros(len(graph["atomic_numbers"]))

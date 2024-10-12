@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import torch
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import GraphPESModel
 from graph_pes.models.addition import AdditionModel
 from graph_pes.models.offsets import LearnableOffset
 from graph_pes.util import uniform_repr
@@ -26,7 +26,7 @@ class Optimizer:
 
         We use delayed instantiation of optimizers when configuring our training
         runs to allow for arbitrary changes to the model and its parameters
-        during the :class:`~graph_pes.core.ConservativePESModel.pre_fit` method.
+        during the :class:`~graph_pes.core.GraphPESModel.pre_fit` method.
 
 
     Parameters
@@ -82,7 +82,8 @@ class Optimizer:
 
         self.optimizer_class = optimizer_class
 
-    def __call__(self, model: ConservativePESModel) -> torch.optim.Optimizer:
+    # TODO: add method: non-decayable params
+    def __call__(self, model: GraphPESModel) -> torch.optim.Optimizer:
         offset_params = []
         if isinstance(model, LearnableOffset):
             offset_params += list(model.parameters())

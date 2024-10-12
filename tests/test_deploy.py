@@ -6,7 +6,7 @@ import helpers
 import pytest
 import torch
 from ase.build import molecule
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import GraphPESModel
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.deploy import deploy_model
 from graph_pes.graphs.operations import number_of_atoms
@@ -18,7 +18,7 @@ from graph_pes.models.pairwise import LennardJones, SmoothedPairPotential
     "ignore:.*training data does not contain energy labels.*"
 )
 @helpers.parameterise_all_models(expected_elements=["C", "H", "O"])
-def test_deploy(model: ConservativePESModel, tmp_path: Path):
+def test_deploy(model: GraphPESModel, tmp_path: Path):
     dummy_graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=1.5)
     # required by some models before making predictions
     model.pre_fit([dummy_graph])

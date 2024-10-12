@@ -10,11 +10,11 @@
 
 ## Features
 
-- Experiment with new model architectures by inheriting from our `ConservativePESModel` base class.
+- Experiment with new model architectures by inheriting from our `GraphPESModel` base class.
 - Train your own or existing models (e.g., SchNet, NequIP, PaiNN, MACE, etc.).
 - Easily configure distributed training, learning rate scheduling, weights and biases logging, and other features using our `graph-pes-train` command line interface.
 - Use our data-loading pipeline within your own training loop.
-- Run molecular dynamics simulations via LAMMPS (or ASE) using any `ConservativePESModel` and the `pair_style graph_pes` LAMMPS command.
+- Run molecular dynamics simulations via LAMMPS (or ASE) using any `GraphPESModel` and the `pair_style graph_pes` LAMMPS command.
 
 ## Quickstart
 

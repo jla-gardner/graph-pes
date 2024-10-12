@@ -11,11 +11,10 @@ from ase import Atoms
 from cycler import cycler
 from matplotlib.ticker import MaxNLocator
 
-from .core import ConservativePESModel
+from .core import GraphPESModel
 from .data.io import to_atomic_graph
 from .graphs import AtomicGraph, AtomicGraphBatch, keys
 from .graphs.operations import to_batch
-from .models.functional import get_predictions
 from .transform import Transform, identity
 
 _my_style = {
@@ -141,7 +140,7 @@ def parity_plot(
         graphs = to_batch(graphs)
 
     ground_truth = transform(graphs[property_label], graphs).detach()
-    pred = get_predictions(model, graphs, property=property)
+    pred = model.predict(graphs, properties=[property])[property]
     predictions = transform(pred, graphs).detach()
 
     # plot
@@ -172,7 +171,7 @@ def parity_plot(
 
 
 def dimer_curve(
-    model: ConservativePESModel,
+    model: GraphPESModel,
     system: str,
     units: str | None = None,
     set_to_zero: bool = True,

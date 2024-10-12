@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import torch
 
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import LocalEnergyModel
 from graph_pes.graphs import DEFAULT_CUTOFF, AtomicGraph
 from graph_pes.graphs.operations import (
     index_over_neighbours,
@@ -157,7 +157,7 @@ class SchNetInteraction(torch.nn.Module):
         return self.mlp(h)
 
 
-class SchNet(ConservativePESModel):
+class SchNet(LocalEnergyModel):
     r"""
     The `SchNet <https://arxiv.org/abs/1706.08566>`_ model: a pairwise, scalar,
     message passing GNN.
@@ -225,7 +225,7 @@ class SchNet(ConservativePESModel):
             activation=ShiftedSoftplus(),
         )
 
-    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
+    def predict_raw_energies(self, graph: AtomicGraph) -> torch.Tensor:
         h = self.chemical_embedding(graph["atomic_numbers"])
         d = neighbour_distances(graph)
 

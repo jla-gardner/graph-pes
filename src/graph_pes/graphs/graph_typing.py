@@ -127,12 +127,14 @@ class Labels(TypedDict):
     energy: Tensor
     forces: Tensor
     stress: Tensor
+    local_energies: Tensor
 
 
 class LabelledGraph(AtomicGraph, Labels):
     """
-    A :class:`LabelledGraph` is an :class:`AtomicGraph` with additional
-    property labels indexed by :class:`~graph_pes.graphs.keys.LabelKey` s:
+    A :class:`LabelledGraph` is an :class:`AtomicGraph` with additional,
+    optional property labels indexed by :class:`~graph_pes.graphs.keys.LabelKey`
+    strings:
 
     .. list-table::
         :header-rows: 1
@@ -149,13 +151,16 @@ class LabelledGraph(AtomicGraph, Labels):
         * - :code:`"stress"`
           - :code:`(3, 3)`
           - stress tensor
+        * - :code:`"local_energies"`
+          - :code:`(N,)`
+          - local energy of each atom
     """
 
 
 class LabelledBatch(AtomicGraphBatch, Labels):
     """
-    A :class:`LabelledBatch` is an :class:`AtomicGraphBatch` with additional
-    property labels:
+    A :class:`LabelledBatch` is an :class:`AtomicGraphBatch` with additional,
+    optional property labels:
 
     .. list-table::
         :header-rows: 1
@@ -172,6 +177,9 @@ class LabelledBatch(AtomicGraphBatch, Labels):
         * - :code:`"stress"`
           - :code:`(S, 3, 3)`
           - stress tensor
+        * - :code:`"local_energies"`
+          - :code:`(N,)`
+          - local energy of each atom
     """
 
 

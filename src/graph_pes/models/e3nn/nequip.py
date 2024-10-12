@@ -7,7 +7,7 @@ import e3nn.nn
 import e3nn.util.jit
 import torch
 from e3nn import o3
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import LocalEnergyModel
 from graph_pes.graphs import DEFAULT_CUTOFF
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import (
@@ -294,7 +294,7 @@ class NequIPMessagePassingLayer(torch.nn.Module):
 
 
 @e3nn.util.jit.compile_mode("script")
-class _BaseNequIP(ConservativePESModel):
+class _BaseNequIP(LocalEnergyModel):
     def __init__(
         self,
         Z_embedding: torch.nn.Module,
@@ -337,7 +337,7 @@ class _BaseNequIP(ConservativePESModel):
 
         self.readout = LinearReadOut(current_layer_input)
 
-    def predict_local_energies(self, graph: AtomicGraph) -> Tensor:
+    def predict_raw_energies(self, graph: AtomicGraph) -> Tensor:
         # pre-compute important quantities
         r = neighbour_distances(graph)
         Y = self.edge_embedding(neighbour_vectors(graph))

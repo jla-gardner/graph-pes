@@ -61,12 +61,12 @@ graph-pes
 
 1. a set of :doc:`command line tools <graph-pes-train/root>` for training state-of-the-art ML-PESs. We've re-implemented several popular models, including :class:`~graph_pes.models.NequIP`, :class:`~graph_pes.models.PaiNN`, :class:`~graph_pes.models.MACE` and :class:`~graph_pes.models.TensorNet`. Easily train any of these from a unified interface, and also configure distributed training, learning rate scheduling, `Weights & Biases <https://wandb.ai>`__ logging, and other useful features.
 
-2. a `LAMMPS <https://docs.lammps.org/Manual.html>`__ ``pair_style graph_pes`` plugin for using any :class:`~graph_pes.core.ConservativePESModel` to drive MD simulations, together with a set of tools to easily build LAMMPS executables for this purpose.
+2. a `LAMMPS <https://docs.lammps.org/Manual.html>`__ ``pair_style graph_pes`` plugin for using any :class:`~graph_pes.core.GraphPESModel` to drive MD simulations, together with a set of tools to easily build LAMMPS executables for this purpose.
 
 3. a mature, well-documented and completely hackable codebase containing:
     * a data pipeline for turning :class:`ase.Atoms` into :class:`~graph_pes.graphs.AtomicGraph`
     * a wide selection of ``TorchScript``- and periodic-boundary-condition compatible functions for common operations on :class:`~graph_pes.graphs.AtomicGraph` objects, including batching, edge-trimming, neighbour selection and summation etc.
-    * a set of base classes (:class:`~graph_pes.core.ConservativePESModel`, :class:`~graph_pes.models.PairPotential`, :class:`~graph_pes.models.AdditionModel`, etc.) for easy experimentation with new model architectures: inherit from these classes, implement the relevant energy prediction method, and ``graph-pes`` will handle force and stress predictions automatically. Any new architectures you create are completely compatible with ``graph-pes-train`` and ``pair_style graph_pes``
+    * a set of base classes (:class:`~graph_pes.core.GraphPESModel`, :class:`~graph_pes.models.PairPotential`, :class:`~graph_pes.models.AdditionModel`, etc.) for easy experimentation with new model architectures: inherit from these classes, implement the relevant energy prediction method, and ``graph-pes`` will handle force and stress predictions automatically. Any new architectures you create are completely compatible with ``graph-pes-train`` and ``pair_style graph_pes``
     * a set of common building blocks for constructing new models, including :class:`~graph_pes.models.distances.DistanceExpansion`, :class:`~graph_pes.models.distances.Envelope`, :class:`~graph_pes.nn.PerElementParameter` and :class:`~graph_pes.nn.MLP`
 
 

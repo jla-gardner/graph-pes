@@ -6,7 +6,7 @@ import e3nn.util.jit
 import graph_pes.models.distances
 import torch
 from e3nn import o3
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import LocalEnergyModel
 from graph_pes.graphs import DEFAULT_CUTOFF
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import neighbour_distances, neighbour_vectors
@@ -32,7 +32,7 @@ def _get_distance_expansion(name: str) -> type[DistanceExpansion]:
 
 
 @e3nn.util.jit.compile_mode("script")
-class _BaseMACE(ConservativePESModel):
+class _BaseMACE(LocalEnergyModel):
     """
     Base class for MACE models.
     """
@@ -92,7 +92,7 @@ class _BaseMACE(ConservativePESModel):
             + [NonLinearReadOut(hidden_irreps)]
         )
 
-    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
+    def predict_raw_energies(self, graph: AtomicGraph) -> torch.Tensor:
         vectors = neighbour_vectors(graph)
         Z_embedding = self.z_embedding(graph["atomic_numbers"])
 

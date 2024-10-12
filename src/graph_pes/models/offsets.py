@@ -4,14 +4,14 @@ import warnings
 
 import torch
 
-from graph_pes.core import ConservativePESModel
-from graph_pes.graphs import AtomicGraph, LabelledBatch
+from graph_pes.core import GraphPESModel
+from graph_pes.graphs import AtomicGraph, LabelledBatch, keys
 from graph_pes.logger import logger
 from graph_pes.models.pre_fit import guess_per_element_mean_and_var
 from graph_pes.nn import PerElementParameter
 
 
-class EnergyOffset(ConservativePESModel):
+class EnergyOffset(GraphPESModel):
     r"""
     A model that predicts the total energy as a sum of per-species offsets:
 
@@ -23,7 +23,8 @@ class EnergyOffset(ConservativePESModel):
 
     With our chemistry hat on, this is equivalent to a PerfectGas model:
     there is no contribution to the total energy from the interactions between
-    atoms.
+    atoms. Hence, this model generates zero for both force and stress
+    predictions.
 
     Parameters
     ----------
@@ -34,24 +35,30 @@ class EnergyOffset(ConservativePESModel):
     """
 
     def __init__(self, offsets: PerElementParameter):
-        super().__init__(cutoff=0, auto_scale=False)
+        super().__init__(cutoff=0)
         self._offsets = offsets
 
-    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
-        """
-        Index the energy offsets by the atomic numbers in the graph.
+    def predict(
+        self,
+        graph: AtomicGraph,
+        properties: list[keys.LabelKey],
+        training: bool = False,
+    ) -> dict[keys.LabelKey, torch.Tensor]:
+        predictions: dict[keys.LabelKey, torch.Tensor] = {}
 
-        Parameters
-        ----------
-        graph
-            The atomic graph for which to predict the local energies.
+        Z = graph["atomic_numbers"]
+        local_energies = self._offsets[Z].squeeze()
+        if "local_energies" in properties:
+            predictions["local_energies"] = local_energies
+        if "energy" in properties:
+            predictions["energy"] = local_energies.sum()
 
-        Returns
-        -------
-        torch.Tensor
-            The energy offsets for each atom in the graph. Shape: (n_atoms,)
-        """
-        return self._offsets[graph["atomic_numbers"]].squeeze()
+        if "forces" in properties:
+            predictions["forces"] = torch.zeros_like(graph["_positions"])
+        if "stress" in properties:
+            predictions["stress"] = torch.zeros((3, 3), device=Z.device)
+
+        return predictions
 
     def __repr__(self):
         return self._offsets._repr(alias=self.__class__.__name__)
@@ -66,6 +73,10 @@ class FixedOffset(EnergyOffset):
     ----------
     final_values
         A dictionary of fixed energy offsets for each atomic species.
+
+    Examples
+    --------
+    >>> model = FixedOffset(H=-1.3, C=-13.0)
     """
 
     def __init__(self, **final_values: float):
@@ -81,11 +92,27 @@ class LearnableOffset(EnergyOffset):
     An :class:`~graph_pes.models.offsets.EnergyOffset` model with
     learnable energy offsets for each element.
 
+    During pre-fitting, for each element in the training data not specified by
+    the user, the model will estimate the energy offset from the data using
+    ridge regression (see TODO)
+
     Parameters
     ----------
     initial_values
         A dictionary of initial energy offsets for each atomic species.
         Leave this empty to guess the offsets from the training data.
+
+    Examples
+    --------
+    Estimate all relevant energy offsets from the training data:
+
+    >>> model = LearnableOffset()
+    >>> model.pre_fit(training_data)  # estimates offsets from data
+
+    Specify some initial values for the energy offsets:
+
+    >>> model = LearnableOffset(H=0.0, C=-3.0)
+    >>> model.pre_fit(training_data)  # estimates remaining offsets from data
     """
 
     def __init__(self, **initial_values: float):

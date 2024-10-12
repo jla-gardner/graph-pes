@@ -2,6 +2,7 @@ SchNet
 ======
 
 .. autoclass:: graph_pes.models.SchNet
+    :show-inheritance:
 
 Components:
 ------------

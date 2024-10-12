@@ -6,7 +6,7 @@ from typing import Literal
 import pytorch_lightning as pl
 import torch
 from graph_pes.config import FittingOptions
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import GraphPESModel
 from graph_pes.data.dataset import FittingData
 from graph_pes.data.loader import GraphDataLoader
 from graph_pes.graphs import AtomicGraphBatch, LabelledBatch, keys
@@ -31,7 +31,7 @@ VALIDATION_LOSS_KEY = "valid/loss/total"
 
 def train_with_lightning(
     trainer: pl.Trainer,
-    model: ConservativePESModel,
+    model: GraphPESModel,
     data: FittingData,
     loss: TotalLoss,
     fit_config: FittingOptions,
@@ -83,7 +83,7 @@ def train_with_lightning(
 class LearnThePES(pl.LightningModule):
     def __init__(
         self,
-        model: ConservativePESModel,
+        model: GraphPESModel,
         loss: TotalLoss,
         optimizer: Optimizer,
         scheduler: LRScheduler | None,
@@ -116,6 +116,7 @@ class LearnThePES(pl.LightningModule):
         self.validation_metrics = validation_metrics
 
     def forward(self, graphs: AtomicGraphBatch) -> torch.Tensor:
+        """Get the energy"""
         return self.model(graphs)
 
     def _step(self, graph: LabelledBatch, prefix: Literal["train", "valid"]):
@@ -137,9 +138,7 @@ class LearnThePES(pl.LightningModule):
             )
 
         # generate prediction:
-        predictions = self.model._get_predictions(
-            graph, properties=self.properties, training=True
-        )
+        predictions = self.model.predict(graph, properties=self.properties)
 
         # compute the loss and its sub-components
         total_loss_result = self.total_loss(predictions, graph)
@@ -214,7 +213,7 @@ class LearnThePES(pl.LightningModule):
 
         logger.debug(f"Using LR scheduler config:\n{config}")
         config["scheduler"] = scheduler
-        return {"optimizer": opt, "lr_scheduler": config}
+        return {"optimizer": opt, "lr_scheduler": config}  # type: ignore
 
     def on_validation_model_eval(self, *args, **kwargs):
         super().on_validation_model_eval(*args, **kwargs)
@@ -225,7 +224,7 @@ class LearnThePES(pl.LightningModule):
     @classmethod
     def load_best_weights(
         cls,
-        model: ConservativePESModel,
+        model: GraphPESModel,
         trainer: pl.Trainer | None = None,
         checkpoint_path: Path | str | None = None,
     ):

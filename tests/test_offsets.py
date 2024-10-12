@@ -33,11 +33,10 @@ def test_offset_behaviour(offset_model: EnergyOffset, trainable: bool):
     graph = graphs[0]
     n = number_of_atoms(graph)
 
-    assert offset_model.predict_local_energies(graph).shape == (n,)
-    predictions = offset_model._get_predictions(
+    assert offset_model.predict_raw_energies(graph).shape == (n,)
+    predictions = offset_model.predict(
         graph,
         properties=["energy", "forces"],
-        training=True,
     )
 
     assert "energy" in predictions

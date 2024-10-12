@@ -17,9 +17,11 @@ PTR = "ptr"
 
 # labels
 ENERGY = "energy"
+LOCAL_ENERGIES = "local_energies"
 FORCES = "forces"
 STRESS = "stress"
 
+# TODO: change label to property
 # appease torchscript by forcing LabelKey to be a simple string
 # at runtime
 if TYPE_CHECKING or _is_being_documented():
@@ -27,8 +29,9 @@ if TYPE_CHECKING or _is_being_documented():
         "energy",
         "forces",
         "stress",
+        "local_energies",
     ]
 else:
     LabelKey = str
 
-ALL_LABEL_KEYS: list[LabelKey] = [ENERGY, FORCES, STRESS]
+ALL_LABEL_KEYS: list[LabelKey] = [ENERGY, FORCES, STRESS, LOCAL_ENERGIES]

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import GraphPESModel
 from graph_pes.logger import logger
 from graph_pes.models.addition import AdditionModel
 from graph_pes.nn import learnable_parameters
@@ -8,7 +8,7 @@ from pytorch_lightning.loggers import Logger as PTLLogger
 
 
 def log_model_info(
-    model: ConservativePESModel,
+    model: GraphPESModel,
     ptl_logger: PTLLogger | None = None,
 ) -> None:
     """Log the number of parameters in a model."""

@@ -1,4 +1,3 @@
-from graph_pes.core import ConservativePESModel
-from graph_pes.models.functional import get_predictions
+from graph_pes.core import GraphPESModel, LocalEnergyModel
 
-__all__ = ["ConservativePESModel", "get_predictions"]
+__all__ = ["LocalEnergyModel", "GraphPESModel"]

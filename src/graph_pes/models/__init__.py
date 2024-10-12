@@ -12,7 +12,7 @@ import pathlib
 
 import torch
 
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import GraphPESModel
 
 from .addition import AdditionModel
 from .e3nn.mace import MACE, ZEmbeddingMACE
@@ -49,7 +49,7 @@ __all__ = [
 ]
 
 # TODO: nicer way to do this?
-ALL_MODELS: list[type[ConservativePESModel]] = [
+ALL_MODELS: list[type[GraphPESModel]] = [
     globals()[model]
     for model in __all__
     if model
@@ -65,7 +65,7 @@ ALL_MODELS: list[type[ConservativePESModel]] = [
 
 def load_model(
     path: str | pathlib.Path,
-) -> ConservativePESModel:
+) -> GraphPESModel:
     """
     Load a model from a file.
 
@@ -76,7 +76,7 @@ def load_model(
 
     Returns
     -------
-    ConservativePESModel
+    GraphPESModel
         The model.
     """
     path = pathlib.Path(path)
@@ -86,9 +86,7 @@ def load_model(
     return torch.load(path)
 
 
-def load_model_component(
-    path: str | pathlib.Path, key: str
-) -> ConservativePESModel:
+def load_model_component(path: str | pathlib.Path, key: str) -> GraphPESModel:
     """
     Load a component from an :class:`~graph_pes.core.AdditionModel`.
 
@@ -101,7 +99,7 @@ def load_model_component(
 
     Returns
     -------
-    ConservativePESModel
+    GraphPESModel
         The component.
     """
 

@@ -4,13 +4,13 @@ import helpers
 import pytest
 import torch
 from ase import Atoms
-from graph_pes import get_predictions
-from graph_pes.core import ConservativePESModel
+from graph_pes.core import GraphPESModel
 from graph_pes.data.io import to_atomic_graph, to_atomic_graphs
 from graph_pes.graphs.operations import (
     has_cell,
     number_of_atoms,
     number_of_edges,
+    to_batch,
 )
 from graph_pes.models import LennardJones, Morse, SchNet
 from graph_pes.models.addition import AdditionModel
@@ -24,7 +24,7 @@ def test_model():
 
     assert sum(p.numel() for p in model.parameters()) == 2
 
-    predictions = get_predictions(model, graphs)
+    predictions = model.get_all_PES_predictions(to_batch(graphs))
     assert "energy" in predictions
     assert "forces" in predictions
     assert "stress" in predictions and has_cell(graphs[0])
@@ -33,7 +33,7 @@ def test_model():
 
     energy = model(graphs[0])
     assert torch.equal(
-        get_predictions(model, graphs[0], property="energy"),
+        model.predict_energy(graphs[0]),
         energy,
     )
 
@@ -59,14 +59,14 @@ def test_pre_fit():
 
 
 @helpers.parameterise_model_classes(expected_elements=["Cu"])
-def test_model_serialisation(model_class: type[ConservativePESModel], tmp_path):
+def test_model_serialisation(model_class: type[GraphPESModel], tmp_path):
     # 1. instantiate the model
-    m1 = model_class()
+    m1 = model_class()  # type: ignore
     m1.pre_fit(graphs)  # required by some models before making predictions
 
     torch.save(m1.state_dict(), tmp_path / "model.pt")
 
-    m2 = model_class()
+    m2 = model_class()  # type: ignore
     # check no errors occur
     m2.load_state_dict(torch.load(tmp_path / "model.pt"))
 
@@ -100,3 +100,29 @@ def test_addition():
     assert (
         lj.sigma.item() != original_lj_sigma
     ), "component LJ model was not pre-fitted"
+
+
+@helpers.parameterise_all_models(expected_elements=["Cu"])
+def test_model_outputs(model: GraphPESModel):
+    graph = graphs[0]
+    assert has_cell(graph)
+    model.pre_fit([graph])
+
+    outputs = model.get_all_PES_predictions(graph)
+    N = number_of_atoms(graph)
+
+    assert "energy" in outputs and outputs["energy"].shape == ()
+    assert "forces" in outputs and outputs["forces"].shape == (N, 3)
+    assert "stress" in outputs and outputs["stress"].shape == (3, 3)
+    assert "local_energies" in outputs and outputs["local_energies"].shape == (
+        N,
+    )
+
+    batch = to_batch(graphs[:2])
+    N = number_of_atoms(batch)
+    assert "energy" in outputs and outputs["energy"].shape == (2,)
+    assert "forces" in outputs and outputs["forces"].shape == (N, 3)
+    assert "stress" in outputs and outputs["stress"].shape == (2, 3, 3)
+    assert "local_energies" in outputs and outputs["local_energies"].shape == (
+        N,
+    )

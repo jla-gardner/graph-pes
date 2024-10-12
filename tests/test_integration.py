@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import helpers
 import pytest
-from graph_pes import get_predictions
 from graph_pes.data.io import to_atomic_graphs
 from graph_pes.graphs.operations import to_batch
 from graph_pes.models import (
@@ -39,7 +38,7 @@ def test_integration(model):
     model.pre_fit(graphs[:8])
 
     loss = Loss("energy")
-    before = loss(get_predictions(model, batch), batch)
+    before = loss(model.predict(batch, ["energy"]), batch)
 
     train_the_model(
         model,
@@ -54,6 +53,6 @@ def test_integration(model):
         pre_fit_model=False,
     )
 
-    after = loss(get_predictions(model, batch), batch)
+    after = loss(model.predict(batch, ["energy"]), batch)
 
     assert after < before, "training did not improve the loss"
