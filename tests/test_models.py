@@ -4,7 +4,8 @@ import helpers
 import pytest
 import torch
 from ase import Atoms
-from graph_pes.core import ConservativePESModel, get_predictions
+from graph_pes import get_predictions
+from graph_pes.core import ConservativePESModel
 from graph_pes.data.io import to_atomic_graph, to_atomic_graphs
 from graph_pes.graphs.operations import (
     has_cell,

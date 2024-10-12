@@ -1,7 +1,7 @@
 import pytest
 import torch
 from ase.build import molecule
-from graph_pes.core import get_predictions
+from graph_pes import get_predictions
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.deploy import LAMMPSModel
 from graph_pes.graphs import keys

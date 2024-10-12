@@ -11,10 +11,11 @@ from ase import Atoms
 from cycler import cycler
 from matplotlib.ticker import MaxNLocator
 
-from .core import ConservativePESModel, get_predictions
+from .core import ConservativePESModel
 from .data.io import to_atomic_graph
 from .graphs import AtomicGraph, AtomicGraphBatch, keys
 from .graphs.operations import to_batch
+from .models.functional import get_predictions
 from .transform import Transform, identity
 
 _my_style = {
