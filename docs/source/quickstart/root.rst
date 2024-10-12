@@ -9,6 +9,8 @@ Run each of these notebooks locally, or use the Google Colab links to follow alo
     train-a-model
     model-analysis
     model-fine-tuning
+    implement-a-model
+    custom-training-loop
 
 
 

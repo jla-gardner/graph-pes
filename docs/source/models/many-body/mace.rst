@@ -6,9 +6,7 @@ MACE Models
 ===========
 
 .. autoclass:: graph_pes.models.MACE
-    :show-inheritance:
 .. autoclass:: graph_pes.models.ZEmbeddingMACE
-    :show-inheritance:
 
 ``ScaleShiftMACE``?
 ===================
