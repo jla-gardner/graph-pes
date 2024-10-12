@@ -45,22 +45,22 @@ class ConservativePESModel(nn.Module, ABC):
     which takes an :class:`~graph_pes.graphs.AtomicGraph`, or an
     :class:`~graph_pes.graphs.AtomicGraphBatch`,
     and returns a per-atom prediction of the local energy. For a simple example,
-    see the :class:`PairPotential <graph_pes.models.pairwise.PairPotential>`
-    `implementation <_modules/graph_pes/models/pairwise.html#PairPotential>`_.
+    see the :class:`~graph_pes.models.LennardJones` implementation.
 
     Parameters
     ----------
     cutoff
-        The cutoff radius for the model (if applicable). During the forward
-        pass, only edges between atoms that are closer than this distance will
-        be considered.
+        The cutoff radius for the model. During the forward pass, only edges
+        between atoms that are closer than this distance will be considered.
     auto_scale
         Whether to automatically scale raw predictions by (learnable)
-        per-element scaling factors as calculated from the data passed to
-        :meth:`pre_fit` (typically the training data). If ``True``,
-        :math:`\varepsilon_i = \sigma_{Z_i} \cdot \varepsilon_i`, where
-        :math:`\sigma_{Z_i}` is the scaling factor for element :math:`Z_i`.
-    """
+        per-element scaling factors, :math:`\sigma_{Z_i}`.
+        The starting values for these parameters are calculated from the
+        data passed to :meth:`pre_fit` (typically the training data). If
+        ``True``, :math:`\varepsilon_i \rightarrow \sigma_{Z_i} \cdot \varepsilon_i`,
+        where :math:`\varepsilon_i` is the per-atom local energy prediction,
+        and :math:`\sigma_{Z_i}` is the scaling factor for element :math:`Z_i`.
+    """  # noqa: E501
 
     def __init__(self, cutoff: float, auto_scale: bool):
         super().__init__()
@@ -92,6 +92,22 @@ class ConservativePESModel(nn.Module, ABC):
             local_energies = local_energies * scales
         return local_energies
 
+    @abstractmethod
+    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
+        """
+        Predict the local energy for each atom in the graph.
+
+        Parameters
+        ----------
+        graph
+            The graph representation of the structure/s.
+
+        Returns
+        -------
+        torch.Tensor
+            The per-atom local energy predictions, with shape :code:`(N,)`.
+        """
+
     def forward(self, graph: AtomicGraph) -> torch.Tensor:
         """
         Calculate the total energy of the structure.
@@ -113,22 +129,6 @@ class ConservativePESModel(nn.Module, ABC):
         local_energies = self.predict_scaled_local_energies(graph).squeeze()
         return sum_per_structure(local_energies, graph)
 
-    @abstractmethod
-    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
-        """
-        Predict the local energy for each atom in the graph.
-
-        Parameters
-        ----------
-        graph
-            The graph representation of the structure/s.
-
-        Returns
-        -------
-        torch.Tensor
-            The per-atom local energy predictions, with shape :code:`(N,)`.
-        """
-
     def pre_fit(
         self,
         graphs: LabelledGraphDataset | Sequence[LabelledGraph],
@@ -137,16 +137,15 @@ class ConservativePESModel(nn.Module, ABC):
         Pre-fit the model to the training data.
 
         This method detects the unique atomic numbers in the training data
-        and registers these with all of the model's per-element parameters
-        to ensure correct parameter counting.
+        and registers these with all of the model's
+        :class:`~graph_pes.nn.PerElementParameter`
+        instances to ensure correct parameter counting.
 
         Additionally, this method performs any model-specific pre-fitting
         steps, as implemented in :meth:`model_specific_pre_fit`.
-
         As an example of a model-specific pre-fitting process, see the
         :class:`~graph_pes.models.pairwise.LennardJones`
-        `implementation
-        <_modules/graph_pes/models/pairwise.html#LennardJones>`__.
+        implementation.
 
         If the model has already been pre-fitted, subsequent calls to
         :meth:`pre_fit` will be ignored (and a warning will be raised).
@@ -270,12 +269,13 @@ class ConservativePESModel(nn.Module, ABC):
 
         Examples
         --------
-        >>> get_predictions(model, graph_pbc)
-        {'energy': tensor(-12.3), 'forces': tensor(...), 'stress': tensor(...)}
-        >>> get_predictions(model, graph_no_pbc)
-        {'energy': tensor(-12.3), 'forces': tensor(...)}
-        >>> get_predictions(model, graph, property="energy")
-        tensor(-12.3)
+
+            >>> get_predictions(model, graph_pbc)
+            {'energy': tensor(-12.3), 'forces': <tensor>, 'stress': <tensor>}
+            >>> get_predictions(model, graph_no_pbc)
+            {'energy': tensor(-12.3), 'forces': <tensor>}
+            >>> get_predictions(model, graph, property="energy")
+            tensor(-12.3)
         """
         if isinstance(graph, Sequence):
             graph = to_batch(graph)
@@ -433,8 +433,9 @@ class FunctionalModel(ConservativePESModel):
     .. warning::
 
         This model does not support local energy predictions, and therefore
-        cannot be used for LAMMPS simulations. Force and stress predictions
-        are still supported.
+        cannot be used for LAMMPS simulations.
+
+        Force and stress predictions are still supported however.
 
     Parameters
     ----------

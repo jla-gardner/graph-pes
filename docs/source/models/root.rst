@@ -14,7 +14,6 @@ counterpart :func:`graph_pes.get_predictions`.
 .. autoclass:: graph_pes.ConservativePESModel
    :members: 
    :show-inheritance:
-   :special-members: __call__
 
 
 Loading Models

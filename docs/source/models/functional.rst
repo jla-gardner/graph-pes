@@ -1,9 +1,10 @@
 Functional Models
 =================
 
-
-If you have a function that takes an :class:`~graph_pes.graphs.AtomicGraph` and returns a scalar, you can use it as an energy model
-by wrapping it in :class:`~graph_pes.core.FunctionalModel`:
+If you have a function that takes an :class:`~graph_pes.graphs.AtomicGraph` 
+and returns a scalar energy prediction, you can use ``graph-pes`` to get
+force and stress predictions "for free" by wrapping it in a
+:class:`~graph_pes.core.FunctionalModel`:
 
 .. autoclass:: graph_pes.core.FunctionalModel()
    :members: forward

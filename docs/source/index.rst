@@ -56,13 +56,34 @@ graph-pes
 .. raw:: html
     :file: hide-title.html
 
-``graph-pes`` is a framework built to accelerate the development of machine-learned potential energy surface (PES) models that act on graph representations of atomic structures.
 
-Use ``graph-pes`` to easily do the following:
+``graph-pes`` provides the following functionality:
 
-#. experiment with new model architectures by inheriting from our :class:`~graph_pes.core.ConservativePESModel` base class.
-#. train your own or existing (e.g. :class:`~graph_pes.models.SchNet`, :class:`~graph_pes.models.NequIP`, :class:`~graph_pes.models.PaiNN`, :class:`~graph_pes.models.MACE`, etc.) models. Easily configure distributed training, learning rate scheduling, weights and biases logging, and other features using our ``graph-pes-train`` command line interface, or use our data-loading pipeline within your own training loop
-#. run molecular dynamics simulations via LAMMPS (or ASE) using any :class:`~graph_pes.core.ConservativePESModel` and the ``pair_style graph_pes`` LAMMPS command
+1. a set of :doc:`command line tools <graph-pes-train/root>` for training state-of-the-art ML-PESs. We've re-implemented several popular models, including :class:`~graph_pes.models.NequIP`, :class:`~graph_pes.models.PaiNN`, :class:`~graph_pes.models.MACE` and :class:`~graph_pes.models.TensorNet`. Easily train any of these from a unified interface, and also configure distributed training, learning rate scheduling, `Weights & Biases <https://wandb.ai>`__ logging, and other useful features.
+
+2. a `LAMMPS <https://docs.lammps.org/Manual.html>`__ ``pair_style graph_pes`` plugin for using any :class:`~graph_pes.core.ConservativePESModel` to drive MD simulations, together with a set of tools to easily build LAMMPS executables for this purpose.
+
+3. a mature, well-documented and completely hackable codebase containing:
+    * a data pipeline for turning :class:`ase.Atoms` into :class:`~graph_pes.graphs.AtomicGraph`
+    * a wide selection of ``TorchScript``- and periodic-boundary-condition compatible functions for common operations on :class:`~graph_pes.graphs.AtomicGraph` objects, including batching, edge-trimming, neighbour selection and summation etc.
+    * a set of base classes (:class:`~graph_pes.core.ConservativePESModel`, :class:`~graph_pes.models.PairPotential`, :class:`~graph_pes.models.AdditionModel`, etc.) for easy experimentation with new model architectures: inherit from these classes, implement the relevant energy prediction method, and ``graph-pes`` will handle force and stress predictions automatically. Any new architectures you create are completely compatible with ``graph-pes-train`` and ``pair_style graph_pes``
+    * a set of common building blocks for constructing new models, including :class:`~graph_pes.models.distances.DistanceExpansion`, :class:`~graph_pes.models.distances.Envelope`, :class:`~graph_pes.nn.PerElementParameter` and :class:`~graph_pes.nn.MLP`
+
+
+Quick-start
+===========
+
+Use our :doc:`command line tools <graph-pes-train/root>` to:
+
+* :doc:`train a model from scratch <quickstart/train-a-model>`
+* :doc:`fine-tune an existing model <quickstart/model-fine-tuning>`
+* :doc:`run an MD simulation in LAMMPs <md/lammps>` 
+
+Or get your hands dirty with the code by:
+
+* :doc:`analysing your model in a python notebook <quickstart/model-analysis>`
+* :doc:`implementing your own model <quickstart/implement-a-model>`, train it from the command line and use it to drive MD.
+* using our mature data pipeline to :doc:`implement your own training loop <quickstart/custom-training-loop>`
 
 
 Installation
@@ -83,16 +104,3 @@ Install ``graph-pes`` from PyPI using pip (installs all dependencies):
         conda create -n graph-pes python=3.10 -y
         conda activate graph-pes
 
-
-Quickstart
-==========
-
-See the menu-bar on the left for a complete API and usage guide, or jump straight in with the following quickstart guides:
-
-* :doc:`train a model from the command line <quickstart/train-a-model>`
-* implement your own model in xxx lines, and train it
-* implement a custom training loop
-* :doc:`load a trained model into a python notebook for analysis <quickstart/model-analysis>`
-* run MD simulations using either :doc:`ASE <md/ase>` or LAMMPS
-* fine-tune a model
-* sweep?

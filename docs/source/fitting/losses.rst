@@ -2,12 +2,37 @@
 Losses
 ######
 
-.. autoclass:: graph_pes.training.loss.Loss
-.. autoclass:: graph_pes.training.loss.TotalLoss()
-.. autoclass:: graph_pes.training.loss.PerAtomEnergyLoss
-    
+In ``graph-pes``, we distinguish between metrics and losses:
+
+* A :class:`~graph_pes.training.loss.Metric` is some function that takes two tensors and returns a scalar value measuring the discrepancy between them.
+* A :class:`~graph_pes.training.loss.Loss` acts to apply a given :class:`~graph_pes.training.loss.Metric` to some predictions and labels, where both of these inputs are dictionaries mapping from label keys (e.g. ``"energy"``, ``"forces"``, ``"stress"``) to tensors.
+
+
 Metrics
 =======
 
+.. class:: graph_pes.training.loss.Metric
+
+    A type alias for any function that takes two input tensors
+    and returns some scalar measure of the discrepancy between them.
+
+    .. code-block:: python
+
+        Metric = Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
+
 .. autoclass:: graph_pes.training.loss.RMSE()
 .. autoclass:: graph_pes.training.loss.MAE()
+
+
+Losses
+======
+
+.. autoclass:: graph_pes.training.loss.Loss
+    :show-inheritance:
+    :members: name
+
+.. autoclass:: graph_pes.training.loss.TotalLoss
+    :show-inheritance:
+
+.. autoclass:: graph_pes.training.loss.PerAtomEnergyLoss
+    

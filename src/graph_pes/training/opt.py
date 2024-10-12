@@ -18,7 +18,16 @@ class Optimizer:
       :class:`~graph_pes.models.LearnableOffset`), and
     - those that belong to the main model.
 
-    Any specified weight decay is applied only to the main model parameters.
+    Any specified weight decay is applied only to the main model parameters:
+    it doesn't make sense to apply weight decay to energy offsets with arbitrary
+    zero points.
+
+    .. note::
+
+        We use delayed instantiation of optimizers when configuring our training
+        runs to allow for arbitrary changes to the model and its parameters
+        during the :class:`~graph_pes.core.ConservativePESModel.pre_fit` method.
+
 
     Parameters
     ----------
@@ -33,12 +42,12 @@ class Optimizer:
     Examples
     --------
     >>> from graph_pes.training.opt import Optimizer
-    >>> from graph_pes.models import LearnableOffset
+    >>> from graph_pes.models import LennardJones
     >>> ...
-    >>> optimizer_factory = Optimizer("Adam", lr=1e-3)
-    >>> model = LearnableOffset()
+    >>> optimizer_factory = Optimizer("AdamW", lr=1e-3)
+    >>> model = LennardJones()
     >>> model.pre_fit(train_loader)
-    >>> opttimizer_instance = optimizer_factory(model)
+    >>> optimizer_instance = optimizer_factory(model)
     """
 
     def __init__(

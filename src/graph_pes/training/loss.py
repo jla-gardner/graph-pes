@@ -9,20 +9,13 @@ from graph_pes.transform import divide_per_atom
 from graph_pes.util import force_to_single_line, uniform_repr
 from torch import Tensor, nn
 
+Metric = Callable[[Tensor, Tensor], Tensor]
+
 
 class Loss(nn.Module):
     r"""
-    Measure the discrepancy between predictions and labels for a given property.
-
-    You can create a weighted, multi-component loss by using the ``+`` and ``*``
-    operators on :class:`Loss` instances. For example:
-
-    .. code-block:: python
-
-            Loss("energy") + Loss("forces") * 10
-
-    will create a loss function that is the sum of an energy loss
-    and a 10x-weighted force loss.
+    A :class:`Loss` instance applies its :class:`Metric` to the predictions and
+    labels for a given property in a :class:`~graph_pes.graphs.LabelledBatch`.
 
     Parameters
     ----------
@@ -30,13 +23,24 @@ class Loss(nn.Module):
         The property to apply the loss metric to.
     metric
         The loss metric to use. Defaults to :class:`MAE`.
+
+    Examples
+    --------
+
+    .. code-block:: python
+
+        energy_rmse_loss = Loss(keys.ENERGY, RMSE())
+        energy_rmse_value = energy_rmse_loss(
+            predictions,  # a dict of key (energy/force/etc.) to value
+            graphs,  # a LabelledBatch
+        )
+
     """
 
     def __init__(
         self,
         property_key: keys.LabelKey,
-        metric: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
-        | None = None,
+        metric: Metric | None = None,
     ):
         super().__init__()
         self.property_key: keys.LabelKey = property_key
@@ -96,27 +100,22 @@ class TotalLossResult(NamedTuple):
 
 class TotalLoss(torch.nn.Module):
     r"""
-    A lightweight wrapper around a collection of weighted losses.
+    A lightweight wrapper around a collection of (optionally weighted) losses.
 
-    Creation can be done in two ways:
+    .. math::
 
-    1. Directly, by passing a list of losses and weights.
-    2. Via ``+`` and ``*`` operators
+        \mathcal{L}_{\text{total}} = \sum_i w_i \mathcal{L}_i
 
-    Hence:
-
-    .. code-block:: python
-
-        WeightedLoss([Loss("energy"), Loss("forces")], weights=[10, 1])
-        # is equivalent to
-        10 * Loss("energy") + 1 * Loss("forces")
+    where :math:`\mathcal{L}_i` is the :math:`i`-th loss and :math:`w_i` is the
+    corresponding weight.
 
     Parameters
     ----------
     losses
         The collection of losses to aggregate.
     weights
-        The weights to apply to each loss.
+        The weights to apply to each loss. If ``None``, defaults to
+        :math:`w_i = 1 \;\; \forall \; i`.
     """
 
     def __init__(
@@ -184,7 +183,8 @@ class TotalLoss(torch.nn.Module):
 
 class PerAtomEnergyLoss(Loss):
     r"""
-    A loss function that computes the per-atom energy loss:
+    A loss function that evaluates some metric on the total energy normalised
+    by the number of atoms in the structure.
 
     .. math::
         \mathcal{L} = \text{metric}\left(
@@ -202,8 +202,7 @@ class PerAtomEnergyLoss(Loss):
 
     def __init__(
         self,
-        metric: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
-        | None = None,
+        metric: Metric | None = None,
     ):
         super().__init__(keys.ENERGY, metric)
 
@@ -254,7 +253,7 @@ class MAE(torch.nn.L1Loss):
         super().__init__()
 
 
-def _get_metric_name(metric: Callable[[Tensor, Tensor], Tensor]) -> str:
+def _get_metric_name(metric: Metric) -> str:
     # if metric is a function, we want the function's name, otherwise
     # we want the metric's class name, all lowercased
     # and without the word "loss" in it
