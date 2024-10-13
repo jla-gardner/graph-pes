@@ -10,7 +10,7 @@
     :hidden:
     :caption: CLI Reference
 
-    graph-pes-train/root
+    cli/graph-pes-train
 
 .. toctree::
     :maxdepth: 4
@@ -45,7 +45,7 @@
 .. image:: _static/logo-text.svg
     :align: center
     :alt: graph-pes logo
-    :width: 90%
+    :width: 70%
     :target: .
 
 
@@ -56,34 +56,89 @@ graph-pes
 .. raw:: html
     :file: hide-title.html
 
+``graph-pes`` is a set of tools designed to accelerate the development of machine-learned potential energy surfaces (ML-PESs) that act on graph representations of atomic structures. 
 
-``graph-pes`` provides the following functionality:
+A 3-in-1 toolset:
+=================
 
-1. a set of :doc:`command line tools <graph-pes-train/root>` for training state-of-the-art ML-PESs. We've re-implemented several popular models, including :class:`~graph_pes.models.NequIP`, :class:`~graph_pes.models.PaiNN`, :class:`~graph_pes.models.MACE` and :class:`~graph_pes.models.TensorNet`. Easily train any of these from a unified interface, and also configure distributed training, learning rate scheduling, `Weights & Biases <https://wandb.ai>`__ logging, and other useful features.
+.. dropdown:: ``graph_pes``: a Python library of components for training ML-PESs
 
-2. a `LAMMPS <https://docs.lammps.org/Manual.html>`__ ``pair_style graph_pes`` plugin for using any :class:`~graph_pes.core.GraphPESModel` to drive MD simulations, together with a set of tools to easily build LAMMPS executables for this purpose.
+   This includes:
 
-3. a mature, well-documented and completely hackable codebase containing:
-    * a data pipeline for turning :class:`ase.Atoms` into :class:`~graph_pes.graphs.AtomicGraph`
-    * a wide selection of ``TorchScript``- and periodic-boundary-condition compatible functions for common operations on :class:`~graph_pes.graphs.AtomicGraph` objects, including batching, edge-trimming, neighbour selection and summation etc.
-    * a set of base classes (:class:`~graph_pes.core.GraphPESModel`, :class:`~graph_pes.models.PairPotential`, :class:`~graph_pes.models.AdditionModel`, etc.) for easy experimentation with new model architectures: inherit from these classes, implement the relevant energy prediction method, and ``graph-pes`` will handle force and stress predictions automatically. Any new architectures you create are completely compatible with ``graph-pes-train`` and ``pair_style graph_pes``
-    * a set of common building blocks for constructing new models, including :class:`~graph_pes.models.distances.DistanceExpansion`, :class:`~graph_pes.models.distances.Envelope`, :class:`~graph_pes.nn.PerElementParameter` and :class:`~graph_pes.nn.MLP`
+   - a data pipeline for turning :class:`ase.Atoms` objects into :class:`~graph_pes.graphs.AtomicGraph` objects
+   - a set of operations for common tasks on :class:`~graph_pes.graphs.AtomicGraph` objects, including edge-trimming, neighbour indexing and summations, and batching
+   - base classes both for models that make direct energy, force and stress predictions (:class:`~graph_pes.core.GraphPESModel`) and for models that make force and stress predictions as the derivative of an energy function (:class:`~graph_pes.core.LocalEnergyModel`)
+   - reference implementations of popular models, including :class:`~graph_pes.models.NequIP`, :class:`~graph_pes.models.PaiNN`, :class:`~graph_pes.models.MACE` and :class:`~graph_pes.models.TensorNet`
+   - all written in vanilla ``PyTorch``, and 100% compatible with ``TorchScript`` compilation for use within LAMMPS
 
+.. dropdown:: ``graph-pes-train``: a command line tool for training ML-PESs
+
+   - get up and running quickly with sensible defaults to train new models from scratch
+   - fine-tune existing models on new datasets
+   - easily configure advanced features such as distributed training, learning rate scheduling, and logging to `Weights & Biases <https://wandb.ai>`__
+
+.. dropdown:: ``pair_style graph_pes``: a LAMMPS pair style for GPU-accelerated MD
+
+   - use this to drive GPU-accelerated molecular dynamics (MD) simulations with any model that inherits from :class:`~graph_pes.core.GraphPESModel` (i.e. both ones we've implemented and also your own)
+   - we've included helper scripts to automate the `LAMMPS <https://docs.lammps.org/Manual.html>`__ build process for you
 
 Quick-start
 ===========
 
-Use our :doc:`command line tools <graph-pes-train/root>` to:
+Open any of these notebooks to get started. Install ``graph-pes`` to follow along locally, or run the code in the cloud using Google Colab.
 
-* :doc:`train a model from scratch <quickstart/train-a-model>`
-* :doc:`fine-tune an existing model <quickstart/model-fine-tuning>`
-* :doc:`run an MD simulation in LAMMPs <md/lammps>` 
+.. grid:: 1 2 3 3
+    :gutter: 2
 
-Or get your hands dirty with the code by:
+    .. grid-item-card::
+        :text-align: center
 
-* :doc:`analysing your model in a python notebook <quickstart/model-analysis>`
-* :doc:`implementing your own model <quickstart/implement-a-model>`, train it from the command line and use it to drive MD.
-* using our mature data pipeline to :doc:`implement your own training loop <quickstart/custom-training-loop>`
+        .. button-ref:: quickstart/train-a-model
+            :ref-type: doc
+            :click-parent:
+    
+    .. grid-item-card::
+        :text-align: center
+
+        .. button-ref:: quickstart/model-fine-tuning
+            :ref-type: doc
+            :click-parent:
+
+    .. grid-item-card::
+        :text-align: center
+
+        .. button-ref:: md/lammps
+            :ref-type: doc
+            :click-parent:
+
+            Run LAMMPS MD
+
+    .. grid-item-card::
+        :text-align: center
+
+        .. button-ref:: quickstart/model-analysis
+            :ref-type: doc
+            :click-parent:
+
+            Analyse a model
+
+    .. grid-item-card::
+        :text-align: center
+
+        .. button-ref:: quickstart/implement-a-model
+            :ref-type: doc
+            :click-parent:
+
+            Implement your own model
+
+    .. grid-item-card::
+        :text-align: center
+
+        .. button-ref:: quickstart/custom-training-loop
+            :ref-type: doc
+            :click-parent:
+
+            Implement your own training loop
 
 
 Installation

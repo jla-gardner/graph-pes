@@ -14,6 +14,7 @@ extensions = [
     # "sphinxext.opengraph",
     "sphinx_copybutton",
     "sphinx.ext.viewcode",
+    "sphinx_design",
 ]
 
 intersphinx_mapping = {
@@ -60,3 +61,38 @@ html_theme_options = {
 nitpick_ignore = [
     ("py:class", "torch.nn.Parameter"),
 ]
+
+# override the default css to match the furo theme
+nbsphinx_prolog = """
+.. raw:: html
+
+    <style>
+        .jp-RenderedHTMLCommon tbody tr:nth-child(odd),
+        div.rendered_html tbody tr:nth-child(odd) {
+            background: var(--color-code-background);
+        }
+        .jp-RenderedHTMLCommon tr,
+        .jp-RenderedHTMLCommon th,
+        .jp-RenderedHTMLCommon td,
+        div.rendered_html tr,
+        div.rendered_html th,
+        div.rendered_html td {
+            color: var(--color-content-foreground);
+        }
+        .jp-RenderedHTMLCommon tbody tr:hover,
+        div.rendered_html tbody tr:hover {
+            background: #3c78d8aa;
+        }
+        div.nbinput.container div.input_area {
+            /* border radius of 10px, but no outline */
+            border-radius: 10px;
+            border-style: none;
+        }
+        div.nbinput.container div.input_area > div.highlight > pre {
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+    </style>
+"""
+nbsphinx_prompt_width = "0"
