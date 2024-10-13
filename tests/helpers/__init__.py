@@ -19,6 +19,8 @@ from graph_pes.models import (
     FixedOffset,
     LennardJones,
     NequIP,
+    ZEmbeddingMACE,
+    ZEmbeddingNequIP,
 )
 
 
@@ -26,15 +28,29 @@ def all_model_factories(
     expected_elements: list[str],
 ) -> tuple[list[str], list[Callable[[], GraphPESModel]]]:
     pytorch_lightning.seed_everything(42)
+    # make these models as small as possible to speed up tests
     required_kwargs = {
-        NequIP: {"elements": expected_elements},
-        MACE: {"elements": expected_elements},
+        NequIP: {"elements": expected_elements, "n_layers": 1, "l_max": 1},
+        ZEmbeddingNequIP: {"n_layers": 1, "l_max": 1},
+        MACE: {
+            "elements": expected_elements,
+            "layers": 1,
+            "max_ell": 1,
+            "correlation": 1,
+            "hidden_irreps": "4x0e + 4x1o",
+        },
+        ZEmbeddingMACE: {
+            "layers": 1,
+            "max_ell": 1,
+            "correlation": 1,
+            "hidden_irreps": "4x0e + 4x1o",
+        },
     }
 
     def _model_factory(
         model_klass: type[GraphPESModel],
     ) -> Callable[[], GraphPESModel]:
-        return lambda: model_klass(**required_kwargs.get(model_klass, {}))  # type: ignore
+        return lambda: model_klass(**required_kwargs.get(model_klass, {}))
 
     names = [model.__name__ for model in ALL_MODELS]
     factories = [_model_factory(model) for model in ALL_MODELS]

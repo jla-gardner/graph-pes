@@ -366,7 +366,7 @@ class PerElementParameter(torch.nn.Parameter):
                 ["Z"] + [chemical_symbols[Z] for Z in self._accessed_Zs]
             )
             for col_Z in self._accessed_Zs:
-                row = [col_Z]
+                row = [chemical_symbols[col_Z]]
                 for row_Z in self._accessed_Zs:
                     row.append(
                         to_significant_figures(self[col_Z, row_Z].item())

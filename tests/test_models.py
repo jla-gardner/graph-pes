@@ -119,6 +119,7 @@ def test_model_outputs(model: GraphPESModel):
     )
 
     batch = to_batch(graphs[:2])
+    outputs = model.get_all_PES_predictions(batch)
     N = number_of_atoms(batch)
     assert "energy" in outputs and outputs["energy"].shape == (2,)
     assert "forces" in outputs and outputs["forces"].shape == (N, 3)

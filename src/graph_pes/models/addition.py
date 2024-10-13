@@ -8,7 +8,12 @@ from torch import Tensor
 from graph_pes.core import GraphPESModel
 from graph_pes.data.dataset import LabelledGraphDataset
 from graph_pes.graphs import AtomicGraph, LabelledGraph, keys
-from graph_pes.graphs.operations import number_of_atoms, trim_edges
+from graph_pes.graphs.operations import (
+    is_batch,
+    number_of_atoms,
+    number_of_structures,
+    trim_edges,
+)
 from graph_pes.nn import UniformModuleDict
 from graph_pes.util import uniform_repr
 
@@ -51,12 +56,21 @@ class AdditionModel(GraphPESModel):
     ) -> dict[keys.LabelKey, Tensor]:
         device = graph["atomic_numbers"].device
         N = number_of_atoms(graph)
-        zeros = {
-            "energy": torch.zeros((), device=device),
-            "forces": torch.zeros((N, 3), device=device),
-            "stress": torch.zeros((3, 3), device=device),
-            "local_energies": torch.zeros((N), device=device),
-        }
+        if is_batch(graph):
+            S = number_of_structures(graph)
+            zeros = {
+                "energy": torch.zeros((S), device=device),
+                "forces": torch.zeros((N, 3), device=device),
+                "stress": torch.zeros((S, 3, 3), device=device),
+                "local_energies": torch.zeros((N), device=device),
+            }
+        else:
+            zeros = {
+                "energy": torch.zeros((), device=device),
+                "forces": torch.zeros((N, 3), device=device),
+                "stress": torch.zeros((3, 3), device=device),
+                "local_energies": torch.zeros((N), device=device),
+            }
 
         predictions: dict[keys.LabelKey, Tensor] = {
             k: zeros[k] for k in properties

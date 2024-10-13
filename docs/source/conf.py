@@ -16,7 +16,6 @@ extensions = [
     "sphinx.ext.viewcode",
 ]
 
-
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
@@ -57,3 +56,7 @@ html_theme_options = {
         "color-brand-content": logo_highlight_colour,
     },
 }
+
+nitpick_ignore = [
+    ("py:class", "torch.nn.Parameter"),
+]

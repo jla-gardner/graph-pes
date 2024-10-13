@@ -51,11 +51,12 @@ class GraphPESModel(nn.Module, ABC):
     @abstractmethod
     def predict(
         self,
-        graph: AtomicGraph | AtomicGraphBatch,
+        graph: AtomicGraph,
         properties: list[keys.LabelKey],
     ) -> dict[keys.LabelKey, torch.Tensor]:
         """
-        Generate predictions for the given ``properties`` and  ``graph``.
+        Generate (optionally batched) predictions for the given
+        ``properties`` and  ``graph``.
 
         This method should return a dictionary mapping each requested
         ``property`` to a tensor of predictions.
@@ -84,7 +85,9 @@ class GraphPESModel(nn.Module, ABC):
               - :code:`(N,)`
 
         See :doc:`this page <../theory>` for more details, and in particular
-        the convention that ``graph-pes`` uses for stresses.
+        the convention that ``graph-pes`` uses for stresses. Use the
+        :meth:`~graph_pes.graphs.operations.is_batch` function when implementing
+        this method to check if the graph is batched.
 
         Parameters
         ----------
@@ -94,7 +97,6 @@ class GraphPESModel(nn.Module, ABC):
             The properties to predict. Can be any combination of
             ``"energy"``, ``"forces"``, ``"stress"``, and ``"local_energies"``.
         """
-        ...
 
     @torch.no_grad()
     def pre_fit(
@@ -193,7 +195,7 @@ class GraphPESModel(nn.Module, ABC):
             The training data.
         """
 
-    def non_decayable_parameters(self) -> list[nn.Parameter]:
+    def non_decayable_parameters(self) -> list[torch.nn.Parameter]:
         """
         Return a list of parameters that should not be decayed during training.
         """
@@ -317,9 +319,7 @@ class LocalEnergyModel(GraphPESModel, ABC):
             self.per_element_scaling = None
 
     @abstractmethod
-    def predict_raw_energies(
-        self, graph: AtomicGraph | AtomicGraphBatch
-    ) -> torch.Tensor:
+    def predict_raw_energies(self, graph: AtomicGraph) -> torch.Tensor:
         """
         Predict the (unscaled) local energy for each atom in the graph.
 
@@ -334,14 +334,14 @@ class LocalEnergyModel(GraphPESModel, ABC):
             The per-atom local energy predictions, with shape :code:`(N,)`.
         """
 
-    def non_decayable_parameters(self) -> list[nn.Parameter]:
+    def non_decayable_parameters(self) -> list[torch.nn.Parameter]:
         if self.per_element_scaling is not None:
             return [self.per_element_scaling]
         return []
 
     def predict(
         self,
-        graph: AtomicGraph | AtomicGraphBatch,
+        graph: AtomicGraph,
         properties: list[keys.LabelKey],
     ) -> dict[keys.LabelKey, torch.Tensor]:
         want_stress = keys.STRESS in properties
