@@ -6,8 +6,8 @@ import torch
 
 from graph_pes.core import GraphPESModel
 from graph_pes.graphs import AtomicGraph, LabelledBatch, keys
+from graph_pes.graphs.operations import guess_per_element_mean_and_var
 from graph_pes.logger import logger
-from graph_pes.models.pre_fit import guess_per_element_mean_and_var
 from graph_pes.nn import PerElementParameter
 
 

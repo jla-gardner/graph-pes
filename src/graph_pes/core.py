@@ -19,6 +19,7 @@ from .graphs import (
     keys,
 )
 from .graphs.operations import (
+    guess_per_element_mean_and_var,
     has_cell,
     is_batch,
     sum_per_structure,
@@ -165,10 +166,6 @@ class GraphPESModel(nn.Module, ABC):
                 and self.per_element_scaling is not None
                 and "energy" in graph_batch
             ):
-                from graph_pes.models.pre_fit import (
-                    guess_per_element_mean_and_var,
-                )
-
                 means, variances = guess_per_element_mean_and_var(
                     graph_batch["energy"], graph_batch
                 )

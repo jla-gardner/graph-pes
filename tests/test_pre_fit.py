@@ -9,13 +9,13 @@ from ase.build import molecule
 from graph_pes import GraphPESModel
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.graphs.graph_typing import LabelledBatch, LabelledGraph
-from graph_pes.graphs.operations import number_of_structures, to_batch
+from graph_pes.graphs.operations import (
+    guess_per_element_mean_and_var,
+    number_of_structures,
+    to_batch,
+)
 from graph_pes.models import LennardJonesMixture
 from graph_pes.models.addition import AdditionModel
-from graph_pes.models.pre_fit import (
-    MIN_VARIANCE,
-    guess_per_element_mean_and_var,
-)
 
 
 def _create_batch(
@@ -90,11 +90,13 @@ def test_clamping():
     batch = _create_batch(mu=mu, sigma=sigma)
 
     # calculate the per-element mean and variance
-    means, variances = guess_per_element_mean_and_var(batch["energy"], batch)
+    means, variances = guess_per_element_mean_and_var(
+        batch["energy"], batch, min_variance=0.01
+    )
 
     # ensure no variance is less than the value we choose to clamp to
     for value in variances.values():
-        assert value >= MIN_VARIANCE
+        assert value >= 0.01
 
 
 models = [
