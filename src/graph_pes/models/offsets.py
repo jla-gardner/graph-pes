@@ -60,6 +60,9 @@ class EnergyOffset(GraphPESModel):
 
         return predictions
 
+    def non_decayable_parameters(self) -> list[torch.nn.Parameter]:
+        return [self._offsets]
+
     def __repr__(self):
         return self._offsets._repr(alias=self.__class__.__name__)
 

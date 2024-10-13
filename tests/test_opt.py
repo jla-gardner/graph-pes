@@ -1,8 +1,52 @@
 import pytest
 import torch
-from graph_pes.models import LearnableOffset, SchNet
+from graph_pes.models import LearnableOffset, LennardJones, SchNet
 from graph_pes.models.addition import AdditionModel
-from graph_pes.training.opt import SGD, Adam, LRScheduler, Optimizer
+from graph_pes.training.opt import LRScheduler, Optimizer
+
+
+def test_non_decayable_params():
+    opt_factory = Optimizer("Adam", weight_decay=1e-4)
+
+    # learnable offsets have a single paramter, _offsets,
+    # that is not decayable
+    model = LearnableOffset()
+    assert (
+        set(model.non_decayable_parameters())
+        == set([model._offsets])
+        == set(model.parameters())
+    )
+
+    opt = opt_factory(model)
+    assert len(opt.param_groups) == 1
+    assert opt.param_groups[0]["weight_decay"] == 0.0
+
+    # LJ models have no non-decayable parameters
+    model = LennardJones()
+    assert len(model.non_decayable_parameters()) == 0
+
+    opt = opt_factory(model)
+    assert len(opt.param_groups) == 1
+    assert opt.param_groups[0]["weight_decay"] == 1e-4
+
+    # schnet has many parameters, but only per_element_scaling is
+    # not decayable
+    model = SchNet()
+    assert set(model.non_decayable_parameters()) == set(
+        [model.per_element_scaling]
+    )
+    opt = opt_factory(model)
+    assert len(opt.param_groups) == 2
+    pg_by_name = {pg["name"]: pg for pg in opt.param_groups}
+    assert pg_by_name["non-decayable"]["weight_decay"] == 0.0
+    assert pg_by_name["normal"]["weight_decay"] == 1e-4
+
+    # addition models should return the decayable parameters of their
+    # components
+    model = AdditionModel(energy_offset=LearnableOffset(), schnet=SchNet())
+    assert set(model.non_decayable_parameters()) == set(
+        [model["energy_offset"]._offsets, model["schnet"].per_element_scaling]
+    )
 
 
 def test_opt():
@@ -11,19 +55,8 @@ def test_opt():
     opt_factory = Optimizer("Adam", weight_decay=1e-4)
     opt = opt_factory(model)
 
-    # check that opt is an Adam optimizer with a single parameter group
+    # check that opt is an Adam optimizer with two parameter groups
     assert isinstance(opt, torch.optim.Adam)
-    assert len(opt.param_groups) == 1
-
-    # test addition model with energy offset parameters
-    model = AdditionModel(energy_offset=LearnableOffset(), schnet=SchNet())
-    opt = opt_factory(model)
-    assert len(opt.param_groups) == 2
-    group1, group2 = opt.param_groups
-    # first group should be the offset parameters
-    assert group1["name"] == "offset" and group1["weight_decay"] == 0.0
-    # second group should be the model parameters
-    assert group2["name"] == "model" and group2["weight_decay"] == 1e-4
 
     # test error if optimizer class is not found
     with pytest.raises(ValueError, match="Could not find optimizer"):
@@ -47,24 +80,6 @@ def test_opt():
     opt_factory = Optimizer(CustomOptimizer)
     opt = opt_factory(model)
     assert isinstance(opt, CustomOptimizer)
-
-    # (edge case) when training just an offset model, the optimizer should
-    # again have a single parameter group
-    model = LearnableOffset()
-    opt = opt_factory(model)
-    assert len(opt.param_groups) == 1
-    assert opt.param_groups[0]["weight_decay"] == 0.0
-
-
-def test_opt_conveniences():
-    model = SchNet()
-    opt_factory = Adam(weight_decay=1e-4)
-    opt = opt_factory(model)
-    assert isinstance(opt, torch.optim.Adam)
-
-    opt_factory = SGD(lr=1e-3)
-    opt = opt_factory(model)
-    assert isinstance(opt, torch.optim.SGD)
 
 
 def test_lr_scheduler():

@@ -5,7 +5,7 @@ import random
 import string
 import sys
 from pathlib import Path
-from typing import Any, Iterator, Sequence, TypeVar, overload
+from typing import Any, Iterable, Iterator, Sequence, TypeVar, overload
 
 import torch
 import torch.distributed
@@ -243,3 +243,12 @@ def random_dir(root: Path) -> Path:
         new_dir = root / random_id(lengths=[8, 8, 8])
         if not new_dir.exists():
             return new_dir
+
+
+def contains_tensor(l: Iterable[torch.Tensor], tensor: torch.Tensor) -> bool:
+    """
+    A convenient way to check if a list contains a particular tensor,
+    since ``tensor in l`` is broadcasted by torch to return a boolean
+    tensor with the same shape as ``l``.
+    """
+    return any(tensor is t for t in l)

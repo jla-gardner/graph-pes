@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import torch
 from graph_pes.core import GraphPESModel
-from graph_pes.models.addition import AdditionModel
 from graph_pes.models.offsets import LearnableOffset
-from graph_pes.util import uniform_repr
+from graph_pes.util import contains_tensor, uniform_repr
 
 
 class Optimizer:
@@ -14,13 +13,18 @@ class Optimizer:
 
     The generated optimizer splits the parameters of the model into two groups:
 
-    - those that belong to some form of energy-offset modelling (e.g.
-      :class:`~graph_pes.models.LearnableOffset`), and
-    - those that belong to the main model.
+    - "non-decayable" parameters, which are all parameters returned by the
+      :meth:`~graph_pes.core.GraphPESModel.non_decayable_parameters` method of
+      the model.
+    - "normal" parameters, corresponding to the remaining model parameters.
 
-    Any specified weight decay is applied only to the main model parameters:
-    it doesn't make sense to apply weight decay to energy offsets with arbitrary
-    zero points.
+    Unsurprisingly, any specified weight decay is applied only to the normal
+    model parameters.
+
+    As an example, per-element energy offsets parameters of
+    :class:`~graph_pes.models.offsets.LearnableOffset` models
+    represent the arbitrary zero points of energies for different elements:
+    it doesn't make sense to push these towards zero during training.
 
     .. note::
 
@@ -33,14 +37,28 @@ class Optimizer:
     ----------
     name
         The name of the :class:`torch.optim.Optimizer` class to use, e.g.
-        ``"Adam"`` or ``"SGD"``. Alternatively, provide any subclass of
-        :class:`torch.optim.Optimizer`.
+        ``"Adam"`` or ``"SGD"``. Alternatively, provide the type of any
+        subclass of :class:`torch.optim.Optimizer`.
     **kwargs
         Additional keyword arguments to pass to the specified optimizer's
         constructor.
 
     Examples
     --------
+    Pass a named optimiser:
+
+    >>> from graph_pes.training.opt import Optimizer
+    >>> optimizer_factory = Optimizer("AdamW", lr=1e-3)
+    >>> optimizer_instance = optimizer_factory(model)
+
+    Or pass the optimiser class directly:
+
+    >>> from torch.optim import SGD
+    >>> optimizer_factory = Optimizer(SGD, lr=1e-3)
+    >>> optimizer_instance = optimizer_factory(model)
+
+    Psuedo-code excerpt from ``graph-pes-train`` logic:
+
     >>> from graph_pes.training.opt import Optimizer
     >>> from graph_pes.models import LennardJones
     >>> ...
@@ -82,60 +100,34 @@ class Optimizer:
 
         self.optimizer_class = optimizer_class
 
-    # TODO: add method: non-decayable params
     def __call__(self, model: GraphPESModel) -> torch.optim.Optimizer:
-        offset_params = []
-        if isinstance(model, LearnableOffset):
-            offset_params += list(model.parameters())
-        elif isinstance(model, AdditionModel):
-            for component in model.models.values():
-                if isinstance(component, LearnableOffset):
-                    offset_params += list(component.parameters())
+        """
+        Create an instance of the specified optimizer class, with the correct
+        parameter groups for the model.
+        """
 
-        model_params = [
-            p
-            for p in model.parameters()
-            if not any(p is op for op in offset_params)
-        ]
-
-        assert (
-            offset_params or model_params
-        ), "No parameters found in the model. "
-
-        if not offset_params:
-            return self.optimizer_class(
-                [{"name": "model", "params": model_params}],
-                **self.kwargs,
-            )
-
-        if not model_params:
-            # override weight decay for offset parameters
-            return self.optimizer_class(
-                [
-                    {
-                        "name": "offset",
-                        "params": offset_params,
-                        "weight_decay": 0.0,
-                    }
-                ],
-                **self.kwargs,
-            )
+        all_params = list(model.parameters())
+        non_decayable_params = model.non_decayable_parameters()
 
         param_groups = [
             {
-                "name": "offset",
-                "params": offset_params,
+                "name": "non-decayable",
+                "params": non_decayable_params,
                 "weight_decay": 0.0,
             },
             {
-                "name": "model",
+                "name": "normal",
                 "params": [
                     p
-                    for p in model.parameters()
-                    if not any(p is t for t in offset_params)
+                    for p in all_params
+                    if not contains_tensor(non_decayable_params, p)
                 ],
             },
         ]
+
+        # remove empty groups
+        param_groups = [pg for pg in param_groups if pg["params"]]
+
         return self.optimizer_class(param_groups, **self.kwargs)
 
     def __repr__(self):
@@ -219,50 +211,4 @@ class LRScheduler:
             self.__class__.__name__,
             name=self.scheduler_class.__name__,
             **self.kwargs,
-        )
-
-
-## Util classes for simplicity ##
-
-
-class Adam(Optimizer):
-    """A convenience class for creating an Adam :class:`Optimizer`."""
-
-    def __init__(
-        self,
-        lr: float = 3e-4,
-        weight_decay: float = 0.0,
-    ):
-        super().__init__(torch.optim.Adam, lr=lr, weight_decay=weight_decay)
-
-
-class SGD(Optimizer):
-    """A convenience class for creating an SGD :class:`Optimizer`."""
-
-    def __init__(
-        self,
-        lr: float = 3e-4,
-        weight_decay: float = 0.0,
-    ):
-        super().__init__(torch.optim.SGD, lr=lr, weight_decay=weight_decay)
-
-
-class ReduceLROnPlateau(LRScheduler):
-    """
-    A convenience class for creating a ReduceLROnPlateau :class:`LRScheduler`.
-    """
-
-    def __init__(
-        self,
-        factor: float = 0.5,
-        patience: int = 10,
-        threshold: float = 1e-4,
-        min_lr: float = 1e-6,
-    ):
-        super().__init__(
-            torch.optim.lr_scheduler.ReduceLROnPlateau,
-            factor=factor,
-            patience=patience,
-            threshold=threshold,
-            min_lr=min_lr,
         )

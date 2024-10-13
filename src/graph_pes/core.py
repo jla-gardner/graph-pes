@@ -46,6 +46,7 @@ class GraphPESModel(nn.Module, ABC):
 
         self.cutoff: torch.Tensor
         self.register_buffer("cutoff", torch.tensor(cutoff))
+        self._has_been_pre_fit = False
 
     @abstractmethod
     def predict(
@@ -192,6 +193,12 @@ class GraphPESModel(nn.Module, ABC):
             The training data.
         """
 
+    def non_decayable_parameters(self) -> list[nn.Parameter]:
+        """
+        Return a list of parameters that should not be decayed during training.
+        """
+        return []
+
     def forward(self, graph: AtomicGraph) -> torch.Tensor:
         """
         The main access point for :class:`~graph_pes.core.GraphPESModel`
@@ -326,6 +333,11 @@ class LocalEnergyModel(GraphPESModel, ABC):
         torch.Tensor
             The per-atom local energy predictions, with shape :code:`(N,)`.
         """
+
+    def non_decayable_parameters(self) -> list[nn.Parameter]:
+        if self.per_element_scaling is not None:
+            return [self.per_element_scaling]
+        return []
 
     def predict(
         self,

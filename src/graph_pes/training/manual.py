@@ -21,7 +21,7 @@ from graph_pes.graphs.operations import (
 )
 from graph_pes.logger import logger
 from graph_pes.training.loss import RMSE, Loss, TotalLoss
-from graph_pes.training.opt import Adam, Optimizer
+from graph_pes.training.opt import Optimizer
 from graph_pes.training.ptl import create_trainer, train_with_lightning
 
 
@@ -52,7 +52,7 @@ def train_the_model(
     if config_to_log is None:
         config_to_log = {}
     if optimizer is None:
-        optimizer = Adam(lr=3e-3)
+        optimizer = Optimizer("Adam", lr=3e-3)
 
     # create data module
     if not isinstance(train_data, LabelledGraphDataset):

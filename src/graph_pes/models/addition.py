@@ -73,6 +73,13 @@ class AdditionModel(GraphPESModel):
         for model in self.models.values():
             model.pre_fit(graphs)
 
+    def non_decayable_parameters(self) -> list[torch.nn.Parameter]:
+        return [
+            p
+            for model in self.models.values()
+            for p in model.non_decayable_parameters()
+        ]
+
     def __repr__(self):
         return uniform_repr(
             self.__class__.__name__,
