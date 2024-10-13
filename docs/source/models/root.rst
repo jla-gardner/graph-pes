@@ -40,5 +40,4 @@ Available Models
    offsets
    pairwise
    many-body/root
-   functional
    

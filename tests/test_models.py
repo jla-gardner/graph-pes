@@ -118,6 +118,13 @@ def test_model_outputs(model: GraphPESModel):
         N,
     )
 
+    assert torch.allclose(model.predict_energy(graph), outputs["energy"])
+    assert torch.allclose(model.predict_forces(graph), outputs["forces"])
+    assert torch.allclose(model.predict_stress(graph), outputs["stress"])
+    assert torch.allclose(
+        model.predict_local_energies(graph), outputs["local_energies"]
+    )
+
     batch = to_batch(graphs[:2])
     outputs = model.get_all_PES_predictions(batch)
     N = number_of_atoms(batch)

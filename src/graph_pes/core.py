@@ -244,7 +244,7 @@ class GraphPESModel(nn.Module, ABC):
         """Convenience method to predict just the stress."""
         return self.predict(graph, ["stress"])["stress"]
 
-    def predict_raw_energies(self, graph: AtomicGraph) -> torch.Tensor:
+    def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
         """Convenience method to predict just the local energies."""
         return self.predict(graph, ["local_energies"])["local_energies"]
 
