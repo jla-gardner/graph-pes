@@ -35,4 +35,4 @@ fitting:
 
 # ... and log to Weights & Biases
 wandb:
-  project: graph-pes
+  project: graph-pes-demo

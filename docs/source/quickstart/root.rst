@@ -7,8 +7,8 @@ Run each of these notebooks locally, or use the Google Colab links to follow alo
     :maxdepth: 1
 
     train-a-model
-    model-analysis
     model-fine-tuning
+    model-analysis
     implement-a-model
     custom-training-loop
 
