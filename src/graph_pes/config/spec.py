@@ -290,6 +290,25 @@ class Config:
                 n_val: 1000
                 property_map:
                     energy: U0
+
+    Point to separate train and validation datasets, taking a random
+    1,000 structures from the training file to train from, and all
+    structures from the validation file:
+
+    .. code-block:: yaml
+
+        data:
+            train:
+                graph_pes.data.file_dataset:
+                    path: training_data.xyz
+                    cutoff: 5.0
+                    n: 1000
+                    shuffle: true
+                    seed: 42
+            valid:
+                graph_pes.data.file_dataset:
+                    path: validation_data.xyz
+                    cutoff: 5.0
     """
 
     loss: Union[str, Dict[str, Any], List[LossSpec]]

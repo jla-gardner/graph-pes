@@ -8,29 +8,34 @@ model:
     layers: 3
     cutoff: 3.0 # radial cutoff in Å
 
-# ... on structures from the QM7 dataset ...
+# ... on structures from local files ...
 data:
-  graph_pes.data.load_atoms_dataset:
-    id: QM7
-    cutoff: 3.0 # radial cutoff in Å
-    n_train: 1_000
-    n_valid: 100
-
+  train:
+    graph_pes.data.file_dataset:
+      path: train.xyz
+      cutoff: 3.0 
+      n: 1000
+      shuffle: false
+  valid:
+    graph_pes.data.file_dataset:
+      path: val.xyz
+      cutoff: 3.0 
+ 
 # ... using a simple energy loss function ...
 loss: graph_pes.training.loss.PerAtomEnergyLoss()
 
 # ... with the following settings ...
 fitting:
-  trainer_kwargs: # passed straight to the lightning trainer
+  trainer_kwargs:
     max_epochs: 200
-    accelerator: auto # use a gpu if available
+    accelerator: auto
 
   optimizer:
     graph_pes.training.opt.Optimizer:
       name: AdamW
       lr: 0.0001
 
-  loader_kwargs: # passed straight to the data loader
+  loader_kwargs:
     batch_size: 16
 
 # ... and log to Weights & Biases
