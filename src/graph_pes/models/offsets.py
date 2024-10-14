@@ -6,7 +6,10 @@ import torch
 
 from graph_pes.core import GraphPESModel
 from graph_pes.graphs import AtomicGraph, LabelledBatch, keys
-from graph_pes.graphs.operations import guess_per_element_mean_and_var
+from graph_pes.graphs.operations import (
+    guess_per_element_mean_and_var,
+    sum_per_structure,
+)
 from graph_pes.logger import logger
 from graph_pes.nn import PerElementParameter
 
@@ -51,7 +54,7 @@ class EnergyOffset(GraphPESModel):
         if "local_energies" in properties:
             predictions["local_energies"] = local_energies
         if "energy" in properties:
-            predictions["energy"] = local_energies.sum()
+            predictions["energy"] = sum_per_structure(local_energies, graph)
 
         if "forces" in properties:
             predictions["forces"] = torch.zeros_like(graph["_positions"])

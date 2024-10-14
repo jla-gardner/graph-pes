@@ -24,6 +24,7 @@ intersphinx_mapping = {
     "e3nn": ("https://docs.e3nn.org/en/latest/", None),
     "pytorch_lightning": ("https://lightning.ai/docs/pytorch/stable/", None),
     "matplotlib": ("https://matplotlib.org/stable/", None),
+    "load-atoms": ("https://jla-gardner.github.io/load-atoms/", None),
 }
 
 html_logo = "_static/logo-square.svg"
@@ -60,6 +61,7 @@ html_theme_options = {
 
 nitpick_ignore = [
     ("py:class", "torch.nn.Parameter"),
+    ("py:class", "numpy.ndarray"),
 ]
 
 # override the default css to match the furo theme

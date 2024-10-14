@@ -3,18 +3,18 @@ from __future__ import annotations
 import warnings
 from typing import Iterator, Sequence
 
-from torch.utils.data import DataLoader as TorchDataLoader
+import torch.utils.data
 
-from graph_pes.graphs import AtomicGraphBatch, LabelledGraph
+from graph_pes.graphs import LabelledBatch, LabelledGraph
 from graph_pes.graphs.operations import to_batch
 
 from .dataset import LabelledGraphDataset, SequenceDataset
 
 
-class GraphDataLoader(TorchDataLoader):
+class GraphDataLoader(torch.utils.data.DataLoader):
     r"""
-    A data loader for merging :class:`AtomicGraph` objects into
-    :class:`AtomicGraphBatch` objects.
+    A data loader for merging :class:`~graph_pes.graphs.AtomicGraph` objects
+    into :class:`~graph_pes.graphs.AtomicGraphBatch` objects.
 
     Parameters
     ----------
@@ -56,5 +56,5 @@ class GraphDataLoader(TorchDataLoader):
             **kwargs,
         )
 
-    def __iter__(self) -> Iterator[AtomicGraphBatch]:  # type: ignore
+    def __iter__(self) -> Iterator[LabelledBatch]:  # type: ignore
         return super().__iter__()

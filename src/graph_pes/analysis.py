@@ -99,11 +99,11 @@ def parity_plot(
 
         parity_plot(model, train, keys.ENERGY)
 
-    .. image:: notebooks/Cu-LJ-default-parity.svg
+    .. image:: Cu-LJ-default-parity.svg
         :align: center
 
     Custom settings, as seen in
-    :doc:`this example notebook <notebooks/example>`:
+    :doc:`this example notebook <../quickstart/custom-training-loop>`:
 
     .. code-block:: python
 
@@ -127,7 +127,7 @@ def parity_plot(
 
         plt.legend(loc="upper left", fancybox=False);
 
-    .. image:: notebooks/Cu-LJ-parity.svg
+    .. image:: ../quickstart/parity-plot.svg
         :align: center
     """
     # deal with defaults
@@ -206,15 +206,17 @@ def dimer_curve(
 
     Examples
     --------
-    See :doc:`this example notebook <notebooks/example>`:
 
     .. code-block:: python
 
-        dimer_curve(model, "Cu", units="eV", label="Final", c="C1")
+        from graph_pes.analysis import dimer_curve
+        from graph_pes.models import LennardJones
 
-    .. image:: notebooks/Cu-LJ-dimer.svg
+        dimer_curve(LennardJones(sigma=1.3, epsilon=0.5), system="OH", units="eV")
+
+    .. image:: dimer-curve.svg
         :align: center
-    """
+    """  # noqa: E501
 
     trial_atoms = Atoms(system)
     if len(trial_atoms) != 2:

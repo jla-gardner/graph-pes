@@ -27,9 +27,9 @@
     :caption: Tools
     :hidden:
 
-    md/root
-    analysis
-    examples
+    tools/ase
+    tools/lammps
+    tools/analysis
 
 
 .. toctree::
@@ -107,7 +107,7 @@ Open any of these notebooks to get started. Install ``graph-pes`` to follow alon
     .. grid-item-card::
         :text-align: center
 
-        .. button-ref:: md/lammps
+        .. button-ref:: tools/lammps
             :ref-type: doc
             :click-parent:
 
