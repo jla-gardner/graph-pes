@@ -1,5 +1,5 @@
 general:
-  run_id: quickstart-run
+  run_id: qm7-quickstart
   progress: logged
 
 # train a PaiNN model ...
@@ -27,7 +27,7 @@ loss: graph_pes.training.loss.PerAtomEnergyLoss()
 # ... with the following settings ...
 fitting:
   trainer_kwargs:
-    max_epochs: 200
+    max_epochs: 100
     accelerator: auto
 
   optimizer:

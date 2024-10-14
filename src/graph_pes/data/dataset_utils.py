@@ -15,7 +15,7 @@ def load_atoms_dataset(
     id: str | pathlib.Path,
     cutoff: float,
     n_train: int,
-    n_valid: int,
+    n_valid: int = -1,
     split: Literal["random", "sequential"] = "random",
     seed: int = 42,
     pre_transform: bool = True,
@@ -34,7 +34,9 @@ def load_atoms_dataset(
     n_train:
         The number of training structures.
     n_valid:
-        The number of validation structures.
+        The number of validation structures. If ``-1``, the number of validation
+        structures is set to the number of remaining structures after
+        training structures are chosen.
     split:
         The split method. ``"random"`` shuffles the structures before
         choosing a non-overlapping split, while ``"sequential"`` takes the
@@ -73,6 +75,9 @@ def load_atoms_dataset(
     if split == "random":
         idxs = np.random.default_rng(seed).permutation(len(structures))
         structures = [structures[i] for i in idxs]
+
+    if n_valid == -1:
+        n_valid = len(structures) - n_train
 
     train_structures = structures[:n_train]
     val_structures = structures[n_train : n_train + n_valid]
