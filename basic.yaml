@@ -1,0 +1,46 @@
+model:
+  graph_pes.models.NequIP:
+    # train a model that can act on C, H and O
+    elements: [C, H, O, N, S]
+    cutoff: 5.0
+    # use 2 message passing layers
+    n_layers: 2
+    # use 64 l=0 irrep features, 32 l=1 and 8 l=2
+    n_channels: [32, 16, 8]
+    l_max: 2
+    # use variance preserving neighbour aggregation
+    neighbour_aggregation: constant_fixed
+    self_interaction: linear
+
+data:
+    graph_pes.data.load_atoms_dataset:
+        id: QM7
+        cutoff: 3.7
+        n_train: 1_000
+        n_valid: 100
+        split: sequential
+
+loss: 
+    graph_pes.training.loss.PerAtomEnergyLoss()
+
+fitting:
+  trainer_kwargs:
+    max_epochs: 1_000
+    accelerator: cpu
+
+  early_stopping_patience: 50
+
+  optimizer:
+    graph_pes.training.opt.Optimizer:
+      name: AdamW
+      lr: 0.0003
+
+  scheduler:
+    graph_pes.training.opt.LRScheduler:
+      name: ReduceLROnPlateau
+      patience: 5
+      factor: 0.8
+
+  loader_kwargs:
+    batch_size: 64
+
