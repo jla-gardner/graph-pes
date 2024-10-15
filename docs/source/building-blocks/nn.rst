@@ -10,5 +10,3 @@ PyTorch Helpers
 .. autoclass:: graph_pes.nn.MLP
     :members:
 
-.. autoclass:: graph_pes.nn.UniformModuleDict
-   :members:

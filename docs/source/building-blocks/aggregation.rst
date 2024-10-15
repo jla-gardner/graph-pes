@@ -8,3 +8,15 @@ Aggregation
 
 .. autoclass:: graph_pes.models.components.aggregation.NeighbourAggregation
    :members:
+
+.. autoclass:: graph_pes.models.components.aggregation.SumNeighbours
+   :members:
+
+.. autoclass:: graph_pes.models.components.aggregation.MeanNeighbours
+   :members:
+
+.. autoclass:: graph_pes.models.components.aggregation.ScaledSumNeighbours
+   :members:
+
+.. autoclass:: graph_pes.models.components.aggregation.VariancePreservingSumNeighbours
+   :members:

@@ -530,8 +530,9 @@ class NequIP(_BaseNequIP):
             n_channels: [64, 32, 8]
             l_max: 2
 
-            # use variance preserving neighbour aggregation
-            neighbour_aggregation: "sqrt"
+            # scale the aggregation by the avg. number of
+            # neighbours in the training set
+            neighbour_aggregation: constant_fixed
 
 
     Observe the drop in parameters as we prune the last layer and
