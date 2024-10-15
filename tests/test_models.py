@@ -126,11 +126,35 @@ def test_model_outputs(model: GraphPESModel):
     )
 
     batch = to_batch(graphs[:2])
-    outputs = model.get_all_PES_predictions(batch)
-    N = number_of_atoms(batch)
-    assert "energy" in outputs and outputs["energy"].shape == (2,)
-    assert "forces" in outputs and outputs["forces"].shape == (N, 3)
-    assert "stress" in outputs and outputs["stress"].shape == (2, 3, 3)
-    assert "local_energies" in outputs and outputs["local_energies"].shape == (
-        N,
+    batch_outputs = model.get_all_PES_predictions(batch)
+    Nbatch = number_of_atoms(batch)
+    assert "energy" in batch_outputs and batch_outputs["energy"].shape == (2,)
+    assert "forces" in batch_outputs and batch_outputs["forces"].shape == (
+        Nbatch,
+        3,
+    )
+    assert "stress" in batch_outputs and batch_outputs["stress"].shape == (
+        2,
+        3,
+        3,
+    )
+    assert "local_energies" in batch_outputs and batch_outputs[
+        "local_energies"
+    ].shape == (Nbatch,)
+
+    # ensure that the predictions for the individual graphs are the same
+    # as if they were predicted separately
+    assert torch.allclose(
+        batch_outputs["energy"][0], outputs["energy"], atol=1e-5
+    )
+    assert torch.allclose(
+        batch_outputs["forces"][:N], outputs["forces"], atol=1e-5
+    )
+    assert torch.allclose(
+        batch_outputs["stress"][0], outputs["stress"], atol=1e-5
+    )
+    assert torch.allclose(
+        batch_outputs["local_energies"][:N],
+        outputs["local_energies"],
+        atol=1e-5,
     )

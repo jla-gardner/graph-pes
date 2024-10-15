@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import warnings
+from abc import ABC, abstractmethod
+from typing import Literal
 
 import e3nn
 import e3nn.nn
@@ -9,11 +11,13 @@ import torch
 from e3nn import o3
 from graph_pes.core import LocalEnergyModel
 from graph_pes.graphs import DEFAULT_CUTOFF
-from graph_pes.graphs.graph_typing import AtomicGraph
+from graph_pes.graphs.graph_typing import AtomicGraph, LabelledBatch
 from graph_pes.graphs.operations import (
     index_over_neighbours,
     neighbour_distances,
     neighbour_vectors,
+    number_of_atoms,
+    number_of_edges,
     sum_over_neighbours,
 )
 from graph_pes.models import distances
@@ -160,6 +164,45 @@ def build_gate(output_irreps: o3.Irreps):
     )
 
 
+class SelfInteraction(ABC, torch.nn.Module):
+    @abstractmethod
+    def forward(self, node_embeddings: Tensor, Z_embeddings: Tensor) -> Tensor:
+        pass
+
+
+class LinearSelfInteraction(SelfInteraction):
+    def __init__(
+        self,
+        input_irreps: o3.Irreps,
+        output_irreps: o3.Irreps,
+    ):
+        super().__init__()
+
+        self.linear = o3.Linear(input_irreps, output_irreps)
+
+    def forward(self, node_embeddings: Tensor, Z_embeddings: Tensor) -> Tensor:
+        return self.linear(node_embeddings)
+
+
+class TensorProductSelfInteraction(SelfInteraction):
+    def __init__(
+        self,
+        input_irreps: o3.Irreps | str,
+        output_irreps: o3.Irreps | str,
+        Z_embedding_irreps: o3.Irreps | str,
+    ):
+        super().__init__()
+
+        self.tensor_product = o3.FullyConnectedTensorProduct(
+            input_irreps,
+            Z_embedding_irreps,
+            output_irreps,
+        )
+
+    def forward(self, node_embeddings: Tensor, Z_embeddings: Tensor) -> Tensor:
+        return self.tensor_product(node_embeddings, Z_embeddings)
+
+
 class NequIPMessagePassingLayer(torch.nn.Module):
     def __init__(
         self,
@@ -169,6 +212,8 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         l_max: int,
         n_channels: int,
         cutoff: float,
+        self_interaction: Literal["linear", "tensor_product"] | None,
+        is_last_layer: bool,
     ):
         super().__init__()
 
@@ -180,11 +225,10 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         #       of the neighbour distance, to create messages m_j_to_i
         # 2. Aggregate the messages over all neighbours to create the
         #       total message, m_i
-        # 3. Simultaneously, allow the central atom embeddings to interact
-        #       with themselves via another tensor product
-        # 4. Pass the total message through a linear layer to create features
-        #       of the same shape as the central atom self interactions, and add
-        #       them together
+        # 3. Pass the total message through a linear layer to create
+        #       new central atom embeddings
+        # 4. (if configured) Allow the old central atom embeddings to interact
+        #       with themselves via another tensor product and residual add
         # 5. Apply a non-linearity to the new central atom embeddings
 
         # each input irreps should have a multiplicity of n_channels:
@@ -212,7 +256,7 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         )
 
         # 2. Message aggregation
-        ...  # no state to save for this
+        self.register_buffer("aggregation_normalisation", torch.zeros(1))
 
         # 5. Non-linearity
         # NB we do this first so we can work out how many irreps we need
@@ -220,25 +264,36 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         post_message_irreps: list[o3.Irrep] = sorted(
             set(i.ir for i in self.message_tensor_product.irreps_out)
         )
-        desired_output_irreps = o3.Irreps(
-            [(n_channels, ir) for ir in post_message_irreps]
-        )
+        if not is_last_layer:
+            desired_output_irreps = o3.Irreps(
+                [(n_channels, ir) for ir in post_message_irreps]
+            )
+        else:
+            desired_output_irreps = o3.Irreps(f"{n_channels}x0e")
         self.non_linearity = build_gate(desired_output_irreps)  # type: ignore
 
-        # 3. Self-interaction
-        # create a self interaction that produces the output irreps that
-        # are required for the non-linearity
-        self.self_interaction = o3.FullyConnectedTensorProduct(
-            input_node_irreps,
-            f"{Z_embedding_dim}x0e",
-            self.non_linearity.irreps_in,
-        )
-
-        # 4. Post-message linear
+        # 3. Post-message linear
         self.post_message_linear = o3.Linear(
             self.message_tensor_product.irreps_out.simplify(),
             self.non_linearity.irreps_in,
         )
+
+        # 4. Self-interaction
+        # create a self interaction that produces the output irreps that
+        # are required for the non-linearity
+        self.self_interaction: SelfInteraction | None = None
+
+        if self_interaction == "tensor_product":
+            self.self_interaction = TensorProductSelfInteraction(
+                input_irreps=input_node_irreps,
+                Z_embedding_irreps=f"{Z_embedding_dim}x0e",
+                output_irreps=self.non_linearity.irreps_in,
+            )
+        elif self_interaction == "linear":
+            self.self_interaction = LinearSelfInteraction(
+                input_irreps=input_node_irreps,
+                output_irreps=self.non_linearity.irreps_in,
+            )
 
         # bookkeeping
         self.irreps_in = input_node_irreps
@@ -262,15 +317,19 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         )
 
         # 2. message aggregation
-        total_message = sum_over_neighbours(messages, graph)
-
-        # 3. self-interaction
-        self_interaction = self.self_interaction(node_embeddings, Z_embeddings)
-
-        # 4. post-message linear and adding
-        new_node_embeddings = (
-            self.post_message_linear(total_message) + self_interaction
+        total_message = (
+            sum_over_neighbours(messages, graph)
+            / self.aggregation_normalisation
         )
+
+        # 3. update node embeddings
+        new_node_embeddings = self.post_message_linear(total_message)
+
+        # 4. self-interaction
+        if self.self_interaction is not None:
+            new_node_embeddings = new_node_embeddings + self.self_interaction(
+                node_embeddings, Z_embeddings
+            )
 
         # 5. non-linearity
         return self.non_linearity(new_node_embeddings)
@@ -304,9 +363,13 @@ class _BaseNequIP(LocalEnergyModel):
         cutoff: float,
         l_max: int,
         allow_odd_parity: bool,
+        self_interaction: Literal["linear", "tensor_product"] | None,
+        prune_last_layer: bool,
+        normalisation_constant: Literal["identity", "n_neighbours"],
     ):
         super().__init__(cutoff=cutoff, auto_scale=True)
 
+        self.normalisation_constant = normalisation_constant
         self.Z_embedding = Z_embedding
         self.initial_node_embedding = PerElementEmbedding(n_channels)
 
@@ -321,7 +384,7 @@ class _BaseNequIP(LocalEnergyModel):
         # of the atomic number
         current_layer_input = o3.Irreps(f"{n_channels}x0e")
         layers: list[NequIPMessagePassingLayer] = []
-        for _ in range(n_layers):
+        for i in range(n_layers):
             layer = NequIPMessagePassingLayer(
                 input_node_irreps=current_layer_input,  # type: ignore
                 edge_irreps=edge_embedding_irreps,  # type: ignore
@@ -329,6 +392,8 @@ class _BaseNequIP(LocalEnergyModel):
                 n_channels=n_channels,
                 cutoff=cutoff,
                 Z_embedding_dim=Z_embedding_dim,
+                self_interaction=self_interaction,
+                is_last_layer=i == n_layers - 1 and prune_last_layer,
             )
             layers.append(layer)
             current_layer_input = layer.irreps_out
@@ -353,6 +418,12 @@ class _BaseNequIP(LocalEnergyModel):
         # ...and read out the energy
         return self.readout(node_embed)
 
+    def model_specific_pre_fit(self, graphs: LabelledBatch) -> None:
+        if self.normalisation_constant == "n_neighbours":
+            avg_neighbours = number_of_edges(graphs) / number_of_atoms(graphs)
+            for layer in self.layers:
+                layer.aggregation_normalisation = torch.tensor(avg_neighbours)
+
 
 @e3nn.util.jit.compile_mode("script")
 class NequIP(_BaseNequIP):
@@ -364,6 +435,12 @@ class NequIP(_BaseNequIP):
         n_layers: int = 3,
         l_max: int = 2,
         allow_odd_parity: bool = True,
+        self_interaction: Literal["linear", "tensor_product"]
+        | None = "tensor_product",
+        prune_last_layer: bool = True,
+        normalisation_constant: Literal[
+            "identity", "n_neighbours"
+        ] = "identity",
     ):
         assert len(set(elements)) == len(elements), "Found duplicate elements"
         Z_embedding = AtomicOneHot(elements)
@@ -376,6 +453,9 @@ class NequIP(_BaseNequIP):
             cutoff,
             l_max,
             allow_odd_parity,
+            self_interaction,
+            prune_last_layer=prune_last_layer,
+            normalisation_constant=normalisation_constant,
         )
 
 
@@ -389,6 +469,12 @@ class ZEmbeddingNequIP(_BaseNequIP):
         n_layers: int = 3,
         l_max: int = 2,
         allow_odd_parity: bool = True,
+        self_interaction: Literal["linear", "tensor_product"]
+        | None = "tensor_product",
+        prune_last_layer: bool = True,
+        normalisation_constant: Literal[
+            "identity", "n_neighbours"
+        ] = "identity",
     ):
         Z_embedding = PerElementEmbedding(Z_embed_dim)
         super().__init__(
@@ -399,4 +485,7 @@ class ZEmbeddingNequIP(_BaseNequIP):
             cutoff,
             l_max,
             allow_odd_parity,
+            self_interaction,
+            prune_last_layer=prune_last_layer,
+            normalisation_constant=normalisation_constant,
         )
