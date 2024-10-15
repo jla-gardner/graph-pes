@@ -252,3 +252,69 @@ def contains_tensor(l: Iterable[torch.Tensor], tensor: torch.Tensor) -> bool:
     tensor with the same shape as ``l``.
     """
     return any(tensor is t for t in l)
+
+
+def left_aligned_mul(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    r"""
+    Calculate :math:`z = x \odot y` such that:
+
+    .. math::
+
+            z_{i, j, \dots} = x_{i, j, \dots} \cdot y_i
+
+    That is, broadcast :math:`y` to the far left of :math:`x` (the opposite
+    sense of normal broadcasting in torch), and multiply the two tensors
+    elementwise.
+
+    Parameters
+    ----------
+    x
+        of shape (n, ...)
+    y
+        of shape (n, )
+
+    Returns
+    -------
+    torch.Tensor
+        of same shape as x
+    """
+    if x.dim() == 1 or x.dim() == 0:
+        return x * y
+
+    # x of shape (n, ..., a)
+    x = x.transpose(0, -1)  # shape: (a, ..., n)
+    result = x * y  # shape: (a, ..., n)
+    return result.transpose(0, -1)  # shape: (n, ..., a)
+
+
+def left_aligned_div(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    r"""
+    Calculate :math:`z = x \oslash y` such that:
+
+    .. math::
+
+            z_{i, j, \dots} = x_{i, j, \dots} / y_i
+
+    That is, broadcast :math:`y` to the far left of :math:`x` (the opposite
+    sense of normal broadcasting in torch), and divide the two tensors
+    elementwise.
+
+    Parameters
+    ----------
+    x
+        of shape (n, ...)
+    y
+        of shape (n, )
+
+    Returns
+    -------
+    torch.Tensor
+        of same shape as x
+    """
+    if x.dim() == 1 or x.dim() == 0:
+        return x / y
+
+    # x of shape (n, ..., a)
+    x = x.transpose(0, -1)  # shape: (a, ..., n)
+    result = x / y  # shape: (a, ..., n)
+    return result.transpose(0, -1)  # shape: (n, ..., a)

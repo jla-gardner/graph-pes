@@ -18,7 +18,7 @@ from graph_pes.nn import (
     UniformModuleList,
 )
 
-from .distances import CosineEnvelope, ExponentialRBF
+from .components.distances import CosineEnvelope, ExponentialRBF
 
 
 def decompose_tensor(x: Tensor) -> tuple[Tensor, Tensor, Tensor]:

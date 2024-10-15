@@ -9,11 +9,9 @@ from graph_pes.nn import (
     PerElementParameter,
     UniformModuleDict,
     UniformModuleList,
-    left_aligned_div,
-    left_aligned_mul,
     parse_activation,
 )
-from graph_pes.util import MAX_Z
+from graph_pes.util import MAX_Z, left_aligned_div, left_aligned_mul
 
 
 def test_per_element_parameter(tmp_path):

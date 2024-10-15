@@ -17,7 +17,7 @@ from graph_pes.graphs.operations import (
     neighbour_distances,
     sum_over_neighbours,
 )
-from graph_pes.models.distances import SmoothOnsetEnvelope
+from graph_pes.models.components.distances import SmoothOnsetEnvelope
 from graph_pes.nn import PerElementParameter
 from graph_pes.util import to_significant_figures, uniform_repr
 
@@ -91,7 +91,7 @@ class SmoothedPairPotential(PairPotential):
     r"""
     A wrapper around a :class:`~graph_pes.models.PairPotential` that
     applies a smooth cutoff function, :math:`f` =
-    :class:`~graph_pes.models.distances.SmoothOnsetEnvelope`,
+    :class:`~graph_pes.models.components.distances.SmoothOnsetEnvelope`,
     to the potential to ensure a continous energy surface:
 
     .. math::

@@ -15,7 +15,14 @@ import torch.nn
 from ase.data import atomic_numbers, chemical_symbols, covalent_radii
 from torch import Tensor
 
-from .util import MAX_Z, pairs, to_significant_figures, uniform_repr
+from graph_pes.util import left_aligned_mul
+
+from .util import (
+    MAX_Z,
+    pairs,
+    to_significant_figures,
+    uniform_repr,
+)
 
 V = TypeVar("V", bound=torch.nn.Module)
 
@@ -460,72 +467,6 @@ class HaddamardProduct(torch.nn.Module):
             else:
                 out = out * component(x)
         return out
-
-
-def left_aligned_mul(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    r"""
-    Calculate :math:`z = x \odot y` such that:
-
-    .. math::
-
-            z_{i, j, \dots} = x_{i, j, \dots} \cdot y_i
-
-    That is, broadcast :math:`y` to the far left of :math:`x` (the opposite
-    sense of normal broadcasting in torch), and multiply the two tensors
-    elementwise.
-
-    Parameters
-    ----------
-    x
-        of shape (n, ...)
-    y
-        of shape (n, )
-
-    Returns
-    -------
-    torch.Tensor
-        of same shape as x
-    """
-    if x.dim() == 1 or x.dim() == 0:
-        return x * y
-
-    # x of shape (n, ..., a)
-    x = x.transpose(0, -1)  # shape: (a, ..., n)
-    result = x * y  # shape: (a, ..., n)
-    return result.transpose(0, -1)  # shape: (n, ..., a)
-
-
-def left_aligned_div(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    r"""
-    Calculate :math:`z = x \oslash y` such that:
-
-    .. math::
-
-            z_{i, j, \dots} = x_{i, j, \dots} / y_i
-
-    That is, broadcast :math:`y` to the far left of :math:`x` (the opposite
-    sense of normal broadcasting in torch), and divide the two tensors
-    elementwise.
-
-    Parameters
-    ----------
-    x
-        of shape (n, ...)
-    y
-        of shape (n, )
-
-    Returns
-    -------
-    torch.Tensor
-        of same shape as x
-    """
-    if x.dim() == 1 or x.dim() == 0:
-        return x / y
-
-    # x of shape (n, ..., a)
-    x = x.transpose(0, -1)  # shape: (a, ..., n)
-    result = x / y  # shape: (a, ..., n)
-    return result.transpose(0, -1)  # shape: (n, ..., a)
 
 
 def learnable_parameters(module: torch.nn.Module) -> int:

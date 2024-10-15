@@ -8,7 +8,7 @@ from sklearn.linear_model import Ridge
 from torch import Tensor
 
 from graph_pes.logger import logger
-from graph_pes.nn import left_aligned_mul
+from graph_pes.util import left_aligned_mul
 
 from . import keys
 from .graph_typing import (
@@ -38,8 +38,6 @@ def is_batch(graph: AtomicGraph) -> bool:
 def to_batch(graphs: Sequence[LabelledGraph]) -> LabelledBatch: ...
 @overload
 def to_batch(graphs: Sequence[AtomicGraph]) -> AtomicGraphBatch: ...
-
-
 @torch.no_grad()
 def to_batch(
     graphs: Sequence[AtomicGraph | LabelledGraph],
@@ -96,8 +94,9 @@ def to_batch(
             graph[label] = torch.stack([g[label] for g in graphs])
 
     # - per atom labels are concatenated along the first axis
-    if keys.FORCES in graphs[0]:
-        graph[keys.FORCES] = torch.cat([g[keys.FORCES] for g in graphs])  # type: ignore
+    for key in [keys.FORCES, keys.LOCAL_ENERGIES]:
+        if key in graphs[0]:
+            graph[key] = torch.cat([g[key] for g in graphs])
 
     return graph  # type: ignore
 

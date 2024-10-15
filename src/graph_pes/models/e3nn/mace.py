@@ -3,14 +3,14 @@ from __future__ import annotations
 from typing import Callable
 
 import e3nn.util.jit
-import graph_pes.models.distances
+import graph_pes.models.components.distances
 import torch
 from e3nn import o3
 from graph_pes.core import LocalEnergyModel
 from graph_pes.graphs import DEFAULT_CUTOFF
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import neighbour_distances, neighbour_vectors
-from graph_pes.models.distances import (
+from graph_pes.models.components.distances import (
     DistanceExpansion,
     PolynomialEnvelope,
 )
@@ -26,7 +26,7 @@ from mace_layer import MACE_layer
 
 def _get_distance_expansion(name: str) -> type[DistanceExpansion]:
     try:
-        return getattr(graph_pes.models.distances, name)
+        return getattr(graph_pes.models.components.distances, name)
     except AttributeError:
         raise ValueError(f"Unknown distance expansion type: {name}") from None
 
@@ -141,7 +141,7 @@ class MACE(_BaseMACE):
     n_radial
         number of bases to expand the radial distances into
     radial_expansion_type
-        type of radial expansion to use. See :class:`~graph_pes.models.distances.DistanceExpansion`
+        type of radial expansion to use. See :class:`~graph_pes.models.components.distances.DistanceExpansion`
         for available options
     layers
         number of message passing layers
@@ -166,7 +166,7 @@ class MACE(_BaseMACE):
     .. code-block:: python
 
         >>> from graph_pes.models import MACE
-        >>> from graph_pes.models.distances import Bessel
+        >>> from graph_pes.models.components.distances import Bessel
         >>> model = MACE(
         ...     elements=["H", "C", "N", "O"],
         ...     cutoff=5.0,
@@ -267,7 +267,7 @@ class ZEmbeddingMACE(_BaseMACE):
     n_radial
         number of bases to expand the radial distances into
     radial_expansion_type
-        type of radial expansion to use. See :class:`~graph_pes.models.distances.DistanceExpansion`
+        type of radial expansion to use. See :class:`~graph_pes.models.components.distances.DistanceExpansion`
         for available options
     z_embed_dim
         dimension of the atomic number embedding

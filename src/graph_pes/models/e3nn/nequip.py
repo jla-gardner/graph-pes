@@ -16,11 +16,12 @@ from graph_pes.graphs.operations import (
     index_over_neighbours,
     neighbour_distances,
     neighbour_vectors,
-    number_of_atoms,
-    number_of_edges,
-    sum_over_neighbours,
 )
-from graph_pes.models import distances
+from graph_pes.models.components import distances
+from graph_pes.models.components.aggregation import (
+    NeighbourAggregation,
+    NeighbourAggregationMode,
+)
 from graph_pes.models.e3nn.utils import LinearReadOut
 from graph_pes.nn import (
     MLP,
@@ -112,6 +113,15 @@ def _nequip_message_tensor_product(
         internal_weights=False,
         shared_weights=False,
     )
+
+
+@e3nn.util.jit.compile_mode("script")
+class SphericalHarmonics(o3.SphericalHarmonics):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __repr__(self):
+        return f"SphericalHarmonics(1x1o -> {self.irreps_out})"
 
 
 def build_gate(output_irreps: o3.Irreps):
@@ -210,10 +220,11 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         Z_embedding_dim: int,
         edge_irreps: o3.Irreps,
         l_max: int,
-        n_channels: int,
+        n_channels: list[int],
         cutoff: float,
         self_interaction: Literal["linear", "tensor_product"] | None,
         is_last_layer: bool,
+        neighbour_aggregation: NeighbourAggregationMode,
     ):
         super().__init__()
 
@@ -230,9 +241,6 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         # 4. (if configured) Allow the old central atom embeddings to interact
         #       with themselves via another tensor product and residual add
         # 5. Apply a non-linearity to the new central atom embeddings
-
-        # each input irreps should have a multiplicity of n_channels:
-        assert all(i.mul == n_channels for i in input_node_irreps)
 
         # 1. Message creation
         self.pre_message_linear = o3.Linear(
@@ -256,7 +264,9 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         )
 
         # 2. Message aggregation
-        self.register_buffer("aggregation_normalisation", torch.zeros(1))
+        self.aggregation = NeighbourAggregation.parse(
+            mode=neighbour_aggregation
+        )
 
         # 5. Non-linearity
         # NB we do this first so we can work out how many irreps we need
@@ -266,10 +276,11 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         )
         if not is_last_layer:
             desired_output_irreps = o3.Irreps(
-                [(n_channels, ir) for ir in post_message_irreps]
+                [(n_channels[ir.l], ir) for ir in post_message_irreps]
             )
         else:
-            desired_output_irreps = o3.Irreps(f"{n_channels}x0e")
+            desired_output_irreps = o3.Irreps(f"{n_channels[0]}x0e")
+
         self.non_linearity = build_gate(desired_output_irreps)  # type: ignore
 
         # 3. Post-message linear
@@ -317,10 +328,7 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         )
 
         # 2. message aggregation
-        total_message = (
-            sum_over_neighbours(messages, graph)
-            / self.aggregation_normalisation
-        )
+        total_message = self.aggregation(messages, graph)
 
         # 3. update node embeddings
         new_node_embeddings = self.post_message_linear(total_message)
@@ -358,31 +366,38 @@ class _BaseNequIP(LocalEnergyModel):
         self,
         Z_embedding: torch.nn.Module,
         Z_embedding_dim: int,
-        n_channels: int,
+        n_channels: int | list[int],
+        l_max: int,
         n_layers: int,
         cutoff: float,
-        l_max: int,
         allow_odd_parity: bool,
         self_interaction: Literal["linear", "tensor_product"] | None,
         prune_last_layer: bool,
-        normalisation_constant: Literal["identity", "n_neighbours"],
+        neighbour_aggregation: NeighbourAggregationMode,
     ):
         super().__init__(cutoff=cutoff, auto_scale=True)
 
-        self.normalisation_constant = normalisation_constant
+        if isinstance(n_channels, int):
+            n_channels = [n_channels] * (l_max + 1)
+
+        if len(n_channels) != l_max + 1:
+            raise ValueError(
+                "n_channels must be an integer or a list of length l_max + 1"
+            )
+
         self.Z_embedding = Z_embedding
-        self.initial_node_embedding = PerElementEmbedding(n_channels)
+        self.initial_node_embedding = PerElementEmbedding(n_channels[0])
 
         edge_embedding_irreps = o3.Irreps.spherical_harmonics(
             l_max, p=-1 if allow_odd_parity else 1
         )
-        self.edge_embedding = o3.SphericalHarmonics(
+        self.edge_embedding = SphericalHarmonics(
             edge_embedding_irreps, normalize=True
         )
 
         # first layer recieves an even parity, scalar embedding
         # of the atomic number
-        current_layer_input = o3.Irreps(f"{n_channels}x0e")
+        current_layer_input = o3.Irreps(f"{n_channels[0]}x0e")
         layers: list[NequIPMessagePassingLayer] = []
         for i in range(n_layers):
             layer = NequIPMessagePassingLayer(
@@ -394,13 +409,14 @@ class _BaseNequIP(LocalEnergyModel):
                 Z_embedding_dim=Z_embedding_dim,
                 self_interaction=self_interaction,
                 is_last_layer=i == n_layers - 1 and prune_last_layer,
+                neighbour_aggregation=neighbour_aggregation,
             )
             layers.append(layer)
             current_layer_input = layer.irreps_out
 
         self.layers = UniformModuleList(layers)
 
-        self.readout = LinearReadOut(current_layer_input)
+        self.readout = LinearReadOut(current_layer_input)  # type: ignore
 
     def predict_raw_energies(self, graph: AtomicGraph) -> Tensor:
         # pre-compute important quantities
@@ -419,73 +435,211 @@ class _BaseNequIP(LocalEnergyModel):
         return self.readout(node_embed)
 
     def model_specific_pre_fit(self, graphs: LabelledBatch) -> None:
-        if self.normalisation_constant == "n_neighbours":
-            avg_neighbours = number_of_edges(graphs) / number_of_atoms(graphs)
-            for layer in self.layers:
-                layer.aggregation_normalisation = torch.tensor(avg_neighbours)
+        for layer in self.layers:
+            layer.aggregation.pre_fit(graphs)
 
 
 @e3nn.util.jit.compile_mode("script")
 class NequIP(_BaseNequIP):
+    r"""
+    NequIP architecture from `E(3)-equivariant graph neural networks for
+    data-efficient and accurate interatomic potentials
+    <https://www.nature.com/articles/s41467-022-29939-5>`__.
+
+    If you use this model in your research, please cite the original work:
+
+    .. code:: bibtex
+
+        @article{Batzner-22-05,
+            title = {
+                      E(3)-Equivariant Graph Neural Networks for
+                      Data-Efficient and Accurate Interatomic Potentials
+                    },
+            author = {
+                      Batzner, Simon and Musaelian, Albert and Sun, Lixin
+                      and Geiger, Mario and Mailoa, Jonathan P.
+                      and Kornbluth, Mordechai and Molinari, Nicola
+                      and Smidt, Tess E. and Kozinsky, Boris
+                    },
+            year = {2022},
+            journal = {Nature Communications},
+            volume = {13},
+            number = {1},
+            pages = {2453},
+            doi = {10.1038/s41467-022-29939-5},
+            copyright = {2022 The Author(s)}
+        }
+
+    Parameters
+    ----------
+    elements
+        The elements that the model will encounter in the training data.
+        This is used to create the atomic one-hot embedding. If you intend
+        to fine-tune this model on additional data, you must ensure that all
+        elements you will encounter in both pre-training and fine-tuning are
+        present in this list. (See :class:`~graph_pes.models.ZEmbeddingNequIP`
+        for an alternative that allows for arbitrary atomic numbers.)
+    cutoff
+        The cutoff radius for the model.
+    n_channels
+        The number of channels for the node embedding. If an integer, all
+        :math:`l`-order irreps will have the same number of channels. If a list,
+        the entries must be in :math:`l = 0, 1, \ldots, l_{\text{max}}` order.
+    n_layers
+        The number of layers for the message passing.
+    l_max
+        The maximum angular momentum for the edge embedding.
+    allow_odd_parity
+        Whether to allow odd parity for the edge embedding.
+    self_interaction
+        The kind of self-interaction to use. If ``None``, no self-interaction
+        is applied. If ``"linear"``, a linear self-interaction is applied
+        to update the node embeddings along the residual path. If
+        ``"tensor_product"``, a tensor product combining the old node
+        embedding with an embedding of the atomic number is applied.
+        As first noticed by the authors of `SevenNet <https://pubs.acs.org/doi/10.1021/acs.jctc.4c00190>`__,
+        using linear self-interactions greatly reduces the number of parameters
+        in the model, and helps to prevent overfitting.
+    prune_last_layer
+        Whether to prune irrep communication pathways in the final layer
+        that do not contribute to the ``0e`` output embedding.
+    neighbour_aggregation
+        The neighbour aggregation mode. See
+        :class:`~graph_pes.models.components.aggregation.NeighbourAggregationMode`
+        for more details. Note that ``"mean"`` or ``"sqrt"`` aggregations lead
+        to un-physical discontinuities in the energy function as atoms enter and
+        leave the cutoff radius of the model.
+
+    Examples
+    --------
+
+    Configure a NequIP model for use with
+    :doc:`graph-pes-train <../../cli/graph-pes-train>`:
+
+    .. code:: yaml
+
+        model:
+          graph_pes.models.NequIP:
+            elements: [C, H, O]
+            cutoff: 5.0
+
+            # use 2 message passing layers
+            n_layers: 2
+
+            # use 64 l=0, 32 l=1 and 8 l=2 node features
+            n_channels: [64, 32, 8]
+            l_max: 2
+
+            # use variance preserving neighbour aggregation
+            neighbour_aggregation: "sqrt"
+
+
+    Observe the drop in parameters as we prune the last layer and
+    replace the tensor product interactions with linear layers:
+
+    .. code:: python
+
+        >>> from graph_pes.models import NequIP
+        >>> # vanilla NequIP
+        >>> vanilla = NequIP(
+        ...     elements=["C", "H", "O"],
+        ...     cutoff=5.0,
+        ...     n_channels=128,
+        ...     n_layers=3,
+        ...     l_max=2,
+        ...     self_interaction="tensor_product",
+        ...     prune_last_layer=False,
+        ... )
+        >>> sum(p.numel() for p in vanilla.parameters())
+        2308720
+        >>> # SevenNet-flavoured NequIP
+        >>> smaller = NequIP(
+        ...     elements=["C", "H", "O"],
+        ...     cutoff=5.0,
+        ...     n_channels=128,
+        ...     n_layers=3,
+        ...     l_max=2,
+        ...     self_interaction="linear",
+        ...     prune_last_layer=True,
+        ... )
+        >>> sum(p.numel() for p in smaller.parameters())
+        965232
+
+
+    """
+
     def __init__(
         self,
         elements: list[str],
         cutoff: float = DEFAULT_CUTOFF,
-        n_channels: int = 16,
+        n_channels: int | list[int] = 16,
         n_layers: int = 3,
         l_max: int = 2,
         allow_odd_parity: bool = True,
         self_interaction: Literal["linear", "tensor_product"]
         | None = "tensor_product",
         prune_last_layer: bool = True,
-        normalisation_constant: Literal[
-            "identity", "n_neighbours"
-        ] = "identity",
+        neighbour_aggregation: NeighbourAggregationMode = "sum",
     ):
         assert len(set(elements)) == len(elements), "Found duplicate elements"
         Z_embedding = AtomicOneHot(elements)
         Z_embedding_dim = len(elements)
         super().__init__(
-            Z_embedding,
-            Z_embedding_dim,
-            n_channels,
-            n_layers,
-            cutoff,
-            l_max,
-            allow_odd_parity,
-            self_interaction,
+            Z_embedding=Z_embedding,
+            Z_embedding_dim=Z_embedding_dim,
+            n_channels=n_channels,
+            l_max=l_max,
+            n_layers=n_layers,
+            cutoff=cutoff,
+            allow_odd_parity=allow_odd_parity,
+            self_interaction=self_interaction,
             prune_last_layer=prune_last_layer,
-            normalisation_constant=normalisation_constant,
+            neighbour_aggregation=neighbour_aggregation,
         )
 
 
 @e3nn.util.jit.compile_mode("script")
 class ZEmbeddingNequIP(_BaseNequIP):
+    r"""
+    A modified version of the :class:`~graph_pes.models.NequIP` architecture
+    that embeds atomic numbers into a learnable embedding rather than using an
+    atomic one-hot encoding.
+
+    This circumvents the need to know in advance all the elements that the
+    model will encounter in any pre-training or fine-tuning datasets.
+
+    **Relevant differences** from :class:`~graph_pes.models.NequIP`\ :
+
+    - The ``elements`` argument is removed.
+    - The ``Z_embed_dim`` (:class:`int`) argument controls the size of the
+      atomic number embedding (default: 8).
+
+    For all other options, see :class:`~graph_pes.models.NequIP`.
+    """
+
     def __init__(
         self,
         cutoff: float = DEFAULT_CUTOFF,
         Z_embed_dim: int = 8,
-        n_channels: int = 16,
-        n_layers: int = 3,
+        n_channels: int | list[int] = 16,
         l_max: int = 2,
+        n_layers: int = 3,
         allow_odd_parity: bool = True,
         self_interaction: Literal["linear", "tensor_product"]
         | None = "tensor_product",
         prune_last_layer: bool = True,
-        normalisation_constant: Literal[
-            "identity", "n_neighbours"
-        ] = "identity",
+        neighbour_aggregation: NeighbourAggregationMode = "sum",
     ):
         Z_embedding = PerElementEmbedding(Z_embed_dim)
         super().__init__(
-            Z_embedding,
-            Z_embed_dim,
-            n_channels,
-            n_layers,
-            cutoff,
-            l_max,
-            allow_odd_parity,
-            self_interaction,
+            Z_embedding=Z_embedding,
+            Z_embedding_dim=Z_embed_dim,
+            n_channels=n_channels,
+            l_max=l_max,
+            n_layers=n_layers,
+            cutoff=cutoff,
+            allow_odd_parity=allow_odd_parity,
+            self_interaction=self_interaction,
             prune_last_layer=prune_last_layer,
-            normalisation_constant=normalisation_constant,
+            neighbour_aggregation=neighbour_aggregation,
         )

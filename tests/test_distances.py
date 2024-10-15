@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 import torch
-from graph_pes.models.distances import (
+from graph_pes.models.components.distances import (
     Bessel,
     CosineEnvelope,
     DistanceExpansion,

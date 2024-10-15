@@ -84,7 +84,7 @@ class Bessel(DistanceExpansion):
     .. code::
 
         import torch
-        from graph_pes.models.distances import Bessel
+        from graph_pes.models.components.distances import Bessel
         import matplotlib.pyplot as plt
 
         cutoff = 5.0
@@ -144,7 +144,7 @@ class GaussianSmearing(DistanceExpansion):
     .. code::
 
         import torch
-        from graph_pes.models.distances import GaussianSmearing
+        from graph_pes.models.components.distances import GaussianSmearing
         import matplotlib.pyplot as plt
 
         cutoff = 5.0
@@ -214,7 +214,7 @@ class SinExpansion(DistanceExpansion):
     .. code::
 
         import torch
-        from graph_pes.models.distances import SinExpansion
+        from graph_pes.models.components.distances import SinExpansion
         import matplotlib.pyplot as plt
 
         cutoff = 5.0
@@ -279,7 +279,7 @@ class ExponentialRBF(DistanceExpansion):
     .. code::
 
         import torch
-        from graph_pes.models.distances import ExponentialRBF
+        from graph_pes.models.components.distances import ExponentialRBF
         import matplotlib.pyplot as plt
 
         cutoff = 5.0

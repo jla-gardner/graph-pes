@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 import torch
-from graph_pes.models.distances import (
+from graph_pes.models.components.distances import (
     Bessel,
     DistanceExpansion,
     ExponentialRBF,

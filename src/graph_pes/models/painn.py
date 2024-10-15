@@ -19,7 +19,7 @@ from graph_pes.nn import (
     UniformModuleList,
 )
 
-from .distances import Bessel, PolynomialEnvelope
+from .components.distances import Bessel, PolynomialEnvelope
 
 
 class Interaction(nn.Module):

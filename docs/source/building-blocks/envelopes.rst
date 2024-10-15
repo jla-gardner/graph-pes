@@ -4,18 +4,18 @@ Envelopes
 Available Envelopes
 -------------------
 
-.. autoclass:: graph_pes.models.distances.PolynomialEnvelope
+.. autoclass:: graph_pes.models.components.distances.PolynomialEnvelope
     :show-inheritance:
 
-.. autoclass:: graph_pes.models.distances.SmoothOnsetEnvelope
+.. autoclass:: graph_pes.models.components.distances.SmoothOnsetEnvelope
     :show-inheritance:
 
-.. autoclass:: graph_pes.models.distances.CosineEnvelope
+.. autoclass:: graph_pes.models.components.distances.CosineEnvelope
     :show-inheritance:
 
 Implementing a new Envelope
 ---------------------------
 
-.. autoclass:: graph_pes.models.distances.Envelope
+.. autoclass:: graph_pes.models.components.distances.Envelope
     :members:
 

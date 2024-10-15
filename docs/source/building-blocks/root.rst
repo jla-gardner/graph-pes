@@ -6,5 +6,6 @@ Building blocks
 
     distances
     envelopes
+    aggregation
     nn
     transforms

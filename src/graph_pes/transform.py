@@ -6,7 +6,7 @@ from torch import Tensor
 
 from graph_pes.graphs import AtomicGraph
 from graph_pes.graphs.operations import structure_sizes
-from graph_pes.nn import left_aligned_div
+from graph_pes.util import left_aligned_div
 
 Transform = Callable[[Tensor, AtomicGraph], Tensor]
 r"""

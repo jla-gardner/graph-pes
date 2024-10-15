@@ -17,7 +17,7 @@ from graph_pes.nn import (
 )
 from graph_pes.util import uniform_repr
 
-from .distances import DistanceExpansion, GaussianSmearing
+from .components.distances import DistanceExpansion, GaussianSmearing
 
 
 class CFConv(torch.nn.Module):
@@ -38,7 +38,7 @@ class CFConv(torch.nn.Module):
     -------
     .. code::
 
-        from graph_pes.models.distances import GaussianSmearing
+        from graph_pes.models.components.distances import GaussianSmearing
         from graph_pes.nn import MLP
         from torch import nn
 
@@ -194,7 +194,7 @@ class SchNet(LocalEnergyModel):
         Number of interaction blocks to apply.
     expansion
         The type of radial basis expansion to use. Defaults to
-        :class:`GaussianSmearing <graph_pes.models.distances.GaussianSmearing>`
+        :class:`GaussianSmearing <graph_pes.models.components.distances.GaussianSmearing>`
         as in the original paper.
     """  # noqa: E501
 
