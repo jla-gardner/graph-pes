@@ -1,13 +1,71 @@
 #!/bin/bash
 
-## Build LAMMPS with graph-pes 
+# This script builds a LAMMPS executable with graph-pes support.
+# It sets up a conda environment, clones LAMMPS, patches it with graph-pes,
+# and builds the executable for either CPU or GPU use.
 
-# fail if any command fails
+# Fail if any command fails
 set -e
 
-CURRENT_DIR=$(pwd)
+show_help() {
+    echo "Usage: $0 [OPTIONS]"
+    echo
+    echo "This script builds a LAMMPS executable with support for 'pair_style graph_pes'."
+    echo
+    echo "It performs the following tasks:"
+    echo "  1. Locates the graph-pes installation"
+    echo "  2. Creates a conda environment with necessary dependencies"
+    echo "  3. Clones the LAMMPS repository"
+    echo "  4. Patches LAMMPS with graph-pes source code"
+    echo "  5. Builds LAMMPS with graph-pes support"
+    echo
+    echo "Options:"
+    echo "  --help           Display this help message and exit"
+    echo "  --cpu-only       Build LAMMPS for CPU only (default: GPU enabled)"
+    echo "  --force-rebuild  Force rebuilding of conda environment and LAMMPS"
+    echo
+    echo "The final executable will be located at:"
+    echo "  ./graph_pes_lmp_cpu_only (if --cpu-only is used)"
+    echo "  ./graph_pes_lmp (default, with GPU support)"
+}
 
-# check if we can find the graph_pes install path
+###################
+## PARSE OPTIONS ##
+###################
+
+CPU_ONLY=false
+FORCE_REBUILD=false
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --cpu-only) CPU_ONLY=true ;;
+        --force-rebuild) FORCE_REBUILD=true ;;
+        --help) show_help; exit 0 ;;
+        *)
+            echo "Unknown parameter passed: $1"
+            echo "Use --help for usage information"
+            exit 1
+        ;;
+    esac
+    shift
+done
+
+
+CURRENT_DIR=$(pwd)
+if [ "$CPU_ONLY" = true ]; then
+    FINAL_EXE="$CURRENT_DIR/graph_pes_lmp_cpu_only"
+else
+    FINAL_EXE="$CURRENT_DIR/graph_pes_lmp"
+fi
+
+echo "Running build-lammps.sh with the following parameters:"
+echo "          CPU_ONLY: $CPU_ONLY"
+echo "    FORCE_REBUILD : $FORCE_REBUILD"
+
+#################################
+## FIND GRAPH-PES INSTALLATION ##
+#################################
+
 script="
 try:
     import graph_pes
@@ -34,32 +92,10 @@ if [ ! -d "$PAIR_STYLE_DIR" ]; then
 fi
 echo "Found graph-pes pair style at $PAIR_STYLE_DIR"
 
-# default values
-CPU_ONLY=false
-FORCE_REBUILD=false
 
-# Parse arguments
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --cpu-only) CPU_ONLY=true ;;
-        --force-rebuild) FORCE_REBUILD=true ;;
-        *)
-            echo "Unknown parameter passed: $1"; exit 1
-        ;;
-    esac
-    shift
-done
-
-# FINAL EXECTUBALE at $CURRENT_DIR/graph_pes_lmp_(cpu|gpu)
-if [ "$CPU_ONLY" = true ]; then
-    FINAL_EXE="$CURRENT_DIR/graph_pes_lmp_cpu_only"
-else
-    FINAL_EXE="$CURRENT_DIR/graph_pes_lmp"
-fi
-
-echo "Running build-lammps.sh with the following parameters:"
-echo "          CPU_ONLY: $CPU_ONLY"
-echo "    FORCE_REBUILD : $FORCE_REBUILD"
+###################
+## GET CONDA ENV ##
+###################
 
 if [ "$CPU_ONLY" = true ]; then
     ENV_NAME="lammps-env-cpu-throwaway"
@@ -133,7 +169,11 @@ fi
 conda activate "$ENV_NAME"
 echo "Conda environment $ENV_NAME successfully activated"
 
-# clone lammps repo to ignore/lammps, delete if exists and FORCE_REBUILD is true
+
+############################
+## CLONE AND PATCH LAMMPS ##
+############################
+
 mkdir -p ignore
 cd ignore
 
@@ -148,10 +188,10 @@ else
     echo "LAMMPS repository already exists, skipping clone."
 fi
 
-# patch LAMMPS with graph-pes source code
-# 1 - add pair_style
+# add graph-pes source code to lammps
 cp $PAIR_STYLE_DIR/*.cpp $PAIR_STYLE_DIR/*.h lammps/src/
-# 2 - patch CMakeLists.txt
+
+# patch CMakeLists.txt
 if ! grep -q "find_package(Torch REQUIRED)" lammps/cmake/CMakeLists.txt; then
     echo "
 find_package(Torch REQUIRED)
@@ -160,7 +200,10 @@ target_link_libraries(lammps PUBLIC \"\${TORCH_LIBRARIES}\")
 " >> lammps/cmake/CMakeLists.txt
 fi
 
-# build LAMMPS
+##################
+## BUILD LAMMPS ##
+##################
+
 cd lammps
 rm -rf build
 mkdir -p build
@@ -172,6 +215,10 @@ cmake ../cmake \
 
 echo "Building LAMMPS executable"
 make -j$(nproc)
+
+####################
+## CREATE SYMLINK ##
+####################
 
 rm -f "$FINAL_EXE"
 ln -s "$(pwd)/lmp" "$FINAL_EXE"

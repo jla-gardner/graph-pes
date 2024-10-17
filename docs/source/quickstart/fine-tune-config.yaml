@@ -9,7 +9,7 @@ model:
       path: ./graph-pes-results/quickstart-run/model.pt
   
   offset:
-    graph_pes.models.FixedEnergyOffset:
+    graph_pes.models.FixedOffset:
       C: -148.65
 
 # ... on structures from the QM7 dataset ...
