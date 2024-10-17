@@ -19,14 +19,18 @@ show_help() {
     echo "  4. Patches LAMMPS with graph-pes source code"
     echo "  5. Builds LAMMPS with graph-pes support"
     echo
+    echo "The final executable will be located at:"
+    echo "  ./graph_pes_lmp_cpu_only (if --cpu-only is used)"
+    echo "  ./graph_pes_lmp (default, with GPU support)"
+    echo
+    echo "Requirements:"
+    echo "  - conda"
+    echo
     echo "Options:"
     echo "  --help           Display this help message and exit"
     echo "  --cpu-only       Build LAMMPS for CPU only (default: GPU enabled)"
     echo "  --force-rebuild  Force rebuilding of conda environment and LAMMPS"
     echo
-    echo "The final executable will be located at:"
-    echo "  ./graph_pes_lmp_cpu_only (if --cpu-only is used)"
-    echo "  ./graph_pes_lmp (default, with GPU support)"
 }
 
 ###################
@@ -152,7 +156,7 @@ fi
 # delete if FORCE_REBUILD is true and environment exists
 if [ "$FORCE_REBUILD" = true ] && [ "$_env_exists" = true ]; then
     echo "Deleting existing conda environment $ENV_NAME"
-    conda env remove -n "$ENV_NAME"
+    conda env remove -n "$ENV_NAME" -y
 fi
 
 _env_exists=$(conda env list | grep -q "$ENV_NAME" && echo "true" || echo "false")
