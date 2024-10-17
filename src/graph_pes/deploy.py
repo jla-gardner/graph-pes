@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+import pathlib
 
 import e3nn.util.jit
 import torch
@@ -71,7 +71,7 @@ class LAMMPSModel(torch.nn.Module):
         return super().__call__(graph)
 
 
-def deploy_model(model: GraphPESModel, path: str | Path):
+def deploy_model(model: GraphPESModel, path: str | pathlib.Path):
     """
     Deploy a :class:`~graph_pes.core.GraphPESModel` for use with LAMMPS.
 
@@ -79,8 +79,8 @@ def deploy_model(model: GraphPESModel, path: str | Path):
 
     .. code-block:: bash
 
-        pair_style graph_pes <cpu> <debug>
-        pair_coeff * * path/to/model.pt
+        pair_style graph_pes <cpu>
+        pair_coeff * * path/to/model.pt <element-of-type-1> <element-of-type-2> ...
 
     Parameters
     ----------
@@ -88,7 +88,7 @@ def deploy_model(model: GraphPESModel, path: str | Path):
         The model to deploy.
     path
         The path to save the deployed model to.
-    """
+    """  # noqa: E501
     lammps_model = LAMMPSModel(model)
     scripted_model = e3nn.util.jit.script(lammps_model)
     torch.jit.save(scripted_model, path)
