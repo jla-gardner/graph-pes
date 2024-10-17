@@ -2,3 +2,5 @@
 
 include src/graph_pes/config/defaults.yaml
 include src/graph_pes/scripts/automation.yaml
+include src/graph_pes/pair_style/pair_graph_pes.h
+include src/graph_pes/pair_style/pair_graph_pes.cpp

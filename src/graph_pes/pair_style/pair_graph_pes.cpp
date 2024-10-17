@@ -239,6 +239,10 @@ void PairGraphPES::coeff(int narg, char **arg)
 // energy, force and virial calculation ---------------------------------------
 void PairGraphPES::compute(int eflag, int vflag)
 {
+
+  if (debug_mode)
+    std::cout << "Computing properties with GraphPES\n";
+
   ev_init(eflag, vflag);
 
   if (force->newton_pair == 1)
