@@ -1,12 +1,12 @@
 general:
-  run_id: fine-tuning
+  run_id: cgap17-fine-tuning
   progress: logged
 
 # fine-tune an existing model ...
 model:
   painn:
     graph_pes.models.load_model:
-      path: ./graph-pes-results/quickstart-run/model.pt
+      path: ./graph-pes-results/qm7-quickstart/model.pt
   
   offset:
     graph_pes.models.FixedOffset:
@@ -16,27 +16,32 @@ model:
 data:
   graph_pes.data.load_atoms_dataset:
     id: QM7
-    cutoff: 3.0 # radial cutoff in Å
+    cutoff: 3.0
     n_train: 1_000
     n_valid: 100
 
-# ... using a simple energy loss function ...
-loss: graph_pes.training.loss.PerAtomEnergyLoss()
+# ... using a combination of energy and force loss functions ...
+loss: 
+  - component: graph_pes.training.loss.PerAtomEnergyLoss()
+  - component: 
+      graph_pes.training.loss.Loss:
+        property_key: forces
+        metric: graph_pes.training.loss.RMSE()
 
 # ... with the following settings ...
 fitting:
-  trainer_kwargs: # passed straight to the lightning trainer
+  trainer_kwargs:
     max_epochs: 25
-    accelerator: auto # use a gpu if available
+    accelerator: auto
 
   optimizer:
     graph_pes.training.opt.Optimizer:
       name: AdamW
-      lr: 0.01
+      lr: 0.001
 
-  loader_kwargs: # passed straight to the data loader
+  loader_kwargs:
     batch_size: 16
 
 # ... and log to Weights & Biases
 wandb:
-  project: graph-pes
+  project: graph-pes-demo
