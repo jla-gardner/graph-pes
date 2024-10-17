@@ -204,7 +204,7 @@ def random_id(
     use_existing: bool = False,
 ) -> str:
     """
-    Generate a random ID of the form ``abdc123-efgh456-...``.
+    Generate a random ID of the form ``abdc123_efgh456_...``.
 
     Parameters
     ----------
@@ -217,7 +217,7 @@ def random_id(
     Example
     -------
     >>> random_id(lengths=[4, 4])
-    "abcd-1234"
+    "abcd_1234"
     """
 
     if lengths is None:
@@ -230,7 +230,7 @@ def random_id(
         rng = random.Random()
         rng.seed()
 
-    return "-".join(
+    return "_".join(
         "".join(rng.choices(string.ascii_lowercase + string.digits, k=k))
         for k in lengths
     )

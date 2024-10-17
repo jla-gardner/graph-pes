@@ -172,8 +172,14 @@ class PaiNN(LocalEnergyModel):
     .. code-block:: bibtex
 
         @misc{Schutt-21-06,
-            title = {Equivariant Message Passing for the Prediction of Tensorial Properties and Molecular Spectra},
-            author = {Sch{\"u}tt, Kristof T. and Unke, Oliver T. and Gastegger, Michael},
+            title = {
+                Equivariant Message Passing for the Prediction
+                of Tensorial Properties and Molecular Spectra
+            },
+            author = {
+                Sch{\"u}tt, Kristof T. and Unke, Oliver T.
+                and Gastegger, Michael
+            },
             year = {2021},
             doi = {10.48550/arXiv.2102.03150},
         }
@@ -188,6 +194,19 @@ class PaiNN(LocalEnergyModel):
         The number of (interaction + update) layers to use.
     cutoff
         The cutoff distance for the radial features.
+
+    Examples
+    --------
+
+    Configure a PaiNN model for use with ``graph-pes-train``:
+
+    .. code:: yaml
+
+        model:
+          graph_pes.models.PaiNN:
+            internal_dim: 32
+            layers: 3
+            cutoff: 5.0
     """  # noqa: E501
 
     def __init__(

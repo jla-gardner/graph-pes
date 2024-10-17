@@ -510,8 +510,37 @@ class NequIP(_BaseNequIP):
         to un-physical discontinuities in the energy function as atoms enter and
         leave the cutoff radius of the model.
 
+
     Examples
     --------
+
+    The hidden layer and edge embedding irreps the model generates are
+    controlled by the combination of ``n_channels``, ``l_max`` and
+    ``allow_odd_parity``:
+
+    .. list-table::
+        :header-rows: 1
+
+        * - ``n_channels``
+          - ``l_max``
+          - ``allow_odd_parity``
+          - ``edge_irreps``
+          - ``hidden_irreps``
+        * - 8
+          - 2
+          - True
+          - ``1x0e + 1x1o + 1x2e``
+          - ``8x0e + 8x0o + 8x1e + 8x1o + 8x2e + 8x2o``
+        * - 8
+          - 2
+          - False
+          - ``1x0e + 1x1e + 1x2e``
+          - ``8x0e + 8x1e + 8x2e``
+        * - [16, 8, 4]
+          - 2
+          - False
+          - ``1x0e + 1x1e + 1x2e``
+          - ``16x0e + 16x1e + 16x2e``
 
     Configure a NequIP model for use with
     :doc:`graph-pes-train <../../cli/graph-pes-train>`:

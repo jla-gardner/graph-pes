@@ -320,6 +320,49 @@ class ScalarOutput(nn.Module):
 
 
 class TensorNet(LocalEnergyModel):
+    r"""
+    The `TensorNet <http://arxiv.org/abs/2306.06482>`_ model.
+
+    Citation:
+
+    .. code:: bibtex
+
+        @misc{Simeon-23-06,
+            title = {
+                TensorNet: Cartesian Tensor Representations for
+                Efficient Learning of Molecular Potentials
+            },
+            author = {Simeon, Guillem and {de Fabritiis}, Gianni},
+            year = {2023},
+            number = {arXiv:2306.06482},
+        }
+
+    Parameters
+    ----------
+    cutoff
+        The cutoff radius to use for the model.
+    radial_features
+        The number of radial features to use for the model.
+    embedding_size
+        The size of the embedding for each atom.
+    layers
+        The number of interaction layers to use for the model.
+
+    Examples
+    --------
+
+    Configure a TensorNet model for use with ``graph-pes-train``:
+
+    .. code:: yaml
+
+        model:
+          graph_pes.models.TensorNet:
+            radial_features: 32
+            embedding_size: 32
+            layers: 2
+            cutoff: 5.0
+    """
+
     def __init__(
         self,
         cutoff: float = DEFAULT_CUTOFF,
