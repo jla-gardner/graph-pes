@@ -28,7 +28,6 @@ class DummyModel(GraphPESModel):
         super().__init__(
             cutoff=cutoff,
             implemented_properties=["local_energies"],
-            auto_scale_local_energies=False,
         )
         self.name = name
         self.info = info

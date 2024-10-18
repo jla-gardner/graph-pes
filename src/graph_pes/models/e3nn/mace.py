@@ -14,6 +14,7 @@ from graph_pes.models.components.distances import (
     DistanceExpansion,
     PolynomialEnvelope,
 )
+from graph_pes.models.components.scaling import LocalEnergiesScaler
 from graph_pes.models.e3nn.utils import LinearReadOut, NonLinearReadOut, ReadOut
 from graph_pes.nn import (
     AtomicOneHot,
@@ -57,7 +58,6 @@ class _BaseMACE(GraphPESModel):
         super().__init__(
             cutoff=cutoff,
             implemented_properties=["local_energies"],
-            auto_scale_local_energies=True,
         )
 
         if isinstance(radial_expansion_type, str):
@@ -96,6 +96,8 @@ class _BaseMACE(GraphPESModel):
             + [NonLinearReadOut(hidden_irreps)]
         )
 
+        self.scaler = LocalEnergiesScaler()
+
     def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
         vectors = neighbour_vectors(graph)
         Z_embedding = self.z_embedding(graph["atomic_numbers"])
@@ -116,11 +118,12 @@ class _BaseMACE(GraphPESModel):
             )
             per_atom_energies.append(readout(node_features))
 
-        return {
-            "local_energies": torch.sum(
-                torch.stack(per_atom_energies), dim=0
-            ).squeeze()
-        }
+        local_energies = torch.sum(
+            torch.stack(per_atom_energies), dim=0
+        ).squeeze()
+        local_energies = self.scaler(local_energies, graph)
+
+        return {"local_energies": local_energies}
 
 
 @e3nn.util.jit.compile_mode("script")

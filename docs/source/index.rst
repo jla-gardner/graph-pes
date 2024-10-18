@@ -67,7 +67,7 @@ A 3-in-1 toolset:
 
    - a data pipeline for turning :class:`ase.Atoms` objects into :class:`~graph_pes.graphs.AtomicGraph` objects
    - a set of operations for common tasks on :class:`~graph_pes.graphs.AtomicGraph` objects, including edge-trimming, neighbour indexing and summations, and batching
-   - base class for all model of the potential energy surface (:class:`~graph_pes.core.GraphPESModel`) that automatically infers force and stress predictions if these are not defined by the model itself
+   - a base class for all model of the potential energy surface (:class:`~graph_pes.core.GraphPESModel`) that automatically infers force and stress predictions if these are not provided by the model's implementation
    - reference implementations of popular models, including :class:`~graph_pes.models.NequIP`, :class:`~graph_pes.models.PaiNN`, :class:`~graph_pes.models.MACE` and :class:`~graph_pes.models.TensorNet`
    - all written in vanilla ``PyTorch``, and 100% compatible with ``TorchScript`` compilation for use within LAMMPS
 

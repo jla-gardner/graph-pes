@@ -52,7 +52,6 @@ class AdditionModel(GraphPESModel):
         super().__init__(
             cutoff=max_cutoff,
             implemented_properties=implemented_properties,
-            auto_scale_local_energies=False,
         )
         self.models = UniformModuleDict(**models)
 

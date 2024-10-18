@@ -4,10 +4,6 @@
 Models
 ######
 
-All models implemented in ``graph-pes`` are subclasses of
-:class:`~graph_pes.core.GraphPESModel`. Implementations should override the
-:meth:`~graph_pes.core.GraphPESModel.forward` method.
-
 
 .. autoclass:: graph_pes.core.GraphPESModel
    :members:

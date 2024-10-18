@@ -22,6 +22,7 @@ from graph_pes.models.components.aggregation import (
     NeighbourAggregation,
     NeighbourAggregationMode,
 )
+from graph_pes.models.components.scaling import LocalEnergiesScaler
 from graph_pes.models.e3nn.utils import LinearReadOut
 from graph_pes.nn import (
     MLP,
@@ -383,7 +384,6 @@ class _BaseNequIP(GraphPESModel):
         super().__init__(
             cutoff=cutoff,
             implemented_properties=props,
-            auto_scale_local_energies=True,
         )
 
         if isinstance(n_channels, int):
@@ -433,6 +433,8 @@ class _BaseNequIP(GraphPESModel):
         else:
             self.force_readout = None
 
+        self.scaler = LocalEnergiesScaler()
+
     def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
         # pre-compute important quantities
         r = neighbour_distances(graph)
@@ -447,8 +449,11 @@ class _BaseNequIP(GraphPESModel):
             node_embed = layer(node_embed, Z_embed, r, Y, graph)
 
         # ...and read out
+        local_energies = self.energy_readout(node_embed).squeeze()
+        local_energies = self.scaler(local_energies, graph)
+
         preds: dict[keys.LabelKey, torch.Tensor] = {
-            "local_energies": self.energy_readout(node_embed).squeeze()
+            "local_energies": local_energies
         }
         if self.force_readout is not None:
             preds["forces"] = self.force_readout(node_embed).squeeze()

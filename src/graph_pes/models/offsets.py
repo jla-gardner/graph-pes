@@ -40,7 +40,6 @@ class EnergyOffset(GraphPESModel):
                 "forces",
                 "stress",
             ],
-            auto_scale_local_energies=False,
         )
         self._offsets = offsets
 
@@ -119,6 +118,7 @@ class LearnableOffset(EnergyOffset):
             requires_grad=True,
         )
         super().__init__(offsets)
+        # TODO: keep track of which where specified!
         self._values_were_specified = bool(initial_values)
 
     @torch.no_grad()

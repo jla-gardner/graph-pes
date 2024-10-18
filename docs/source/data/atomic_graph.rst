@@ -41,3 +41,4 @@ Graph Operations
 
 .. autofunction:: graph_pes.graphs.operations.sum_over_neighbours
 .. autofunction:: graph_pes.graphs.operations.is_local_property
+.. autofunction:: graph_pes.graphs.operations.guess_per_element_mean_and_var

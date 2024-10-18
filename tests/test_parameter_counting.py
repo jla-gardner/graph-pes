@@ -39,11 +39,11 @@ def test_fixed():
 
 
 def test_scaling():
-    model = DoesNothingModel(auto_scale_local_energies=True)
+    model = DoesNothingModel()
     # the model should have a single parameter: the per_element_scaling
     params = list(model.parameters())
     assert len(params) == 1
-    assert params[0] is model.local_energies_scaler.per_element_scaling  # type: ignore
+    assert params[0] is model.scaler.per_element_scaling
 
     # there should be no countable values in this parameter
     assert params[0].numel() == 0

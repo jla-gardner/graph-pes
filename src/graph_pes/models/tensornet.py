@@ -11,6 +11,7 @@ from graph_pes.graphs.operations import (
     number_of_atoms,
     number_of_edges,
 )
+from graph_pes.models.components.scaling import LocalEnergiesScaler
 from graph_pes.nn import (
     MLP,
     HaddamardProduct,
@@ -373,7 +374,6 @@ class TensorNet(GraphPESModel):
         super().__init__(
             cutoff=cutoff,
             implemented_properties=["local_energies"],
-            auto_scale_local_energies=True,
         )
         self.embedding = Embedding(radial_features, embedding_size, cutoff)
         self.interactions = UniformModuleList(
@@ -381,9 +381,14 @@ class TensorNet(GraphPESModel):
             for _ in range(layers)
         )
         self.read_out = ScalarOutput(embedding_size)
+        self.scaler = LocalEnergiesScaler()
 
     def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
         X = self.embedding(graph)  # (N, C, 3, 3)
         for interaction in self.interactions:
             X = interaction(X, graph) + X  # residual connection
-        return {"local_energies": self.read_out(X).squeeze()}
+
+        local_energies = self.read_out(X).squeeze()
+        local_energies = self.scaler(local_energies, graph)
+
+        return {"local_energies": local_energies}

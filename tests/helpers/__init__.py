@@ -23,6 +23,7 @@ from graph_pes.models import (
     ZEmbeddingMACE,
     ZEmbeddingNequIP,
 )
+from graph_pes.models.components.scaling import LocalEnergiesScaler
 
 
 def all_model_factories(
@@ -102,12 +103,14 @@ CONFIGS_DIR = Path(__file__).parent.parent.parent / "configs"
 
 
 class DoesNothingModel(GraphPESModel):
-    def __init__(self, auto_scale_local_energies: bool = True):
+    def __init__(self):
         super().__init__(
             cutoff=3.7,
             implemented_properties=["local_energies"],
-            auto_scale_local_energies=auto_scale_local_energies,
         )
+        self.scaler = LocalEnergiesScaler()
 
     def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
-        return {"local_energies": torch.zeros(len(graph["atomic_numbers"]))}
+        local_energies = torch.zeros(len(graph["atomic_numbers"]))
+        local_energies = self.scaler(local_energies, graph)
+        return {"local_energies": local_energies}

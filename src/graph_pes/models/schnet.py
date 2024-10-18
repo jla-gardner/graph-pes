@@ -9,6 +9,7 @@ from graph_pes.graphs.operations import (
     neighbour_distances,
     sum_over_neighbours,
 )
+from graph_pes.models.components.scaling import LocalEnergiesScaler
 from graph_pes.nn import (
     MLP,
     PerElementEmbedding,
@@ -209,7 +210,6 @@ class SchNet(GraphPESModel):
         super().__init__(
             cutoff=cutoff,
             implemented_properties=["local_energies"],
-            auto_scale_local_energies=True,
         )
 
         if expansion is None:
@@ -229,6 +229,8 @@ class SchNet(GraphPESModel):
             activation=ShiftedSoftplus(),
         )
 
+        self.scaler = LocalEnergiesScaler()
+
     def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
         h = self.chemical_embedding(graph["atomic_numbers"])
         d = neighbour_distances(graph)
@@ -236,7 +238,10 @@ class SchNet(GraphPESModel):
         for interaction in self.interactions:
             h = h + interaction(h, d, graph)
 
-        return {"local_energies": self.read_out(h).squeeze()}
+        local_energies = self.read_out(h).squeeze()
+        local_energies = self.scaler(local_energies, graph)
+
+        return {"local_energies": local_energies}
 
     def __repr__(self) -> str:
         return uniform_repr(
@@ -244,5 +249,5 @@ class SchNet(GraphPESModel):
             chemical_embedding=self.chemical_embedding,
             interactions=self.interactions,
             read_out=self.read_out,
-            local_energies_scaler=self.local_energies_scaler,
+            scaler=self.scaler,
         )

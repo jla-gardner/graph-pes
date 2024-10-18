@@ -12,6 +12,7 @@ from graph_pes.graphs.operations import (
     number_of_atoms,
     sum_over_neighbours,
 )
+from graph_pes.models.components.scaling import LocalEnergiesScaler
 from graph_pes.nn import (
     MLP,
     HaddamardProduct,
@@ -219,7 +220,6 @@ class PaiNN(GraphPESModel):
         super().__init__(
             cutoff=cutoff,
             implemented_properties=["local_energies"],
-            auto_scale_local_energies=True,
         )
 
         self.internal_dim = internal_dim
@@ -235,6 +235,8 @@ class PaiNN(GraphPESModel):
             [internal_dim, internal_dim, 1],
             activation=nn.SiLU(),
         )
+
+        self.scaler = LocalEnergiesScaler()
 
     def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, Tensor]:
         # initialise embbedings:
@@ -259,4 +261,8 @@ class PaiNN(GraphPESModel):
             scalar_embeddings = scalar_embeddings + delta_s
 
         # mlp read out
-        return {"local_energies": self.read_out(scalar_embeddings).squeeze()}
+        local_energies = self.read_out(scalar_embeddings).squeeze()
+
+        # scaling
+        local_energies = self.scaler(local_energies, graph)
+        return {"local_energies": local_energies}

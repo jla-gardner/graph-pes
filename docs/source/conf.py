@@ -62,6 +62,9 @@ html_theme_options = {
 nitpick_ignore = [
     ("py:class", "torch.nn.Parameter"),
     ("py:class", "numpy.ndarray"),
+    ("py:class", "e3nn.*"),
+    ("py:class", "optional"),
+    ("py:class", "o3.Irreps"),
 ]
 
 # override the default css to match the furo theme

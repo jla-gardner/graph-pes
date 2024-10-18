@@ -1,6 +1,5 @@
 import torch
 from ase.build import molecule
-from graph_pes.core import NotNeeded
 from graph_pes.data.io import to_atomic_graph
 from graph_pes.models import NequIP
 
@@ -19,13 +18,10 @@ def test_direct_forces():
     assert "forces" in preds
     assert preds["forces"].shape == (5, 3)
 
-    # no InferForce output inferrer
-    assert isinstance(model.output_inferrers["forces"], NotNeeded)
-
     # model outputs forces indirectly
     all_preds = model.get_all_PES_predictions(graph)
-    assert "forces" in preds
-    assert preds["forces"].shape == (5, 3)
+    assert "forces" in all_preds
+    assert all_preds["forces"].shape == (5, 3)
     assert torch.allclose(preds["forces"], all_preds["forces"])
 
     # check equivariance: all force mags for the H atoms should be the same
