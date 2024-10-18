@@ -130,21 +130,6 @@ def number_of_edges(graph: AtomicGraph) -> int:
     return graph[keys.NEIGHBOUR_INDEX].shape[1]
 
 
-def is_local_property(x: Tensor, graph: AtomicGraph) -> bool:
-    """
-    Is the property ``x`` local to each atom in the ``graph``?
-
-    Parameters
-    ----------
-    x
-        The property to check.
-    graph
-        The graph to check the property for.
-    """
-
-    return len(x.shape) > 0 and x.shape[0] == number_of_atoms(graph)
-
-
 def has_cell(graph: AtomicGraph) -> bool:
     """
     Does ``graph`` represent a structure with a defined unit cell?
@@ -248,7 +233,46 @@ def structure_sizes(batch: AtomicGraph) -> Tensor:
     return batch[keys.PTR][1:] - batch[keys.PTR][:-1]  # type: ignore
 
 
+def number_of_neighbours(
+    graph: AtomicGraph,
+    include_central_atom: bool = True,
+) -> Tensor:
+    """
+    Get a tensor, ``T``, of shape ``(N,)``, where ``N`` is the number of atoms
+    in the ``graph``, such that ``T[i]`` gives the number of neighbours of atom
+    ``i``. If ``include_central_atom`` is ``True``, then the central atom is
+    included in the count.
+
+    Parameters
+    ----------
+    graph
+        The graph to get the number of neighbours for.
+    include_central_atom
+        Whether to include the central atom in the count.
+    """
+
+    return sum_over_neighbours(
+        torch.ones_like(graph[keys.NEIGHBOUR_INDEX][0]),
+        graph,
+    ) + int(include_central_atom)
+
+
 ############################### ACTIONS ###############################
+
+
+def is_local_property(x: Tensor, graph: AtomicGraph) -> bool:
+    """
+    Is the property ``x`` local to each atom in the ``graph``?
+
+    Parameters
+    ----------
+    x
+        The property to check.
+    graph
+        The graph to check the property for.
+    """
+
+    return len(x.shape) > 0 and x.shape[0] == number_of_atoms(graph)
 
 
 def trim_edges(graph: AtomicGraph, cutoff: float) -> AtomicGraph:
@@ -351,30 +375,6 @@ def sum_over_neighbours(p: Tensor, graph: AtomicGraph) -> Tensor:
     return zeros.scatter_add(0, index, p)
 
 
-def number_of_neighbours(
-    graph: AtomicGraph,
-    include_central_atom: bool = True,
-) -> Tensor:
-    """
-    Get a tensor, ``T``, of shape ``(N,)``, where ``N`` is the number of atoms
-    in the ``graph``, such that ``T[i]`` gives the number of neighbours of atom
-    ``i``. If ``include_central_atom`` is ``True``, then the central atom is
-    included in the count.
-
-    Parameters
-    ----------
-    graph
-        The graph to get the number of neighbours for.
-    include_central_atom
-        Whether to include the central atom in the count.
-    """
-
-    return sum_over_neighbours(
-        torch.ones_like(graph[keys.NEIGHBOUR_INDEX][0]),
-        graph,
-    ) + int(include_central_atom)
-
-
 def sum_per_structure(x: Tensor, graph: AtomicGraph) -> Tensor:
     r"""
     Shape-preserving sum of a per-atom property, :math:`p`, to get a
@@ -461,7 +461,7 @@ def guess_per_element_mean_and_var(
 ) -> tuple[dict[int, float], dict[int, float]]:
     r"""
     Guess the per-element mean (:math:`\mu_Z`) and variance (:math:`\sigma_Z^2`)
-    of a per-structure quantity under the following assumptions:
+    of a per-structure quantity using ridge regression under the following assumptions:
 
     1. the per-structure property, :math:`P`, is a summation over local
        properties of its components atoms: :math:`P = \sum_{i=1}^{N} p_{Z_i}`.
