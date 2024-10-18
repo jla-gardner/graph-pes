@@ -496,6 +496,11 @@ class NequIP(_BaseNequIP):
         elements you will encounter in both pre-training and fine-tuning are
         present in this list. (See :class:`~graph_pes.models.ZEmbeddingNequIP`
         for an alternative that allows for arbitrary atomic numbers.)
+    direct_force_predictions
+        Whether to predict forces directly. If ``True``, the model will output
+        forces (rather than infer them from the energy) using a
+        :class:`~graph_pes.models.e3nn.utils.LinearReadOut` to map the final
+        layer node embedding to a set of force predictions.
     cutoff
         The cutoff radius for the model.
     n_channels

@@ -8,4 +8,5 @@ Building blocks
     envelopes
     aggregation
     nn
+    e3nn
     transforms

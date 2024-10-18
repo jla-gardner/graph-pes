@@ -98,4 +98,3 @@ nbsphinx_prolog = """
     </style>
 """
 nbsphinx_prompt_width = "0"
-nbsphinx_execute = "never"
