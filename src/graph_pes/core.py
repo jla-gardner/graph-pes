@@ -66,8 +66,8 @@ class GraphPESModel(nn.Module, ABC):
     include a per-atom energy contribution (``"local_energies"``).
 
     For any other properties not returned by the forward pass,
-    :class:`graph_pes.core.GraphPESModel.predict` will automatically infer these
-    properties from the local energies as required:
+    the :meth:`~graph_pes.core.GraphPESModel.predict` method will automatically
+    infer these properties from the local energies as required:
 
     * ``"energy"``: as the sum of the local energies per structure.
     * ``"forces"``: as the negative gradient of the energy with respect to the
@@ -281,11 +281,11 @@ class GraphPESModel(nn.Module, ABC):
         This method does two things:
 
         1. iterates over all the model's :class:`~torch.nn.Module` components
-            (inlcuding itself) and calls their :meth:`pre_fit` method (if it exists
-            - see for instance :class:`~graph_pes.models.pairwise.LennardJones` for
-            an example of a model-specific pre-fit method, and
-            :class:`~graph_pes.models.components.scaling.LocalEnergiesScaler` for an example of a
-            component-specific pre-fit method).
+           (inlcuding itself) and calls their :meth:`pre_fit` method (if it exists -
+           see for instance :class:`~graph_pes.models.pairwise.LennardJones` for
+           an example of a model-specific pre-fit method, and
+           :class:`~graph_pes.models.components.scaling.LocalEnergiesScaler` for
+           an example of a component-specific pre-fit method).
         2. registers all the unique atomic numbers in the training data with
            all of the model's :class:`~graph_pes.nn.PerElementParameter`
            instances to ensure correct parameter counting.
