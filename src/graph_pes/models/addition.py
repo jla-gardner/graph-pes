@@ -89,40 +89,6 @@ class AdditionModel(GraphPESModel):
 
         return predictions
 
-    # def predict(
-    #     self,
-    #     graph: AtomicGraph,
-    #     properties: list[keys.LabelKey],
-    # ) -> dict[keys.LabelKey, Tensor]:
-    #     device = graph["atomic_numbers"].device
-    #     N = number_of_atoms(graph)
-    #     if is_batch(graph):
-    #         S = number_of_structures(graph)
-    #         zeros = {
-    #             "energy": torch.zeros((S), device=device),
-    #             "forces": torch.zeros((N, 3), device=device),
-    #             "stress": torch.zeros((S, 3, 3), device=device),
-    #             "local_energies": torch.zeros((N), device=device),
-    #         }
-    #     else:
-    #         zeros = {
-    #             "energy": torch.zeros((), device=device),
-    #             "forces": torch.zeros((N, 3), device=device),
-    #             "stress": torch.zeros((3, 3), device=device),
-    #             "local_energies": torch.zeros((N), device=device),
-    #         }
-
-    #     predictions: dict[keys.LabelKey, Tensor] = {
-    #         k: zeros[k] for k in properties
-    #     }
-    #     for model in self.models.values():
-    #         trimmed = trim_edges(graph, model.cutoff.item())
-    #         preds = model.predict(trimmed, properties)
-    #         for key in properties:
-    #             predictions[key] += preds[key]
-
-    #     return predictions
-
     def pre_fit_all_components(
         self, graphs: LabelledGraphDataset | Sequence[LabelledGraph]
     ):

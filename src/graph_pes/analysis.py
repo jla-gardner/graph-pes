@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Sequence
+from typing import Sequence
 
 import matplotlib.axes
 import matplotlib.lines
@@ -52,10 +52,8 @@ def move_axes(ax: matplotlib.axes.Axes | None = None):  # type: ignore
     ax.spines["bottom"].set_position(("outward", 10))
 
 
-# TODO per-property default transforms
-# energy: per-atom with arbitrary shift
 def parity_plot(
-    model: Callable[[AtomicGraph], torch.Tensor],
+    model: GraphPESModel,
     graphs: AtomicGraphBatch | Sequence[AtomicGraph],
     property: keys.LabelKey = keys.ENERGY,
     property_label: str | None = None,

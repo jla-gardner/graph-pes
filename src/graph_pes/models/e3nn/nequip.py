@@ -11,7 +11,7 @@ import torch
 from e3nn import o3
 from graph_pes.core import GraphPESModel
 from graph_pes.graphs import DEFAULT_CUTOFF, keys
-from graph_pes.graphs.graph_typing import AtomicGraph, LabelledBatch
+from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import (
     index_over_neighbours,
     neighbour_distances,
@@ -437,11 +437,6 @@ class _BaseNequIP(GraphPESModel):
 
         # ...and read out the energy
         return {"local_energies": self.readout(node_embed).squeeze()}
-
-    # TODO: fix this
-    def pre_fit(self, graphs: LabelledBatch) -> None:
-        for layer in self.layers:
-            layer.aggregation.pre_fit(graphs)
 
 
 @e3nn.util.jit.compile_mode("script")
