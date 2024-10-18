@@ -246,7 +246,7 @@ class GraphPESModel(nn.Module, ABC):
     def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
         """
         The model's forward pass. Generate all properties for the given graph
-        that are in this model's :attr:`implemented_properties` list.
+        that are in this model's ``implemented_properties`` list.
         """
         ...
 
@@ -377,10 +377,10 @@ class GraphPESModel(nn.Module, ABC):
         :class:`~graph_pes.nn.PerElementParameter`
         instances to ensure correct parameter counting.
         To implement model-specific pre-fitting, override the
-        :meth:`model_specific_pre_fit` method.
+        :meth:`pre_fit` method.
 
         If the model has already been pre-fitted, subsequent calls to
-        :meth:`pre_fit` will be ignored (and a warning will be raised).
+        :meth:`pre_fit_all_components` will be ignored (and a warning will be raised).
 
         Parameters
         ----------

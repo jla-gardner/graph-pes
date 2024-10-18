@@ -92,6 +92,16 @@ def test_addition():
         lj.predict_energy(graphs[0]) + m.predict_energy(graphs[0]),
     )
 
+    assert torch.allclose(
+        addition_model.predict_forces(graphs[0]),
+        lj.predict_forces(graphs[0]) + m.predict_forces(graphs[0]),
+    )
+
+    assert torch.allclose(
+        addition_model.predict_stress(graphs[0]),
+        lj.predict_stress(graphs[0]) + m.predict_stress(graphs[0]),
+    )
+
     # test pre_fit
     original_lj_sigma = lj.sigma.item()
     addition_model.pre_fit_all_components(graphs)

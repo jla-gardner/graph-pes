@@ -103,12 +103,14 @@ class LearnableOffset(EnergyOffset):
     Estimate all relevant energy offsets from the training data:
 
     >>> model = LearnableOffset()
-    >>> model.pre_fit(training_data)  # estimates offsets from data
+    >>> # estimates offsets from data
+    >>> model.pre_fit_all_components(training_data)
 
     Specify some initial values for the energy offsets:
 
     >>> model = LearnableOffset(H=0.0, C=-3.0)
-    >>> model.pre_fit(training_data)  # estimates remaining offsets from data
+    >>> # estimate offsets for elements that aren't C or H
+    >>> model.pre_fit_all_components(training_data)
     """
 
     def __init__(self, **initial_values: float):

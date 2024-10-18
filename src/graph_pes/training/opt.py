@@ -30,7 +30,8 @@ class Optimizer:
 
         We use delayed instantiation of optimizers when configuring our training
         runs to allow for arbitrary changes to the model and its parameters
-        during the :class:`~graph_pes.core.GraphPESModel.pre_fit` method.
+        during the :class:`~graph_pes.core.GraphPESModel.pre_fit_all_components`
+        method.
 
 
     Parameters
