@@ -1,3 +1,3 @@
-from graph_pes.core import GraphPESModel, LocalEnergyModel
+from graph_pes.core import GraphPESModel
 
-__all__ = ["LocalEnergyModel", "GraphPESModel"]
+__all__ = ["GraphPESModel"]

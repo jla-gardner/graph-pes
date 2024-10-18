@@ -9,7 +9,7 @@ import e3nn.nn
 import e3nn.util.jit
 import torch
 from e3nn import o3
-from graph_pes.core import LocalEnergyModel
+from graph_pes.core import GraphPESModel
 from graph_pes.graphs import DEFAULT_CUTOFF
 from graph_pes.graphs.graph_typing import AtomicGraph, LabelledBatch
 from graph_pes.graphs.operations import (
@@ -361,7 +361,7 @@ class NequIPMessagePassingLayer(torch.nn.Module):
 
 
 @e3nn.util.jit.compile_mode("script")
-class _BaseNequIP(LocalEnergyModel):
+class _BaseNequIP(GraphPESModel):
     def __init__(
         self,
         Z_embedding: torch.nn.Module,
@@ -375,7 +375,11 @@ class _BaseNequIP(LocalEnergyModel):
         prune_last_layer: bool,
         neighbour_aggregation: NeighbourAggregationMode,
     ):
-        super().__init__(cutoff=cutoff, auto_scale=True)
+        super().__init__(
+            cutoff=cutoff,
+            implemented_properties=["local_energies"],
+            auto_scale_local_energies=True,
+        )
 
         if isinstance(n_channels, int):
             n_channels = [n_channels] * (l_max + 1)

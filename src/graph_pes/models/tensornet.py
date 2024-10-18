@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 from torch import Tensor, nn
 
-from graph_pes.core import LocalEnergyModel
+from graph_pes.core import GraphPESModel
 from graph_pes.graphs import DEFAULT_CUTOFF, AtomicGraph
 from graph_pes.graphs.operations import (
     neighbour_distances,
@@ -319,7 +319,7 @@ class ScalarOutput(nn.Module):
         return self.mlp(X)  # (N, 1)
 
 
-class TensorNet(LocalEnergyModel):
+class TensorNet(GraphPESModel):
     r"""
     The `TensorNet <http://arxiv.org/abs/2306.06482>`_ model.
 
@@ -370,7 +370,11 @@ class TensorNet(LocalEnergyModel):
         embedding_size: int = 32,
         layers: int = 2,
     ):
-        super().__init__(cutoff, auto_scale=True)
+        super().__init__(
+            cutoff=cutoff,
+            implemented_properties=["local_energies"],
+            auto_scale_local_energies=True,
+        )
         self.embedding = Embedding(radial_features, embedding_size, cutoff)
         self.interactions = UniformModuleList(
             Interaction(radial_features, embedding_size, cutoff)

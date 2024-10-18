@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import Sequence
+from typing import NamedTuple, Sequence
 
 import torch
 from ase.data import chemical_symbols
@@ -26,8 +26,178 @@ from .graphs.operations import (
     to_batch,
     trim_edges,
 )
-from .nn import PerElementParameter
+from .nn import PerElementParameter, UniformModuleDict
 from .util import differentiate
+
+
+class OutputInferrer(nn.Module, ABC):
+    def before(self, graph: AtomicGraph):
+        """
+        Perform any necessary operations before the forward pass.
+
+        Typically, this involves adding some temporary state to the graph,
+        or setting up gradient tracking for some graph attributes.
+
+        By default, this method does nothing.
+
+        Parameters
+        ----------
+        graph
+            The graph representation of the structure.
+        """
+        pass
+
+    @abstractmethod
+    def after(
+        self,
+        predictions: dict[keys.LabelKey, torch.Tensor],
+        graph: AtomicGraph,
+    ):
+        """
+        Adjust the current predictions for the given ``graph`` in-place.
+
+        Remove any temporary state that was added in the ``before`` method.
+
+        Parameters
+        ----------
+        current_predictions
+            The current predictions for the given ``graph``.
+        graph
+            The graph representation of the structure.
+        """
+
+    def pre_fit(self, graphs: LabelledBatch):
+        """
+        Pre-fit the output adapter to the training data.
+
+        Parameters
+        ----------
+        graphs
+            The training data.
+        """
+        pass
+
+
+class InferTotalEnergy(OutputInferrer):
+    def after(
+        self,
+        predictions: dict[keys.LabelKey, torch.Tensor],
+        graph: AtomicGraph,
+    ):
+        predictions[keys.ENERGY] = sum_per_structure(
+            predictions[keys.LOCAL_ENERGIES],
+            graph,
+        )
+
+
+class _InferForcesState(NamedTuple):
+    positions_required_grad: bool
+
+
+class InferForces(OutputInferrer):
+    def __init__(self):
+        super().__init__()
+        self._temp_state: _InferForcesState | None = None
+
+    def before(self, graph: AtomicGraph):
+        # save temporary state
+        self._temp_state = _InferForcesState(
+            positions_required_grad=graph[keys._POSITIONS].requires_grad
+        )
+
+        # ensure gradients are tracked
+        graph[keys._POSITIONS].requires_grad_(True)
+
+    def after(
+        self,
+        predictions: dict[keys.LabelKey, torch.Tensor],
+        graph: AtomicGraph,
+    ):
+        # add forces to the predictions
+        predictions[keys.FORCES] = -differentiate(
+            predictions[keys.ENERGY], graph[keys._POSITIONS]
+        )
+
+        # remove temporary state in a TorchScript friendly way
+        state = self._temp_state
+        assert state is not None
+        self._temp_state = None
+
+        # make sure the positions are in the same state as
+        # they were in before
+        graph[keys._POSITIONS].requires_grad_(state.positions_required_grad)
+
+
+class _InferStressState(NamedTuple):
+    positions_required_grad: bool
+    cell_required_grad: bool
+
+
+class InferStress(OutputInferrer):
+    def __init__(self):
+        super().__init__()
+        self._temp_state: _InferStressState | None = None
+
+    def before(self, graph: AtomicGraph):
+        if not has_cell(graph):
+            raise ValueError("Can't predict stress without cell information.")
+
+        existing_cell = graph[keys.CELL]
+
+        # save temporary state
+        self._temp_state = _InferStressState(
+            positions_required_grad=graph[keys._POSITIONS].requires_grad,
+            cell_required_grad=graph[keys.CELL].requires_grad,
+        )
+
+        # set up stress calculation
+        change_to_cell = torch.zeros_like(existing_cell)
+        change_to_cell.requires_grad_(True)
+        symmetric_change = 0.5 * (
+            change_to_cell + change_to_cell.transpose(-1, -2)
+        )  # (n_structures, 3, 3) if batched, else (3, 3)
+        scaling = torch.eye(3, device=existing_cell.device) + symmetric_change
+        if is_batch(graph):
+            scaling_per_atom = torch.index_select(
+                scaling,
+                dim=0,
+                index=graph[keys.BATCH],  # type: ignore
+            )  # (n_atoms, 3, 3)
+            # to go from (N, 3) @ (N, 3, 3) -> (N, 3), we need un/squeeze:
+            # (N, 1, 3) @ (N, 3, 3) -> (N, 1, 3) -> (N, 3)
+            new_positions = (
+                graph[keys._POSITIONS].unsqueeze(-2) @ scaling_per_atom
+            ).squeeze()
+            # (M, 3, 3) @ (M, 3, 3) -> (M, 3, 3)
+            new_cell = existing_cell @ scaling
+        else:
+            # (N, 3) @ (3, 3) -> (N, 3)
+            new_positions = graph[keys._POSITIONS] @ scaling
+            new_cell = existing_cell @ scaling
+        # change to positions will be a tensor of all 0's, but will allow
+        # gradients to flow backwards through the energy calculation
+        # and allow us to calculate the stress tensor as the gradient
+        # of the energy wrt the change in cell.
+        graph[keys._POSITIONS] = new_positions
+        graph[keys.CELL] = new_cell
+
+    def after(
+        self,
+        predictions: dict[keys.LabelKey, torch.Tensor],
+        graph: AtomicGraph,
+    ):
+        # use auto-grad to calculate stress
+        stress = differentiate(predictions[keys.ENERGY], graph[keys.CELL])
+        predictions[keys.STRESS] = stress
+
+        # remove temporary state in a TorchScript friendly way
+        state = self._temp_state
+        assert state is not None
+        self._temp_state = None
+
+        # put things back to how they were before
+        graph[keys.CELL].requires_grad_(state.cell_required_grad)
+        graph[keys._POSITIONS].requires_grad_(state.positions_required_grad)
 
 
 class GraphPESModel(nn.Module, ABC):
@@ -40,16 +210,54 @@ class GraphPESModel(nn.Module, ABC):
     ----------
     cutoff
         The cutoff radius for the model.
+    implemented_properties
+        The property predictions that the model implements in the forward pass.
+        Must include at least ``"local_energies"``.
     """
 
-    def __init__(self, cutoff: float):
+    def __init__(
+        self,
+        cutoff: float,
+        implemented_properties: list[keys.LabelKey],
+        auto_scale_local_energies: bool,
+    ):
         super().__init__()
 
         self.cutoff: torch.Tensor
         self.register_buffer("cutoff", torch.tensor(cutoff))
-        self._has_been_pre_fit = False
+        self._has_been_pre_fit: torch.Tensor
+        self.register_buffer("_has_been_pre_fit", torch.tensor(0))
+
+        if auto_scale_local_energies:
+            self.local_energies_scaler = LocalEnergiesScaler()
+        else:
+            self.local_energies_scaler = None
+
+        # setup up the output enhancers
+        self.implemented_properties = implemented_properties
+        if "local_energies" not in implemented_properties:
+            raise ValueError(
+                'All GraphPESModel\'s must implement a "local_energies" '
+                "prediction."
+            )
+        self.output_inferrers: UniformModuleDict[OutputInferrer] = (
+            UniformModuleDict()
+        )
+        if "energy" not in implemented_properties:
+            self.output_inferrers["energy"] = InferTotalEnergy()
+        if "forces" not in implemented_properties:
+            self.output_inferrers["forces"] = InferForces()
+        if "stress" not in implemented_properties:
+            self.output_inferrers["stress"] = InferStress()
 
     @abstractmethod
+    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
+        """
+        The model's forward pass. Generate all properties for the given graph
+        that are in this model's :attr:`implemented_properties` list.
+        """
+        ...
+
     def predict(
         self,
         graph: AtomicGraph,
@@ -99,6 +307,43 @@ class GraphPESModel(nn.Module, ABC):
             ``"energy"``, ``"forces"``, ``"stress"``, and ``"local_energies"``.
         """
 
+        # before anything, remove unnecessary edges:
+        graph = trim_edges(graph, self.cutoff.item())
+
+        # only select the relevant inferrers, in
+        # last in first out order (stress and force requires energy)
+        inferrers = []
+        for key in "energy", "forces", "stress":
+            if key in properties and key not in self.implemented_properties:
+                inferrers.append(self.output_inferrers[key])
+
+        # set up (in reverse order!)
+        for inferrer in reversed(inferrers):
+            inferrer.before(graph)
+
+        # get the raw output from the model
+        output = self(graph)
+
+        # optionally scale the local energies
+        if self.local_energies_scaler is not None:
+            output["local_energies"] = self.local_energies_scaler(
+                output["local_energies"], graph
+            )
+
+        # infer the remaining properties
+        for inferrer in inferrers:
+            inferrer.after(output, graph)
+
+        # tidy up if in eval mode
+        if not self.training:
+            output: dict[keys.LabelKey, torch.Tensor] = {
+                k: v.detach() for k, v in output.items()
+            }
+
+        # return the output
+        return output
+
+    # TODO: change to pre-fit all.
     @torch.no_grad()
     def pre_fit(
         self,
@@ -161,21 +406,14 @@ class GraphPESModel(nn.Module, ABC):
                 )
 
             # TODO make this pre-fit process nicer
-            if (
-                hasattr(self, "per_element_scaling")
-                and self.per_element_scaling is not None
-                and "energy" in graph_batch
-            ):
-                means, variances = guess_per_element_mean_and_var(
-                    graph_batch["energy"], graph_batch
-                )
-                for Z, var in variances.items():
-                    self.per_element_scaling[Z] = torch.sqrt(torch.tensor(var))
+            for inferrer in self.output_inferrers.values():
+                inferrer.pre_fit(graph_batch)
 
-            self._has_been_pre_fit = True
+            self._has_been_pre_fit = torch.tensor(1)
             self.model_specific_pre_fit(graph_batch)
 
-        # 3. finally, register all per-element parameters
+        # 3. finally, register all per-element parameters (no harm in doing this
+        #    multiple times)
         for param in self.parameters():
             if isinstance(param, PerElementParameter):
                 param.register_elements(
@@ -198,18 +436,8 @@ class GraphPESModel(nn.Module, ABC):
         """
         return []
 
-    def forward(self, graph: AtomicGraph) -> torch.Tensor:
-        """
-        The main access point for :class:`~graph_pes.core.GraphPESModel`
-        instances is :meth:`~graph_pes.core.GraphPESModel.predict` (see above).
-
-        For convenience, we alias the forward pass of the model to be the
-        :meth:`~graph_pes.core.GraphPESModel.predict_energy` method.
-        """
-        graph = trim_edges(graph, self.cutoff.item())
-        return self.predict_energy(graph)
-
-    def __call__(self, graph: AtomicGraph) -> torch.Tensor:
+    # add type hints for mypy etc.
+    def __call__(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
         return super().__call__(graph)
 
     def get_all_PES_predictions(
@@ -256,203 +484,46 @@ class GraphPESModel(nn.Module, ABC):
                 Zs.update(param._accessed_Zs)
         return [chemical_symbols[Z] for Z in sorted(Zs)]
 
-    def get_extra_state(self) -> bool:
-        return self._has_been_pre_fit
 
-    def set_extra_state(self, state: bool) -> None:
-        self._has_been_pre_fit = state
+class LocalEnergiesScaler(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.per_element_scaling = PerElementParameter.of_length(
+            1,
+            default_value=1.0,
+            requires_grad=True,
+        )
 
+    def forward(
+        self,
+        local_energies: torch.Tensor,
+        graph: AtomicGraph,
+    ) -> torch.Tensor:
+        scales = self.per_element_scaling[graph[keys.ATOMIC_NUMBERS]].squeeze()
+        return local_energies * scales
 
-class LocalEnergyModel(GraphPESModel, ABC):
-    r"""
-    An abstract base class for all models of the PES that:
-
-    1. make predictions of the total energy of a structure as a sum
-       of local contributions:
-
-       .. math::
-           E(\mathcal{G}) = \sum_i \varepsilon_i
-
-       where :math:`\varepsilon_i` is the local energy of atom :math:`i`, and
-       :math:`\mathcal{G}` is the atomic graph representation of the structure.
-    2. make force and stress predictions as the (numerical) gradient of the
-       total energy prediction.
-
-
-    To create such a model, implement :meth:`predict_raw_energies`,
-    which takes an :class:`~graph_pes.graphs.AtomicGraph`, or an
-    :class:`~graph_pes.graphs.AtomicGraphBatch`,
-    and returns a per-atom prediction of the local energy. For a simple example,
-    see the :class:`~graph_pes.models.LennardJones` implementation.
-
-    Parameters
-    ----------
-    cutoff
-        The cutoff radius for the model. During the forward pass, only edges
-        between atoms that are closer than this distance will be considered.
-    auto_scale
-        Whether to automatically scale raw predictions by (learnable)
-        per-element scaling factors, :math:`\sigma_{Z_i}`.
-        The starting values for these parameters are calculated from the
-        data passed to :meth:`~graph_pes.core.GraphPESModel.pre_fit` (typically the
-        training data). If ``True``,
-        :math:`\varepsilon_i = \sigma_{Z_i} \cdot \varepsilon_{\text{raw},i}`,
-        where :math:`\varepsilon_i` is the per-atom local energy prediction,
-        and :math:`\sigma_{Z_i}` is the scaling factor for element :math:`Z_i`.
-    """  # noqa: E501
-
-    def __init__(self, cutoff: float, auto_scale: bool):
-        super().__init__(cutoff)
-
-        # TODO: default this to 1 and make non-trainable + non-fittable
-        self.per_element_scaling: PerElementParameter | None
-        if auto_scale:
-            self.per_element_scaling = PerElementParameter.of_length(
-                1,
-                default_value=1.0,
-                requires_grad=True,
-            )
-        else:
-            self.per_element_scaling = None
-
-    @abstractmethod
-    def predict_raw_energies(self, graph: AtomicGraph) -> torch.Tensor:
+    @torch.no_grad()
+    def pre_fit(self, graphs: LabelledBatch):
         """
-        Predict the (unscaled) local energy for each atom in the graph.
+        Pre-fit the output adapter to the training data.
 
         Parameters
         ----------
-        graph
-            The graph representation of the structure/s.
-
-        Returns
-        -------
-        torch.Tensor
-            The per-atom local energy predictions, with shape :code:`(N,)`.
+        graphs
+            The training data.
         """
-
-    def non_decayable_parameters(self) -> list[torch.nn.Parameter]:
-        if self.per_element_scaling is not None:
-            return [self.per_element_scaling]
-        return []
-
-    def predict(
-        self,
-        graph: AtomicGraph,
-        properties: list[keys.LabelKey],
-    ) -> dict[keys.LabelKey, torch.Tensor]:
-        want_stress = keys.STRESS in properties
-        if want_stress and not has_cell(graph):
-            raise ValueError("Can't predict stress without cell information.")
-
-        # [interesting] calculate the predictions
-        # we do this in a conservative manner:
-        # 1. always predict the energy
-        # 2. if forces are requested, make sure that the graph's positions
-        #    have gradients enabled **before** calling the model. Then use
-        #    autograd to calculate the forces by differentiating the energy
-        #    wrt the positions.
-        # 3. if stress is requested, make sure that the graph's cell has
-        #    gradients enabled **before** calling the model. Then use
-        #    autograd to calculate the stress by differentiating the energy
-        #    wrt a distortion of the cell.
-
-        predictions: dict[keys.LabelKey, torch.Tensor] = {}
-
-        existing_positions = graph[keys._POSITIONS]
-        existing_cell = graph[keys.CELL]
-
-        if want_stress:
-            # See About>Theory in the graph-pes for an explanation of the
-            # maths behind this.
-            #
-            # The stress tensor is the gradient of the total energy wrt
-            # a symmetric expansion of the structure (i.e. that acts on
-            # both the cell and the atomic positions).
-            #
-            # F. Knuth et al. All-electron formalism for total energy strain
-            # derivatives and stress tensor components for numeric atom-centered
-            # orbitals. Computer Physics Communications 190, 33–50 (2015).
-
-            change_to_cell = torch.zeros_like(existing_cell)
-            change_to_cell.requires_grad_(True)
-            symmetric_change = 0.5 * (
-                change_to_cell + change_to_cell.transpose(-1, -2)
-            )  # (n_structures, 3, 3) if batched, else (3, 3)
-            scaling = (
-                torch.eye(3, device=existing_cell.device) + symmetric_change
+        if "energy" not in graphs:
+            warnings.warn(
+                "No energy data found in training data: can't estimate "
+                "per-element scaling factors for local energies.",
+                stacklevel=2,
             )
 
-            if is_batch(graph):
-                scaling_per_atom = torch.index_select(
-                    scaling,
-                    dim=0,
-                    index=graph[keys.BATCH],  # type: ignore
-                )  # (n_atoms, 3, 3)
+        means, variances = guess_per_element_mean_and_var(
+            graphs["energy"], graphs
+        )
+        for Z, var in variances.items():
+            self.per_element_scaling[Z] = torch.sqrt(torch.tensor(var))
 
-                # to go from (N, 3) @ (N, 3, 3) -> (N, 3), we need un/squeeze:
-                # (N, 1, 3) @ (N, 3, 3) -> (N, 1, 3) -> (N, 3)
-                new_positions = (
-                    graph[keys._POSITIONS].unsqueeze(-2) @ scaling_per_atom
-                ).squeeze()
-                # (M, 3, 3) @ (M, 3, 3) -> (M, 3, 3)
-                new_cell = existing_cell @ scaling
-
-            else:
-                # (N, 3) @ (3, 3) -> (N, 3)
-                new_positions = graph[keys._POSITIONS] @ scaling
-                new_cell = existing_cell @ scaling
-
-            # change to positions will be a tensor of all 0's, but will allow
-            # gradients to flow backwards through the energy calculation
-            # and allow us to calculate the stress tensor as the gradient
-            # of the energy wrt the change in cell.
-            graph[keys._POSITIONS] = new_positions
-            graph[keys.CELL] = new_cell
-
-        else:
-            change_to_cell = torch.zeros_like(graph[keys.CELL])
-
-        if keys.FORCES in properties:
-            graph[keys._POSITIONS].requires_grad_(True)
-
-        local_energies = self.predict_raw_energies(graph).squeeze()
-        if self.per_element_scaling is not None:
-            scales = self.per_element_scaling[
-                graph[keys.ATOMIC_NUMBERS]
-            ].squeeze()
-            local_energies = local_energies * scales
-
-        if keys.LOCAL_ENERGIES in properties:
-            predictions[keys.LOCAL_ENERGIES] = local_energies
-
-        # TODO: scale
-        energy = sum_per_structure(local_energies, graph)
-        if keys.ENERGY in properties:
-            predictions[keys.ENERGY] = energy
-        # use the autograd machinery to auto-magically
-        # calculate forces and stress from the energy
-        if keys.FORCES in properties:
-            dE_dR = differentiate(energy, graph[keys._POSITIONS])
-            predictions[keys.FORCES] = -dE_dR
-
-        if keys.STRESS in properties:
-            if has_cell(graph):
-                stress = differentiate(energy, change_to_cell)
-                cell_volume = torch.det(graph[keys.CELL])
-                if is_batch(graph):
-                    cell_volume = cell_volume.view(-1, 1, 1)
-                predictions[keys.STRESS] = stress / cell_volume
-            else:
-                predictions[keys.STRESS] = torch.tensor(torch.nan)
-
-        graph[keys._POSITIONS] = existing_positions
-        graph[keys.CELL] = existing_cell
-
-        # TODO: move that to differntiate? i.e. no need to keep secdon pass
-        # also check grad enabled if want force or stress
-        if not self.training:
-            for key, value in predictions.items():
-                predictions[key] = value.detach()
-
-        return predictions
+    def non_decayable_parameters(self) -> list[torch.nn.Parameter]:
+        return [self.per_element_scaling]

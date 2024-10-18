@@ -46,8 +46,23 @@ class AdditionModel(GraphPESModel):
 
     def __init__(self, **models: GraphPESModel):
         max_cutoff = max([m.cutoff.item() for m in models.values()])
-        super().__init__(cutoff=max_cutoff)
+        super().__init__(
+            cutoff=max_cutoff,
+            implemented_properties=[
+                "local_energies",
+                "energy",
+                "forces",
+                "stress",
+            ],
+            auto_scale_local_energies=False,
+        )
         self.models = UniformModuleDict(**models)
+
+    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, Tensor]:
+        raise NotImplementedError(
+            "AdditionModel do not directly generate predictions in the forward "
+            "pass. Use :meth:`predict` instead."
+        )
 
     def predict(
         self,

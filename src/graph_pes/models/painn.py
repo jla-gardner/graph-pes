@@ -3,8 +3,8 @@ from __future__ import annotations
 import torch
 from torch import Tensor, nn
 
-from graph_pes.core import LocalEnergyModel
-from graph_pes.graphs import DEFAULT_CUTOFF, AtomicGraph
+from graph_pes.core import GraphPESModel
+from graph_pes.graphs import DEFAULT_CUTOFF, AtomicGraph, keys
 from graph_pes.graphs.operations import (
     index_over_neighbours,
     neighbour_distances,
@@ -158,7 +158,7 @@ class Update(nn.Module):
         return delta_v, delta_s
 
 
-class PaiNN(LocalEnergyModel):
+class PaiNN(GraphPESModel):
     r"""
     The `Polarizable Atom Interaction Neural Network (PaiNN)
     <https://arxiv.org/abs/2102.03150>`_ model.
@@ -216,7 +216,11 @@ class PaiNN(LocalEnergyModel):
         layers: int = 3,
         cutoff: float = DEFAULT_CUTOFF,
     ):
-        super().__init__(cutoff=cutoff, auto_scale=True)
+        super().__init__(
+            cutoff=cutoff,
+            implemented_properties=["local_energies"],
+            auto_scale_local_energies=True,
+        )
 
         self.internal_dim = internal_dim
         self.z_embedding = PerElementEmbedding(internal_dim)
@@ -232,7 +236,7 @@ class PaiNN(LocalEnergyModel):
             activation=nn.SiLU(),
         )
 
-    def predict_raw_energies(self, graph: AtomicGraph) -> Tensor:
+    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, Tensor]:
         # initialise embbedings:
         # - scalars as an embedding of the atomic numbers
         scalar_embeddings = self.z_embedding(graph["atomic_numbers"])
@@ -255,4 +259,4 @@ class PaiNN(LocalEnergyModel):
             scalar_embeddings = scalar_embeddings + delta_s
 
         # mlp read out
-        return self.read_out(scalar_embeddings)
+        return {"local_energies": self.read_out(scalar_embeddings).squeeze()}

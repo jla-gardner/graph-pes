@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import torch
 
-from graph_pes.core import LocalEnergyModel
+from graph_pes.core import GraphPESModel
 from graph_pes.graphs import DEFAULT_CUTOFF, AtomicGraph
 from graph_pes.graphs.operations import (
     index_over_neighbours,
@@ -157,7 +157,7 @@ class SchNetInteraction(torch.nn.Module):
         return self.mlp(h)
 
 
-class SchNet(LocalEnergyModel):
+class SchNet(GraphPESModel):
     r"""
     The `SchNet <https://arxiv.org/abs/1706.08566>`_ model: a pairwise, scalar,
     message passing GNN.
@@ -206,7 +206,11 @@ class SchNet(LocalEnergyModel):
         layers: int = 3,
         expansion: type[DistanceExpansion] | None = None,
     ):
-        super().__init__(cutoff=cutoff, auto_scale=True)
+        super().__init__(
+            cutoff=cutoff,
+            implemented_properties=["local_energies"],
+            auto_scale_local_energies=True,
+        )
 
         if expansion is None:
             expansion = GaussianSmearing

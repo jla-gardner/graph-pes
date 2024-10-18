@@ -6,7 +6,7 @@ import e3nn.util.jit
 import graph_pes.models.components.distances
 import torch
 from e3nn import o3
-from graph_pes.core import LocalEnergyModel
+from graph_pes.core import GraphPESModel
 from graph_pes.graphs import DEFAULT_CUTOFF
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import neighbour_distances, neighbour_vectors
@@ -32,7 +32,7 @@ def _get_distance_expansion(name: str) -> type[DistanceExpansion]:
 
 
 @e3nn.util.jit.compile_mode("script")
-class _BaseMACE(LocalEnergyModel):
+class _BaseMACE(GraphPESModel):
     """
     Base class for MACE models.
     """
@@ -54,7 +54,11 @@ class _BaseMACE(LocalEnergyModel):
         neighbour_scaling: float,
         use_self_connection: bool,
     ):
-        super().__init__(cutoff=cutoff, auto_scale=True)
+        super().__init__(
+            cutoff=cutoff,
+            implemented_properties=["local_energies"],
+            auto_scale_local_energies=True,
+        )
 
         if isinstance(radial_expansion_type, str):
             radial_expansion_type = _get_distance_expansion(
