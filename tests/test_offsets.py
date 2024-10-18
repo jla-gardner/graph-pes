@@ -72,7 +72,7 @@ def test_energy_offset_fitting():
     assert "energy" in batch
 
     model = LearnableOffset()
-    model.pre_fit(graphs)
+    model.pre_fit_all_components(graphs)
     # check that the model has learned the correct energy offsets
     # use pytest.approx to account for numerical errors
     assert model._offsets[1].item() == pytest.approx(H_energy)
@@ -80,7 +80,7 @@ def test_energy_offset_fitting():
 
     # check that initial values aren't overwritten if specified
     model = LearnableOffset(H=20)
-    model.pre_fit(graphs)
+    model.pre_fit_all_components(graphs)
     assert model._offsets[1].item() == pytest.approx(20)
     assert model._offsets[6].item() == 0
 
@@ -92,4 +92,4 @@ def test_energy_offset_fitting():
         UserWarning,
         match="No energy labels found in the training data",
     ):
-        model.pre_fit([graph])  # type: ignore
+        model.pre_fit_all_components([graph])  # type: ignore

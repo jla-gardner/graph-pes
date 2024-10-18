@@ -343,9 +343,8 @@ class GraphPESModel(nn.Module, ABC):
         # return the output
         return output
 
-    # TODO: change to pre-fit all.
     @torch.no_grad()
-    def pre_fit(
+    def pre_fit_all_components(
         self,
         graphs: LabelledGraphDataset | Sequence[LabelledGraph],
     ):
@@ -405,12 +404,13 @@ class GraphPESModel(nn.Module, ABC):
                     stacklevel=2,
                 )
 
-            # TODO make this pre-fit process nicer
-            for inferrer in self.output_inferrers.values():
-                inferrer.pre_fit(graph_batch)
+            self.pre_fit(graph_batch)
+            # pre-fit any sub-module with a pre_fit method
+            for module in self.modules():
+                if hasattr(module, "pre_fit"):
+                    module.pre_fit(graph_batch)
 
             self._has_been_pre_fit = torch.tensor(1)
-            self.model_specific_pre_fit(graph_batch)
 
         # 3. finally, register all per-element parameters (no harm in doing this
         #    multiple times)
@@ -420,7 +420,7 @@ class GraphPESModel(nn.Module, ABC):
                     torch.unique(graph_batch[keys.ATOMIC_NUMBERS]).tolist()
                 )
 
-    def model_specific_pre_fit(self, graphs: LabelledBatch) -> None:
+    def pre_fit(self, graphs: LabelledBatch) -> None:
         """
         Override this method to perform additional pre-fitting steps.
 

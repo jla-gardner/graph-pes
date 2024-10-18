@@ -113,7 +113,7 @@ def test(tmp_path: Path, model: GraphPESModel):
     # show the model C and H
     methane = molecule("CH4")
     methane.info["energy"] = 1.0
-    model.pre_fit([to_atomic_graph(methane, cutoff=3.0)])
+    model.pre_fit_all_components([to_atomic_graph(methane, cutoff=3.0)])
     assert model.elements_seen == ["H", "C"]
 
     # check that these are persisted over save and load
@@ -125,5 +125,7 @@ def test(tmp_path: Path, model: GraphPESModel):
     acetaldehyde = molecule("CH3CHO")
     acetaldehyde.info["energy"] = 2.0
     with pytest.warns(UserWarning, match="has already been pre-fitted"):
-        model.pre_fit([to_atomic_graph(acetaldehyde, cutoff=3.0)])
+        model.pre_fit_all_components(
+            [to_atomic_graph(acetaldehyde, cutoff=3.0)]
+        )
     assert model.elements_seen == ["H", "C", "O"]

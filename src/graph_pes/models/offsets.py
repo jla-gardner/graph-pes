@@ -120,7 +120,7 @@ class LearnableOffset(EnergyOffset):
         self._values_were_specified = bool(initial_values)
 
     @torch.no_grad()
-    def model_specific_pre_fit(self, graphs: LabelledBatch) -> None:
+    def pre_fit(self, graphs: LabelledBatch) -> None:
         """
         Calculate the **mean** energy offsets per element from the training data
         using linear regression.

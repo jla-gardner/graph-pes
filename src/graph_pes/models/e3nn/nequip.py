@@ -438,7 +438,8 @@ class _BaseNequIP(GraphPESModel):
         # ...and read out the energy
         return self.readout(node_embed)
 
-    def model_specific_pre_fit(self, graphs: LabelledBatch) -> None:
+    # TODO: fix this
+    def pre_fit(self, graphs: LabelledBatch) -> None:
         for layer in self.layers:
             layer.aggregation.pre_fit(graphs)
 

@@ -98,9 +98,11 @@ class AdditionModel(GraphPESModel):
 
         return predictions
 
-    def pre_fit(self, graphs: LabelledGraphDataset | Sequence[LabelledGraph]):
+    def pre_fit_all_components(
+        self, graphs: LabelledGraphDataset | Sequence[LabelledGraph]
+    ):
         for model in self.models.values():
-            model.pre_fit(graphs)
+            model.pre_fit_all_components(graphs)
 
     def non_decayable_parameters(self) -> list[torch.nn.Parameter]:
         return [

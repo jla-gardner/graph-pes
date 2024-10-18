@@ -20,7 +20,7 @@ graphs = to_atomic_graphs(helpers.CU_TEST_STRUCTURES, cutoff=3)
 
 def test_model():
     model = LennardJones()
-    model.pre_fit(graphs[:2])
+    model.pre_fit_all_components(graphs[:2])
 
     assert sum(p.numel() for p in model.parameters()) == 2
 
@@ -49,20 +49,22 @@ def test_isolated_atom():
 
 def test_pre_fit():
     model = LennardJones()
-    model.pre_fit(graphs)
+    model.pre_fit_all_components(graphs)
 
     with pytest.warns(
         UserWarning,
         match="has already been pre-fitted",
     ):
-        model.pre_fit(graphs)
+        model.pre_fit_all_components(graphs)
 
 
 @helpers.parameterise_model_classes(expected_elements=["Cu"])
 def test_model_serialisation(model_class: type[GraphPESModel], tmp_path):
     # 1. instantiate the model
     m1 = model_class()  # type: ignore
-    m1.pre_fit(graphs)  # required by some models before making predictions
+    m1.pre_fit_all_components(
+        graphs
+    )  # required by some models before making predictions
 
     torch.save(m1.state_dict(), tmp_path / "model.pt")
 
@@ -96,7 +98,7 @@ def test_addition():
 
     # test pre_fit
     original_lj_sigma = lj.sigma.item()
-    addition_model.pre_fit(graphs)
+    addition_model.pre_fit_all_components(graphs)
     assert (
         lj.sigma.item() != original_lj_sigma
     ), "component LJ model was not pre-fitted"
@@ -106,7 +108,7 @@ def test_addition():
 def test_model_outputs(model: GraphPESModel):
     graph = graphs[0]
     assert has_cell(graph)
-    model.pre_fit([graph])
+    model.pre_fit_all_components([graph])
 
     outputs = model.get_all_PES_predictions(graph)
     N = number_of_atoms(graph)

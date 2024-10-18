@@ -72,7 +72,7 @@ def test_counting():
         == 3
     )
 
-    model.pre_fit(graphs)  # type: ignore
+    model.pre_fit_all_components(graphs)  # type: ignore
 
     post_fit_params = sum(p.numel() for p in model.parameters())
 
@@ -91,7 +91,7 @@ def test_lj():
 
 def test_lj_mixture():
     lj_mixture = LennardJonesMixture()
-    lj_mixture.pre_fit(graphs)  # type: ignore
+    lj_mixture.pre_fit_all_components(graphs)  # type: ignore
 
     expected_params = 0
     # sigma and epsilon for each element

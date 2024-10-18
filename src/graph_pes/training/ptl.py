@@ -63,7 +63,7 @@ def train_with_lightning(
         logger.info(
             f"Pre-fitting the model on {len(pre_fit_dataset):,} samples"
         )
-        model.pre_fit(pre_fit_dataset)
+        model.pre_fit_all_components(pre_fit_dataset)
     trainer.strategy.barrier("pre-fit")
 
     # - log the model info

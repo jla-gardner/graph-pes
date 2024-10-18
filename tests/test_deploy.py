@@ -21,7 +21,7 @@ from graph_pes.models.pairwise import LennardJones, SmoothedPairPotential
 def test_deploy(model: GraphPESModel, tmp_path: Path):
     dummy_graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=1.5)
     # required by some models before making predictions
-    model.pre_fit([dummy_graph])
+    model.pre_fit_all_components([dummy_graph])
 
     model_cutoff = float(model.cutoff)
     graph = to_atomic_graph(
