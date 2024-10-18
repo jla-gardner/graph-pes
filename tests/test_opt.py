@@ -32,8 +32,9 @@ def test_non_decayable_params():
     # schnet has many parameters, but only per_element_scaling is
     # not decayable
     model = SchNet()
+    assert model.local_energies_scaler is not None
     assert set(model.non_decayable_parameters()) == set(
-        [model.per_element_scaling]
+        [model.local_energies_scaler.per_element_scaling]
     )
     opt = opt_factory(model)
     assert len(opt.param_groups) == 2
@@ -44,8 +45,12 @@ def test_non_decayable_params():
     # addition models should return the decayable parameters of their
     # components
     model = AdditionModel(energy_offset=LearnableOffset(), schnet=SchNet())
+    assert model["schnet"].local_energies_scaler is not None
     assert set(model.non_decayable_parameters()) == set(
-        [model["energy_offset"]._offsets, model["schnet"].per_element_scaling]
+        [
+            model["energy_offset"]._offsets,
+            model["schnet"].local_energies_scaler.per_element_scaling,
+        ]
     )
 
 

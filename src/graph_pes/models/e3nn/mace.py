@@ -7,7 +7,7 @@ import graph_pes.models.components.distances
 import torch
 from e3nn import o3
 from graph_pes.core import GraphPESModel
-from graph_pes.graphs import DEFAULT_CUTOFF
+from graph_pes.graphs import DEFAULT_CUTOFF, keys
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import neighbour_distances, neighbour_vectors
 from graph_pes.models.components.distances import (
@@ -96,7 +96,7 @@ class _BaseMACE(GraphPESModel):
             + [NonLinearReadOut(hidden_irreps)]
         )
 
-    def predict_raw_energies(self, graph: AtomicGraph) -> torch.Tensor:
+    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
         vectors = neighbour_vectors(graph)
         Z_embedding = self.z_embedding(graph["atomic_numbers"])
 
@@ -116,7 +116,11 @@ class _BaseMACE(GraphPESModel):
             )
             per_atom_energies.append(readout(node_features))
 
-        return torch.sum(torch.stack(per_atom_energies), dim=0)
+        return {
+            "local_energies": torch.sum(
+                torch.stack(per_atom_energies), dim=0
+            ).squeeze()
+        }
 
 
 @e3nn.util.jit.compile_mode("script")

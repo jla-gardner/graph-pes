@@ -36,6 +36,7 @@ class GraphPESCalculator(Calculator):
     ):
         super().__init__(**kwargs)
         self.model = model.to(device)
+        self.model.eval()
         self.device = device
 
     def calculate(
@@ -52,7 +53,6 @@ class GraphPESCalculator(Calculator):
         assert self.atoms is not None and isinstance(self.atoms, ase.Atoms)
 
         # account for numerical inprecision by nudging the cutoff up slightly
-        # for all well-implemented models this has no effect
         graph = to_atomic_graph(self.atoms, self.model.cutoff.item() + 0.001)
         graph: AtomicGraph = {k: v.to(self.device) for k, v in graph.items()}  # type: ignore
 

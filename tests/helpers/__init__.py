@@ -9,8 +9,9 @@ import pytorch_lightning
 import torch
 from ase import Atoms
 from ase.io import read
-from graph_pes.core import GraphPESModel, LocalEnergyModel
+from graph_pes.core import GraphPESModel
 from graph_pes.data.io import to_atomic_graph
+from graph_pes.graphs import keys
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.models import (
     ALL_MODELS,
@@ -100,6 +101,13 @@ CU_TEST_STRUCTURES: list[Atoms] = read(CU_STRUCTURES_FILE, ":")  # type: ignore
 CONFIGS_DIR = Path(__file__).parent.parent.parent / "configs"
 
 
-class DoesNothingModel(LocalEnergyModel):
-    def predict_raw_energies(self, graph: AtomicGraph) -> torch.Tensor:
-        return torch.zeros(len(graph["atomic_numbers"]))
+class DoesNothingModel(GraphPESModel):
+    def __init__(self, auto_scale_local_energies: bool = True):
+        super().__init__(
+            cutoff=3.7,
+            implemented_properties=["local_energies"],
+            auto_scale_local_energies=auto_scale_local_energies,
+        )
+
+    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
+        return {"local_energies": torch.zeros(len(graph["atomic_numbers"]))}

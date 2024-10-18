@@ -44,8 +44,6 @@ class NeighbourAggregation(ABC, torch.nn.Module):
         Calculate any quantities that are dependent on the graph structure
         that should be fixed before prediction.
 
-        Call this in the model's ``model_specific_pre_fit`` method.
-
         Default implementation does nothing.
 
         Parameters

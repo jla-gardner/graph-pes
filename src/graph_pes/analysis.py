@@ -228,7 +228,7 @@ def dimer_curve(
     batch = to_batch(graphs)
 
     with torch.no_grad():
-        energy = model(batch).numpy()
+        energy = model.predict_energy(batch).numpy()
 
     if set_to_zero:
         energy -= energy[-1]

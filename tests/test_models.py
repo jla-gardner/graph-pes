@@ -31,12 +31,6 @@ def test_model():
     assert predictions["energy"].shape == (len(graphs),)
     assert predictions["stress"].shape == (len(graphs), 3, 3)
 
-    energy = model(graphs[0])
-    assert torch.equal(
-        model.predict_energy(graphs[0]),
-        energy,
-    )
-
 
 def test_isolated_atom():
     atom = Atoms("He", positions=[[0, 0, 0]])
@@ -44,7 +38,7 @@ def test_isolated_atom():
     assert number_of_atoms(graph) == 1 and number_of_edges(graph) == 0
 
     model = LennardJones()
-    assert model(graph) == 0
+    assert model.predict_energy(graph) == 0
 
 
 def test_pre_fit():
@@ -73,7 +67,9 @@ def test_model_serialisation(model_class: type[GraphPESModel], tmp_path):
     m2.load_state_dict(torch.load(tmp_path / "model.pt"))
 
     # check predictions are the same
-    assert torch.allclose(m1(graphs[0]), m2(graphs[0]))
+    assert torch.allclose(
+        m1.predict_energy(graphs[0]), m2.predict_energy(graphs[0])
+    )
 
 
 def test_cutoff_save_and_load():
@@ -92,8 +88,8 @@ def test_addition():
     # test addition of two models
     addition_model = AdditionModel(lj=lj, morse=m)
     assert torch.allclose(
-        addition_model(graphs[0]),
-        lj(graphs[0]) + m(graphs[0]),
+        addition_model.predict_energy(graphs[0]),
+        lj.predict_energy(graphs[0]) + m.predict_energy(graphs[0]),
     )
 
     # test pre_fit

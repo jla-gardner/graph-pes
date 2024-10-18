@@ -10,7 +10,7 @@ import e3nn.util.jit
 import torch
 from e3nn import o3
 from graph_pes.core import GraphPESModel
-from graph_pes.graphs import DEFAULT_CUTOFF
+from graph_pes.graphs import DEFAULT_CUTOFF, keys
 from graph_pes.graphs.graph_typing import AtomicGraph, LabelledBatch
 from graph_pes.graphs.operations import (
     index_over_neighbours,
@@ -422,7 +422,7 @@ class _BaseNequIP(GraphPESModel):
 
         self.readout = LinearReadOut(current_layer_input)  # type: ignore
 
-    def predict_raw_energies(self, graph: AtomicGraph) -> Tensor:
+    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
         # pre-compute important quantities
         r = neighbour_distances(graph)
         Y = self.edge_embedding(neighbour_vectors(graph))
@@ -436,7 +436,7 @@ class _BaseNequIP(GraphPESModel):
             node_embed = layer(node_embed, Z_embed, r, Y, graph)
 
         # ...and read out the energy
-        return self.readout(node_embed)
+        return {"local_energies": self.readout(node_embed).squeeze()}
 
     # TODO: fix this
     def pre_fit(self, graphs: LabelledBatch) -> None:

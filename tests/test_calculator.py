@@ -1,4 +1,4 @@
-from ase.build import molecule
+from ase.build import bulk, molecule
 from graph_pes.calculator import GraphPESCalculator
 from graph_pes.models import LennardJones
 
@@ -10,3 +10,9 @@ def test_calc():
 
     assert isinstance(ethanol.get_potential_energy(), float)
     assert ethanol.get_forces().shape == (9, 3)
+
+    copper = bulk("Cu")
+    copper.calc = calc
+    assert isinstance(copper.get_potential_energy(), float)
+    assert copper.get_forces().shape == (1, 3)
+    assert copper.get_stress().shape == (6,)

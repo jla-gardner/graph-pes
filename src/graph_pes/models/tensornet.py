@@ -4,7 +4,7 @@ import torch
 from torch import Tensor, nn
 
 from graph_pes.core import GraphPESModel
-from graph_pes.graphs import DEFAULT_CUTOFF, AtomicGraph
+from graph_pes.graphs import DEFAULT_CUTOFF, AtomicGraph, keys
 from graph_pes.graphs.operations import (
     neighbour_distances,
     neighbour_vectors,
@@ -382,8 +382,8 @@ class TensorNet(GraphPESModel):
         )
         self.read_out = ScalarOutput(embedding_size)
 
-    def predict_raw_energies(self, graph: AtomicGraph):
+    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
         X = self.embedding(graph)  # (N, C, 3, 3)
         for interaction in self.interactions:
             X = interaction(X, graph) + X  # residual connection
-        return self.read_out(X)  # (N, 1)
+        return {"local_energies": self.read_out(X).squeeze()}

@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pytest
-from graph_pes.core import LocalEnergyModel
+from graph_pes.core import GraphPESModel
+from graph_pes.graphs import keys
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import (
     neighbour_distances,
@@ -22,13 +23,17 @@ class Stats:
     max_edge_length: float
 
 
-class DummyModel(LocalEnergyModel):
+class DummyModel(GraphPESModel):
     def __init__(self, name: str, cutoff: float, info: dict[str, Stats]):
-        super().__init__(cutoff, auto_scale=False)
+        super().__init__(
+            cutoff=cutoff,
+            implemented_properties=["local_energies"],
+            auto_scale_local_energies=False,
+        )
         self.name = name
         self.info = info
 
-    def predict_raw_energies(self, graph: AtomicGraph) -> Tensor:
+    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, Tensor]:
         # insert statistics here: `GraphPESModel` should automatically
         # trim the input graph based on the model's cutoff
         self.info[self.name] = Stats(
@@ -36,7 +41,7 @@ class DummyModel(LocalEnergyModel):
             max_edge_length=neighbour_distances(graph).max().item(),
         )
         # dummy return value
-        return graph["atomic_numbers"].float()
+        return {"local_energies": graph["atomic_numbers"].float()}
 
 
 def test_auto_trimming():
@@ -47,8 +52,8 @@ def test_auto_trimming():
     small_model = DummyModel("small", cutoff=3.0, info=info)
 
     # forward passes to gather info
-    large_model(graph)
-    small_model(graph)
+    large_model.predict_energy(graph)
+    small_model.predict_energy(graph)
 
     # check that graph remains unchanged
     assert "_rmax" not in graph
@@ -83,7 +88,7 @@ def test_warning():
 
     model = SchNet(cutoff=6.0)
     with pytest.warns(UserWarning, match="Graph already has a cutoff of"):
-        model(trimmed_graph)
+        model.get_all_PES_predictions(trimmed_graph)
 
 
 def test_cutoff_trimming():

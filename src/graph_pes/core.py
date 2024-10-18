@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import NamedTuple, Sequence
+from typing import Sequence
 
 import torch
 from ase.data import chemical_symbols
@@ -56,8 +56,6 @@ class OutputInferrer(nn.Module, ABC):
         """
         Adjust the current predictions for the given ``graph`` in-place.
 
-        Remove any temporary state that was added in the ``before`` method.
-
         Parameters
         ----------
         current_predictions
@@ -90,20 +88,14 @@ class InferTotalEnergy(OutputInferrer):
         )
 
 
-class _InferForcesState(NamedTuple):
-    positions_required_grad: bool
-
-
 class InferForces(OutputInferrer):
     def __init__(self):
         super().__init__()
-        self._temp_state: _InferForcesState | None = None
+        self._positions_required_grad: bool = False
 
     def before(self, graph: AtomicGraph):
         # save temporary state
-        self._temp_state = _InferForcesState(
-            positions_required_grad=graph[keys._POSITIONS].requires_grad
-        )
+        self._positions_required_grad = graph[keys._POSITIONS].requires_grad
 
         # ensure gradients are tracked
         graph[keys._POSITIONS].requires_grad_(True)
@@ -118,25 +110,17 @@ class InferForces(OutputInferrer):
             predictions[keys.ENERGY], graph[keys._POSITIONS]
         )
 
-        # remove temporary state in a TorchScript friendly way
-        state = self._temp_state
-        assert state is not None
-        self._temp_state = None
-
         # make sure the positions are in the same state as
         # they were in before
-        graph[keys._POSITIONS].requires_grad_(state.positions_required_grad)
-
-
-class _InferStressState(NamedTuple):
-    positions_required_grad: bool
-    cell_required_grad: bool
+        if not self._positions_required_grad:
+            graph[keys._POSITIONS].requires_grad_(False)
 
 
 class InferStress(OutputInferrer):
     def __init__(self):
         super().__init__()
-        self._temp_state: _InferStressState | None = None
+        self._old_positions: torch.Tensor = torch.zeros((0, 0))
+        self._old_cell: torch.Tensor = torch.zeros((0, 0))
 
     def before(self, graph: AtomicGraph):
         if not has_cell(graph):
@@ -145,10 +129,8 @@ class InferStress(OutputInferrer):
         existing_cell = graph[keys.CELL]
 
         # save temporary state
-        self._temp_state = _InferStressState(
-            positions_required_grad=graph[keys._POSITIONS].requires_grad,
-            cell_required_grad=graph[keys.CELL].requires_grad,
-        )
+        self._old_positions = graph[keys._POSITIONS]
+        self._old_cell = graph[keys.CELL]
 
         # set up stress calculation
         change_to_cell = torch.zeros_like(existing_cell)
@@ -190,14 +172,18 @@ class InferStress(OutputInferrer):
         stress = differentiate(predictions[keys.ENERGY], graph[keys.CELL])
         predictions[keys.STRESS] = stress
 
-        # remove temporary state in a TorchScript friendly way
-        state = self._temp_state
-        assert state is not None
-        self._temp_state = None
-
         # put things back to how they were before
-        graph[keys.CELL].requires_grad_(state.cell_required_grad)
-        graph[keys._POSITIONS].requires_grad_(state.positions_required_grad)
+        graph[keys.CELL] = self._old_cell
+        graph[keys._POSITIONS] = self._old_positions
+
+
+class NotNeeded(OutputInferrer):
+    def after(
+        self,
+        predictions: dict[keys.LabelKey, torch.Tensor],
+        graph: AtomicGraph,
+    ):
+        pass
 
 
 class GraphPESModel(nn.Module, ABC):
@@ -240,15 +226,21 @@ class GraphPESModel(nn.Module, ABC):
                 'All GraphPESModel\'s must implement a "local_energies" '
                 "prediction."
             )
+
+        inferrers = {
+            "energy": InferTotalEnergy()
+            if "energy" not in implemented_properties
+            else NotNeeded(),
+            "forces": InferForces()
+            if "forces" not in implemented_properties
+            else NotNeeded(),
+            "stress": InferStress()
+            if "stress" not in implemented_properties
+            else NotNeeded(),
+        }
         self.output_inferrers: UniformModuleDict[OutputInferrer] = (
-            UniformModuleDict()
+            UniformModuleDict(**inferrers)
         )
-        if "energy" not in implemented_properties:
-            self.output_inferrers["energy"] = InferTotalEnergy()
-        if "forces" not in implemented_properties:
-            self.output_inferrers["forces"] = InferForces()
-        if "stress" not in implemented_properties:
-            self.output_inferrers["stress"] = InferStress()
 
     @abstractmethod
     def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
@@ -310,16 +302,31 @@ class GraphPESModel(nn.Module, ABC):
         # before anything, remove unnecessary edges:
         graph = trim_edges(graph, self.cutoff.item())
 
-        # only select the relevant inferrers, in
-        # last in first out order (stress and force requires energy)
-        inferrers = []
-        for key in "energy", "forces", "stress":
-            if key in properties and key not in self.implemented_properties:
-                inferrers.append(self.output_inferrers[key])
+        # if force or stress are requested, energy must also be requested
+        if (
+            "forces" in properties or "stress" in properties
+        ) and "energy" not in properties:
+            properties = properties + ["energy"]
+            remove_energy = True
+        else:
+            remove_energy = False
 
-        # set up (in reverse order!)
-        for inferrer in reversed(inferrers):
-            inferrer.before(graph)
+        # only select the relevant inferrers
+        # a bit ugly to ensure TorchScript friendliness
+        infer = {
+            "energy": "energy" in properties
+            and "energy" not in self.implemented_properties,
+            "forces": "forces" in properties
+            and "forces" not in self.implemented_properties,
+            "stress": "stress" in properties
+            and "stress" not in self.implemented_properties,
+        }
+        if infer["stress"]:
+            self.output_inferrers["stress"].before(graph)
+        if infer["forces"]:
+            self.output_inferrers["forces"].before(graph)
+        if infer["energy"]:
+            self.output_inferrers["energy"].before(graph)
 
         # get the raw output from the model
         output = self(graph)
@@ -331,17 +338,23 @@ class GraphPESModel(nn.Module, ABC):
             )
 
         # infer the remaining properties
-        for inferrer in inferrers:
-            inferrer.after(output, graph)
+        if infer["energy"]:
+            self.output_inferrers["energy"].after(output, graph)
+        if infer["forces"]:
+            self.output_inferrers["forces"].after(output, graph)
+        if infer["stress"]:
+            self.output_inferrers["stress"].after(output, graph)
 
         # tidy up if in eval mode
         if not self.training:
-            output: dict[keys.LabelKey, torch.Tensor] = {
-                k: v.detach() for k, v in output.items()
-            }
+            output = {k: v.detach() for k, v in output.items()}
+
+        # remove energy if it was added but not requested
+        if remove_energy:
+            output.pop(keys.ENERGY)
 
         # return the output
-        return output
+        return output  # type: ignore
 
     @torch.no_grad()
     def pre_fit_all_components(
@@ -434,7 +447,13 @@ class GraphPESModel(nn.Module, ABC):
         """
         Return a list of parameters that should not be decayed during training.
         """
-        return []
+        found = []
+        for module in self.modules():
+            if module is self:
+                continue
+            if hasattr(module, "non_decayable_parameters"):
+                found.extend(module.non_decayable_parameters())
+        return found
 
     # add type hints for mypy etc.
     def __call__(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
@@ -518,6 +537,7 @@ class LocalEnergiesScaler(nn.Module):
                 "per-element scaling factors for local energies.",
                 stacklevel=2,
             )
+            return
 
         means, variances = guess_per_element_mean_and_var(
             graphs["energy"], graphs

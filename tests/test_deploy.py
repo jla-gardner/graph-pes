@@ -14,9 +14,7 @@ from graph_pes.models.pairwise import LennardJones, SmoothedPairPotential
 
 
 # ignore warnings about lack of energy labels for pre-fitting: not important
-@pytest.mark.filterwarnings(
-    "ignore:.*training data does not contain energy labels.*"
-)
+@pytest.mark.filterwarnings("ignore:.*No energy data found in training data.*")
 @helpers.parameterise_all_models(expected_elements=["C", "H", "O"])
 def test_deploy(model: GraphPESModel, tmp_path: Path):
     dummy_graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=1.5)
@@ -62,8 +60,8 @@ def test_deploy(model: GraphPESModel, tmp_path: Path):
     assert outputs["virial"].shape == (6,)
 
     # 5. test that the deployment process hasn't changed the model's predictions
-    with torch.no_grad():
-        original_energy = model(graph).double()
+    model.eval()
+    original_energy = model.predict_energy(graph).double()
     assert torch.allclose(original_energy, outputs["energy"])
 
 
