@@ -95,6 +95,14 @@ def extract_config_from_command_line() -> Config:
             parsed_configs.append(nested_dict)
 
         else:
+            logger.error(
+                "We detected the following command line arguments: \n" "".join(
+                    f"- {arg}\n" for arg in args.args
+                )
+                + "We expected all of these to be in the form key=value or "
+                f"to end with .yaml or .yml - {arg} is invalid."
+            )
+
             raise ValueError(
                 f"Invalid argument: {arg}. "
                 "Expected a YAML file or an override in the form key=value"

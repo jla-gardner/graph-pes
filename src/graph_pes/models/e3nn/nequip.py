@@ -483,8 +483,9 @@ def parse_irrep_specification(
 
     if not is_simple and not is_complete:
         raise ValueError(
-            "Invalid irrep specification. Expected a "
-            "`CompleteIrrepSpec` or a `SimpleIrrepSpec`."
+            "Invalid irrep specification. Expected a dict with keys "
+            "`node_irreps` and `edge_irreps` or a dict with keys "
+            "`n_channels`, `l_max`, and `use_odd_parity`."
         )
 
     if is_simple:
@@ -607,52 +608,6 @@ class NequIP(_BaseNequIP):
     Examples
     --------
 
-    The hidden layer and edge embedding irreps the model generates can be
-    controlled using either a SimpleIrrepSpec or a CompleteIrrepSpec:
-
-    Using :class:`~graph_pes.models.e3nn.nequip.SimpleIrrepSpec`:
-
-    .. code:: python
-
-        >>> from graph_pes.models import NequIP
-        >>> model = NequIP(
-        ...     elements=["C", "H", "O"],
-        ...     cutoff=5.0,
-        ...     features={
-        ...         "n_channels": [16, 8, 4],
-        ...         "l_max": 2,
-        ...         "use_odd_parity": True
-        ...     },
-        ...     n_layers=3,
-        ... )
-        >>> for layer in model.layers:
-        ...     print(layer.irreps_in, "->", layer.irreps_out)
-        16x0e -> 16x0e+8x1o+4x2e
-        16x0e+8x1o+4x2e -> 16x0e+8x1o+8x1e+4x2o+4x2e
-        16x0e+8x1o+8x1e+4x2o+4x2e -> 16x0e
-
-    Using :class:`~graph_pes.models.e3nn.nequip.CompleteIrrepSpec`:
-
-    .. code:: python
-
-        >>> from graph_pes.models import NequIP
-        >>> model = NequIP(
-        ...     elements=["C", "H", "O"],
-        ...     cutoff=5.0,
-        ...     features={
-        ...         "node_irreps": "32x0e + 16x1o + 8x2e",
-        ...         "edge_irreps": "1x0e + 1x1o + 1x2e"
-        ...     },
-        ...     n_layers=3,
-        ... )
-        >>> for layer in model.layers:
-        ...     print(layer.irreps_in, "->", layer.irreps_out)
-        32x0e -> 32x0e+16x1o+8x2e
-        32x0e+16x1o+8x2e -> 32x0e+16x1o+8x2e
-        32x0e+16x1o+8x2e -> 32x0e
-
-
-
     Configure a NequIP model for use with
     :doc:`graph-pes-train <../../cli/graph-pes-train>`:
 
@@ -676,6 +631,46 @@ class NequIP(_BaseNequIP):
             # neighbours in the training set
             neighbour_aggregation: constant_fixed
 
+    The hidden layer and edge embedding irreps the model generates can be
+    controlled using either a :class:`~graph_pes.models.e3nn.nequip.SimpleIrrepSpec`
+    or a :class:`~graph_pes.models.e3nn.nequip.CompleteIrrepSpec`:
+
+    .. code:: python
+
+        >>> from graph_pes.models import NequIP
+        >>> model = NequIP(
+        ...     elements=["C", "H", "O"],
+        ...     cutoff=5.0,
+        ...     features={
+        ...         "n_channels": [16, 8, 4],
+        ...         "l_max": 2,
+        ...         "use_odd_parity": True
+        ...     },
+        ...     n_layers=3,
+        ... )
+        >>> for layer in model.layers:
+        ...     print(layer.irreps_in, "->", layer.irreps_out)
+        16x0e -> 16x0e+8x1o+4x2e
+        16x0e+8x1o+4x2e -> 16x0e+8x1o+8x1e+4x2o+4x2e
+        16x0e+8x1o+8x1e+4x2o+4x2e -> 16x0e
+
+    .. code:: python
+
+        >>> from graph_pes.models import NequIP
+        >>> model = NequIP(
+        ...     elements=["C", "H", "O"],
+        ...     cutoff=5.0,
+        ...     features={
+        ...         "node_irreps": "32x0e + 16x1o + 8x2e",
+        ...         "edge_irreps": "1x0e + 1x1o + 1x2e"
+        ...     },
+        ...     n_layers=3,
+        ... )
+        >>> for layer in model.layers:
+        ...     print(layer.irreps_in, "->", layer.irreps_out)
+        32x0e -> 32x0e+16x1o+8x2e
+        32x0e+16x1o+8x2e -> 32x0e+16x1o+8x2e
+        32x0e+16x1o+8x2e -> 32x0e
 
     Observe the drop in parameters as we prune the last layer and
     replace the tensor product interactions with linear layers:
