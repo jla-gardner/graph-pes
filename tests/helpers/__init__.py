@@ -31,9 +31,17 @@ def all_model_factories(
 ) -> tuple[list[str], list[Callable[[], GraphPESModel]]]:
     pytorch_lightning.seed_everything(42)
     # make these models as small as possible to speed up tests
+    _small_nequip = {
+        "n_layers": 1,
+        "features": dict(
+            n_channels=16,
+            l_max=1,
+            use_odd_parity=False,
+        ),
+    }
     required_kwargs = {
-        NequIP: {"elements": expected_elements, "n_layers": 1, "l_max": 1},
-        ZEmbeddingNequIP: {"n_layers": 1, "l_max": 1},
+        NequIP: {"elements": expected_elements, **_small_nequip},
+        ZEmbeddingNequIP: {**_small_nequip},
         MACE: {
             "elements": expected_elements,
             "layers": 1,

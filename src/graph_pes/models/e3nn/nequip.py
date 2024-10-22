@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import Literal
+from typing import Final, Literal, TypedDict, cast
 
 import e3nn
 import e3nn.nn
@@ -17,13 +17,18 @@ from graph_pes.graphs.operations import (
     neighbour_distances,
     neighbour_vectors,
 )
+from graph_pes.logger import logger
 from graph_pes.models.components import distances
 from graph_pes.models.components.aggregation import (
     NeighbourAggregation,
     NeighbourAggregationMode,
 )
 from graph_pes.models.components.scaling import LocalEnergiesScaler
-from graph_pes.models.e3nn.utils import LinearReadOut
+from graph_pes.models.e3nn.utils import (
+    LinearReadOut,
+    SphericalHarmonics,
+    build_limited_tensor_product,
+)
 from graph_pes.nn import (
     MLP,
     AtomicOneHot,
@@ -41,93 +46,12 @@ warnings.filterwarnings(
     ),
 )
 
-
-def _nequip_message_tensor_product(
-    node_embedding_irreps: o3.Irreps,
-    edge_embedding_irreps: o3.Irreps,
-    l_max: int,
-) -> o3.TensorProduct:
-    # we want to build a tensor product that takes the:
-    # - node embeddings of each neighbour (node_irreps_in)
-    # - spherical-harmonic expansion of the neighbour directions
-    #      (o3.Irreps.spherical_harmonics(l_max) = e.g. 1x0e, 1x1o, 1x2e)
-    # and generates
-    # - message embeddings from each neighbour (node_irreps_out)
-    #
-    # crucially, rather than using the full tensor product, we limit the
-    # output irreps to be of order l_max at most. we do this by defining a
-    # sequence of instructions that specify the connectivity between the
-    # two input irreps and the output irreps
-    #
-    # we build this instruction set by naively iterating over all possible
-    # combinations of input irreps and spherical-harmonic irreps, and
-    # filtering out those that are above the desired order
-    #
-    # finally, we sort the instructions so that the tensor product generates
-    # a tensor where all elements of the same irrep are grouped together
-    # this aids normalisation in subsequent operations
-
-    output_irreps = []
-    instructions = []
-
-    for i, (channels, ir_in) in enumerate(node_embedding_irreps):
-        # the spherical harmonic expansions always have 1 channel per irrep,
-        # so we don't care about their channel dimension
-        for l, (_, ir_edge) in enumerate(edge_embedding_irreps):
-            # get all possible output irreps that this interaction could
-            # generate, e.g. 1e x 1e -> 0e + 1e + 2e
-            possible_output_irreps = ir_in * ir_edge
-
-            for ir_out in possible_output_irreps:
-                (order, parity) = ir_out
-
-                # if we want this output from the tensor product, add it to the
-                # list of instructions
-                if order <= l_max:
-                    k = len(output_irreps)
-                    output_irreps.append((channels, ir_out))
-                    # from the i'th irrep of the neighbour embedding
-                    # and from the l'th irrep of the spherical harmonics
-                    # to the k'th irrep of the output tensor
-                    instructions.append((i, l, k, "uvu", True))
-
-    # since many paths can lead to the same output irrep, we sort the
-    # instructions so that the tensor product generates tensors in a
-    # simplified order, e.g. 32x0e + 16x1o, not 16x0e + 16x1o + 16x0e
-    output_irreps = o3.Irreps(output_irreps)
-    assert isinstance(output_irreps, o3.Irreps)
-    output_irreps, permutation, _ = output_irreps.sort()
-
-    # permute the output indexes of the instructions to match the sorted irreps:
-    instructions = [
-        (i_in1, i_in2, permutation[i_out], mode, train)
-        for i_in1, i_in2, i_out, mode, train in instructions
-    ]
-
-    return o3.TensorProduct(
-        node_embedding_irreps,
-        edge_embedding_irreps,
-        output_irreps,
-        instructions,
-        # this tensor product will be parameterised by weights that are learned
-        # from neighbour distances, so it has no internal weights
-        internal_weights=False,
-        shared_weights=False,
-    )
-
-
-@e3nn.util.jit.compile_mode("script")
-class SphericalHarmonics(o3.SphericalHarmonics):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def __repr__(self):
-        return f"SphericalHarmonics(1x1o -> {self.irreps_out})"
+### IMPLEMENTATION ###
 
 
 def build_gate(output_irreps: o3.Irreps):
     """
-    Builds an equivariant non-linearity that produces output_irreps.
+    Builds an equivariant non-linearity that produces ``output_irreps``.
 
     This is done by passing all scalar irreps directly through a non-linearity,
     (tanh for even parity, silu for odd parity).
@@ -219,15 +143,19 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         self,
         input_node_irreps: o3.Irreps,
         Z_embedding_dim: int,
-        edge_irreps: o3.Irreps,
-        l_max: int,
-        n_channels: list[int],
+        radial_features: int,
+        edge_features: o3.Irreps,
+        target_node_features: o3.Irreps,
         cutoff: float,
         self_interaction: Literal["linear", "tensor_product"] | None,
-        prune_weights: bool,
+        prune_output_to: list[o3.Irrep] | None,
         neighbour_aggregation: NeighbourAggregationMode,
     ):
         super().__init__()
+
+        target_multiplicities: dict[o3.Irrep, int] = {}
+        for mul, ir in target_node_features:
+            target_multiplicities[ir] = mul
 
         # NequIP message passing involves the following steps:
         # 1. Create the message from neighbour j to central atom i
@@ -247,21 +175,22 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         self.pre_message_linear = o3.Linear(
             input_node_irreps, input_node_irreps
         )
-        self.message_tensor_product = _nequip_message_tensor_product(
+        self.message_tensor_product = build_limited_tensor_product(
             node_embedding_irreps=input_node_irreps,
-            edge_embedding_irreps=edge_irreps,
-            l_max=l_max,
+            edge_embedding_irreps=edge_features,
+            allowed_outputs=target_node_features,
         )
         n_required_weights = self.message_tensor_product.weight_numel
-        self.weight_generator = torch.nn.Sequential(
-            HaddamardProduct(
-                distances.Bessel(8, cutoff, trainable=True),
-                distances.PolynomialEnvelope(cutoff, p=6),
+        self.weight_generator = HaddamardProduct(
+            torch.nn.Sequential(
+                distances.Bessel(radial_features, cutoff, trainable=True),
+                MLP(
+                    # TODO: parameterise this
+                    [radial_features] * 3 + [n_required_weights],
+                    activation=torch.nn.SiLU(),
+                ),
             ),
-            MLP(
-                [8, 10, 10, n_required_weights],
-                activation=torch.nn.SiLU(),
-            ),
+            distances.PolynomialEnvelope(cutoff, p=6),
         )
 
         # 2. Message aggregation
@@ -270,17 +199,23 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         )
 
         # 5. Non-linearity
-        # NB we do this first so we can work out how many irreps we need
-        #    to be generating in step 3
+        # NB we initialise this first so we can work out how many irreps
+        #    we need to be generating in step 3
         post_message_irreps: list[o3.Irrep] = sorted(
             set(i.ir for i in self.message_tensor_product.irreps_out)
         )
-        if not prune_weights:
-            desired_output_irreps = o3.Irreps(
-                [(n_channels[ir.l], ir) for ir in post_message_irreps]
-            )
+        if not prune_output_to:
+            # desired_output_irreps = post_message_irreps
+            irreps = []
+            for ir in post_message_irreps:
+                irreps.append((target_multiplicities[ir], ir))
+            desired_output_irreps = o3.Irreps(irreps)
         else:
-            desired_output_irreps = o3.Irreps(f"{n_channels[0]}x0e")
+            irreps = []
+            for ir in post_message_irreps:
+                if ir in prune_output_to:
+                    irreps.append((target_multiplicities[ir], ir))
+            desired_output_irreps = o3.Irreps(irreps)
 
         self.non_linearity = build_gate(desired_output_irreps)  # type: ignore
 
@@ -365,17 +300,21 @@ class NequIPMessagePassingLayer(torch.nn.Module):
 class _BaseNequIP(GraphPESModel):
     def __init__(
         self,
+        # model
+        cutoff: float,
         direct_force_predictions: bool,
+        # input embeddings
         Z_embedding: torch.nn.Module,
         Z_embedding_dim: int,
-        n_channels: int | list[int],
-        l_max: int,
+        radial_features: int,
+        # message passing
         n_layers: int,
-        cutoff: float,
-        allow_odd_parity: bool,
+        node_features: o3.Irreps,
+        edge_features: o3.Irreps,
         self_interaction: Literal["linear", "tensor_product"] | None,
-        prune_last_layer: bool,
         neighbour_aggregation: NeighbourAggregationMode,
+        # optimisation
+        prune_last_layer: bool,
     ):
         props: list[keys.LabelKey] = ["local_energies"]
         if direct_force_predictions:
@@ -386,40 +325,40 @@ class _BaseNequIP(GraphPESModel):
             implemented_properties=props,
         )
 
-        if isinstance(n_channels, int):
-            n_channels = [n_channels] * (l_max + 1)
-
-        if len(n_channels) != l_max + 1:
-            raise ValueError(
-                "n_channels must be an integer or a list of length l_max + 1"
-            )
+        if not prune_last_layer:
+            prune_output_to = None
+        else:
+            if direct_force_predictions:
+                prune_output_to = [o3.Irrep("0e"), o3.Irrep("1o")]
+            else:
+                prune_output_to = [o3.Irrep("0e")]
 
         self.Z_embedding = Z_embedding
-        self.initial_node_embedding = PerElementEmbedding(n_channels[0])
 
-        edge_embedding_irreps = o3.Irreps.spherical_harmonics(
-            l_max, p=-1 if allow_odd_parity else 1
-        )
-        self.edge_embedding = SphericalHarmonics(
-            edge_embedding_irreps, normalize=True
-        )
+        scalar_even_dim = node_features.count("0e")
+        if scalar_even_dim == 0:
+            raise ValueError("Hidden irreps must contain a `0e` component.")
+        self.initial_node_embedding = PerElementEmbedding(scalar_even_dim)
+        # l_max = max(ir.l for ir in hidden_irreps)
+        # use_odd_parity = any(ir.ir.p == -1 for ir in hidden_irreps)
+
+        self.edge_embedding = SphericalHarmonics(edge_features, normalize=True)
 
         # first layer recieves an even parity, scalar embedding
         # of the atomic number
-        current_layer_input: o3.Irreps = o3.Irreps(f"{n_channels[0]}x0e")  # type: ignore
+        current_layer_input: o3.Irreps
+        current_layer_input = o3.Irreps(f"{scalar_even_dim}x0e")  # type: ignore
         layers: list[NequIPMessagePassingLayer] = []
         for i in range(n_layers):
             layer = NequIPMessagePassingLayer(
                 input_node_irreps=current_layer_input,
-                edge_irreps=edge_embedding_irreps,  # type: ignore
-                l_max=l_max,
-                n_channels=n_channels,
+                edge_features=edge_features,
+                target_node_features=node_features,
                 cutoff=cutoff,
+                radial_features=radial_features,
                 Z_embedding_dim=Z_embedding_dim,
                 self_interaction=self_interaction,
-                prune_weights=i == n_layers - 1
-                and prune_last_layer
-                and not direct_force_predictions,
+                prune_output_to=None if i < n_layers - 1 else prune_output_to,
                 neighbour_aggregation=neighbour_aggregation,
             )
             layers.append(layer)
@@ -429,7 +368,13 @@ class _BaseNequIP(GraphPESModel):
         self.energy_readout = LinearReadOut(current_layer_input)
 
         if direct_force_predictions:
+            if current_layer_input.count("1o") == 0:
+                raise ValueError(
+                    "Hidden irreps must contain a `1o` component in order "
+                    f"to predict forces. Got {current_layer_input}."
+                )
             self.force_readout = LinearReadOut(current_layer_input, "1o")
+
         else:
             self.force_readout = None
 
@@ -459,6 +404,129 @@ class _BaseNequIP(GraphPESModel):
             preds["forces"] = self.force_readout(node_embed).squeeze()
 
         return preds
+
+
+### USER FACING INTERFACE ###
+
+
+class SimpleIrrepSpec(TypedDict):
+    r"""
+    A simple specification of the node and edge feature irreps for
+    :class:`~graph_pes.models.NequIP`.
+
+    Parameters
+    ----------
+    n_channels
+        The number of channels for the node embedding. If an integer, all
+        :math:`l`-order irreps will have the same number of channels. If a list,
+        the :math:`l`-order irreps will have the number of channels specified by
+        the :math:`l`-th entry in the list.
+    l_max
+        The maximum angular momentum for the edge embedding.
+    use_odd_parity
+        Whether to allow odd parity for the edge embedding.
+
+    Examples
+    --------
+
+    .. code:: python
+
+        >>> from graph_pes.models.e3nn.nequip import SimpleIrrepSpec
+        >>> SimpleIrrepSpec(n_channels=16, l_max=2, use_odd_parity=True)
+    """
+
+    n_channels: int | list[int]
+    l_max: int
+    use_odd_parity: bool
+
+
+class CompleteIrrepSpec(TypedDict):
+    r"""
+    A complete specification of the node and edge feature irreps for
+    :class:`~graph_pes.models.NequIP`.
+
+    Parameters
+    ----------
+    node_irreps
+        The node feature irreps.
+    edge_irreps
+        The edge feature irreps.
+
+    Examples
+    --------
+
+    .. code:: python
+
+        >>> from graph_pes.models.e3nn.nequip import CompleteIrrepSpec
+        >>> CompleteIrrepSpec(
+        ...     node_irreps="32x0e + 16x1o + 8x2e",
+        ...     edge_irreps="0e + 1o + 2e"
+        ... )
+    """
+
+    node_irreps: str
+    edge_irreps: str
+
+
+DEFAULT_FEATURES: Final[SimpleIrrepSpec] = {
+    "n_channels": 16,
+    "l_max": 2,
+    "use_odd_parity": True,
+}
+
+
+def parse_irrep_specification(
+    spec: SimpleIrrepSpec | CompleteIrrepSpec,
+) -> tuple[o3.Irreps, o3.Irreps]:
+    is_simple = set(spec.keys()) == {"n_channels", "l_max", "use_odd_parity"}
+    is_complete = set(spec.keys()) == {"node_irreps", "edge_irreps"}
+
+    if not is_simple and not is_complete:
+        raise ValueError(
+            "Invalid irrep specification. Expected a "
+            "`CompleteIrrepSpec` or a `SimpleIrrepSpec`."
+        )
+
+    if is_simple:
+        spec = cast(SimpleIrrepSpec, spec)
+        l_max, channels = spec["l_max"], spec["n_channels"]
+        if not isinstance(channels, list):
+            channels = [channels] * (l_max + 1)
+
+        if len(channels) != l_max + 1:
+            raise ValueError(
+                "n_channels must be an integer or a list of length l_max + 1"
+            )
+
+        parities = "oe" if spec["use_odd_parity"] else "e"
+
+        node_irreps = []
+        for l, c in zip(range(l_max + 1), channels):
+            for p in parities:
+                node_irreps.append(f"{c}x{l}{p}")
+
+        edge_irreps = []
+        for l in range(l_max + 1):
+            p = "e" if not spec["use_odd_parity"] else "eo"[l % 2]
+            edge_irreps.append(f"1x{l}{p}")
+
+        node_irreps = o3.Irreps(" + ".join(node_irreps))
+        edge_irreps = o3.Irreps(" + ".join(edge_irreps))
+
+    else:
+        spec = cast(CompleteIrrepSpec, spec)
+        node_irreps = o3.Irreps(spec["node_irreps"])
+        edge_irreps = o3.Irreps(spec["edge_irreps"])
+
+    logger.debug(
+        f"""\
+        Parsed NequIP irrep speficication:
+            node_irreps: {node_irreps}
+            edge_irreps: {edge_irreps}
+        """
+    )
+
+    return node_irreps, edge_irreps  # type: ignore
 
 
 @e3nn.util.jit.compile_mode("script")
@@ -508,16 +576,11 @@ class NequIP(_BaseNequIP):
         layer node embedding to a set of force predictions.
     cutoff
         The cutoff radius for the model.
-    n_channels
-        The number of channels for the node embedding. If an integer, all
-        :math:`l`-order irreps will have the same number of channels. If a list,
-        the entries must be in :math:`l = 0, 1, \ldots, l_{\text{max}}` order.
+    features
+        A specification of the irreps to use for the node and edge embeddings.
+        Can be either a SimpleIrrepSpec or a CompleteIrrepSpec.
     n_layers
         The number of layers for the message passing.
-    l_max
-        The maximum angular momentum for the edge embedding.
-    allow_odd_parity
-        Whether to allow odd parity for the edge embedding.
     self_interaction
         The kind of self-interaction to use. If ``None``, no self-interaction
         is applied. If ``"linear"``, a linear self-interaction is applied
@@ -536,38 +599,59 @@ class NequIP(_BaseNequIP):
         for more details. Note that ``"mean"`` or ``"sqrt"`` aggregations lead
         to un-physical discontinuities in the energy function as atoms enter and
         leave the cutoff radius of the model.
-
+    radial_features
+        The number of features to expand the radial distances into. These
+        features are then passed through an :class:`~graph_pes.nn.MLP` to
+        generate distance-conditioned weights for the message tensor product.
 
     Examples
     --------
 
-    The hidden layer and edge embedding irreps the model generates are
-    controlled by the combination of ``n_channels``, ``l_max`` and
-    ``allow_odd_parity``:
+    The hidden layer and edge embedding irreps the model generates can be
+    controlled using either a SimpleIrrepSpec or a CompleteIrrepSpec:
 
-    .. list-table::
-        :header-rows: 1
+    Using :class:`~graph_pes.models.e3nn.nequip.SimpleIrrepSpec`:
 
-        * - ``n_channels``
-          - ``l_max``
-          - ``allow_odd_parity``
-          - ``edge_irreps``
-          - ``hidden_irreps``
-        * - 8
-          - 2
-          - True
-          - ``1x0e + 1x1o + 1x2e``
-          - ``8x0e + 8x0o + 8x1e + 8x1o + 8x2e + 8x2o``
-        * - 8
-          - 2
-          - False
-          - ``1x0e + 1x1e + 1x2e``
-          - ``8x0e + 8x1e + 8x2e``
-        * - [16, 8, 4]
-          - 2
-          - False
-          - ``1x0e + 1x1e + 1x2e``
-          - ``16x0e + 16x1e + 16x2e``
+    .. code:: python
+
+        >>> from graph_pes.models import NequIP
+        >>> model = NequIP(
+        ...     elements=["C", "H", "O"],
+        ...     cutoff=5.0,
+        ...     features={
+        ...         "n_channels": [16, 8, 4],
+        ...         "l_max": 2,
+        ...         "use_odd_parity": True
+        ...     },
+        ...     n_layers=3,
+        ... )
+        >>> for layer in model.layers:
+        ...     print(layer.irreps_in, "->", layer.irreps_out)
+        16x0e -> 16x0e+8x1o+4x2e
+        16x0e+8x1o+4x2e -> 16x0e+8x1o+8x1e+4x2o+4x2e
+        16x0e+8x1o+8x1e+4x2o+4x2e -> 16x0e
+
+    Using :class:`~graph_pes.models.e3nn.nequip.CompleteIrrepSpec`:
+
+    .. code:: python
+
+        >>> from graph_pes.models import NequIP
+        >>> model = NequIP(
+        ...     elements=["C", "H", "O"],
+        ...     cutoff=5.0,
+        ...     features={
+        ...         "node_irreps": "32x0e + 16x1o + 8x2e",
+        ...         "edge_irreps": "1x0e + 1x1o + 1x2e"
+        ...     },
+        ...     n_layers=3,
+        ... )
+        >>> for layer in model.layers:
+        ...     print(layer.irreps_in, "->", layer.irreps_out)
+        32x0e -> 32x0e+16x1o+8x2e
+        32x0e+16x1o+8x2e -> 32x0e+16x1o+8x2e
+        32x0e+16x1o+8x2e -> 32x0e
+
+
 
     Configure a NequIP model for use with
     :doc:`graph-pes-train <../../cli/graph-pes-train>`:
@@ -582,9 +666,11 @@ class NequIP(_BaseNequIP):
             # use 2 message passing layers
             n_layers: 2
 
-            # use 64 l=0, 32 l=1 and 8 l=2 node features
-            n_channels: [64, 32, 8]
-            l_max: 2
+            # using SimpleIrrepSpec
+            features:
+              n_channels: [64, 32, 8]
+              l_max: 2
+              use_odd_parity: true
 
             # scale the aggregation by the avg. number of
             # neighbours in the training set
@@ -601,9 +687,8 @@ class NequIP(_BaseNequIP):
         >>> vanilla = NequIP(
         ...     elements=["C", "H", "O"],
         ...     cutoff=5.0,
-        ...     n_channels=128,
+        ...     features={"n_channels": 128, "l_max": 2, "use_odd_parity": True},
         ...     n_layers=3,
-        ...     l_max=2,
         ...     self_interaction="tensor_product",
         ...     prune_last_layer=False,
         ... )
@@ -613,47 +698,46 @@ class NequIP(_BaseNequIP):
         >>> smaller = NequIP(
         ...     elements=["C", "H", "O"],
         ...     cutoff=5.0,
-        ...     n_channels=128,
+        ...     features={"n_channels": 128, "l_max": 2, "use_odd_parity": True},
         ...     n_layers=3,
-        ...     l_max=2,
         ...     self_interaction="linear",
         ...     prune_last_layer=True,
         ... )
         >>> sum(p.numel() for p in smaller.parameters())
         965232
-
-
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
         elements: list[str],
         direct_force_predictions: bool = False,
         cutoff: float = DEFAULT_CUTOFF,
-        n_channels: int | list[int] = 16,
         n_layers: int = 3,
-        l_max: int = 2,
-        allow_odd_parity: bool = True,
+        features: SimpleIrrepSpec | CompleteIrrepSpec = DEFAULT_FEATURES,
         self_interaction: Literal["linear", "tensor_product"]
         | None = "tensor_product",
         prune_last_layer: bool = True,
         neighbour_aggregation: NeighbourAggregationMode = "sum",
+        radial_features: int = 8,
     ):
         assert len(set(elements)) == len(elements), "Found duplicate elements"
         Z_embedding = AtomicOneHot(elements)
         Z_embedding_dim = len(elements)
+
+        node_features, edge_features = parse_irrep_specification(features)
+
         super().__init__(
             direct_force_predictions=direct_force_predictions,
             Z_embedding=Z_embedding,
             Z_embedding_dim=Z_embedding_dim,
-            n_channels=n_channels,
-            l_max=l_max,
+            node_features=node_features,
+            edge_features=edge_features,
             n_layers=n_layers,
             cutoff=cutoff,
-            allow_odd_parity=allow_odd_parity,
             self_interaction=self_interaction,
             prune_last_layer=prune_last_layer,
             neighbour_aggregation=neighbour_aggregation,
+            radial_features=radial_features,
         )
 
 
@@ -681,26 +765,26 @@ class ZEmbeddingNequIP(_BaseNequIP):
         cutoff: float = DEFAULT_CUTOFF,
         direct_force_predictions: bool = False,
         Z_embed_dim: int = 8,
-        n_channels: int | list[int] = 16,
-        l_max: int = 2,
+        features: SimpleIrrepSpec | CompleteIrrepSpec = DEFAULT_FEATURES,
         n_layers: int = 3,
-        allow_odd_parity: bool = True,
         self_interaction: Literal["linear", "tensor_product"]
         | None = "tensor_product",
         prune_last_layer: bool = True,
         neighbour_aggregation: NeighbourAggregationMode = "sum",
+        radial_features: int = 8,
     ):
         Z_embedding = PerElementEmbedding(Z_embed_dim)
+        node_features, edge_features = parse_irrep_specification(features)
         super().__init__(
             direct_force_predictions=direct_force_predictions,
             Z_embedding=Z_embedding,
             Z_embedding_dim=Z_embed_dim,
-            n_channels=n_channels,
-            l_max=l_max,
+            node_features=node_features,
+            edge_features=edge_features,
             n_layers=n_layers,
             cutoff=cutoff,
-            allow_odd_parity=allow_odd_parity,
             self_interaction=self_interaction,
             prune_last_layer=prune_last_layer,
             neighbour_aggregation=neighbour_aggregation,
+            radial_features=radial_features,
         )

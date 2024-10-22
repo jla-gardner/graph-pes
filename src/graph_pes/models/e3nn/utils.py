@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Union
 
+import e3nn.util.jit
 import torch
 from e3nn import o3
 
@@ -126,3 +127,87 @@ class NonLinearReadOut(torch.nn.Sequential):
 
 
 ReadOut = Union[LinearReadOut, NonLinearReadOut]
+
+
+@e3nn.util.jit.compile_mode("script")
+class SphericalHarmonics(o3.SphericalHarmonics):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __repr__(self):
+        return f"SphericalHarmonics(1x1o -> {self.irreps_out})"
+
+
+def build_limited_tensor_product(
+    node_embedding_irreps: o3.Irreps,
+    edge_embedding_irreps: o3.Irreps,
+    allowed_outputs: o3.Irreps,
+) -> o3.TensorProduct:
+    # we want to build a tensor product that takes the:
+    # - node embeddings of each neighbour (node_irreps_in)
+    # - spherical-harmonic expansion of the neighbour directions
+    #      (o3.Irreps.spherical_harmonics(l_max) = e.g. 1x0e, 1x1o, 1x2e)
+    # and generates
+    # - message embeddings from each neighbour (node_irreps_out)
+    #
+    # crucially, rather than using the full tensor product, we limit the
+    # output irreps to be of order l_max at most. we do this by defining a
+    # sequence of instructions that specify the connectivity between the
+    # two input irreps and the output irreps
+    #
+    # we build this instruction set by naively iterating over all possible
+    # combinations of input irreps and spherical-harmonic irreps, and
+    # filtering out those that are above the desired order
+    #
+    # finally, we sort the instructions so that the tensor product generates
+    # a tensor where all elements of the same irrep are grouped together
+    # this aids normalisation in subsequent operations
+
+    output_irreps = []
+    instructions = []
+
+    for i, (channels, ir_in) in enumerate(node_embedding_irreps):
+        # the spherical harmonic expansions always have 1 channel per irrep,
+        # so we don't care about their channel dimension
+        for l, (_, ir_edge) in enumerate(edge_embedding_irreps):
+            # get all possible output irreps that this interaction could
+            # generate, e.g. 1e x 1e -> 0e + 1e + 2e
+            possible_output_irreps = ir_in * ir_edge
+
+            for ir_out in possible_output_irreps:
+                # (order, parity) = ir_out
+                if ir_out not in allowed_outputs:
+                    continue
+
+                # if we want this output from the tensor product, add it to the
+                # list of instructions
+                k = len(output_irreps)
+                output_irreps.append((channels, ir_out))
+                # from the i'th irrep of the neighbour embedding
+                # and from the l'th irrep of the spherical harmonics
+                # to the k'th irrep of the output tensor
+                instructions.append((i, l, k, "uvu", True))
+
+    # since many paths can lead to the same output irrep, we sort the
+    # instructions so that the tensor product generates tensors in a
+    # simplified order, e.g. 32x0e + 16x1o, not 16x0e + 16x1o + 16x0e
+    output_irreps = o3.Irreps(output_irreps)
+    assert isinstance(output_irreps, o3.Irreps)
+    output_irreps, permutation, _ = output_irreps.sort()
+
+    # permute the output indexes of the instructions to match the sorted irreps:
+    instructions = [
+        (i_in1, i_in2, permutation[i_out], mode, train)
+        for i_in1, i_in2, i_out, mode, train in instructions
+    ]
+
+    return o3.TensorProduct(
+        node_embedding_irreps,
+        edge_embedding_irreps,
+        output_irreps,
+        instructions,
+        # this tensor product will be parameterised by weights that are learned
+        # from neighbour distances, so it has no internal weights
+        internal_weights=False,
+        shared_weights=False,
+    )
