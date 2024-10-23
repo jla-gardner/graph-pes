@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import sys
 from abc import ABC, abstractmethod
 
 import torch
@@ -66,6 +67,31 @@ class DistanceExpansion(nn.Module, ABC):
             f"{self.__class__.__name__}(n_features={self.n_features}, "
             f"cutoff={self.cutoff}, trainable={self.trainable})"
         )
+
+
+def get_distance_expansion(name: str) -> type[DistanceExpansion]:
+    """
+    Get a distance expansion class by it's name.
+
+    Parameters
+    ----------
+    name
+        The name of the distance expansion class.
+
+    Example
+    -------
+    >>> get_distance_expansion("Bessel")
+    <class 'graph_pes.models.components.distances.Bessel'>
+    """
+    try:
+        klass = getattr(sys.modules[__name__], name)
+    except AttributeError:
+        raise ValueError(f"Unknown distance expansion type: {name}") from None
+
+    if not isinstance(klass, type) or not issubclass(klass, DistanceExpansion):
+        raise ValueError(f"{name} is not a DistanceExpansion") from None
+
+    return klass
 
 
 class Bessel(DistanceExpansion):

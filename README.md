@@ -31,10 +31,10 @@ conda activate graph-pes
 pip install graph-pes
 
 # download a config file
-curl -0 TODO
+wget https://tinyurl.com/graph-pes-qm7-quickstart
 
 # train a model
-graph-pes-train TODO
+graph-pes-train qm7-quickstart.yaml
 ```
 
 

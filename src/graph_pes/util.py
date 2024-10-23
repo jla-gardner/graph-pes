@@ -62,13 +62,16 @@ def as_possible_tensor(value: object) -> Tensor | None:
         return None
 
 
-def differentiate(y: torch.Tensor, x: torch.Tensor):
+def differentiate_all(
+    y: torch.Tensor,
+    xs: list[torch.Tensor],
+    training: bool = False,
+):
     """
-    A torchscript-compatible way to differentiate `y` with respect
-    to `x`, handling the (odd) cases where either or both of
-    `y` or `x` do not have a gradient function: in these cases,
-    we return a tensor of zeros with the correct shape and
-    requires_grad set to True.
+    A ``Torchscript``-compatible way to differentiate `y` with respect
+    to all of the tensors in `xs`, with a slightly nicer API than
+    ``torch.autograd.grad``, and handling the (odd) cases where either
+    or both of `y` or `xs` do not have a gradient function.
     """
 
     if not torch.is_grad_enabled():
@@ -78,25 +81,45 @@ def differentiate(y: torch.Tensor, x: torch.Tensor):
             "a torch.enable_grad() context."
         )
 
-    x_did_require_grad = x.requires_grad
-    x.requires_grad_(True)
+    x_did_require_grad = [x.requires_grad for x in xs]
+    for x in xs:
+        x.requires_grad_(True)
 
     y_total = y.sum()
     # ensure y has a grad_fn
     y_total = y_total + torch.tensor(0.0, requires_grad=True)
 
-    grad = torch.autograd.grad(
+    grads = torch.autograd.grad(
         [y_total],
-        [x],
-        create_graph=True,
+        xs,
+        create_graph=training,
         allow_unused=True,
-    )[0]
+    )
 
-    x.requires_grad_(x_did_require_grad)
+    for x, did_require_grad in zip(xs, x_did_require_grad):
+        x.requires_grad_(did_require_grad)
 
-    default = torch.zeros_like(x)
-    default.requires_grad_(True)
-    return grad if grad is not None else default
+    defaults = [
+        torch.zeros_like(x, requires_grad=req)
+        for x, req in zip(xs, x_did_require_grad)
+    ]
+
+    return [
+        grad if grad is not None else default
+        for grad, default in zip(grads, defaults)
+    ]
+
+
+def differentiate(y: torch.Tensor, x: torch.Tensor, training: bool = False):
+    """
+    A torchscript-compatible way to differentiate `y` with respect
+    to `x`, handling the (odd) cases where either or both of
+    `y` or `x` do not have a gradient function: in these cases,
+    we return a tensor of zeros with the correct shape and
+    requires_grad set to True.
+    """
+
+    return differentiate_all(y, [x], training)[0]
 
 
 def to_significant_figures(x: float | int, sf: int = 3) -> float:

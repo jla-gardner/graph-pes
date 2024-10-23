@@ -25,7 +25,7 @@ from .graphs.operations import (
     trim_edges,
 )
 from .nn import PerElementParameter
-from .util import differentiate
+from .util import differentiate, differentiate_all
 
 
 class GraphPESModel(nn.Module, ABC):
@@ -238,18 +238,32 @@ class GraphPESModel(nn.Module, ABC):
 
         # use the autograd machinery to auto-magically
         # calculate forces and stress from the energy
-        if infer_forces:
-            dE_dR = differentiate(
-                predictions[keys.ENERGY], graph[keys._POSITIONS]
+
+        cell_volume = torch.det(graph[keys.CELL])
+        if is_batch(graph):
+            cell_volume = cell_volume.view(-1, 1, 1)
+
+        if infer_forces and infer_stress:
+            dE_dR, dE_dC = differentiate_all(
+                predictions[keys.ENERGY],
+                [graph[keys._POSITIONS], change_to_cell],
+                self.training,
             )
             predictions[keys.FORCES] = -dE_dR
+            predictions[keys.STRESS] = dE_dC / cell_volume
 
-        if infer_stress:
-            stress = differentiate(predictions[keys.ENERGY], change_to_cell)
-            cell_volume = torch.det(graph[keys.CELL])
-            if is_batch(graph):
-                cell_volume = cell_volume.view(-1, 1, 1)
-            predictions[keys.STRESS] = stress / cell_volume
+        elif infer_forces:
+            predictions[keys.FORCES] = -differentiate(
+                predictions[keys.ENERGY], graph[keys._POSITIONS], self.training
+            )
+
+        elif infer_stress:
+            predictions[keys.STRESS] = (
+                differentiate(
+                    predictions[keys.ENERGY], change_to_cell, self.training
+                )
+                / cell_volume
+            )
 
         # put things back to how they were before
         graph[keys._POSITIONS] = existing_positions
