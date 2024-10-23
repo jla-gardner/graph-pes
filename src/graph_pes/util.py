@@ -81,6 +81,8 @@ def differentiate_all(
             "a torch.enable_grad() context."
         )
 
+    defaults = [torch.zeros_like(x) for x in xs]
+
     x_did_require_grad = [x.requires_grad for x in xs]
     for x in xs:
         x.requires_grad_(True)
@@ -98,11 +100,6 @@ def differentiate_all(
 
     for x, did_require_grad in zip(xs, x_did_require_grad):
         x.requires_grad_(did_require_grad)
-
-    defaults = [
-        torch.zeros_like(x, requires_grad=req)
-        for x, req in zip(xs, x_did_require_grad)
-    ]
 
     return [
         grad if grad is not None else default
