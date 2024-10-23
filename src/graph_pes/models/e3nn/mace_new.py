@@ -6,7 +6,7 @@ import e3nn.util.jit
 import torch
 from e3nn import o3
 from graph_pes.core import GraphPESModel
-from graph_pes.graphs import DEFAULT_CUTOFF, keys
+from graph_pes.graphs import keys
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import neighbour_distances, neighbour_vectors
 from graph_pes.models.components.aggregation import NeighbourAggregationMode
@@ -23,7 +23,6 @@ from graph_pes.models.e3nn.utils import (
     SphericalHarmonics,
 )
 from graph_pes.nn import (
-    AtomicOneHot,
     HaddamardProduct,
     PerElementEmbedding,
     UniformModuleList,
