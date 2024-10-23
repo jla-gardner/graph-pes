@@ -51,7 +51,7 @@ def test_get_gradient():
     # finally, we want to test that the gradient itself has a gradient
     x = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
     y = (x**2).sum()
-    dy_dx = differentiate(y, x)
+    dy_dx = differentiate(y, x, keep_graph=True)
     dy_dx2 = differentiate(dy_dx, x)
     assert torch.allclose(dy_dx2, 2 * torch.ones_like(x))
 

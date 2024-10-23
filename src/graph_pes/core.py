@@ -247,23 +247,25 @@ class GraphPESModel(nn.Module, ABC):
             dE_dR, dE_dC = differentiate_all(
                 predictions[keys.ENERGY],
                 [graph[keys._POSITIONS], change_to_cell],
-                self.training,
+                keep_graph=self.training,
             )
             predictions[keys.FORCES] = -dE_dR
             predictions[keys.STRESS] = dE_dC / cell_volume
 
         elif infer_forces:
-            predictions[keys.FORCES] = -differentiate(
-                predictions[keys.ENERGY], graph[keys._POSITIONS], self.training
+            dE_dR = differentiate(
+                predictions[keys.ENERGY],
+                graph[keys._POSITIONS],
+                keep_graph=self.training,
             )
-
+            predictions[keys.FORCES] = -dE_dR
         elif infer_stress:
-            predictions[keys.STRESS] = (
-                differentiate(
-                    predictions[keys.ENERGY], change_to_cell, self.training
-                )
-                / cell_volume
+            dE_dC = differentiate(
+                predictions[keys.ENERGY],
+                change_to_cell,
+                keep_graph=self.training,
             )
+            predictions[keys.STRESS] = dE_dC / cell_volume
 
         # put things back to how they were before
         graph[keys._POSITIONS] = existing_positions

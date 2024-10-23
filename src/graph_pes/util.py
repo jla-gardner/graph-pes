@@ -65,7 +65,7 @@ def as_possible_tensor(value: object) -> Tensor | None:
 def differentiate_all(
     y: torch.Tensor,
     xs: list[torch.Tensor],
-    training: bool = False,
+    keep_graph: bool = False,
 ):
     """
     A ``Torchscript``-compatible way to differentiate `y` with respect
@@ -94,7 +94,7 @@ def differentiate_all(
     grads = torch.autograd.grad(
         [y_total],
         xs,
-        create_graph=training,
+        create_graph=keep_graph,
         allow_unused=True,
     )
 
@@ -107,7 +107,7 @@ def differentiate_all(
     ]
 
 
-def differentiate(y: torch.Tensor, x: torch.Tensor, training: bool = False):
+def differentiate(y: torch.Tensor, x: torch.Tensor, keep_graph: bool = False):
     """
     A torchscript-compatible way to differentiate `y` with respect
     to `x`, handling the (odd) cases where either or both of
@@ -116,7 +116,7 @@ def differentiate(y: torch.Tensor, x: torch.Tensor, training: bool = False):
     requires_grad set to True.
     """
 
-    return differentiate_all(y, [x], training)[0]
+    return differentiate_all(y, [x], keep_graph)[0]
 
 
 def to_significant_figures(x: float | int, sf: int = 3) -> float:
