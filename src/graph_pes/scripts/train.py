@@ -269,34 +269,20 @@ def train_from_config(config: Config):
     total_loss = config.instantiate_loss()
     log(total_loss)
 
-    logger.info(f"Starting training on rank {trainer.global_rank}.")
-    try:
-        train_with_lightning(
-            trainer,
-            model,
-            data,
-            loss=total_loss,
-            fit_config=config.fitting,
-            optimizer=optimizer,
-            scheduler=scheduler,
-        )
+    def save_model():
+        if not is_rank_0:
+            return
 
-    except Exception as e:
-        cleanup()
-        raise e
-
-    log("Training complete.")
-
-    # only save things on rank 0
-    if is_rank_0:
         try:
             # place model onto cpu
+            nonlocal model
             model = model.to("cpu")
 
             # log the final path to the trainer.logger.summary
             model_path = output_dir / "model.pt"
             lammps_model_path = output_dir / "lammps_model.pt"
 
+            assert trainer.logger is not None
             trainer.logger.log_hyperparams(
                 {
                     "model_path": model_path,
@@ -311,6 +297,26 @@ def train_from_config(config: Config):
         except Exception as e:
             logger.error(f"Failed to save model: {e}")
 
+    logger.info(f"Starting training on rank {trainer.global_rank}.")
+    try:
+        train_with_lightning(
+            trainer,
+            model,
+            data,
+            loss=total_loss,
+            fit_config=config.fitting,
+            optimizer=optimizer,
+            scheduler=scheduler,
+        )
+
+    except Exception as e:
+        cleanup()
+        save_model()
+        raise e
+
+    log("Training complete.")
+
+    save_model()
     cleanup()
 
 
