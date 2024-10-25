@@ -47,13 +47,13 @@ def all_model_factories(
             "layers": 1,
             "l_max": 1,
             "correlation": 1,
-            "n_features": 4,
+            "channels": 4,
         },
         ZEmbeddingMACE: {
             "layers": 1,
             "l_max": 1,
             "correlation": 1,
-            "n_features": 4,
+            "channels": 4,
             "z_embed_dim": 4,
         },
     }
