@@ -41,41 +41,62 @@ from graph_pes.nn import (
     UniformModuleList,
 )
 
+# consistent termninology used in this file:
+#
+#  MACE takes as input:
+# - channels (int)
+# - attributes (int)
+# - l_max (int)
+# - hidden_irreps (list[o3.Irrep])
+#
+# The MACE model:
+# embeds Z into a channels x 0e irrep feature
+# embeds r_ij into a 1x0e + 1x1o + ... + 1xl_max(oe) feature
+#
+
 
 # @e3nn.util.jit.compile_mode("script")
 class MACEInteraction(torch.nn.Module):
     """
-    MACE interaction block
+    The MACE interaction block.
+
+    Generates new node embeddings from the old node embeddings and the
+    spherical harmonic expansion and mangitudes of the neighbour vectors.
+
+
     """
 
     def __init__(
         self,
         # input nodes
-        node_features_in: o3.Irreps,
+        irreps_in: list[o3.Irrep],
+        channels: int,
         # input edges
         sph_harmonics: o3.Irreps,
         radial_basis_features: int,
         mlp_layers: list[int],
-        # output nodes
-        target_features_out: o3.Irreps,
         # other
         aggregation: NeighbourAggregationMode,
     ):
         super().__init__()
 
+        irreps_out = [ir for _, ir in sph_harmonics]
+
+        features_in = as_irreps([(channels, ir) for ir in irreps_in])
         self.pre_linear = o3.Linear(
-            node_features_in,
-            node_features_in,
+            features_in,
+            features_in,
             internal_weights=True,
             shared_weights=True,
         )
 
         self.tp = build_limited_tensor_product(
-            node_features_in,
+            features_in,
             sph_harmonics,
-            [ir for _, ir in target_features_out],
+            irreps_out,
         )
         mid_features = self.tp.irreps_out.simplify()
+        assert all(ir in mid_features for ir in irreps_out)
 
         self.weight_generator = MLP(
             [radial_basis_features] + mlp_layers + [self.tp.weight_numel],
@@ -83,20 +104,21 @@ class MACEInteraction(torch.nn.Module):
             bias=False,
         )
 
+        features_out = as_irreps([(channels, ir) for (_, ir) in sph_harmonics])
         self.post_linear = o3.Linear(
             mid_features,
-            target_features_out,
+            features_out,
             internal_weights=True,
             shared_weights=True,
         )
 
         self.aggregator = NeighbourAggregation.parse(aggregation)
 
-        self.reshape = reshape_irreps(target_features_out)
+        self.reshape = ReshapeIrreps(irreps_out, channels)
 
         # book-keeping
-        self.irreps_in = node_features_in
-        self.irreps_out = target_features_out
+        self.irreps_in = features_in
+        self.irreps_out = features_out
 
     def forward(
         self,
@@ -125,47 +147,58 @@ class MACEInteraction(torch.nn.Module):
         # post-linear
         node_features = self.post_linear(total_message)  # (N, d)
 
-        return self.reshape(node_features)
+        return self.reshape(node_features)  # (N, channels, d')
 
 
 # @compile_mode("script")
-class reshape_irreps(torch.nn.Module):
-    def __init__(self, irreps: o3.Irreps) -> None:
+class ReshapeIrreps(torch.nn.Module):
+    def __init__(self, irreps: list[o3.Irrep], channels: int) -> None:
         super().__init__()
-        self.irreps = o3.Irreps(irreps)
-        self.dims = []
-        self.muls = []
-        for mul, ir in self.irreps:
-            d = ir.dim
-            self.dims.append(d)
-            self.muls.append(mul)
+        self.channels = channels
+        self.irreps = irreps
+        self.dims = [ir.dim for ir in irreps]
 
     def forward(self, tensor: torch.Tensor) -> torch.Tensor:
-        ix = 0
-        out = []
-        batch, _ = tensor.shape
-        for mul, d in zip(self.muls, self.dims):
-            field = tensor[:, ix : ix + mul * d]  # [batch, sample, mul * repr]
-            ix += mul * d
-            field = field.reshape(batch, mul, d)
-            out.append(field)
-        return torch.cat(out, dim=-1)
+        idx = 0
+        output = []
+
+        # iterate over the flat tensor, and pull out
+        # each channel x irrep
+        # e.g. (N, 16x0e + 16x1o) -> (N, 16, 1x0e + 1x1o)
+        for dim in self.dims:
+            field = tensor[:, idx : idx + self.channels * dim]
+            idx += self.channels * dim
+            field = field.reshape(-1, self.channels, dim)
+            output.append(field)
+
+        return torch.cat(output, dim=-1)
+
+    def __repr__(self) -> str:
+        _in = "(N, "
+        _in += "+".join([f"{self.channels}x{ir}" for ir in self.irreps])
+        _in += ")"
+
+        _out = f"(N, {self.channels}, "
+        _out += "+".join([f"1x{ir}" for ir in self.irreps])
+        _out += ")"
+
+        return f"{self.__class__.__name__}({_in} -> {_out})"
 
 
 @dataclass
 class NodeDescription:
-    n_features: int
-    n_attributes: int
+    channels: int
+    attributes: int
     hidden_features: list[o3.Irrep]
 
     def hidden_irreps(self) -> o3.Irreps:
-        return to_full_irreps(self.n_features, self.hidden_features)
+        return to_full_irreps(self.channels, self.hidden_features)
 
 
 class MACELayer(torch.nn.Module):
     def __init__(
         self,
-        input_features: o3.Irreps,
+        irreps_in: list[o3.Irrep],
         nodes: NodeDescription,
         correlation: int,
         sph_harmonics: o3.Irreps,
@@ -176,15 +209,12 @@ class MACELayer(torch.nn.Module):
     ):
         super().__init__()
 
-        target_mid_features = as_irreps(
-            [(nodes.n_features, ir) for (_, ir) in sph_harmonics]
-        )
         self.interaction = MACEInteraction(
-            node_features_in=input_features,
+            irreps_in=irreps_in,
+            channels=nodes.channels,
             sph_harmonics=sph_harmonics,
             radial_basis_features=radial_basis_features,
             mlp_layers=mlp_layers,
-            target_features_out=target_mid_features,
             aggregation=aggregation,
         )
         actual_mid_features = [ir for _, ir in self.interaction.irreps_out]
@@ -193,8 +223,8 @@ class MACELayer(torch.nn.Module):
         self.contractions = UniformModuleList(
             [
                 Contraction(
-                    num_features=nodes.n_features,
-                    n_node_attributes=nodes.n_attributes,
+                    num_features=nodes.channels,
+                    n_node_attributes=nodes.attributes,
                     irrep_s_in=actual_mid_features,
                     irrep_out=target_irrep,
                     correlation=correlation,
@@ -205,8 +235,8 @@ class MACELayer(torch.nn.Module):
 
         if use_sc:
             self.redisual_update = o3.FullyConnectedTensorProduct(
-                irreps_in1=input_features,
-                irreps_in2=o3.Irreps(f"{nodes.n_attributes}x0e"),
+                irreps_in1=[(nodes.channels, ir) for ir in irreps_in],
+                irreps_in2=o3.Irreps(f"{nodes.attributes}x0e"),
                 irreps_out=nodes.hidden_irreps(),
             )
         else:
@@ -220,7 +250,7 @@ class MACELayer(torch.nn.Module):
         )
 
         # book-keeping
-        self.irreps_in = input_features
+        self.irreps_in = irreps_in
         self.irreps_out = nodes.hidden_irreps()
 
     def forward(
@@ -313,15 +343,15 @@ class _BaseMACE(GraphPESModel):
 
         # node things
         self.node_attribute_generator = node_attribute_generator
-        self.initial_node_embedding = PerElementEmbedding(nodes.n_features)
+        self.initial_node_embedding = PerElementEmbedding(nodes.channels)
 
         # message passing
-        current_node_irreps = as_irreps(nodes.n_features * o3.Irrep("0e"))
+        current_node_irreps = [o3.Irrep("0e")]
         self.layers: UniformModuleList[MACELayer] = UniformModuleList([])
 
         for _ in range(layers):
             layer = MACELayer(
-                input_features=current_node_irreps,
+                irreps_in=current_node_irreps,
                 nodes=nodes,
                 correlation=correlation,
                 sph_harmonics=sph_harmonics,
@@ -331,7 +361,7 @@ class _BaseMACE(GraphPESModel):
                 aggregation=neighbour_aggregation,
             )
             self.layers.append(layer)
-            current_node_irreps = layer.irreps_out
+            current_node_irreps = [ir for _, ir in layer.irreps_out]
 
         self.readouts: UniformModuleList[ReadOut] = UniformModuleList(
             [LinearReadOut(nodes.hidden_irreps()) for _ in range(layers - 1)]
@@ -415,8 +445,8 @@ class MACE(_BaseMACE):
         Z_dim = len(elements)
         hidden_irrep_s = parse_irreps(hidden_irreps)
         nodes = NodeDescription(
-            n_features=n_features,
-            n_attributes=Z_dim,
+            channels=n_features,
+            attributes=Z_dim,
             hidden_features=hidden_irrep_s,
         )
 
@@ -454,8 +484,8 @@ class ZEmbeddingMACE(_BaseMACE):
         Z_embedding = PerElementEmbedding(z_embed_dim)
         hidden_irrep_s = parse_irreps(hidden_irreps)
         nodes = NodeDescription(
-            n_features=n_features,
-            n_attributes=z_embed_dim,
+            channels=n_features,
+            attributes=z_embed_dim,
             hidden_features=hidden_irrep_s,
         )
 
