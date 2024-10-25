@@ -178,7 +178,7 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         self.message_tensor_product = build_limited_tensor_product(
             node_embedding_irreps=input_node_irreps,
             edge_embedding_irreps=edge_features,
-            allowed_outputs=target_node_features,
+            allowed_outputs=[ir for _, ir in target_node_features],
         )
         n_required_weights = self.message_tensor_product.weight_numel
         self.weight_generator = HaddamardProduct(

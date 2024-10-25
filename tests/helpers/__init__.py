@@ -45,15 +45,16 @@ def all_model_factories(
         MACE: {
             "elements": expected_elements,
             "layers": 1,
-            "max_ell": 1,
+            "l_max": 1,
             "correlation": 1,
-            "hidden_irreps": "4x0e + 4x1o",
+            "n_features": 4,
         },
         ZEmbeddingMACE: {
             "layers": 1,
-            "max_ell": 1,
+            "l_max": 1,
             "correlation": 1,
-            "hidden_irreps": "4x0e + 4x1o",
+            "n_features": 4,
+            "z_embed_dim": 4,
         },
     }
 

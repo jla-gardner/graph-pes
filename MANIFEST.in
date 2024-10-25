@@ -4,3 +4,4 @@ include src/graph_pes/config/defaults.yaml
 include src/graph_pes/scripts/automation.yaml
 include src/graph_pes/pair_style/pair_graph_pes.h
 include src/graph_pes/pair_style/pair_graph_pes.cpp
+include src/graph_pes/models/e3nn/_high_order_CG_coeff.pt

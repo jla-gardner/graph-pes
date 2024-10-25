@@ -26,6 +26,20 @@ def test_deploy(model: GraphPESModel, tmp_path: Path):
         molecule("CH3CH2OH", vacuum=2),
         cutoff=model_cutoff,
     )
+    outputs = {
+        k: t.double() for k, t in model.get_all_PES_predictions(graph).items()
+    }
+
+    # 1. saving and unsaving works
+    torch.save(model, tmp_path / "model.pt")
+    loaded_model = torch.load(tmp_path / "model.pt")
+    assert isinstance(loaded_model, GraphPESModel)
+    torch.testing.assert_close(
+        model.predict_forces(graph),
+        loaded_model.predict_forces(graph),
+        atol=1e-6,
+        rtol=1e-6,
+    )
 
     # 2. deploy the model
     save_path = tmp_path / "model.pt"
@@ -37,7 +51,7 @@ def test_deploy(model: GraphPESModel, tmp_path: Path):
     assert loaded_model.get_cutoff() == model_cutoff
 
     # 4. test outputs
-    outputs = loaded_model(
+    loaded_outputs = loaded_model(
         # mock the graph that would be passed through from LAMMPS
         {
             **graph,
@@ -45,24 +59,47 @@ def test_deploy(model: GraphPESModel, tmp_path: Path):
             "debug": torch.tensor(False),
         }
     )
-    assert isinstance(outputs, dict)
-    assert set(outputs.keys()) == {
+    assert isinstance(loaded_outputs, dict)
+    assert set(loaded_outputs.keys()) == {
         "energy",
         "local_energies",
         "forces",
         "virial",
         "stress",
     }
-    assert outputs["energy"].shape == torch.Size([])
-    assert outputs["local_energies"].shape == (number_of_atoms(graph),)
-    assert outputs["forces"].shape == graph["_positions"].shape
-    assert outputs["stress"].shape == (3, 3)
-    assert outputs["virial"].shape == (6,)
+    assert loaded_outputs["energy"].shape == torch.Size([])
+    torch.testing.assert_close(
+        outputs["energy"],
+        loaded_outputs["energy"],
+        atol=1e-6,
+        rtol=1e-6,
+    )
 
-    # 5. test that the deployment process hasn't changed the model's predictions
-    model.eval()
-    original_energy = model.predict_energy(graph).double()
-    assert torch.allclose(original_energy, outputs["energy"])
+    assert loaded_outputs["local_energies"].shape == (number_of_atoms(graph),)
+    torch.testing.assert_close(
+        outputs["local_energies"],
+        loaded_outputs["local_energies"],
+        atol=1e-6,
+        rtol=1e-6,
+    )
+
+    assert loaded_outputs["forces"].shape == graph["_positions"].shape
+    torch.testing.assert_close(
+        outputs["forces"],
+        loaded_outputs["forces"],
+        atol=1e-6,
+        rtol=1e-6,
+    )
+
+    assert loaded_outputs["stress"].shape == (3, 3)
+    torch.testing.assert_close(
+        outputs["stress"],
+        loaded_outputs["stress"],
+        atol=1e-6,
+        rtol=1e-6,
+    )
+
+    assert loaded_outputs["virial"].shape == (6,)
 
 
 def test_deploy_smoothed_pair_potential(tmp_path: Path):
