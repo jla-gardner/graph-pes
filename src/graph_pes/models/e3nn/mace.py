@@ -25,6 +25,7 @@ from graph_pes.models.components.distances import (
 from graph_pes.models.components.scaling import LocalEnergiesScaler
 from graph_pes.models.e3nn.utils import (
     Contraction,
+    ContractionConfig,
     LinearReadOut,
     NonLinearReadOut,
     ReadOut,
@@ -226,10 +227,12 @@ class MACELayer(torch.nn.Module):
         self.contractions = UniformModuleList(
             [
                 Contraction(
-                    num_features=nodes.channels,
-                    n_node_attributes=nodes.attributes,
-                    irrep_s_in=actual_mid_features,
-                    irrep_out=target_irrep,
+                    config=ContractionConfig(
+                        num_features=nodes.channels,
+                        n_node_attributes=nodes.attributes,
+                        irrep_s_in=actual_mid_features,
+                        irrep_out=target_irrep,
+                    ),
                     correlation=correlation,
                 )
                 for target_irrep in nodes.hidden_features

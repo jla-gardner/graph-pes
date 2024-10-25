@@ -7,6 +7,7 @@ import e3nn.util.jit
 import opt_einsum_fx
 import torch
 import torch.fx
+from attr import dataclass
 from e3nn import o3
 from e3nn.util.codegen import CodeGenMixin
 from graph_pes.nn import UniformModuleList
@@ -218,7 +219,7 @@ def build_limited_tensor_product(
     )
 
 
-BATCH_EXAMPLE = 10
+BATCH_DIM_EG = 20
 SPARE = "wxvnzrtyuops"
 
 
@@ -238,27 +239,28 @@ def get_spare_dims(correlation: int, irrep_out: o3.Irrep) -> str:
     return SPARE[:n_spare]
 
 
+@dataclass
+class ContractionConfig:
+    num_features: int
+    irrep_s_in: list[o3.Irrep]
+    irrep_out: o3.Irrep
+    n_node_attributes: int
+
+
 class InitialContraction(CodeGenMixin, torch.nn.Module):
-    def __init__(
-        self,
-        num_features: int,
-        irrep_s_in: list[o3.Irrep],
-        irrep_out: o3.Irrep,
-        correlation: int,
-        n_node_attributes: int,
-    ):
+    def __init__(self, config: ContractionConfig, correlation: int):
         super().__init__()
 
         # U is of shape (X, (Y,) * correlation, Z)
         # where X = irrep_out.dim
         self.register_buffer(
-            "U", get_U_matrix(irrep_s_in, irrep_out, correlation)
+            "U", get_U_matrix(config.irrep_s_in, config.irrep_out, correlation)
         )
         Y = self.U.size()[-2]
         Z = self.U.size()[-1]
 
         self.W = torch.nn.Parameter(
-            torch.randn(n_node_attributes, Z, num_features) / Z
+            torch.randn(config.n_node_attributes, Z, config.num_features) / Z
         )
 
         # the contraction is a summation that takes 4 inputs:
@@ -272,9 +274,9 @@ class InitialContraction(CodeGenMixin, torch.nn.Module):
             lambda x, y, z, w: torch.einsum(instruction, x, y, z, w),
             [
                 (self.U.shape),
-                (n_node_attributes, Z, num_features),
-                (BATCH_EXAMPLE, num_features, Y),
-                (BATCH_EXAMPLE, n_node_attributes),
+                (config.n_node_attributes, Z, config.num_features),
+                (BATCH_DIM_EG, config.num_features, Y),
+                (BATCH_DIM_EG, config.n_node_attributes),
             ],
         )
 
@@ -294,24 +296,17 @@ class InitialContraction(CodeGenMixin, torch.nn.Module):
 
 
 class FollowingWeightContraction(CodeGenMixin, torch.nn.Module):
-    def __init__(
-        self,
-        num_features: int,
-        irrep_s_in: list[o3.Irrep],
-        irrep_out: o3.Irrep,
-        correlation: int,
-        n_node_attributes: int,
-    ):
+    def __init__(self, config: ContractionConfig, correlation: int):
         super().__init__()
 
         # as above, U is of shape (X, (Y,) * correlation, Z)
         self.register_buffer(
-            "U", get_U_matrix(irrep_s_in, irrep_out, correlation)
+            "U", get_U_matrix(config.irrep_s_in, config.irrep_out, correlation)
         )
         Z = self.U.size()[-1]
 
         self.W = torch.nn.Parameter(
-            torch.randn(n_node_attributes, Z, num_features) / Z
+            torch.randn(config.n_node_attributes, Z, config.num_features) / Z
         )
 
         # this contraction acts on U, W and the node attributes
@@ -323,8 +318,8 @@ class FollowingWeightContraction(CodeGenMixin, torch.nn.Module):
             lambda x, y, z: torch.einsum(instruction, x, y, z),
             [
                 (self.U.shape),
-                (n_node_attributes, Z, num_features),
-                (BATCH_EXAMPLE, n_node_attributes),
+                (config.n_node_attributes, Z, config.num_features),
+                (BATCH_DIM_EG, config.n_node_attributes),
             ],
         )
 
@@ -343,31 +338,24 @@ class FollowingWeightContraction(CodeGenMixin, torch.nn.Module):
 
 
 class FeatureContraction(CodeGenMixin, torch.nn.Module):
-    def __init__(
-        self,
-        num_features: int,
-        irrep_s_in: list[o3.Irrep],
-        irrep_out: o3.Irrep,
-        correlation: int,
-        n_node_attributes: int,
-    ):
+    def __init__(self, config: ContractionConfig, correlation: int):
         super().__init__()
 
         # as above, U is of shape (X, (Y,) * correlation, Z)
-        U = get_U_matrix(irrep_s_in, irrep_out, correlation)
-        X = irrep_out.dim
+        U = get_U_matrix(config.irrep_s_in, config.irrep_out, correlation)
+        X = config.irrep_out.dim
         Y = U.size()[-2]
 
         # this contraction acts on the output of a weight contraction
         # and the node features
-        spare_dims = get_spare_dims(correlation, irrep_out)
+        spare_dims = get_spare_dims(correlation, config.irrep_out)
         instruction = f"bc{spare_dims}i,bci->bc{spare_dims}"
 
         self.summation = get_optimised_summation(
             lambda x, y: torch.einsum(instruction, x, y),
             [
-                [BATCH_EXAMPLE, num_features, X] + [Y] * correlation,
-                (BATCH_EXAMPLE, num_features, Y),
+                [BATCH_DIM_EG, config.num_features, X] + [Y] * correlation,
+                (BATCH_DIM_EG, config.num_features, Y),
             ],
         )
 
@@ -388,43 +376,18 @@ class FeatureContraction(CodeGenMixin, torch.nn.Module):
 
 
 class Contraction(CodeGenMixin, torch.nn.Module):
-    def __init__(
-        self,
-        num_features: int,
-        irrep_s_in: list[o3.Irrep],
-        irrep_out: o3.Irrep,
-        correlation: int,
-        n_node_attributes: int,
-    ):
+    def __init__(self, config: ContractionConfig, correlation: int):
         super().__init__()
 
-        self.initial_contraction = InitialContraction(
-            num_features,
-            irrep_s_in,
-            irrep_out,
-            correlation,
-            n_node_attributes,
-        )
+        self.initial_contraction = InitialContraction(config, correlation)
 
         self.weight_contractions = UniformModuleList(
-            FollowingWeightContraction(
-                num_features,
-                irrep_s_in,
-                irrep_out,
-                j,
-                n_node_attributes,
-            )
+            FollowingWeightContraction(config, j)
             for j in reversed(range(1, correlation))
         )
 
         self.feature_contractions = UniformModuleList(
-            FeatureContraction(
-                num_features,
-                irrep_s_in,
-                irrep_out,
-                j,
-                n_node_attributes,
-            )
+            FeatureContraction(config, j)
             for j in reversed(range(1, correlation))
         )
 
@@ -466,7 +429,7 @@ _U_cache_sparse: dict[tuple[str, str, int], torch.Tensor] = torch.load(
     Path(__file__).parent / "_high_order_CG_coeff.pt"
 )
 """
-A pre-computed look-up table for the U matrices.
+A pre-computed look-up table for the U matrices used in MACE Contractions.
 
 Keys are tuples of the form ``(in_irreps, out_irreps, correlation)``, where
 ``in_irreps`` and ``out_irreps`` are strings formed by concatenating the string
