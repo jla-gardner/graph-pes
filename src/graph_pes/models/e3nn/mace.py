@@ -114,7 +114,7 @@ class MACEInteraction(torch.nn.Module):
 
         self.aggregator = NeighbourAggregation.parse(aggregation)
 
-        self.reshape = ReshapeIrreps(irreps_out, channels)
+        self.reshape = UnflattenIrreps(irreps_out, channels)
 
         # book-keeping
         self.irreps_in = features_in
@@ -150,8 +150,12 @@ class MACEInteraction(torch.nn.Module):
         return self.reshape(node_features)  # (N, channels, d')
 
 
-# @compile_mode("script")
-class ReshapeIrreps(torch.nn.Module):
+class UnflattenIrreps(torch.nn.Module):
+    """
+    Unflattens a tensor of irreps with uniform multiplicity,
+    e.g. (N, 16x0e + 16x1o) -> (N, 16, 1x0e + 1x1o)
+    """
+
     def __init__(self, irreps: list[o3.Irrep], channels: int) -> None:
         super().__init__()
         self.channels = channels
@@ -219,7 +223,6 @@ class MACELayer(torch.nn.Module):
         )
         actual_mid_features = [ir for _, ir in self.interaction.irreps_out]
 
-        # Initialize contractions directly in MACELayer
         self.contractions = UniformModuleList(
             [
                 Contraction(
@@ -426,17 +429,105 @@ DEFAULT_MLP_LAYERS: Final[list[int]] = [16, 16]
 
 
 class MACE(_BaseMACE):
+    r"""
+    The `MACE <https://arxiv.org/abs/2206.07697>`__ architecture.
+
+    One-hot encodings of the atomic numbers are used to condition the
+    ``TensorProduct`` update in the residual connection of the message passing
+    layers, as well as the contractions in the message passing layers.
+
+    Please cite the following if you use this model in your research:
+
+    .. code-block:: bibtex
+
+        @misc{Batatia2022MACE,
+            title = {
+                MACE: Higher Order Equivariant Message Passing
+                Neural Networks for Fast and Accurate Force Fields
+            },
+            author = {
+                Batatia, Ilyes and Kov{\'a}cs, D{\'a}vid P{\'e}ter and
+                Simm, Gregor N. C. and Ortner, Christoph and Cs{\'a}nyi, G{\'a}bor
+            },
+            year = {2022},
+            doi = {10.48550/arXiv.2206.07697},
+        }
+
+    Parameters
+    ----------
+    elements
+        list of elements that this MACE model will be able to handle.
+    cutoff
+        radial cutoff (in Å) for the radial expansion (and message passing)
+    n_radial
+        number of bases to expand the radial distances into
+    radial_expansion_type
+        type of radial expansion to use. See :class:`~graph_pes.models.components.distances.DistanceExpansion`
+        for available options
+    mlp_layers
+        the widths of layers in the MLPs that map the radial basis functions
+        to the weights of the interactions' tensor products
+    channels
+        the multiplicity of the node features corresponding to each irrep
+        specified in ``hidden_irreps``
+    hidden_irreps
+        string representations of the :class:`e3nn.o3.Irrep`\ s to use
+        for representing the node features between each message passing layer
+    l_max
+        the highest order to consider in:
+        * the spherical harmonics expansion of the neighbour vectors
+        * the irreps of node features used within each message passing layer
+    correlation
+        maximum correlation (body-order) of the messages
+    layers
+        number of message passing layers
+    aggregation
+        the type of aggregation to use when creating total messages from
+        neigbour messages :math:`m_{j \rightarrow i}`
+    self_connection
+        whether to use self-connections in the message passing layers
+
+    Examples
+    --------
+    Basic usage:
+
+    .. code-block:: python
+
+        >>> from graph_pes.models import MACE
+        >>> model = MACE(
+        ...     elements=["H", "C", "N", "O"],
+        ...     cutoff=5.0,
+        ...     channels=16,
+        ...     radial_expansion_type="Bessel",
+        ... )
+
+    Specification in a YAML file:
+
+    .. code-block:: yaml
+
+        model:
+            graph_pes.models.MACE:
+                elements: [H, C, N, O]
+                cutoff: 5.0
+                radial_expansion_type: GaussianSmearing
+                mlp_layers: [16, 16]
+
+    """  # noqa: E501
+
     def __init__(
         self,
         elements: list[str],
+        # radial things
         cutoff: float = DEFAULT_CUTOFF,
+        n_radial: int = 8,
         radial_expansion_type: type[DistanceExpansion] | str = "Bessel",
         mlp_layers: list[int] = DEFAULT_MLP_LAYERS,
-        n_features: int = 16,
+        # node things
+        channels: int = 128,
         hidden_irreps: str | list[str] = "0e + 1o",
-        n_radial: int = 8,
-        l_max: int = 2,
-        layers: int = 1,
+        # message passing things
+        l_max: int = 3,
+        layers: int = 2,
         correlation: int = 3,
         aggregation: NeighbourAggregationMode = "constant_fixed",
         self_connection: bool = True,
@@ -445,7 +536,7 @@ class MACE(_BaseMACE):
         Z_dim = len(elements)
         hidden_irrep_s = parse_irreps(hidden_irreps)
         nodes = NodeDescription(
-            channels=n_features,
+            channels=channels,
             attributes=Z_dim,
             hidden_features=hidden_irrep_s,
         )
@@ -466,17 +557,49 @@ class MACE(_BaseMACE):
 
 
 class ZEmbeddingMACE(_BaseMACE):
+    """
+    A variant of MACE that uses a fixed-size (``z_embed_dim``) per-element
+    embedding of the atomic numbers to condition the ``TensorProduct`` update
+    in the residual connection of the message passing layers, as well as the
+    contractions in the message passing layers.
+
+    Please cite the following if you use this model in your research:
+
+    .. code-block:: bibtex
+
+        @misc{Batatia2022MACE,
+            title = {
+                MACE: Higher Order Equivariant Message Passing
+                Neural Networks for Fast and Accurate Force Fields
+            },
+            author = {
+                Batatia, Ilyes and Kov{\'a}cs, D{\'a}vid P{\'e}ter and
+                Simm, Gregor N. C. and Ortner, Christoph and Cs{\'a}nyi, G{\'a}bor
+            },
+            year = {2022},
+            doi = {10.48550/arXiv.2206.07697},
+        }
+
+    All paramters are identical to :class:`~graph_pes.models.MACE`, except for the following:
+
+    - ``elements`` is not required or used here
+    - ``z_embed_dim`` controls size of the per-element embedding
+    """  # noqa: E501
+
     def __init__(
         self,
-        cutoff: float = DEFAULT_CUTOFF,
         z_embed_dim: int = 4,
+        # radial things
+        cutoff: float = DEFAULT_CUTOFF,
+        n_radial: int = 8,
         radial_expansion_type: type[DistanceExpansion] | str = "Bessel",
         mlp_layers: list[int] = DEFAULT_MLP_LAYERS,
-        n_radial: int = 8,
-        n_features: int = 16,
+        # node things
+        channels: int = 128,
         hidden_irreps: str | list[str] = "0e + 1o",
-        l_max: int = 2,
-        layers: int = 1,
+        # message passing things
+        l_max: int = 3,
+        layers: int = 2,
         correlation: int = 3,
         aggregation: NeighbourAggregationMode = "constant_fixed",
         self_connection: bool = True,
@@ -484,7 +607,7 @@ class ZEmbeddingMACE(_BaseMACE):
         Z_embedding = PerElementEmbedding(z_embed_dim)
         hidden_irrep_s = parse_irreps(hidden_irreps)
         nodes = NodeDescription(
-            channels=n_features,
+            channels=channels,
             attributes=z_embed_dim,
             hidden_features=hidden_irrep_s,
         )
