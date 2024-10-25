@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Callable, Final, cast
 
 import torch
+import torch.fx
 from e3nn import o3
 from graph_pes.core import GraphPESModel
 from graph_pes.graphs import DEFAULT_CUTOFF, keys
@@ -23,9 +24,13 @@ from graph_pes.models.components.distances import (
     get_distance_expansion,
 )
 from graph_pes.models.components.scaling import LocalEnergiesScaler
-from graph_pes.models.e3nn.utils import (
+from graph_pes.models.e3nn.mace_utils import (
     Contraction,
     ContractionConfig,
+    UnflattenIrreps,
+    parse_irreps,
+)
+from graph_pes.models.e3nn.utils import (
     LinearReadOut,
     NonLinearReadOut,
     ReadOut,
@@ -63,8 +68,6 @@ class MACEInteraction(torch.nn.Module):
 
     Generates new node embeddings from the old node embeddings and the
     spherical harmonic expansion and mangitudes of the neighbour vectors.
-
-
     """
 
     def __init__(
@@ -151,45 +154,6 @@ class MACEInteraction(torch.nn.Module):
         return self.reshape(node_features)  # (N, channels, d')
 
 
-class UnflattenIrreps(torch.nn.Module):
-    """
-    Unflattens a tensor of irreps with uniform multiplicity,
-    e.g. (N, 16x0e + 16x1o) -> (N, 16, 1x0e + 1x1o)
-    """
-
-    def __init__(self, irreps: list[o3.Irrep], channels: int) -> None:
-        super().__init__()
-        self.channels = channels
-        self.irreps = irreps
-        self.dims = [ir.dim for ir in irreps]
-
-    def forward(self, tensor: torch.Tensor) -> torch.Tensor:
-        idx = 0
-        output = []
-
-        # iterate over the flat tensor, and pull out
-        # each channel x irrep
-        # e.g. (N, 16x0e + 16x1o) -> (N, 16, 1x0e + 1x1o)
-        for dim in self.dims:
-            field = tensor[:, idx : idx + self.channels * dim]
-            idx += self.channels * dim
-            field = field.reshape(-1, self.channels, dim)
-            output.append(field)
-
-        return torch.cat(output, dim=-1)
-
-    def __repr__(self) -> str:
-        _in = "(N, "
-        _in += "+".join([f"{self.channels}x{ir}" for ir in self.irreps])
-        _in += ")"
-
-        _out = f"(N, {self.channels}, "
-        _out += "+".join([f"1x{ir}" for ir in self.irreps])
-        _out += ")"
-
-        return f"{self.__class__.__name__}({_in} -> {_out})"
-
-
 @dataclass
 class NodeDescription:
     channels: int
@@ -261,19 +225,24 @@ class MACELayer(torch.nn.Module):
 
     def forward(
         self,
-        node_features: torch.Tensor,  # (N, irreps_in)
+        node_features: torch.Tensor,
         node_attributes: torch.Tensor,
         sph_harmonics: torch.Tensor,
         radial_basis: torch.Tensor,
         graph: AtomicGraph,
     ) -> torch.Tensor:
+        # A MACE layer operates on:
+        # - node features with multiplicity M, e.g. M=16: 16x0e + 16x1o
+        # - node attributes with multiplicity A e.g. A=5: 5x0e
+        # - spherical harmonics up to l_max, e.g. l_max=2: 1x0e + 1x1o + 1x2e
+
         # interact
         internal_node_features = self.interaction(
             node_features,
             sph_harmonics,
             radial_basis,
             graph,
-        )  # (N, irreps_mid)
+        )  # (N, M, irreps)
 
         # contract using the contractions directly
         contracted_features = torch.cat(
@@ -300,10 +269,6 @@ class MACELayer(torch.nn.Module):
 
 # @e3nn.util.jit.compile_mode("script")
 class _BaseMACE(GraphPESModel):
-    """
-    The MACE architecture.
-    """
-
     def __init__(
         self,
         # radial things
@@ -327,7 +292,7 @@ class _BaseMACE(GraphPESModel):
         )
 
         if o3.Irrep("0e") not in nodes.hidden_features:
-            raise ValueError("MACE requires a 0e hidden feature")
+            raise ValueError("MACE requires a `0e` hidden feature")
 
         # radial things
         sph_harmonics = cast(o3.Irreps, o3.Irreps.spherical_harmonics(l_max))
@@ -408,24 +373,6 @@ class _BaseMACE(GraphPESModel):
 
         # return scaled local energy predictions
         return {"local_energies": self.scaler(local_energies, graph)}
-
-
-def parse_irreps(irreps: str | list[str]) -> list[o3.Irrep]:
-    if isinstance(irreps, str):
-        try:
-            return [o3.Irrep(ir) for ir in irreps.split(" + ")]
-        except ValueError:
-            raise ValueError(
-                f"Unable to parse {irreps} as irreps. "
-                "Expected a string of the form '0e + 1o'"
-            ) from None
-    try:
-        return [o3.Irrep(ir) for ir in irreps]
-    except ValueError:
-        raise ValueError(
-            f"Unable to parse {irreps} as irreps. "
-            "Expected a list of strings of the form ['0e', '1o']"
-        ) from None
 
 
 DEFAULT_MLP_LAYERS: Final[list[int]] = [16, 16]
