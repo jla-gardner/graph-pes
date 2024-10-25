@@ -258,7 +258,8 @@ class UnflattenIrreps(torch.nn.Module):
 
         # iterate over the flat tensor, and pull out
         # each channel x irrep
-        # e.g. (N, 16x0e + 16x1o) -> (N, 16, 1x0e + 1x1o)
+        # e.g.   (N, 16x0e + 16x1o) -> (N, 16, 1x0e + 1x1o)
+        # equiv: (N,      16x(1+3)) -> (N, 16, 1+3)
         for dim in self.dims:
             field = tensor[:, idx : idx + self.channels * dim]
             idx += self.channels * dim

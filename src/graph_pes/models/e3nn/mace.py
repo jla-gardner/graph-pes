@@ -47,21 +47,7 @@ from graph_pes.nn import (
     UniformModuleList,
 )
 
-# consistent termninology used in this file:
-#
-#  MACE takes as input:
-# - channels (int)
-# - attributes (int)
-# - l_max (int)
-# - hidden_irreps (list[o3.Irrep])
-#
-# The MACE model:
-# embeds Z into a channels x 0e irrep feature
-# embeds r_ij into a 1x0e + 1x1o + ... + 1xl_max(oe) feature
-#
 
-
-# @e3nn.util.jit.compile_mode("script")
 class MACEInteraction(torch.nn.Module):
     """
     The MACE interaction block.
@@ -204,13 +190,13 @@ class MACELayer(torch.nn.Module):
         )
 
         if use_sc:
-            self.redisual_update = o3.FullyConnectedTensorProduct(
+            self.residual_update = o3.FullyConnectedTensorProduct(
                 irreps_in1=[(nodes.channels, ir) for ir in irreps_in],
                 irreps_in2=o3.Irreps(f"{nodes.attributes}x0e"),
                 irreps_out=nodes.hidden_irreps(),
             )
         else:
-            self.redisual_update = None
+            self.residual_update = None
 
         self.post_linear = o3.Linear(
             nodes.hidden_irreps(),
@@ -254,8 +240,8 @@ class MACELayer(torch.nn.Module):
         )  # (N, irreps_out)
 
         # residual update
-        if self.redisual_update is not None:
-            update = self.redisual_update(
+        if self.residual_update is not None:
+            update = self.residual_update(
                 node_features,
                 node_attributes,
             )  # (N, irreps_out)
@@ -267,7 +253,6 @@ class MACELayer(torch.nn.Module):
         return node_features
 
 
-# @e3nn.util.jit.compile_mode("script")
 class _BaseMACE(GraphPESModel):
     def __init__(
         self,
