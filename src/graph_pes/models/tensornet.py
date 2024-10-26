@@ -317,7 +317,7 @@ class Interaction(nn.Module):
             nn.Sequential(
                 ExponentialRBF(radial_features, cutoff),
                 MLP(
-                    layers=[channels, 2 * channels, 3 * channels],
+                    layers=[radial_features, 2 * channels, 3 * channels],
                     activation=nn.SiLU(),
                     activate_last=True,
                 ),

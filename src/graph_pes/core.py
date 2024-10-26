@@ -274,7 +274,7 @@ class GraphPESModel(nn.Module, ABC):
         # make sure we don't leave auxiliary predictions
         # e.g. local_energies if we only asked for energy
         #      or energy if we only asked for forces
-        predictions = {k: v for k, v in predictions.items() if k in properties}
+        predictions = {prop: predictions[prop] for prop in properties}
 
         # tidy up if in eval mode
         if not self.training:
