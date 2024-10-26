@@ -25,6 +25,7 @@ from .pairwise import (
     Morse,
     PairPotential,
     SmoothedPairPotential,
+    ZBLCoreRepulsion,
 )
 from .schnet import SchNet
 from .tensornet import TensorNet
@@ -44,6 +45,7 @@ __all__ = [
     "SchNet",
     "SmoothedPairPotential",
     "TensorNet",
+    "ZBLCoreRepulsion",
     "ZEmbeddingMACE",
     "ZEmbeddingNequIP",
 ]

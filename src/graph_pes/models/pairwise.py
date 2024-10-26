@@ -479,3 +479,89 @@ class LennardJonesMixture(PairPotential):
             max_width=60,
             stringify=False,
         )
+
+
+class ZBLCoreRepulsion(PairPotential):
+    r"""
+    The ZBL repulsive potential:
+
+    .. math::
+
+        V(r, Z_i, Z_j) = \frac{e^2}{4 \pi \epsilon_0} \cdot \frac{Z_i Z_j}{r} \cdot \phi(r / a)
+
+    where :math:`\phi(x)` is a dimensionless function given by:
+
+    .. math::
+
+        \phi(x) = 0.1818e^{-3.2x} + 0.5099e^{-0.9423x} + 0.2802e^{-0.4029x} + 0.02817e^{-0.2016x}
+
+    and :math:`a` is the screening length:
+
+    .. math::
+
+        a = \frac{\lambda_p \cdot a_0}{Z_i^{\lambda_e} + Z_j^{\lambda_e}}
+
+    where :math:`a_0` is the Bohr radius, :math:`\lambda_p = 0.8854` and
+    :math:`\lambda_e = 0.23`.
+
+    Parameters
+    ----------
+    cutoff : float, optional
+        The cutoff radius for the potential. Default is DEFAULT_CUTOFF.
+    trainable : bool, optional
+        If True, the pre-factor (:math:`\lambda_p`) and exponent
+        (:math:`\lambda_e`) of the screening length are trainable parameters.
+        Default is False.
+
+    Example
+    -------
+    .. code-block:: python
+
+        import matplotlib.pyplot as plt
+        from graph_pes.analysis import dimer_curve
+        from graph_pes.models import ZBL
+
+        dimer_curve(ZBL(), system="H2", rmin=0.1, rmax=3.5)
+        plt.xlim(0, 3.5)
+        plt.ylim(0.01, 100)
+        plt.yscale("log")
+
+    .. image:: zbl-dimer.svg
+        :align: center
+    """  # noqa: E501
+
+    def __init__(self, cutoff: float = DEFAULT_CUTOFF, trainable: bool = False):
+        super().__init__(cutoff=cutoff)
+
+        if trainable:
+            self.pre_factor = torch.nn.Parameter(torch.tensor(0.8854))
+            self.exponent = torch.nn.Parameter(torch.tensor(0.23))
+        else:
+            self.register_buffer("pre_factor", torch.tensor(0.8854))
+            self.register_buffer("exponent", torch.tensor(0.23))
+
+        ZBL_CONSTANTS = {
+            "coeff": [0.1818, 0.5099, 0.2802, 0.02817],
+            "exp": [-3.2, -0.9423, -0.4029, -0.2016],
+        }
+        self.register_buffer("ZBL_coeff", torch.tensor(ZBL_CONSTANTS["coeff"]))
+        self.register_buffer("ZBL_exp", torch.tensor(ZBL_CONSTANTS["exp"]))
+
+    def interaction(self, r: Tensor, Z_i: Tensor, Z_j: Tensor) -> Tensor:
+        BOHR_RADIUS = 0.529177249  # Å
+        COULOMB_CONSTANT = 14.3996  # eV Å
+
+        a = (
+            self.pre_factor
+            * BOHR_RADIUS
+            / (torch.pow(Z_i, self.exponent) + torch.pow(Z_j, self.exponent))
+        )
+        x = r / a
+        phi = (
+            self.ZBL_coeff[0] * torch.exp(self.ZBL_exp[0] * x)
+            + self.ZBL_coeff[1] * torch.exp(self.ZBL_exp[1] * x)
+            + self.ZBL_coeff[2] * torch.exp(self.ZBL_exp[2] * x)
+            + self.ZBL_coeff[3] * torch.exp(self.ZBL_exp[3] * x)
+        )
+
+        return COULOMB_CONSTANT * Z_i * Z_j * phi / r
