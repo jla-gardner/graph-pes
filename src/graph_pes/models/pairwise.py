@@ -483,7 +483,7 @@ class LennardJonesMixture(PairPotential):
 
 class ZBLCoreRepulsion(PairPotential):
     r"""
-    The ZBL repulsive potential:
+    The `ZBL <https://en.wikipedia.org/wiki/Stopping_power_(particle_radiation)#Repulsive_interatomic_potentials>`__ repulsive potential:
 
     .. math::
 
