@@ -48,6 +48,7 @@ class ModelTimer(pl.Callback):
                 on_epoch=stage == "valid",
                 on_step=stage == "train",
                 prog_bar=name == "its_per_s",
+                sync_dist=stage == "valid",
             )
 
     @override
