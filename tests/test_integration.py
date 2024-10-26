@@ -6,23 +6,13 @@ from graph_pes.data.io import to_atomic_graphs
 from graph_pes.graphs.operations import to_batch
 from graph_pes.training.manual import Loss, train_the_model
 
-# models = [
-#     LennardJones(),
-#     Morse(),
-#     SchNet(),
-#     PaiNN(),
-#     TensorNet(),
-#     ZEmbeddingNequIP(),
-# ]
 
-
-# @pytest.mark.parametrize(
-#     "model",
-#     models,
-#     ids=[model.__class__.__name__ for model in models],
-# )
 @helpers.parameterise_all_models(expected_elements=["Cu"])
 def test_integration(model: GraphPESModel):
+    if len(list(model.parameters())) == 0:
+        # nothing to train
+        return
+
     graphs = to_atomic_graphs(helpers.CU_TEST_STRUCTURES, cutoff=3)
 
     batch = to_batch(graphs)

@@ -21,5 +21,8 @@ Available Pair Potentials
 .. autoclass:: graph_pes.models.Morse
    :show-inheritance:
 
+.. autoclass:: graph_pes.models.ZBLCoreRepulsion
+   :show-inheritance:
+
 .. autoclass:: graph_pes.models.LennardJonesMixture
    :show-inheritance:
