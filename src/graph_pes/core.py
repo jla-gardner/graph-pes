@@ -271,6 +271,11 @@ class GraphPESModel(nn.Module, ABC):
         graph[keys._POSITIONS] = existing_positions
         graph[keys.CELL] = existing_cell
 
+        # make sure we don't leave auxiliary predictions
+        # e.g. local_energies if we only asked for energy
+        #      or energy if we only asked for forces
+        predictions = {k: v for k, v in predictions.items() if k in properties}
+
         # tidy up if in eval mode
         if not self.training:
             predictions = {k: v.detach() for k, v in predictions.items()}

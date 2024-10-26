@@ -305,12 +305,6 @@ class Interaction(nn.Module):
     ):
         super().__init__()
 
-        self.mlp = MLP(
-            layers=[channels, 2 * channels, 3 * channels],
-            activation=nn.SiLU(),
-            activate_last=True,
-        )
-
         # unfortunately, we need to be explicit to satisfy torchscript
         self.W_I_pre = TensorLinear(channels, channels)
         self.W_A_pre = TensorLinear(channels, channels)
@@ -322,7 +316,11 @@ class Interaction(nn.Module):
         self.distance_embedding = HaddamardProduct(
             nn.Sequential(
                 ExponentialRBF(radial_features, cutoff),
-                nn.Linear(radial_features, 3 * channels),
+                MLP(
+                    layers=[channels, 2 * channels, 3 * channels],
+                    activation=nn.SiLU(),
+                    activate_last=True,
+                ),
             ),
             CosineEnvelope(cutoff),
             left_aligned=True,
@@ -337,7 +335,7 @@ class Interaction(nn.Module):
         Y = self.W_I_pre(I) + self.W_A_pre(A) + self.W_S_pre(S)  # (N, C, 3, 3)
 
         # get coefficients from neighbour distances
-        c = self.distance_embedding(neighbour_distances(graph))  # (E, 3C, 1, 1)
+        c = self.distance_embedding(neighbour_distances(graph))  # (E, 3C)
         f_I, f_A, f_S = torch.chunk(c[..., None, None], 3, dim=1)
 
         # message passing
