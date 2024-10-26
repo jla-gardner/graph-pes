@@ -117,7 +117,7 @@ class LearnThePES(pl.LightningModule):
 
     def forward(self, graphs: AtomicGraphBatch) -> torch.Tensor:
         """Get the energy"""
-        return self.model(graphs)
+        return self.model.predict_energy(graphs)
 
     def _step(self, graph: LabelledBatch, prefix: Literal["train", "valid"]):
         """
@@ -134,6 +134,7 @@ class LearnThePES(pl.LightningModule):
                 prog_bar=prefix == "valid" and "loss" in name,
                 on_step=prefix == "train",
                 on_epoch=prefix == "valid",
+                sync_dist=prefix == "valid",
                 batch_size=number_of_structures(graph),
             )
 

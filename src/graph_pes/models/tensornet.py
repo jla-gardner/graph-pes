@@ -513,6 +513,6 @@ class TensorLinear(nn.Module):
     def __repr__(self):
         _in, _out = self.linear.in_features, self.linear.out_features
         return (
-            f"{self.__class__.__name__}( "
-            f"f(N, {_in}, 3, 3) --> (N, {_out}, 3, 3) )"
+            f"{self.__class__.__name__}("
+            f"[N, {_in}, 3, 3] --> [N, {_out}, 3, 3])"
         )
