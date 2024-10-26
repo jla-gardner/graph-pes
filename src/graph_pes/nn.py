@@ -439,6 +439,9 @@ class PerElementEmbedding(torch.nn.Module):
     def forward(self, Z: Tensor) -> Tensor:
         return self._embeddings[Z]
 
+    def dim(self) -> int:
+        return self._embeddings.shape[1]
+
     def __repr__(self) -> str:
         Zs = sorted(self._embeddings._accessed_Zs)
         return uniform_repr(
