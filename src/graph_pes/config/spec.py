@@ -201,7 +201,7 @@ class GeneralConfig:
 class Config:
     """
     A schema for a configuration file to train a
-    :class:`~graph_pes.core.GraphPESModel`.
+    :class:`~graph_pes.GraphPESModel`.
 
     While parsing your configuration file, we will attempt to import
     any class, object or function that you specify via a fully qualified
@@ -265,10 +265,10 @@ class Config:
     
     Point to one of the following:
 
-    - a callable that returns a :class:`~graph_pes.data.dataset.FittingData` 
+    - a callable that returns a :class:`~graph_pes.data.FittingData` 
       instance
     - a dictionary mapping ``"train"`` and ``"valid"`` keys to callables that
-      return :class:`~graph_pes.data.dataset.LabelledGraphDataset` instances
+      return :class:`~graph_pes.data.LabelledGraphDataset` instances
 
     Examples
     --------

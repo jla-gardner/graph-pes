@@ -42,7 +42,7 @@ class CFConv(torch.nn.Module):
     .. code::
 
         from graph_pes.models.components.distances import GaussianSmearing
-        from graph_pes.nn import MLP
+        from graph_pes.utils.nn import MLP
         from torch import nn
 
         filter_generator = nn.Sequential(

@@ -13,7 +13,7 @@ class LocalEnergiesScaler(nn.Module):
     """
     Scale the local energies by a per-element scaling factor.
 
-    See :func:`graph_pes.graphs.operations.guess_per_element_mean_and_var` for
+    See :func:`graph_pes.atomic_graph.guess_per_element_mean_and_var` for
     how the scaling factors are estimated from the training data.
     """
 

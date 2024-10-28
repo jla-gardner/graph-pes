@@ -34,7 +34,7 @@ class SizedDataset(Protocol[T]):
 class GraphDataset(torch.utils.data.Dataset, ABC):
     """
     Abstract base class for datasets of
-    :class:`~graph_pes.graphs.AtomicGraph` instances.
+    :class:`~graph_pes.AtomicGraph` instances.
     """
 
     @abstractmethod
@@ -167,7 +167,7 @@ class ShuffledDataset(ReMappedDataset):
 
 class SequenceDataset(GraphDataset):
     """
-    A dataset that wraps a sequence of :class:`~graph_pes.graphs.AtomicGraph`
+    A dataset that wraps a sequence of :class:`~graph_pes.AtomicGraph`
     instances.
 
     Parameters

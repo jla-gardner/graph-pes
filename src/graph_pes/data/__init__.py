@@ -2,6 +2,8 @@ from .datasets import (
     ASEDataset,
     FittingData,
     GraphDataset,
+    SequenceDataset,
+    ShuffledDataset,
     file_dataset,
     load_atoms_dataset,
 )
@@ -14,4 +16,6 @@ __all__ = [
     "ASEDataset",
     "FittingData",
     "GraphDataLoader",
+    "ShuffledDataset",
+    "SequenceDataset",
 ]

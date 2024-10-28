@@ -5,7 +5,7 @@ Models
 ######
 
 
-.. autoclass:: graph_pes.core.GraphPESModel
+.. autoclass:: graph_pes.GraphPESModel
    :members:
    :show-inheritance:
 

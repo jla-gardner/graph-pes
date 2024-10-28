@@ -603,7 +603,7 @@ class NequIP(_BaseNequIP):
         leave the cutoff radius of the model.
     radial_features
         The number of features to expand the radial distances into. These
-        features are then passed through an :class:`~graph_pes.nn.MLP` to
+        features are then passed through an :class:`~graph_pes.utils.nn.MLP` to
         generate distance-conditioned weights for the message tensor product.
 
     Examples

@@ -18,7 +18,7 @@ from ..graph_pes_model import GraphPESModel
 Transform = Callable[[Tensor, AtomicGraph], Tensor]
 r"""
 Transforms map a property, :math:`x`, to a target property, :math:`y`,
-conditioned on an :class:`~graph_pes.graphs.AtomicGraph`, :math:`\mathcal{G}`:
+conditioned on an :class:`~graph_pes.AtomicGraph`, :math:`\mathcal{G}`:
 
 .. math::
 
@@ -113,7 +113,7 @@ def parity_plot(
 
     .. code-block:: python
 
-        from graph_pes.transform import DividePerAtom
+        from graph_pes.atomic_graph import DividePerAtom
         from graph_pes.util import Keys
 
         for name, data, colour in zip(
@@ -220,7 +220,7 @@ def dimer_curve(
 
     .. code-block:: python
 
-        from graph_pes.analysis import dimer_curve
+        from graph_pes.utils.analysis import dimer_curve
         from graph_pes.models import LennardJones
 
         dimer_curve(LennardJones(sigma=1.3, epsilon=0.5), system="OH", units="eV")

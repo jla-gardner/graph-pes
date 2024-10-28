@@ -27,10 +27,10 @@ from .utils.nn import PerElementParameter
 class GraphPESModel(nn.Module, ABC):
     r"""
     All models implemented in ``graph-pes`` are subclasses of
-    :class:`~graph_pes.core.GraphPESModel`.
+    :class:`~graph_pes.GraphPESModel`.
 
     These models make predictions (via the
-    :meth:`~graph_pes.core.GraphPESModel.predict` method) of the
+    :meth:`~graph_pes.GraphPESModel.predict` method) of the
     following properties:
 
     .. list-table::
@@ -52,17 +52,17 @@ class GraphPESModel(nn.Module, ABC):
               - :code:`(3, 3)`
               - :code:`(M, 3, 3)`
 
-    assuming an input of an :class:`~graph_pes.graphs.AtomicGraph` with
-    :code:`N` atoms, or an :class:`~graph_pes.graphs.AtomicGraphBatch` composed
+    assuming an input of an :class:`~graph_pes.AtomicGraph` with
+    :code:`N` atoms, or an :class:`~graph_pes.AtomicGraphBatch` composed
     of :code:`M` graphs, each with :code:`N` atoms:
 
     Implementations must override the
-    :meth:`~graph_pes.core.GraphPESModel.forward` method to generate a
+    :meth:`~graph_pes.GraphPESModel.forward` method to generate a
     dictionary of predictions for the given graph. As a minimum, this must
     include a per-atom energy contribution (``"local_energies"``).
 
     For any other properties not returned by the forward pass,
-    the :meth:`~graph_pes.core.GraphPESModel.predict` method will automatically
+    the :meth:`~graph_pes.GraphPESModel.predict` method will automatically
     infer these properties from the local energies as required:
 
     * ``"energy"``: as the sum of the local energies per structure.
@@ -118,7 +118,7 @@ class GraphPESModel(nn.Module, ABC):
         dict[keys.LabelKey, torch.Tensor]
             A dictionary mapping each implemented property to a tensor of
             predictions (see above for the expected shapes). Use
-            :func:`~graph_pes.graphs.operations.is_batch` to check if the
+            :func:`~graph_pes.atomic_graph.is_batch` to check if the
             graph is batched in the forward pass.
         """
         ...
@@ -134,7 +134,7 @@ class GraphPESModel(nn.Module, ABC):
 
         This method returns a dictionary mapping each requested
         ``property`` to a tensor of predictions, relying on the model's
-        :meth:`~graph_pes.core.GraphPESModel.forward` implementation
+        :meth:`~graph_pes.GraphPESModel.forward` implementation
         together with :func:`torch.autograd.grad` to automatically infer any
         missing properties.
 
@@ -328,7 +328,7 @@ class GraphPESModel(nn.Module, ABC):
            :class:`~graph_pes.models.components.scaling.LocalEnergiesScaler` for
            an example of a component-specific pre-fit method).
         2. registers all the unique atomic numbers in the training data with
-           all of the model's :class:`~graph_pes.nn.PerElementParameter`
+           all of the model's :class:`~graph_pes.utils.nn.PerElementParameter`
            instances to ensure correct parameter counting.
 
         If the model has already been pre-fitted, subsequent calls to

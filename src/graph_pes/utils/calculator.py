@@ -87,7 +87,7 @@ class GraphPESCalculator(Calculator):
         Parameters
         ----------
         structures
-            A list of :class:`~graph_pes.graphs.AtomicGraph` or
+            A list of :class:`~graph_pes.AtomicGraph` or
             :class:`ase.Atoms` objects.
         properties
             The properties to predict.

@@ -33,7 +33,7 @@ class UniformModuleDict(torch.nn.ModuleDict, Generic[V]):
 
     Examples
     --------
-    >>> from graph_pes.nn import UniformModuleDict
+    >>> from graph_pes.utils.nn import UniformModuleDict
     >>> from torch.nn import Linear
     >>> linear_dict = UniformModuleDict(a=Linear(10, 5), b=Linear(5, 1))
     """
@@ -64,7 +64,7 @@ class UniformModuleList(torch.nn.ModuleList, Sequence[V]):
 
     Examples
     --------
-    >>> from graph_pes.nn import UniformModuleList
+    >>> from graph_pes.utils.nn import UniformModuleList
     >>> from torch.nn import Linear
     >>> linear_list = UniformModuleList(Linear(10, 5), Linear(5, 1))
     """
@@ -113,7 +113,7 @@ class MLP(torch.nn.Module):
     Examples
     --------
     >>> import torch
-    >>> from graph_pes.nn import MLP
+    >>> from graph_pes.utils.nn import MLP
     >>> model = MLP([10, 5, 1])
     >>> model
     MLP(10 → 5 → 1, activation=CELU())

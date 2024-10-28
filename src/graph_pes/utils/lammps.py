@@ -95,7 +95,7 @@ class LAMMPSModel(torch.nn.Module):
 
 def deploy_model(model: GraphPESModel, path: str | pathlib.Path):
     """
-    Deploy a :class:`~graph_pes.core.GraphPESModel` for use with LAMMPS.
+    Deploy a :class:`~graph_pes.GraphPESModel` for use with LAMMPS.
 
     Use the resulting model with LAMMPS according to:
 

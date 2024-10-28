@@ -17,8 +17,8 @@
     :hidden:
     :caption: API Reference
 
+    data/root
     models/root
-    data
     fitting/root
     building-blocks/root
 
@@ -65,9 +65,9 @@ A 3-in-1 toolset:
 
    This includes:
 
-   - a data pipeline for turning :class:`ase.Atoms` objects into :class:`~graph_pes.graphs.AtomicGraph` objects
-   - a set of operations for common tasks on :class:`~graph_pes.graphs.AtomicGraph` objects, including edge-trimming, neighbour indexing and summations, and batching
-   - a base class for all model of the potential energy surface (:class:`~graph_pes.core.GraphPESModel`) that automatically infers force and stress predictions if these are not provided by the model's implementation
+   - a data pipeline for turning :class:`ase.Atoms` objects into :class:`~graph_pes.AtomicGraph` objects
+   - a set of operations for common tasks on :class:`~graph_pes.AtomicGraph` objects, including edge-trimming, neighbour indexing and summations, and batching
+   - a base class for all model of the potential energy surface (:class:`~graph_pes.GraphPESModel`) that automatically infers force and stress predictions if these are not provided by the model's implementation
    - reference implementations of popular models, including :class:`~graph_pes.models.NequIP`, :class:`~graph_pes.models.PaiNN`, :class:`~graph_pes.models.MACE` and :class:`~graph_pes.models.TensorNet`
    - all written in vanilla ``PyTorch``, and 100% compatible with ``TorchScript`` compilation for use within LAMMPS
 
@@ -79,7 +79,7 @@ A 3-in-1 toolset:
 
 .. dropdown:: ``pair_style graph_pes``: a LAMMPS pair style for GPU-accelerated MD
 
-   - use this to drive GPU-accelerated molecular dynamics (MD) simulations with any model that inherits from :class:`~graph_pes.core.GraphPESModel` (i.e. both ones we've implemented and also your own)
+   - use this to drive GPU-accelerated molecular dynamics (MD) simulations with any model that inherits from :class:`~graph_pes.GraphPESModel` (i.e. both ones we've implemented and also your own)
    - we've included helper scripts to automate the `LAMMPS <https://docs.lammps.org/Manual.html>`__ build process for you
 
 Quick-start
@@ -144,18 +144,18 @@ Open any of these notebooks to get started. Install ``graph-pes`` to follow alon
 Installation
 ============
 
+We recommend installing ``graph-pes`` in a new environment, e.g. using `conda <https://conda.io/projects/conda/en/latest/user-guide/getting-started.html>`_:
+
+.. code-block:: bash
+
+    conda create -n graph-pes python=3.10 -y
+    conda activate graph-pes
+
 Install ``graph-pes`` from PyPI using pip (installs all dependencies):
 
 .. code-block:: bash
 
     pip install graph-pes
 
-.. tip::
 
-    We recommend installing ``graph-pes`` in a new environment, e.g. using `conda <https://conda.io/projects/conda/en/latest/user-guide/getting-started.html>`_:
-
-    .. code-block:: bash
-
-        conda create -n graph-pes python=3.10 -y
-        conda activate graph-pes
 

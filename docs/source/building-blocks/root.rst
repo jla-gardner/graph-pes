@@ -10,4 +10,3 @@ Building blocks
     scaling
     nn
     e3nn
-    transforms

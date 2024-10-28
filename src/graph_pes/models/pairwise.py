@@ -180,7 +180,7 @@ class LennardJones(PairPotential):
     -------
     .. code-block:: python
 
-        from graph_pes.analysis import dimer_curve
+        from graph_pes.utils.analysis import dimer_curve
         from graph_pes.models import LennardJones
 
         dimer_curve(LennardJones(), system="H2", rmax=3.5)
@@ -308,7 +308,7 @@ class Morse(PairPotential):
     -------
     .. code-block:: python
 
-        from graph_pes.analysis import dimer_curve
+        from graph_pes.utils.analysis import dimer_curve
         from graph_pes.models import Morse
 
         dimer_curve(Morse(), system="H2", rmax=3.5)
@@ -516,7 +516,7 @@ class ZBLCoreRepulsion(PairPotential):
     .. code-block:: python
 
         import matplotlib.pyplot as plt
-        from graph_pes.analysis import dimer_curve
+        from graph_pes.utils.analysis import dimer_curve
         from graph_pes.models import ZBL
 
         dimer_curve(ZBL(), system="H2", rmin=0.1, rmax=3.5)
