@@ -10,17 +10,24 @@ see :meth:`~graph_pes.AtomicGraph.from_ase`.
 Definition
 ----------
 
-.. class:: graph_pes.atomic_graph.PropertyKey
-    Type alias for ``Literal["energy", "forces", "stress", "local_energies"]``.
-
 .. autoclass:: graph_pes.AtomicGraph()
+    :show-inheritance:
     :members:
 
 
 Batching
 --------
 
-(Explain how to batch graphs)
+A batch of :class:`~graph_pes.AtomicGraph` instances is itself represented by a single
+:class:`~graph_pes.AtomicGraph` instance, containing multiple disjoint subgraphs.
+
+:class:`~graph_pes.AtomicGraph` batches are created using :func:`~graph_pes.atomic_graph.to_batch`, and have
+the following special members of ``graph.other``:
+
+* ``graph.other["batch"]`` : a 0-indexed ``(N,)``-shaped integer :class:`torch.Tensor` indicating which sub-graph each atom belongs to.
+
+* ``graph.other["ptr"]`` : a 0-indexed ``(S + 1,)``-shaped integer :class:`torch.Tensor` indicating the
+  offset of the first atom of each sub-graph in the batch.
 
 .. autofunction:: graph_pes.atomic_graph.to_batch
 .. autofunction:: graph_pes.atomic_graph.is_batch
@@ -29,7 +36,7 @@ Derived Properties
 ------------------
 
 We define a number of derived properties of atomic graphs. These
-also work for both isolated and batched :class:`~graph_pes.AtomicGraph` instances.
+work for both isolated and batched :class:`~graph_pes.AtomicGraph` instances.
 
 .. autofunction:: graph_pes.atomic_graph.number_of_atoms
 .. autofunction:: graph_pes.atomic_graph.number_of_edges
@@ -38,6 +45,8 @@ also work for both isolated and batched :class:`~graph_pes.AtomicGraph` instance
 .. autofunction:: graph_pes.atomic_graph.neighbour_distances
 .. autofunction:: graph_pes.atomic_graph.number_of_neighbours
 .. autofunction:: graph_pes.atomic_graph.available_properties
+.. autofunction:: graph_pes.atomic_graph.number_of_structures
+.. autofunction:: graph_pes.atomic_graph.structure_sizes
 
 
 Graph Operations
@@ -46,7 +55,9 @@ Graph Operations
 We define a number of operations that act on :class:`torch.Tensor` instances conditioned on the graph structure.
 All of these are fully compatible with batched :class:`~graph_pes.AtomicGraph` instances, and with ``TorchScript`` compilation.
 
-.. autofunction:: graph_pes.atomic_graph.trim_edges
-.. autofunction:: graph_pes.atomic_graph.sum_over_neighbours
-.. autofunction:: graph_pes.atomic_graph.index_over_neighbours
 .. autofunction:: graph_pes.atomic_graph.is_local_property
+.. autofunction:: graph_pes.atomic_graph.index_over_neighbours
+.. autofunction:: graph_pes.atomic_graph.sum_over_neighbours
+.. autofunction:: graph_pes.atomic_graph.sum_per_structure
+.. autofunction:: graph_pes.atomic_graph.divide_per_atom
+.. autofunction:: graph_pes.atomic_graph.trim_edges

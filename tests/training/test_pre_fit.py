@@ -45,7 +45,7 @@ def _create_batch(
         for Z in Zs:
             total_E += rng.normal(mu[Z], sigma[Z])
         graphs.append(
-            AtomicGraph.create(
+            AtomicGraph.create_with_defaults(
                 Z=torch.LongTensor(Zs),
                 R=torch.randn(structure_size, 3),
                 properties={"energy": torch.tensor(total_E)},

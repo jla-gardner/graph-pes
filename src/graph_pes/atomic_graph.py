@@ -46,61 +46,106 @@ if not TYPE_CHECKING and not is_being_documented():
 
 class AtomicGraph(NamedTuple):
     # special members of other: cutoff, batch, ptr
+    r"""
+    An :class:`AtomicGraph` represents an atomic structure.
+    Each node corresponds to an atom, and each directed edge links a central
+    atom to a "bonded" neighbour.
+
+    We implement such graphs as (immutable) :class:`~typing.NamedTuple`\ s.
+    This allows for easy serialisation and compatibility with PyTorch,
+    TorchScript and other libraries. These objects, and all functions that
+    operate on them, are compatible with both isolated and periodic structures.
+
+    Batches of multiple structures are represented by a single
+    :class:`AtomicGraph` object containing multiple disjoint subgraphs. See
+    :func:`~graph_pes.atomic_graph.to_batch` for more information.
+
+    Properties
+    ++++++++++
+
+    Below we assume the graph contains ``N`` atoms, ``E`` edges (and ``S``
+    structures if the graph is batched):
+    """
 
     Z: torch.Tensor
+    """
+    The atomic numbers of the atoms in the graph, of shape ``(N,)``.
+    """
+
     R: torch.Tensor
+    """
+    The cartesian positions of the atoms in the graph, of shape ``(N, 3)``.
+    """
+
     cell: torch.Tensor
+    """
+    The unit cell vectors, of shape ``(3, 3)`` for a single structure, or
+    ``(S, 3, 3)`` for a batched graph. If the structure is non-periodic,
+    this will be all zeros.
+    """
 
     neighbour_list: torch.Tensor
+    """
+    A neighbour list, of shape ``(2, E)``, where 
+    ``i, j = graph.neighbour_list[:, k]`` is the ``k``'th directed edge
+    in the graph, linking atom ``i`` to atom ``j``.
+    """
+
     neighbour_cell_offsets: torch.Tensor
+    """
+    The offsets of the neighbours of each atom in units of the unit cell
+    vectors, of shape ``(E, 3)``, such that:
+
+    .. code-block:: python
+
+        # k-th edge
+        i, j = graph.neighbour_list[:, k]
+        kth_displacement_vector = (
+            graph.R[j] 
+            + graph.neighbour_cell_offsets[k] @ graph.cell
+            - graph.R[i]
+        )
+
+    In the case of an isolated, non-periodic structure, these will be all zeros.
+    """
 
     properties: Dict[PropertyKey, torch.Tensor]
+    """
+    A dictionary containing potential energy surface (PES) related properties
+    of the graph.
+
+    .. list-table::
+        :header-rows: 1
+
+        * - Key
+          - Shape
+          - Description
+        * - :code:`"local_energies"`
+          - :code:`(N,)`
+          - contribution to the total energy from each atom
+        * - :code:`"energy"`
+          - ``()`` 
+          
+            (``(S,)`` if batched)
+          - total energy of the structure
+        * - :code:`"forces"`
+          - :code:`(N, 3)`
+          - force on each atom
+        * - :code:`"stress"`
+          - ``(3, 3)`` 
+          
+            (``(S, 3, 3)`` if batched)
+          - stress tensor (see :doc:`../theory`)
+    """
+
     other: Dict[str, torch.Tensor]  # noqa: UP006 <- torchscript issue
-
-    def to(self, device: Union[torch.device, str]) -> "AtomicGraph":
-        properties: dict[PropertyKey, torch.Tensor] = {
-            k: v.to(device) for k, v in self.properties.items()
-        }
-        return AtomicGraph(
-            Z=self.Z.to(device),
-            R=self.R.to(device),
-            cell=self.cell.to(device),
-            neighbour_list=self.neighbour_list.to(device),
-            neighbour_cell_offsets=self.neighbour_cell_offsets.to(device),
-            properties=properties,
-            other={k: v.to(device) for k, v in self.other.items()},
-        )
-
-    @classmethod
-    def create(
-        cls,
-        Z: torch.Tensor,
-        R: torch.Tensor,
-        cell: Union[torch.Tensor, None] = None,
-        neighbour_list: Union[torch.Tensor, None] = None,
-        neighbour_cell_offsets: Union[torch.Tensor, None] = None,
-        properties: Union[Dict[PropertyKey, torch.Tensor], None] = None,
-        other: Union[Dict[str, torch.Tensor], None] = None,
-    ) -> "AtomicGraph":
-        if cell is None:
-            cell = torch.zeros(3, 3)
-        if neighbour_list is None:
-            neighbour_list = torch.zeros(2, 0)
-        if neighbour_cell_offsets is None:
-            neighbour_cell_offsets = torch.zeros(0, 3)
-        if properties is None:
-            properties = {}
-        if other is None:
-            other = {}
-        return cls(
-            Z=Z,
-            R=R,
-            cell=cell,
-            neighbour_list=neighbour_list,
-            neighbour_cell_offsets=neighbour_cell_offsets,
-            properties=properties,
-            other=other,
-        )
+    """
+    A dictionary containing any other additional information about the graph.
+    Feel free to populate this as you wish. Internally, we use this to store
+    the cutoff distance if the neighbour list was created using a uniform
+    cutoff, as well as the ``"batch"`` and ``"ptr"`` arrays used to indicate
+    that this graph represents a batch of sub-graphs.
+    """
 
     @classmethod
     def from_ase(
@@ -111,19 +156,19 @@ class AtomicGraph(NamedTuple):
         others_to_include: Union[Sequence[str], None] = None,
     ) -> "AtomicGraph":
         r"""
-        Convert an ASE Atoms object to an AtomicGraph.
+        Convert an :class:`ase.Atoms` object to an :class:`AtomicGraph`.
 
         Parameters
         ----------
         structure
-            The ASE Atoms object.
+            The :class:`ase.Atoms` object to convert.
         cutoff
             The cutoff distance for neighbour finding.
         property_mapping
             An optional mapping of the form ``{key_on_structure:
             key_for_graph}`` defining how relevant properties are labelled on
-            the ASE Atoms object. If not provided, this function will extract
-            all of ``"energy"``, ``"forces"``, or ``"stress"`` from the
+            the :class:`ase.Atoms` object. If not provided, this function will
+            extract all of ``"energy"``, ``"forces"``, or ``"stress"`` from the
             ``.info`` and ``.arrays`` dicts if they are present.
         others_to_include
             An optional list of other ``.info``/``.arrays`` keys to include in
@@ -137,6 +182,7 @@ class AtomicGraph(NamedTuple):
 
             >>> from ase.build import molecule
             >>> from graph_pes import AtomicGraph
+
             >>> # create a a structure with some extra info
             >>> atoms = molecule("H2O")
             >>> atoms.info["DFT_energy"] = -10.0
@@ -207,7 +253,7 @@ class AtomicGraph(NamedTuple):
         if missing:
             raise ValueError(f"Unable to find properties: {missing}")
 
-        return cls.create(
+        return cls.create_with_defaults(
             Z=Z,
             R=R,
             cell=cell,
@@ -215,6 +261,74 @@ class AtomicGraph(NamedTuple):
             neighbour_cell_offsets=neighbour_cell_offsets,
             properties=properties,
             other=other,
+        )
+
+    @classmethod
+    def create_with_defaults(
+        cls,
+        Z: torch.Tensor,
+        R: torch.Tensor,
+        cell: Union[torch.Tensor, None] = None,
+        neighbour_list: Union[torch.Tensor, None] = None,
+        neighbour_cell_offsets: Union[torch.Tensor, None] = None,
+        properties: Union[Dict[PropertyKey, torch.Tensor], None] = None,
+        other: Union[Dict[str, torch.Tensor], None] = None,
+    ) -> "AtomicGraph":
+        """
+        Create an :class:`AtomicGraph`, populating missing values with defaults.
+
+        Parameters
+        ----------
+        Z
+            The atomic numbers.
+        R
+            The cartesian positions.
+        cell
+            The unit cell. Defaults to ``torch.zeros(3, 3)``.
+        neighbour_list
+            The neighbour list. Defaults to ``torch.zeros(2, 0)``.
+        neighbour_cell_offsets
+            The neighbour cell offsets. Defaults to ``torch.zeros(0, 3)``.
+        properties
+            The properties. Defaults to ``{}``.
+        other
+            The other information. Defaults to ``{}``.
+        """
+
+        if cell is None:
+            cell = torch.zeros(3, 3)
+        if neighbour_list is None:
+            neighbour_list = torch.zeros(2, 0)
+        if neighbour_cell_offsets is None:
+            neighbour_cell_offsets = torch.zeros(0, 3)
+        if properties is None:
+            properties = {}
+        if other is None:
+            other = {}
+        return cls(
+            Z=Z,
+            R=R,
+            cell=cell,
+            neighbour_list=neighbour_list,
+            neighbour_cell_offsets=neighbour_cell_offsets,
+            properties=properties,
+            other=other,
+        )
+
+    def to(self, device: Union[torch.device, str]) -> "AtomicGraph":
+        """Move this graph to the specified device."""
+
+        properties: dict[PropertyKey, torch.Tensor] = {
+            k: v.to(device) for k, v in self.properties.items()
+        }
+        return AtomicGraph(
+            Z=self.Z.to(device),
+            R=self.R.to(device),
+            cell=self.cell.to(device),
+            neighbour_list=self.neighbour_list.to(device),
+            neighbour_cell_offsets=self.neighbour_cell_offsets.to(device),
+            properties=properties,
+            other={k: v.to(device) for k, v in self.other.items()},
         )
 
     def __repr__(self):
@@ -253,10 +367,42 @@ def to_batch(
     """
     Collate a sequence of atomic graphs into a single batch object.
 
+    The ``Z``, ``R``, ``neighbour_list``, and ``neighbour_cell_offsets``
+    properties are concatenated along the first axis, while the ``cell``
+    property is stacked along a new batch dimension.
+
+    Values in the ``"other"`` dictionary are concatenated along the first axis
+    if they appear to be a per-atoms property (i.e. their first dimension
+    matches the number of atoms in the structure). Otherwise, they are stacked
+    along a new batch dimension.
+
     Parameters
     ----------
     graphs
         The graphs to collate.
+
+    Examples
+    --------
+
+    A basic example:
+
+    >>> from ase.build import molecule
+    >>> from graph_pes import AtomicGraph, to_batch
+    >>> graphs = [
+    ...     AtomicGraph.from_ase(molecule("H2O")),
+    ...     AtomicGraph.from_ase(molecule("CH4")),
+    ... ]
+    >>> batch = to_batch(graphs)
+    >>> batch.other["batch"]  # H20 has 3 atoms, CH4 has 5
+    tensor([0, 0, 0, 1, 1, 1, 1, 1])
+    >>> batch.other["ptr"]  # offset of first atom of each graph
+    tensor([0, 3, 8])
+    >>> batch.Z.shape
+    torch.Size([8])
+    >>> batch.R.shape
+    torch.Size([8, 3])
+    >>> batch.cell.shape
+    torch.Size([2, 3, 3])
     """
     if any(is_batch(g) for g in graphs):
         raise ValueError("Cannot recursively batch graphs")
@@ -267,6 +413,12 @@ def to_batch(
     neighbour_offsets = torch.cat([g.neighbour_cell_offsets for g in graphs])
 
     # stack cells along a new batch dimension
+    if not all_equal([has_cell(g) for g in graphs]):
+        warnings.warn(
+            "Attempting to batch a colleciton of graphs where only some "
+            "have a defined unit cell. This may lead to unexpected results.",
+            stacklevel=2,
+        )
     cells = torch.stack([g.cell for g in graphs])
 
     # standard way to caculaute the batch and ptr properties
@@ -495,8 +647,8 @@ def is_local_property(x: torch.Tensor, graph: AtomicGraph) -> bool:
 
 def trim_edges(graph: AtomicGraph, cutoff: float) -> AtomicGraph:
     """
-    Remove edges from the graph where the distance between the atoms
-    is greater than the ``cutoff``.
+    Return a new graph with edges trimmed to be no longer than the ``cutoff``.
+    Leaves the original graph unchanged.
 
     Parameters
     ----------
@@ -674,11 +826,12 @@ def index_over_neighbours(x: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:
 
 
 def divide_per_atom(x: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:
-    """
+    r"""
     Divide a per-structure property, :math:`X`, by the number of atoms in each
     structure to get a per-atom property, :math:`x`:
 
     .. math::
+
         x_i = \frac{X_k}{N_k}
 
     where:
