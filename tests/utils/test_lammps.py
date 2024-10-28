@@ -1,9 +1,8 @@
 import pytest
 import torch
 from ase.build import molecule
-from graph_pes.atomic_graph import keys
-from graph_pes.data.io import to_atomic_graph
-from graph_pes.graphs.graph_typing import AtomicGraph
+from graph_pes import AtomicGraph
+from graph_pes.atomic_graph import PropertyKey
 from graph_pes.models import LennardJones
 from graph_pes.utils.lammps import LAMMPSModel
 
@@ -20,11 +19,11 @@ def test_lammps_model(compute_virial: bool):
     if compute_virial:
         # ensure the structure has a cell
         structure.center(vacuum=5.0)
-    graph = to_atomic_graph(structure, cutoff=CUTOFF)
+    graph = AtomicGraph.from_ase(structure, cutoff=CUTOFF)
 
     # create a normal model, and get normal predictions
     model = LennardJones(cutoff=CUTOFF)
-    props: list[keys.LabelKey] = ["energy", "forces"]
+    props: list[PropertyKey] = ["energy", "forces"]
     if compute_virial:
         props.append("stress")
     outputs = model.predict(graph, properties=props)
@@ -34,11 +33,11 @@ def test_lammps_model(compute_virial: bool):
 
     assert lammps_model.get_cutoff() == torch.tensor(CUTOFF)
 
-    lammps_graph: AtomicGraph = {
+    lammps_graph: dict[str, torch.Tensor] = {
         **graph,
         "compute_virial": torch.tensor(compute_virial),
         "debug": torch.tensor(False),
-    }  # type: ignore
+    }
     lammps_outputs = lammps_model(lammps_graph)
 
     # check outputs
@@ -59,12 +58,12 @@ def test_debug_logging(capsys):
     # generate a structure
     structure = molecule("CH3CH2OH")
     structure.center(vacuum=5.0)
-    graph = to_atomic_graph(structure, cutoff=CUTOFF)
+    graph = AtomicGraph.from_ase(structure, cutoff=CUTOFF)
 
     # create a LAMMPS model, and get LAMMPS predictions
     lammps_model = LAMMPSModel(LennardJones())
 
-    lammps_graph: AtomicGraph = {
+    lammps_graph: dict[str, torch.Tensor] = {
         **graph,
         "compute_virial": torch.tensor(True),
         "debug": torch.tensor(True),

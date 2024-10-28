@@ -1,10 +1,10 @@
-import helpers
 import numpy as np
 import pytest
 import torch
 from ase.build import molecule
-from graph_pes.data.io import to_atomic_graph
-from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes import AtomicGraph, GraphPESModel
+
+from .. import helpers
 
 CUTOFF = 1.0
 
@@ -13,7 +13,7 @@ CUTOFF = 1.0
 def test_equivariance(model: GraphPESModel):
     methane = molecule("CH4")
     methane.center(vacuum=10)
-    og_graph = to_atomic_graph(methane, cutoff=CUTOFF)
+    og_graph = AtomicGraph.from_ase(methane, cutoff=CUTOFF)
     og_predictions = model.get_all_PES_predictions(og_graph)
 
     # get a (repeatably) random rotation matrix
@@ -23,7 +23,7 @@ def test_equivariance(model: GraphPESModel):
     new_methane = methane.copy()
     shift = new_methane.positions.mean(axis=0)
     new_methane.positions = (new_methane.positions - shift).dot(R) + shift
-    new_graph = to_atomic_graph(new_methane, cutoff=CUTOFF)
+    new_graph = AtomicGraph.from_ase(new_methane, cutoff=CUTOFF)
     new_predictions = model.get_all_PES_predictions(new_graph)
 
     # now checks:
@@ -55,8 +55,8 @@ def test_equivariance(model: GraphPESModel):
     # 4. molecule is symetric: forces should ~0 on the central C,
     #    and of equal magnitude on the H atoms
     force_norms = new_predictions["forces"].norm(dim=-1)
-    c_force = force_norms[new_graph["atomic_numbers"] == 6]
+    c_force = force_norms[new_graph.Z == 6]
     assert c_force.item() == pytest.approx(0.0)
 
-    h_forces = force_norms[new_graph["atomic_numbers"] == 1]
+    h_forces = force_norms[new_graph.Z == 1]
     assert h_forces.min().item() == pytest.approx(h_forces.max().item())

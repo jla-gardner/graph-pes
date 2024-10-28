@@ -47,23 +47,3 @@ def test_autogen(monkeypatch):
     config = extract_config_from_command_line()
     assert config.loss == "graph_pes.training.loss.PerAtomEnergyLoss()"
     assert config.data["graph_pes.data.load_atoms_dataset"]["cutoff"] == 3.5  # type: ignore
-
-
-# def test_autogen(monkeypatch):
-#     command = "graph-pes-train --autogen"
-#     sys.argv = command.split()
-
-#     args = parse_args()
-#     assert args.autogen
-#     # TODO: Mimic user input to test the auto-generation of config
-#     monkeypatch.setattr("builtins.input", mimic_autogen_inputs)
-#     config = extract_config_from_command_line()
-#     assert config.model == {"graph_pes.models.LennardJones": {}}
-#     assert config.data == {
-#         "graph_pes.data.load_atoms_dataset": {
-#             "id": "QM7",
-#             "cutoff": 3.0,
-#             "n_train": 480,
-#             "n_valid": 100,
-#         }
-#     }

@@ -3,18 +3,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pytest
-from graph_pes.atomic_graph import keys
-from graph_pes.graph_pes_model import GraphPESModel
-from graph_pes.graphs.graph_typing import AtomicGraph
-from graph_pes.graphs.operations import (
+from graph_pes import GraphPESModel
+from graph_pes.atomic_graph import (
+    AtomicGraph,
+    PropertyKey,
     neighbour_distances,
     number_of_edges,
     trim_edges,
 )
-from graph_pes.models import AdditionModel, SchNet
-from graph_pes.models.offsets import FixedOffset
-from helpers import graph_from_molecule
+from graph_pes.models import AdditionModel, FixedOffset, SchNet
 from torch import Tensor
+
+from ..helpers import graph_from_molecule
 
 
 @dataclass
@@ -32,7 +32,7 @@ class DummyModel(GraphPESModel):
         self.name = name
         self.info = info
 
-    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, Tensor]:
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, Tensor]:
         # insert statistics here: `GraphPESModel` should automatically
         # trim the input graph based on the model's cutoff
         self.info[self.name] = Stats(
@@ -40,7 +40,7 @@ class DummyModel(GraphPESModel):
             max_edge_length=neighbour_distances(graph).max().item(),
         )
         # dummy return value
-        return {"local_energies": graph["atomic_numbers"].float()}
+        return {"local_energies": graph.Z.float()}
 
 
 def test_auto_trimming():

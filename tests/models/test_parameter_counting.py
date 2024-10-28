@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import ase
 import torch
-from graph_pes.data.io import to_atomic_graph
-from graph_pes.graphs.graph_typing import AtomicGraph
+from graph_pes import AtomicGraph
 from graph_pes.models import (
     FixedOffset,
     LearnableOffset,
@@ -13,12 +12,13 @@ from graph_pes.models import (
 )
 from graph_pes.models.addition import AdditionModel
 from graph_pes.utils.nn import PerElementParameter
-from helpers import DoesNothingModel
+
+from ..helpers import DoesNothingModel
 
 graphs: list[AtomicGraph] = []
 for n in range(5):
-    g = to_atomic_graph(ase.Atoms(f"CH{n}"), cutoff=5.0)
-    g["energy"] = torch.tensor(n).float()
+    g = AtomicGraph.from_ase(ase.Atoms(f"CH{n}"), cutoff=5.0)
+    g.properties["energy"] = torch.tensor(n).float()
     graphs.append(g)
 
 
@@ -48,7 +48,7 @@ def test_scaling():
     # there should be no countable values in this parameter
     assert params[0].numel() == 0
 
-    model.pre_fit_all_components(graphs)  # type: ignore
+    model.pre_fit_all_components(graphs)
     # now the model has seen info about 2 elements:
     # there should be 2 countable elements on the model
     assert params[0].numel() == 2
@@ -72,7 +72,7 @@ def test_counting():
         == 3
     )
 
-    model.pre_fit_all_components(graphs)  # type: ignore
+    model.pre_fit_all_components(graphs)
 
     post_fit_params = sum(p.numel() for p in model.parameters())
 
@@ -91,7 +91,7 @@ def test_lj():
 
 def test_lj_mixture():
     lj_mixture = LennardJonesMixture()
-    lj_mixture.pre_fit_all_components(graphs)  # type: ignore
+    lj_mixture.pre_fit_all_components(graphs)
 
     expected_params = 0
     # sigma and epsilon for each element

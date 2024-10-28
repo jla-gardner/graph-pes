@@ -6,23 +6,21 @@ import numpy as np
 import pytest
 import torch
 from ase.build import molecule
-from graph_pes import GraphPESModel
-from graph_pes.data.io import to_atomic_graph
-from graph_pes.graphs.graph_typing import LabelledBatch, LabelledGraph
-from graph_pes.graphs.operations import (
-    guess_per_element_mean_and_var,
+from graph_pes import AtomicGraph, GraphPESModel
+from graph_pes.atomic_graph import (
     number_of_structures,
     to_batch,
 )
 from graph_pes.models import LennardJonesMixture
 from graph_pes.models.addition import AdditionModel
+from graph_pes.utils.shift_and_scale import guess_per_element_mean_and_var
 
 
 def _create_batch(
     mu: dict[int, float],
     sigma: dict[int, float],
     weights: list[float] | None = None,
-) -> LabelledBatch:
+) -> AtomicGraph:
     """
     Create a batch of structures with local energies distributed
     according to the given parameters.
@@ -38,7 +36,7 @@ def _create_batch(
     """
 
     N = 1_000
-    graphs: list[LabelledGraph] = []
+    graphs: list[AtomicGraph] = []
     rng = np.random.default_rng(0)
     for _ in range(N):
         structure_size = rng.integers(4, 10)
@@ -66,10 +64,10 @@ def test_guess_per_element_mean_and_var():
 
     # quickly check that this batch is as expected
     assert number_of_structures(batch) == 1_000
-    assert sorted(torch.unique(batch["atomic_numbers"]).tolist()) == [1, 2]
+    assert sorted(torch.unique(batch.Z).tolist()) == [1, 2]
 
     # calculate the per-element mean and variance
-    per_structure_quantity = batch["energy"]
+    per_structure_quantity = batch.properties["energy"]
     means, variances = guess_per_element_mean_and_var(
         per_structure_quantity, batch
     )
@@ -91,7 +89,7 @@ def test_clamping():
 
     # calculate the per-element mean and variance
     means, variances = guess_per_element_mean_and_var(
-        batch["energy"], batch, min_variance=0.01
+        batch.properties["energy"], batch, min_variance=0.01
     )
 
     # ensure no variance is less than the value we choose to clamp to
@@ -113,7 +111,7 @@ def test(tmp_path: Path, model: GraphPESModel):
     # show the model C and H
     methane = molecule("CH4")
     methane.info["energy"] = 1.0
-    model.pre_fit_all_components([to_atomic_graph(methane, cutoff=3.0)])
+    model.pre_fit_all_components([AtomicGraph.from_ase(methane, cutoff=3.0)])
     assert model.elements_seen == ["H", "C"]
 
     # check that these are persisted over save and load
@@ -126,6 +124,6 @@ def test(tmp_path: Path, model: GraphPESModel):
     acetaldehyde.info["energy"] = 2.0
     with pytest.warns(UserWarning, match="has already been pre-fitted"):
         model.pre_fit_all_components(
-            [to_atomic_graph(acetaldehyde, cutoff=3.0)]
+            [AtomicGraph.from_ase(acetaldehyde, cutoff=3.0)]
         )
     assert model.elements_seen == ["H", "C", "O"]

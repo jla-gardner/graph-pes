@@ -9,10 +9,8 @@ import pytorch_lightning
 import torch
 from ase import Atoms
 from ase.io import read
-from graph_pes.atomic_graph import keys
-from graph_pes.data.io import to_atomic_graph
+from graph_pes.atomic_graph import AtomicGraph, PropertyKey
 from graph_pes.graph_pes_model import GraphPESModel
-from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.models import (
     ALL_MODELS,
     MACE,
@@ -102,7 +100,7 @@ def parameterise_model_classes(
 
 
 def graph_from_molecule(molecule: str, cutoff: float = 3.7) -> AtomicGraph:
-    return to_atomic_graph(ase.build.molecule(molecule), cutoff)
+    return AtomicGraph.from_ase(ase.build.molecule(molecule), cutoff)
 
 
 CU_STRUCTURES_FILE = Path(__file__).parent / "test.xyz"
@@ -119,7 +117,7 @@ class DoesNothingModel(GraphPESModel):
         )
         self.scaler = LocalEnergiesScaler()
 
-    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
-        local_energies = torch.zeros(len(graph["atomic_numbers"]))
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
+        local_energies = torch.zeros(len(graph.Z))
         local_energies = self.scaler(local_energies, graph)
         return {"local_energies": local_energies}

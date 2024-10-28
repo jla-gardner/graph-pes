@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 import pytest
 import torch
@@ -7,6 +9,7 @@ from graph_pes.utils.misc import (
     differentiate,
     nested_merge,
     nested_merge_all,
+    random_split,
 )
 
 possible_tensors = [
@@ -28,7 +31,7 @@ def test_as_possible_tensor(obj, can_be_converted):
         assert as_possible_tensor(obj) is None
 
 
-def test_get_gradient():
+def test_differentiate():
     # test that it works
     x = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
     y = x.sum()
@@ -82,3 +85,12 @@ def test_nested_merge_all():
         {"a": {"b": {"d": 2}}},
         {"a": {"b": {"c": 2}}},
     ) == {"a": {"b": {"c": 2, "d": 2}}}
+
+
+def test_random_split():
+    indices = list(range(10))
+    split = random_split(indices, lengths=[2, 2], seed=0)
+    assert split == [[2, 8], [4, 9]]
+
+    with pytest.raises(ValueError, match="Not enough things to split"):
+        random_split(indices, lengths=[20, 20], seed=0)

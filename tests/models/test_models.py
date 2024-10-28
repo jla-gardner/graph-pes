@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import helpers
 import pytest
 import torch
 from ase import Atoms
-from graph_pes.data.io import to_atomic_graph, to_atomic_graphs
-from graph_pes.graph_pes_model import GraphPESModel
-from graph_pes.graphs.operations import (
+from graph_pes import AtomicGraph, GraphPESModel
+from graph_pes.atomic_graph import (
     has_cell,
     number_of_atoms,
     number_of_edges,
@@ -15,7 +13,12 @@ from graph_pes.graphs.operations import (
 from graph_pes.models import LennardJones, Morse, SchNet
 from graph_pes.models.addition import AdditionModel
 
-graphs = to_atomic_graphs(helpers.CU_TEST_STRUCTURES, cutoff=3)
+from .. import helpers
+
+graphs = [
+    AtomicGraph.from_ase(atoms, cutoff=3)
+    for atoms in helpers.CU_TEST_STRUCTURES
+]
 
 
 def test_model():
@@ -34,7 +37,7 @@ def test_model():
 
 def test_isolated_atom():
     atom = Atoms("He", positions=[[0, 0, 0]])
-    graph = to_atomic_graph(atom, cutoff=3)
+    graph = AtomicGraph.from_ase(atom, cutoff=3)
     assert number_of_atoms(graph) == 1 and number_of_edges(graph) == 0
 
     model = LennardJones()

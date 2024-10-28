@@ -1,4 +1,3 @@
-# at least check a lack of failure of the plotting scripts
 from ase.build import molecule
 from graph_pes.atomic_graph import AtomicGraph
 from graph_pes.models import LennardJones

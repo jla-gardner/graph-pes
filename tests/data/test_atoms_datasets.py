@@ -1,10 +1,11 @@
 from typing import Literal
 
-import helpers
 import numpy as np
 import pytest
 from graph_pes.atomic_graph import number_of_atoms
 from graph_pes.data import load_atoms_dataset
+
+from .. import helpers
 
 
 @pytest.mark.parametrize("split", ["random", "sequential"])
@@ -52,7 +53,7 @@ def test_property_map():
         split="sequential",
     )
 
-    assert "forces" in dataset.train[0]
+    assert "forces" in dataset.train[0].properties
     np.testing.assert_allclose(
         dataset.train[0].properties["forces"],
         helpers.CU_TEST_STRUCTURES[0].positions,

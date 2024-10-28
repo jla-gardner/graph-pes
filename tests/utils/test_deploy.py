@@ -2,27 +2,27 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import helpers
 import pytest
 import torch
 from ase.build import molecule
-from graph_pes.data.io import to_atomic_graph
-from graph_pes.graph_pes_model import GraphPESModel
-from graph_pes.graphs.operations import number_of_atoms
+from graph_pes import AtomicGraph, GraphPESModel
+from graph_pes.atomic_graph import number_of_atoms
 from graph_pes.models.pairwise import LennardJones, SmoothedPairPotential
 from graph_pes.utils.lammps import deploy_model
+
+from .. import helpers
 
 
 # ignore warnings about lack of energy labels for pre-fitting: not important
 @pytest.mark.filterwarnings("ignore:.*No energy data found in training data.*")
 @helpers.parameterise_all_models(expected_elements=["C", "H", "O"])
 def test_deploy(model: GraphPESModel, tmp_path: Path):
-    dummy_graph = to_atomic_graph(molecule("CH3CH2OH"), cutoff=1.5)
+    dummy_graph = AtomicGraph.from_ase(molecule("CH3CH2OH"), cutoff=1.5)
     # required by some models before making predictions
     model.pre_fit_all_components([dummy_graph])
 
     model_cutoff = float(model.cutoff)
-    graph = to_atomic_graph(
+    graph = AtomicGraph.from_ase(
         molecule("CH3CH2OH", vacuum=2),
         cutoff=model_cutoff,
     )
@@ -83,7 +83,7 @@ def test_deploy(model: GraphPESModel, tmp_path: Path):
         rtol=1e-6,
     )
 
-    assert loaded_outputs["forces"].shape == graph["_positions"].shape
+    assert loaded_outputs["forces"].shape == graph.R.shape
     torch.testing.assert_close(
         outputs["forces"],
         loaded_outputs["forces"],

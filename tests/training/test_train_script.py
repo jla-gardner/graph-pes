@@ -3,7 +3,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import helpers
 import yaml
 from graph_pes.config import Config, get_default_config_values
 from graph_pes.config.spec import SWAConfig
@@ -13,6 +12,8 @@ from graph_pes.scripts.train import (
     train_from_config,
 )
 from graph_pes.utils.misc import nested_merge
+
+from .. import helpers
 
 
 def test_arg_parse():

@@ -1,15 +1,19 @@
 from __future__ import annotations
 
-import helpers
 import numpy as np
 import pytest
 import torch
 from ase import Atoms
-from graph_pes.data.io import to_atomic_graphs
-from graph_pes.graphs.operations import number_of_atoms, to_batch
+from graph_pes import AtomicGraph
+from graph_pes.atomic_graph import number_of_atoms, to_batch
 from graph_pes.models.offsets import EnergyOffset, FixedOffset, LearnableOffset
 
-graphs = to_atomic_graphs(helpers.CU_TEST_STRUCTURES, cutoff=3)
+from .. import helpers
+
+graphs = [
+    AtomicGraph.from_ase(atoms, cutoff=3)
+    for atoms in helpers.CU_TEST_STRUCTURES
+]
 
 
 @pytest.mark.parametrize(
@@ -67,7 +71,7 @@ def test_energy_offset_fitting():
         atoms.arrays["forces"] = np.zeros((n_H + n_C, 3))
         structures.append(atoms)
 
-    graphs = to_atomic_graphs(structures, cutoff=1.5)
+    graphs = [AtomicGraph.from_ase(atoms, cutoff=1.5) for atoms in structures]
     batch = to_batch(graphs)
     assert "energy" in batch
 
@@ -86,10 +90,10 @@ def test_energy_offset_fitting():
 
     # check suitable warning logged if no energy data
     model = LearnableOffset()
-    graph = dict(graphs[0])
-    del graph["energy"]
+    graph = graphs[0]
+    del graph.properties["energy"]
     with pytest.warns(
         UserWarning,
         match="No energy labels found in the training data",
     ):
-        model.pre_fit_all_components([graph])  # type: ignore
+        model.pre_fit_all_components([graph])

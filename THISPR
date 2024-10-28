@@ -3,3 +3,4 @@
 - [ ] spec TODOs
 - [ ] kill manual training
 - [ ] ptl_utils -> util
+- [ ] torchscript tests everywhere

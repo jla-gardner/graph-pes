@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import helpers
-from graph_pes.data.io import to_atomic_graphs
-from graph_pes.graph_pes_model import GraphPESModel
-from graph_pes.graphs.operations import to_batch
+from graph_pes import AtomicGraph, GraphPESModel
+from graph_pes.atomic_graph import to_batch
 from graph_pes.training.manual import Loss, train_the_model
+
+from .. import helpers
 
 
 @helpers.parameterise_all_models(expected_elements=["Cu"])
@@ -13,7 +13,10 @@ def test_integration(model: GraphPESModel):
         # nothing to train
         return
 
-    graphs = to_atomic_graphs(helpers.CU_TEST_STRUCTURES, cutoff=3)
+    graphs = [
+        AtomicGraph.from_ase(atoms, cutoff=3)
+        for atoms in helpers.CU_TEST_STRUCTURES
+    ]
 
     batch = to_batch(graphs)
     assert "energy" in batch
