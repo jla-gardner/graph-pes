@@ -203,7 +203,8 @@ class Contraction(CodeGenMixin, torch.nn.Module):
 
 
 _U_cache_sparse: dict[tuple[str, str, int], torch.Tensor] = torch.load(
-    Path(__file__).parent / "_high_order_CG_coeff.pt"
+    Path(__file__).parent / "_high_order_CG_coeff.pt",
+    weights_only=True,
 )
 """
 A pre-computed look-up table for the U matrices used in MACE Contractions.

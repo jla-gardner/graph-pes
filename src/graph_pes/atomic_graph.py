@@ -1,14 +1,14 @@
-from __future__ import annotations
-
 import warnings
 from typing import (
     TYPE_CHECKING,
     Dict,
     Final,
+    List,
     Literal,
     Mapping,
     NamedTuple,
     Sequence,
+    Union,
     cast,
 )
 
@@ -30,7 +30,7 @@ CUTOFF: Final[str] = "cutoff"
 
 
 PropertyKey: TypeAlias = Literal["local_energies", "forces", "energy", "stress"]
-ALL_PROPERTY_KEYS: Final[list[PropertyKey]] = [
+ALL_PROPERTY_KEYS: Final[List[PropertyKey]] = [
     "local_energies",
     "forces",
     "energy",
@@ -54,10 +54,10 @@ class AtomicGraph(NamedTuple):
     neighbour_list: torch.Tensor
     neighbour_cell_offsets: torch.Tensor
 
-    properties: dict[PropertyKey, torch.Tensor]
+    properties: Dict[PropertyKey, torch.Tensor]
     other: Dict[str, torch.Tensor]  # noqa: UP006 <- torchscript issue
 
-    def to(self, device: torch.device) -> AtomicGraph:
+    def to(self, device: torch.device) -> "AtomicGraph":
         properties: dict[PropertyKey, torch.Tensor] = {
             k: v.to(device) for k, v in self.properties.items()
         }
@@ -76,12 +76,12 @@ class AtomicGraph(NamedTuple):
         cls,
         Z: torch.Tensor,
         R: torch.Tensor,
-        cell: torch.Tensor | None = None,
-        neighbour_list: torch.Tensor | None = None,
-        neighbour_cell_offsets: torch.Tensor | None = None,
-        properties: dict[PropertyKey, torch.Tensor] | None = None,
-        other: dict[str, torch.Tensor] | None = None,
-    ) -> AtomicGraph:
+        cell: Union[torch.Tensor, None] = None,
+        neighbour_list: Union[torch.Tensor, None] = None,
+        neighbour_cell_offsets: Union[torch.Tensor, None] = None,
+        properties: Union[Dict[PropertyKey, torch.Tensor], None] = None,
+        other: Union[Dict[str, torch.Tensor], None] = None,
+    ) -> "AtomicGraph":
         if cell is None:
             cell = torch.zeros(3, 3)
         if neighbour_list is None:
@@ -107,9 +107,9 @@ class AtomicGraph(NamedTuple):
         cls,
         structure: ase.Atoms,
         cutoff: float = DEFAULT_CUTOFF,
-        property_mapping: Mapping[str, PropertyKey] | None = None,
-        others_to_include: Sequence[str] | None = None,
-    ) -> AtomicGraph:
+        property_mapping: Union[Mapping[str, PropertyKey], None] = None,
+        others_to_include: Union[Sequence[str], None] = None,
+    ) -> "AtomicGraph":
         r"""
         Convert an ASE Atoms object to an AtomicGraph.
 
@@ -164,15 +164,17 @@ class AtomicGraph(NamedTuple):
             )
         """
 
+        dtype = torch.get_default_dtype()
+
         # structure
         Z = torch.tensor(structure.numbers, dtype=torch.long)
-        R = torch.tensor(structure.positions)
-        cell = torch.tensor(structure.cell.array)
+        R = torch.tensor(structure.positions, dtype=dtype)
+        cell = torch.tensor(structure.cell.array, dtype=dtype)
 
         # neighbour list
         i, j, offsets = neighbor_list("ijS", structure, cutoff)
-        neighbour_list = torch.LongTensor(np.vstack([i, j]))
-        neighbour_cell_offsets = torch.LongTensor(offsets)
+        neighbour_list = torch.tensor(np.vstack([i, j]), dtype=torch.long)
+        neighbour_cell_offsets = torch.tensor(offsets, dtype=dtype)
 
         # properties
         properties: dict[PropertyKey, torch.Tensor] = {}
@@ -193,19 +195,17 @@ class AtomicGraph(NamedTuple):
         ):
             if key in property_mapping:
                 property_key = property_mapping[key]
-                properties[property_key] = torch.tensor(value)
+                properties[property_key] = torch.tensor(value, dtype=dtype)
             elif key in others_to_include:
-                other[key] = torch.tensor(value)
+                other[key] = torch.tensor(value, dtype=dtype)
 
         missing = set(
-            graph_key
+            structure_key
             for structure_key, graph_key in property_mapping.items()
             if graph_key not in properties
         )
         if missing:
-            raise ValueError(
-                f"Unable to find properties: {missing} in {structure}"
-            )
+            raise ValueError(f"Unable to find properties: {missing}")
 
         return cls.create(
             Z=Z,
@@ -331,7 +331,7 @@ def is_batch(graph: AtomicGraph) -> bool:
         The graph to check.
     """
 
-    return "batch" in graph.other and "ptr" in graph.other["batch"]
+    return "batch" in graph.other and "ptr" in graph.other
 
 
 ############################### PROPERTIES ###############################
@@ -382,7 +382,7 @@ def neighbour_vectors(graph: AtomicGraph) -> torch.Tensor:
     cell_per_edge = cell[batch[i]]  # (E, 3, 3)
     distance_offsets = torch.einsum(
         "kl,klm->km",
-        graph.neighbour_cell_offsets.float(),
+        graph.neighbour_cell_offsets.to(cell_per_edge.dtype),
         cell_per_edge,
     )  # (E, 3)
     neighbour_positions = graph.R[j] + distance_offsets  # (E, 3)
@@ -458,7 +458,7 @@ def number_of_neighbours(
     ) + int(include_central_atom)
 
 
-def available_properties(graph: AtomicGraph) -> list[PropertyKey]:
+def available_properties(graph: AtomicGraph) -> List[PropertyKey]:
     """Get the labels that are available on the ``graph``."""
     return [cast(PropertyKey, k) for k in graph.properties]
 
@@ -498,7 +498,7 @@ def trim_edges(graph: AtomicGraph, cutoff: float) -> AtomicGraph:
     if existing_cutoff < cutoff:
         warnings.warn(
             f"Graph already has a cutoff of {existing_cutoff} which is "
-            "less than the requested cutoff of {cutoff}.",
+            f"less than the requested cutoff of {cutoff}.",
             stacklevel=2,
         )
         return graph

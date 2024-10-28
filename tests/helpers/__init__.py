@@ -18,6 +18,8 @@ from graph_pes.models import (
     FixedOffset,
     LennardJones,
     NequIP,
+    PaiNN,
+    TensorNet,
     ZEmbeddingMACE,
     ZEmbeddingNequIP,
 )
@@ -53,6 +55,15 @@ def all_model_factories(
             "correlation": 1,
             "channels": 4,
             "z_embed_dim": 4,
+        },
+        PaiNN: {
+            "layers": 1,
+            "internal_dim": 16,
+        },
+        TensorNet: {
+            "layers": 1,
+            "radial_features": 8,
+            "channels": 8,
         },
     }
 

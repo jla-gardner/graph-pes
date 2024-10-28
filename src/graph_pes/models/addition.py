@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Sequence, cast
 
 import torch
 
 from graph_pes.atomic_graph import (
     AtomicGraph,
     PropertyKey,
+    has_cell,
     is_batch,
     number_of_atoms,
     number_of_structures,
@@ -64,27 +65,29 @@ class AdditionModel(GraphPESModel):
             zeros = {
                 "energy": torch.zeros((S), device=device),
                 "forces": torch.zeros((N, 3), device=device),
-                "stress": torch.zeros((S, 3, 3), device=device),
                 "local_energies": torch.zeros((N), device=device),
             }
         else:
             zeros = {
                 "energy": torch.zeros((), device=device),
                 "forces": torch.zeros((N, 3), device=device),
-                "stress": torch.zeros((3, 3), device=device),
                 "local_energies": torch.zeros((N), device=device),
             }
 
+        properties: list[PropertyKey] = [
+            prop for prop in self.implemented_properties if prop != "stress"
+        ]
+        if has_cell(graph):
+            zeros["stress"] = torch.zeros_like(graph.cell)
+            properties.append("stress")
+
         total_predictions: dict[PropertyKey, torch.Tensor] = {
-            k: zeros[k] for k in self.implemented_properties
+            k: zeros[k] for k in properties
         }
         for model in self.models.values():
-            trimmed = trim_edges(graph, model.cutoff.item())
-            preds = model.predict(
-                trimmed, properties=self.implemented_properties
-            )
-            for key in self.implemented_properties:
-                total_predictions[key] += preds[key]
+            preds = model.predict(graph, properties=properties)
+            for key, value in preds.items():
+                total_predictions[key] += value
 
         return total_predictions
 

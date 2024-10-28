@@ -10,7 +10,7 @@ def test_direct_forces():
         elements=["C", "H"],
         features=dict(n_channels=4, l_max=1, use_odd_parity=True),
     )
-    graph = AtomicGraph.from_ase(molecule("CH4"), cutoff=3.7)
+    graph = AtomicGraph.from_ase(molecule("CH4"))
 
     # test that the model outputs forces directly...
     preds = model(graph)

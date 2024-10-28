@@ -161,7 +161,7 @@ class GraphPESModel(nn.Module, ABC):
         )
         infer_energy = (
             any([infer_stress, infer_forces])
-            and "energy" not in self.implemented_properties
+            or "energy" not in self.implemented_properties
         )
         if infer_stress and not has_cell(graph):
             raise ValueError("Can't predict stress without cell information.")
@@ -421,7 +421,6 @@ class GraphPESModel(nn.Module, ABC):
 
     def predict_energy(self, graph: AtomicGraph) -> torch.Tensor:
         """Convenience method to predict just the energy."""
-
         return self.predict(graph, ["energy"])["energy"]
 
     def predict_forces(self, graph: AtomicGraph) -> torch.Tensor:

@@ -59,11 +59,13 @@ def test_property_map():
         helpers.CU_TEST_STRUCTURES[0].positions,
     )
 
-    with pytest.raises(KeyError, match="Property UNKNOWN KEY not found for"):
+    with pytest.raises(
+        ValueError, match="Unable to find properties: {'UNKNOWN KEY'}"
+    ):
         load_atoms_dataset(
             id=helpers.CU_STRUCTURES_FILE,
             cutoff=3.7,
             n_train=8,
             n_valid=2,
-            property_map={"UNKNOWN Key": "energy"},
+            property_map={"UNKNOWN KEY": "energy"},
         )
