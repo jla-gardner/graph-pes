@@ -13,8 +13,8 @@ class LocalEnergiesScaler(nn.Module):
     """
     Scale the local energies by a per-element scaling factor.
 
-    See :func:`graph_pes.utils.shift_and_scale.guess_per_element_mean_and_var` for
-    how the scaling factors are estimated from the training data.
+    See :func:`graph_pes.utils.shift_and_scale.guess_per_element_mean_and_var`
+    for how the scaling factors are estimated from the training data.
     """
 
     def __init__(self):
