@@ -352,17 +352,17 @@ def random_split(
 
     Parameters
     ----------
-    sequence: Sequence[E]
+    sequence
         The sequence to split.
-    lengths: Sequence[int]
+    lengths
         The lengths of the sub-sequences to create.
-    seed: int | None
+    seed
         The random seed to use. If `None`, the current random state is
         used (non-deterministic).
 
     Returns
     -------
-    list[list[E]]
+    list[list[T]]
         A list of sub-sequences.
 
     Examples

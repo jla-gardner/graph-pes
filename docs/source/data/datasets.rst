@@ -20,6 +20,8 @@ Useful Datasets
 Base Classes
 -------------
 
+.. autoclass:: graph_pes.data.datasets.T
+
 .. autoclass:: graph_pes.data.SizedDataset()
     :show-inheritance:
     :special-members: __len__, __getitem__, __iter__
