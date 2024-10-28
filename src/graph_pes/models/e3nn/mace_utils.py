@@ -9,7 +9,7 @@ import torch
 import torch.fx
 from e3nn import o3
 from e3nn.util.codegen import CodeGenMixin
-from graph_pes.nn import UniformModuleList
+from graph_pes.utils.nn import UniformModuleList
 
 BATCH_DIM_EG = 20
 SPARE = "wxvnzrtyuops"

@@ -3,17 +3,19 @@ from __future__ import annotations
 import torch
 from torch import Tensor, nn
 
-from graph_pes.core import GraphPESModel
-from graph_pes.graphs import DEFAULT_CUTOFF, AtomicGraph, keys
-from graph_pes.graphs.operations import (
+from graph_pes.atomic_graph import (
+    DEFAULT_CUTOFF,
+    AtomicGraph,
+    PropertyKey,
     index_over_neighbours,
     neighbour_distances,
     neighbour_vectors,
     number_of_atoms,
     sum_over_neighbours,
 )
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.components.scaling import LocalEnergiesScaler
-from graph_pes.nn import (
+from graph_pes.utils.nn import (
     MLP,
     HaddamardProduct,
     PerElementEmbedding,
@@ -238,14 +240,14 @@ class PaiNN(GraphPESModel):
 
         self.scaler = LocalEnergiesScaler()
 
-    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, Tensor]:
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, Tensor]:
         # initialise embbedings:
         # - scalars as an embedding of the atomic numbers
-        scalar_embeddings = self.z_embedding(graph["atomic_numbers"])
+        scalar_embeddings = self.z_embedding(graph.Z)
         # - vectors as all 0s:
         vector_embeddings = torch.zeros(
             (number_of_atoms(graph), self.internal_dim, 3),
-            device=graph["atomic_numbers"].device,
+            device=graph.Z.device,
         )
 
         # iteratively interact and update the scalar and vector embeddings

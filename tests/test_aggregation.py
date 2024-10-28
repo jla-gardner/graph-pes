@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 import torch
 from ase import Atoms
-from graph_pes.data.io import to_atomic_graph
-from graph_pes.graphs.operations import (
+from graph_pes.atomic_graph import (
+    AtomicGraph,
     number_of_atoms,
     number_of_edges,
     number_of_neighbours,
@@ -27,9 +27,9 @@ TRIMER = Atoms("H3", positions=[(0, 0, 0), (0, 0, 1), (0, 1, 0)], pbc=False)
 @pytest.fixture
 def graphs():
     return [
-        to_atomic_graph(ISOLATED_ATOM, cutoff=1.5),
-        to_atomic_graph(DIMER, cutoff=1.5),
-        to_atomic_graph(TRIMER, cutoff=1.5),
+        AtomicGraph.from_ase(ISOLATED_ATOM, cutoff=1.5),
+        AtomicGraph.from_ase(DIMER, cutoff=1.5),
+        AtomicGraph.from_ase(TRIMER, cutoff=1.5),
     ]
 
 
@@ -87,7 +87,7 @@ def test_scaled_sum_neighbours(graphs, learnable):
 
     # Test pre_fit
     batch = to_batch(graphs)
-    scaled_sum_agg.pre_fit(batch)  # type: ignore
+    scaled_sum_agg.pre_fit(batch)
     avg_neighbours = number_of_edges(batch) / number_of_atoms(batch)
     assert torch.isclose(scaled_sum_agg.scale, torch.tensor(avg_neighbours))
 

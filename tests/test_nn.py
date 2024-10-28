@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import pytest
 import torch
-from graph_pes.nn import (
+from graph_pes.utils.misc import MAX_Z, left_aligned_div, left_aligned_mul
+from graph_pes.utils.nn import (
     MLP,
     AtomicOneHot,
     PerElementEmbedding,
@@ -11,7 +12,6 @@ from graph_pes.nn import (
     UniformModuleList,
     parse_activation,
 )
-from graph_pes.util import MAX_Z, left_aligned_div, left_aligned_mul
 
 
 def test_per_element_parameter(tmp_path):

@@ -6,14 +6,15 @@ from typing import Callable, Final, cast
 import torch
 import torch.fx
 from e3nn import o3
-from graph_pes.core import GraphPESModel
-from graph_pes.graphs import DEFAULT_CUTOFF, keys
-from graph_pes.graphs.graph_typing import AtomicGraph
-from graph_pes.graphs.operations import (
+from graph_pes.atomic_graph import (
+    DEFAULT_CUTOFF,
+    AtomicGraph,
+    PropertyKey,
     index_over_neighbours,
     neighbour_distances,
     neighbour_vectors,
 )
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.components.aggregation import (
     NeighbourAggregation,
     NeighbourAggregationMode,
@@ -39,7 +40,7 @@ from graph_pes.models.e3nn.utils import (
     build_limited_tensor_product,
     to_full_irreps,
 )
-from graph_pes.nn import (
+from graph_pes.utils.nn import (
     MLP,
     AtomicOneHot,
     HaddamardProduct,
@@ -326,18 +327,17 @@ class _BaseMACE(GraphPESModel):
 
         self.scaler = LocalEnergiesScaler()
 
-    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         # pre-compute some things
-        Z = graph["atomic_numbers"]
         vectors = neighbour_vectors(graph)
         sph_harmonics = self.spherical_harmonics(vectors)
         edge_features = self.radial_expansion(
             neighbour_distances(graph).view(-1, 1)
         )
-        node_attributes = self.node_attribute_generator(Z)
+        node_attributes = self.node_attribute_generator(graph.Z)
 
         # generate initial node features
-        node_features = self.initial_node_embedding(Z)
+        node_features = self.initial_node_embedding(graph.Z)
 
         # update node features through message passing layers
         per_atom_energies = []

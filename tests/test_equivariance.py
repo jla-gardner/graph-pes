@@ -3,8 +3,8 @@ import numpy as np
 import pytest
 import torch
 from ase.build import molecule
-from graph_pes.core import GraphPESModel
 from graph_pes.data.io import to_atomic_graph
+from graph_pes.graph_pes_model import GraphPESModel
 
 CUTOFF = 1.0
 

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import helpers
-from graph_pes.core import GraphPESModel
 from graph_pes.data.io import to_atomic_graphs
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.graphs.operations import to_batch
 from graph_pes.training.manual import Loss, train_the_model
 

@@ -2,21 +2,23 @@ from __future__ import annotations
 
 import torch
 
-from graph_pes.core import GraphPESModel
-from graph_pes.graphs import DEFAULT_CUTOFF, AtomicGraph, keys
-from graph_pes.graphs.operations import (
+from graph_pes.atomic_graph import (
+    DEFAULT_CUTOFF,
+    AtomicGraph,
+    PropertyKey,
     index_over_neighbours,
     neighbour_distances,
     sum_over_neighbours,
 )
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.components.scaling import LocalEnergiesScaler
-from graph_pes.nn import (
+from graph_pes.utils.misc import uniform_repr
+from graph_pes.utils.nn import (
     MLP,
     PerElementEmbedding,
     ShiftedSoftplus,
     UniformModuleList,
 )
-from graph_pes.util import uniform_repr
 
 from .components.distances import DistanceExpansion, GaussianSmearing
 
@@ -231,8 +233,8 @@ class SchNet(GraphPESModel):
 
         self.scaler = LocalEnergiesScaler()
 
-    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
-        h = self.chemical_embedding(graph["atomic_numbers"])
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
+        h = self.chemical_embedding(graph.Z)
         d = neighbour_distances(graph)
 
         for interaction in self.interactions:

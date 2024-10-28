@@ -6,11 +6,11 @@ import helpers
 import pytest
 import torch
 from ase.build import molecule
-from graph_pes.core import GraphPESModel
 from graph_pes.data.io import to_atomic_graph
-from graph_pes.deploy import deploy_model
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.graphs.operations import number_of_atoms
 from graph_pes.models.pairwise import LennardJones, SmoothedPairPotential
+from graph_pes.utils.lammps import deploy_model
 
 
 # ignore warnings about lack of energy labels for pre-fitting: not important

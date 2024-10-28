@@ -9,15 +9,15 @@ import e3nn.nn
 import e3nn.util.jit
 import torch
 from e3nn import o3
-from graph_pes.core import GraphPESModel
-from graph_pes.graphs import DEFAULT_CUTOFF, keys
-from graph_pes.graphs.graph_typing import AtomicGraph
-from graph_pes.graphs.operations import (
+from graph_pes.atomic_graph import (
+    DEFAULT_CUTOFF,
+    AtomicGraph,
+    PropertyKey,
     index_over_neighbours,
     neighbour_distances,
     neighbour_vectors,
 )
-from graph_pes.logger import logger
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.components import distances
 from graph_pes.models.components.aggregation import (
     NeighbourAggregation,
@@ -29,7 +29,8 @@ from graph_pes.models.e3nn.utils import (
     SphericalHarmonics,
     build_limited_tensor_product,
 )
-from graph_pes.nn import (
+from graph_pes.utils.logger import logger
+from graph_pes.utils.nn import (
     MLP,
     AtomicOneHot,
     HaddamardProduct,
@@ -316,7 +317,7 @@ class _BaseNequIP(GraphPESModel):
         # optimisation
         prune_last_layer: bool,
     ):
-        props: list[keys.LabelKey] = ["local_energies"]
+        props: list[PropertyKey] = ["local_energies"]
         if direct_force_predictions:
             props.append("forces")
 
@@ -380,14 +381,14 @@ class _BaseNequIP(GraphPESModel):
 
         self.scaler = LocalEnergiesScaler()
 
-    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         # pre-compute important quantities
         r = neighbour_distances(graph)
         Y = self.edge_embedding(neighbour_vectors(graph))
-        Z_embed = self.Z_embedding(graph["atomic_numbers"])
+        Z_embed = self.Z_embedding(graph.Z)
 
         # initialise the node embeddings...
-        node_embed = self.initial_node_embedding(graph["atomic_numbers"])
+        node_embed = self.initial_node_embedding(graph.Z)
 
         # ...iteratively update them...
         for layer in self.layers:
@@ -397,7 +398,7 @@ class _BaseNequIP(GraphPESModel):
         local_energies = self.energy_readout(node_embed).squeeze()
         local_energies = self.scaler(local_energies, graph)
 
-        preds: dict[keys.LabelKey, torch.Tensor] = {
+        preds: dict[PropertyKey, torch.Tensor] = {
             "local_energies": local_energies
         }
         if self.force_readout is not None:

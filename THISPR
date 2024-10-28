@@ -1,0 +1,5 @@
+- [ ] remove all references to `keys`
+- [ ] scripts
+- [ ] spec TODOs
+- [ ] kill manual training
+- [ ] ptl_utils -> util

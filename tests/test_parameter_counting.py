@@ -12,7 +12,7 @@ from graph_pes.models import (
     SchNet,
 )
 from graph_pes.models.addition import AdditionModel
-from graph_pes.nn import PerElementParameter
+from graph_pes.utils.nn import PerElementParameter
 from helpers import DoesNothingModel
 
 graphs: list[AtomicGraph] = []

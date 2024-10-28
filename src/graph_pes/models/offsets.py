@@ -4,11 +4,11 @@ import warnings
 
 import torch
 
-from graph_pes.core import GraphPESModel
-from graph_pes.graphs import AtomicGraph, LabelledBatch, keys
-from graph_pes.graphs.operations import guess_per_element_mean_and_var
-from graph_pes.logger import logger
-from graph_pes.nn import PerElementParameter
+from graph_pes.atomic_graph import AtomicGraph, PropertyKey
+from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.utils.logger import logger
+from graph_pes.utils.nn import PerElementParameter
+from graph_pes.utils.shift_and_scale import guess_per_element_mean_and_var
 
 
 class EnergyOffset(GraphPESModel):
@@ -43,13 +43,11 @@ class EnergyOffset(GraphPESModel):
         )
         self._offsets = offsets
 
-    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         return {
-            "local_energies": self._offsets[graph["atomic_numbers"]].squeeze(),
-            "forces": torch.zeros_like(graph["_positions"]),
-            "stress": torch.zeros(
-                (3, 3), device=graph["atomic_numbers"].device
-            ),
+            "local_energies": self._offsets[graph.Z].squeeze(),
+            "forces": torch.zeros_like(graph.R),
+            "stress": torch.zeros_like(graph.cell),
         }
 
     def non_decayable_parameters(self) -> list[torch.nn.Parameter]:
@@ -122,7 +120,7 @@ class LearnableOffset(EnergyOffset):
         self._values_were_specified = bool(initial_values)
 
     @torch.no_grad()
-    def pre_fit(self, graphs: LabelledBatch) -> None:
+    def pre_fit(self, graphs: AtomicGraph) -> None:
         """
         Calculate the **mean** energy offsets per element from the training data
         using linear regression.
@@ -154,7 +152,9 @@ class LearnableOffset(EnergyOffset):
 
         # use ridge regression to estimate the mean energy contribution
         # from each atomic species
-        offsets, _ = guess_per_element_mean_and_var(graphs["energy"], graphs)
+        offsets, _ = guess_per_element_mean_and_var(
+            graphs.properties["energy"], graphs
+        )
         for z, offset in offsets.items():
             self._offsets[z] = offset
 

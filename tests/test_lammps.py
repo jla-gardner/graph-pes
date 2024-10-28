@@ -1,11 +1,11 @@
 import pytest
 import torch
 from ase.build import molecule
+from graph_pes.atomic_graph import keys
 from graph_pes.data.io import to_atomic_graph
-from graph_pes.deploy import LAMMPSModel
-from graph_pes.graphs import keys
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.models import LennardJones
+from graph_pes.utils.lammps import LAMMPSModel
 
 CUTOFF = 1.5
 

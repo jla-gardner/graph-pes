@@ -6,20 +6,17 @@ from typing import Optional
 import torch
 from torch import Tensor
 
-from graph_pes.core import GraphPESModel
-from graph_pes.graphs import (
+from graph_pes.atomic_graph import (
     DEFAULT_CUTOFF,
     AtomicGraph,
-    AtomicGraphBatch,
-    keys,
-)
-from graph_pes.graphs.operations import (
+    PropertyKey,
     neighbour_distances,
     sum_over_neighbours,
 )
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.components.distances import SmoothOnsetEnvelope
-from graph_pes.nn import PerElementParameter
-from graph_pes.util import to_significant_figures, uniform_repr
+from graph_pes.utils.misc import to_significant_figures, uniform_repr
+from graph_pes.utils.nn import PerElementParameter
 
 
 class PairPotential(GraphPESModel, ABC):
@@ -70,19 +67,19 @@ class PairPotential(GraphPESModel, ABC):
             The pair-wise interactions.
         """
 
-    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, Tensor]:
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, Tensor]:
         """
         Predict the local energies as half the sum of the pair-wise
         interactions that each atom participates in.
         """
 
         # avoid tuple unpacking to keep torchscript happy
-        central_atoms = graph[keys.NEIGHBOUR_INDEX][0]
-        neighbours = graph[keys.NEIGHBOUR_INDEX][1]
+        central_atoms = graph.neighbour_list[0]
+        neighbours = graph.neighbour_list[1]
         distances = neighbour_distances(graph)
 
-        Z_i = graph[keys.ATOMIC_NUMBERS][central_atoms]
-        Z_j = graph[keys.ATOMIC_NUMBERS][neighbours]
+        Z_i = graph.Z[central_atoms]
+        Z_j = graph.Z[neighbours]
 
         V = self.interaction(distances, Z_i, Z_j)  # (E) / (E, 1)
 
@@ -90,7 +87,7 @@ class PairPotential(GraphPESModel, ABC):
         energies = sum_over_neighbours(V.squeeze(), graph)
 
         # divide by 2 to avoid double counting
-        return {keys.LOCAL_ENERGIES: energies / 2}
+        return {"local_energies": energies / 2}
 
 
 class SmoothedPairPotential(PairPotential):
@@ -236,7 +233,7 @@ class LennardJones(PairPotential):
         x = self.sigma / r
         return 4 * self.epsilon * (x**12 - x**6)
 
-    def pre_fit(self, graphs: AtomicGraphBatch):
+    def pre_fit(self, graphs: AtomicGraph):
         # set the distance at which the potential is zero to be
         # close to the minimum pair-wise distance
         d = torch.quantile(neighbour_distances(graphs), 0.01)
@@ -365,7 +362,7 @@ class Morse(PairPotential):
         """
         return self.D * (1 - torch.exp(-self.a * (r - self.r0))) ** 2
 
-    def pre_fit(self, graphs: AtomicGraphBatch):
+    def pre_fit(self, graphs: AtomicGraph):
         # set the center of the well to be close to the minimum pair-wise
         # distance: the 10th percentile plus a small offset
         d = torch.quantile(neighbour_distances(graphs), 0.1) + 0.1
@@ -476,6 +473,7 @@ class LennardJonesMixture(PairPotential):
         return uniform_repr(
             self.__class__.__name__,
             **kwargs,
+            indent_width=2,
             max_width=60,
             stringify=False,
         )

@@ -8,24 +8,20 @@ import torch
 from ase.data import chemical_symbols
 from torch import nn
 
-from graph_pes.data.dataset import LabelledGraphDataset
-from graph_pes.logger import logger
-
-from .graphs import (
+from graph_pes.atomic_graph import (
     AtomicGraph,
-    LabelledBatch,
-    LabelledGraph,
-    keys,
-)
-from .graphs.operations import (
+    PropertyKey,
     has_cell,
     is_batch,
     sum_per_structure,
     to_batch,
     trim_edges,
 )
-from .nn import PerElementParameter
-from .util import differentiate, differentiate_all
+from graph_pes.data.datasets import GraphDataset
+from graph_pes.utils.logger import logger
+
+from .utils.misc import differentiate, differentiate_all
+from .utils.nn import PerElementParameter
 
 
 class GraphPESModel(nn.Module, ABC):
@@ -89,7 +85,7 @@ class GraphPESModel(nn.Module, ABC):
     def __init__(
         self,
         cutoff: float,
-        implemented_properties: list[keys.LabelKey],
+        implemented_properties: list[PropertyKey],
     ):
         super().__init__()
 
@@ -107,7 +103,7 @@ class GraphPESModel(nn.Module, ABC):
             )
 
     @abstractmethod
-    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         """
         The model's forward pass. Generate all properties for the given graph
         that are in this model's ``implemented_properties`` list.
@@ -130,8 +126,8 @@ class GraphPESModel(nn.Module, ABC):
     def predict(
         self,
         graph: AtomicGraph,
-        properties: list[keys.LabelKey],
-    ) -> dict[keys.LabelKey, torch.Tensor]:
+        properties: list[PropertyKey],
+    ) -> dict[PropertyKey, torch.Tensor]:
         """
         Generate (optionally batched) predictions for the given
         ``properties`` and  ``graph``.
@@ -156,21 +152,22 @@ class GraphPESModel(nn.Module, ABC):
 
         # check to see if we need to infer any properties
         infer_stress = (
-            keys.STRESS in properties
-            and keys.STRESS not in self.implemented_properties
+            "stress" in properties
+            and "stress" not in self.implemented_properties
         )
         infer_forces = (
-            keys.FORCES in properties
-            and keys.FORCES not in self.implemented_properties
+            "forces" in properties
+            and "forces" not in self.implemented_properties
         )
         infer_energy = (
-            any([keys.ENERGY in properties, infer_stress, infer_forces])
-        ) and keys.ENERGY not in self.implemented_properties
+            any([infer_stress, infer_forces])
+            and "energy" not in self.implemented_properties
+        )
         if infer_stress and not has_cell(graph):
             raise ValueError("Can't predict stress without cell information.")
 
-        existing_positions = graph[keys._POSITIONS]
-        existing_cell = graph[keys.CELL]
+        existing_positions = graph.R
+        existing_cell = graph.cell
 
         # inference specific set up
         if infer_stress:
@@ -204,72 +201,80 @@ class GraphPESModel(nn.Module, ABC):
                 # to go from (N, 3) @ (N, 3, 3) -> (N, 3), we need un/squeeze:
                 # (N, 1, 3) @ (N, 3, 3) -> (N, 1, 3) -> (N, 3)
                 new_positions = (
-                    graph[keys._POSITIONS].unsqueeze(-2) @ scaling_per_atom
+                    graph.R.unsqueeze(-2) @ scaling_per_atom
                 ).squeeze()
                 # (M, 3, 3) @ (M, 3, 3) -> (M, 3, 3)
                 new_cell = existing_cell @ scaling
 
             else:
                 # (N, 3) @ (3, 3) -> (N, 3)
-                new_positions = graph[keys._POSITIONS] @ scaling
+                new_positions = graph.R @ scaling
                 new_cell = existing_cell @ scaling
 
             # change to positions will be a tensor of all 0's, but will allow
             # gradients to flow backwards through the energy calculation
             # and allow us to calculate the stress tensor as the gradient
             # of the energy wrt the change in cell.
-            graph[keys._POSITIONS] = new_positions
-            graph[keys.CELL] = new_cell
+            graph = graph._replace(R=new_positions, cell=new_cell)
+            # graph[keys._POSITIONS] = new_positions
+            # graph[keys.CELL] = new_cell
 
         else:
-            change_to_cell = torch.zeros_like(graph[keys.CELL])
+            change_to_cell = torch.zeros_like(graph.cell)
 
         if infer_forces:
-            graph[keys._POSITIONS].requires_grad_(True)
+            graph.R.requires_grad_(True)
 
         # get the implemented properties
         predictions = self.forward(graph)
 
         if infer_energy:
-            predictions[keys.ENERGY] = sum_per_structure(
-                predictions[keys.LOCAL_ENERGIES],
+            if "local_energies" not in predictions:
+                raise ValueError("Can't infer energy without local energies.")
+
+            predictions["energy"] = sum_per_structure(
+                predictions["local_energies"],
                 graph,
             )
 
         # use the autograd machinery to auto-magically
         # calculate forces and stress from the energy
 
-        cell_volume = torch.det(graph[keys.CELL])
+        cell_volume = torch.det(graph.cell)
         if is_batch(graph):
             cell_volume = cell_volume.view(-1, 1, 1)
 
+        # ugly triple if loops to be efficient with autograd
+        # while also Torchscript compatible
         if infer_forces and infer_stress:
+            assert "energy" in predictions
             dE_dR, dE_dC = differentiate_all(
-                predictions[keys.ENERGY],
-                [graph[keys._POSITIONS], change_to_cell],
+                predictions["energy"],
+                [graph.R, change_to_cell],
                 keep_graph=self.training,
             )
-            predictions[keys.FORCES] = -dE_dR
-            predictions[keys.STRESS] = dE_dC / cell_volume
+            predictions["forces"] = -dE_dR
+            predictions["stress"] = dE_dC / cell_volume
 
         elif infer_forces:
+            assert "energy" in predictions
             dE_dR = differentiate(
-                predictions[keys.ENERGY],
-                graph[keys._POSITIONS],
+                predictions["energy"],
+                graph.R,
                 keep_graph=self.training,
             )
-            predictions[keys.FORCES] = -dE_dR
+            predictions["forces"] = -dE_dR
         elif infer_stress:
+            assert "energy" in predictions
             dE_dC = differentiate(
-                predictions[keys.ENERGY],
+                predictions["energy"],
                 change_to_cell,
                 keep_graph=self.training,
             )
-            predictions[keys.STRESS] = dE_dC / cell_volume
+            predictions["stress"] = dE_dC / cell_volume
 
         # put things back to how they were before
-        graph[keys._POSITIONS] = existing_positions
-        graph[keys.CELL] = existing_cell
+        graph = graph._replace(R=existing_positions, cell=existing_cell)
 
         # make sure we don't leave auxiliary predictions
         # e.g. local_energies if we only asked for energy
@@ -286,7 +291,7 @@ class GraphPESModel(nn.Module, ABC):
     @torch.no_grad()
     def pre_fit_all_components(
         self,
-        graphs: LabelledGraphDataset | Sequence[LabelledGraph],
+        graphs: GraphDataset | Sequence[AtomicGraph],
     ):
         """
         Pre-fit the model, and all its components, to the training data.
@@ -324,7 +329,7 @@ class GraphPESModel(nn.Module, ABC):
         logger.debug(f"Attempting to pre-fit {model_name}")
 
         # 1. get the graphs as a single batch
-        if isinstance(graphs, LabelledGraphDataset):
+        if isinstance(graphs, GraphDataset):
             graphs = list(graphs)
         graph_batch = to_batch(graphs)
 
@@ -361,11 +366,9 @@ class GraphPESModel(nn.Module, ABC):
         #    multiple times)
         for param in self.parameters():
             if isinstance(param, PerElementParameter):
-                param.register_elements(
-                    torch.unique(graph_batch[keys.ATOMIC_NUMBERS]).tolist()
-                )
+                param.register_elements(torch.unique(graph_batch.Z).tolist())
 
-    def pre_fit(self, graphs: LabelledBatch) -> None:
+    def pre_fit(self, graphs: AtomicGraph) -> None:
         """
         Override this method to perform additional pre-fitting steps.
 
@@ -397,23 +400,23 @@ class GraphPESModel(nn.Module, ABC):
         return found
 
     # add type hints for mypy etc.
-    def __call__(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
+    def __call__(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         return super().__call__(graph)
 
     def get_all_PES_predictions(
         self, graph: AtomicGraph
-    ) -> dict[keys.LabelKey, torch.Tensor]:
+    ) -> dict[PropertyKey, torch.Tensor]:
         """
         Get all the properties that the model can predict
         for the given ``graph``.
         """
-        properties: list[keys.LabelKey] = [
-            keys.ENERGY,
-            keys.FORCES,
-            keys.LOCAL_ENERGIES,
+        properties: list[PropertyKey] = [
+            "energy",
+            "forces",
+            "local_energies",
         ]
         if has_cell(graph):
-            properties.append(keys.STRESS)
+            properties.append("stress")
         return self.predict(graph, properties)
 
     def predict_energy(self, graph: AtomicGraph) -> torch.Tensor:

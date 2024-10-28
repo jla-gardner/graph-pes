@@ -5,17 +5,20 @@ from typing import Literal
 
 import pytorch_lightning as pl
 import torch
+from graph_pes.atomic_graph import (
+    AtomicGraph,
+    PropertyKey,
+    number_of_structures,
+)
 from graph_pes.config import FittingOptions
-from graph_pes.core import GraphPESModel
-from graph_pes.data.dataset import FittingData
+from graph_pes.data.datasets import FittingData
 from graph_pes.data.loader import GraphDataLoader
-from graph_pes.graphs import AtomicGraphBatch, LabelledBatch, keys
-from graph_pes.graphs.operations import number_of_structures
-from graph_pes.logger import logger
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.training.loss import RMSE, Loss, PerAtomEnergyLoss, TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
 from graph_pes.training.ptl_utils import LoggedProgressBar, ModelTimer
-from graph_pes.training.util import log_model_info
+from graph_pes.training.util import log_model_info, sanity_check
+from graph_pes.utils.logger import logger
 from pytorch_lightning.callbacks import (
     EarlyStopping,
     LearningRateMonitor,
@@ -70,11 +73,18 @@ def train_with_lightning(
     if trainer.global_rank == 0:
         log_model_info(model, trainer.logger)
 
+    # - sanity checks
+    sanity_check(model, next(iter(train_loader)))
+
     # - create the task (a pytorch lightning module)
     task = LearnThePES(model, loss, optimizer, scheduler)
 
     # - train the model
-    trainer.fit(task, train_loader, valid_loader)
+    try:
+        trainer.fit(task, train_loader, valid_loader)
+    except Exception as e:
+        logger.error(f"Training failed: {e}")
+        pass
 
     # - load the best weights
     task.load_best_weights(model, trainer)
@@ -93,7 +103,7 @@ class LearnThePES(pl.LightningModule):
         self.optimizer_factory = optimizer
         self.scheduler_factory = scheduler
         self.total_loss = loss
-        self.properties: list[keys.LabelKey] = [
+        self.properties: list[PropertyKey] = [
             component.property_key for component in self.total_loss.losses
         ]
 
@@ -103,23 +113,23 @@ class LearnThePES(pl.LightningModule):
 
         existing_loss_names = [l.name for l in self.total_loss.losses]
 
-        if keys.ENERGY in self.properties:
+        if "energy" in self.properties:
             pael = PerAtomEnergyLoss()
             if pael.name not in existing_loss_names:
                 validation_metrics.append(PerAtomEnergyLoss())
 
-        if keys.FORCES in self.properties:
+        if "forces" in self.properties:
             fr = Loss("forces", RMSE())
             if fr.name not in existing_loss_names:
                 validation_metrics.append(fr)
 
         self.validation_metrics = validation_metrics
 
-    def forward(self, graphs: AtomicGraphBatch) -> torch.Tensor:
+    def forward(self, graphs: AtomicGraph) -> torch.Tensor:
         """Get the energy"""
         return self.model.predict_energy(graphs)
 
-    def _step(self, graph: LabelledBatch, prefix: Literal["train", "valid"]):
+    def _step(self, graph: AtomicGraph, prefix: Literal["train", "valid"]):
         """
         Get (and log) the losses for a training/validation step.
         """
@@ -159,10 +169,10 @@ class LearnThePES(pl.LightningModule):
 
         return total_loss_result.loss_value
 
-    def training_step(self, structure: LabelledBatch, _):
+    def training_step(self, structure: AtomicGraph, _):
         return self._step(structure, "train")
 
-    def validation_step(self, structure: LabelledBatch, _):
+    def validation_step(self, structure: AtomicGraph, _):
         return self._step(structure, "valid")
 
     def configure_optimizers(

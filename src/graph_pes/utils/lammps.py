@@ -4,10 +4,8 @@ import pathlib
 
 import e3nn.util.jit
 import torch
-
-from graph_pes.core import GraphPESModel
-from graph_pes.graphs import keys
-from graph_pes.graphs.graph_typing import AtomicGraph
+from graph_pes.atomic_graph import AtomicGraph, PropertyKey
+from graph_pes.graph_pes_model import GraphPESModel
 
 
 class LAMMPSModel(torch.nn.Module):
@@ -19,27 +17,30 @@ class LAMMPSModel(torch.nn.Module):
     def get_cutoff(self) -> torch.Tensor:
         return self.model.cutoff
 
-    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
-        debug = graph.get("debug", torch.tensor(False)).item()
+    def forward(
+        self, graph_data: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
+        debug = graph_data.get("debug", torch.tensor(False)).item()
 
         if debug:
             print("Received graph:")
-            for key, value in graph.items():
+            for key, value in graph_data.items():
                 print(f"{key}: {value}")
 
-        compute_virial = graph["compute_virial"].item()  # type: ignore
-        properties: list[keys.LabelKey] = [
-            keys.ENERGY,
-            keys.FORCES,
-            keys.LOCAL_ENERGIES,
-        ]
+        compute_virial = graph_data["compute_virial"].item()
+        properties: list[PropertyKey] = ["energy", "forces", "local_energies"]
         if compute_virial:
-            properties.append(keys.STRESS)
+            properties.append("stress")
 
-        preds = self.model.predict(
-            graph,
-            properties=properties,
+        # graph_data is a dict, so we need to convert it to an AtomicGraph
+        graph = AtomicGraph.create(
+            Z=graph_data["atomic_numbers"],
+            R=graph_data["positions"],
+            cell=graph_data["cell"],
+            neighbour_list=graph_data["neighbour_list"],
+            neighbour_cell_offsets=graph_data["neighbour_cell_offsets"],
         )
+        preds = self.model.predict(graph, properties=properties)
 
         # cast to float64
         for key in preds:
@@ -50,13 +51,14 @@ class LAMMPSModel(torch.nn.Module):
             # LAMMPS expects the **virial** in Voigt notation
             # we provide the **stress** in full 3x3 matrix notation
             # therefore, convert:
-            volume = graph[keys.CELL].det().abs().item()
+            volume = graph.cell.det().abs().item()
 
-            virial_tensor = -preds[keys.STRESS] * volume
+            assert "stress" in preds
+            virial_tensor = -preds["stress"] * volume
             virial_voigt = torch.zeros(
                 6,
-                device=preds[keys.STRESS].device,
-                dtype=preds[keys.STRESS].dtype,
+                device=preds["stress"].device,
+                dtype=preds["stress"].dtype,
             )
             virial_voigt[0] = virial_tensor[0, 0]
             virial_voigt[1] = virial_tensor[1, 1]
@@ -65,10 +67,12 @@ class LAMMPSModel(torch.nn.Module):
             virial_voigt[4] = virial_tensor[0, 2]
             preds["virial"] = virial_voigt  # type: ignore
 
-        return preds
+        return preds  # type: ignore
 
-    def __call__(self, graph: AtomicGraph) -> dict[str, torch.Tensor]:
-        return super().__call__(graph)
+    def __call__(
+        self, graph_data: dict[str, torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
+        return super().__call__(graph_data)
 
 
 def deploy_model(model: GraphPESModel, path: str | pathlib.Path):

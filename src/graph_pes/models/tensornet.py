@@ -3,17 +3,19 @@ from __future__ import annotations
 import torch
 from torch import Tensor, nn
 
-from graph_pes.core import GraphPESModel
-from graph_pes.graphs import DEFAULT_CUTOFF, AtomicGraph, keys
-from graph_pes.graphs.operations import (
+from graph_pes.atomic_graph import (
+    DEFAULT_CUTOFF,
+    AtomicGraph,
+    PropertyKey,
     index_over_neighbours,
     neighbour_distances,
     neighbour_vectors,
     number_of_edges,
     sum_over_neighbours,
 )
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.components.scaling import LocalEnergiesScaler
-from graph_pes.nn import (
+from graph_pes.utils.nn import (
     MLP,
     HaddamardProduct,
     PerElementEmbedding,
@@ -91,7 +93,7 @@ class TensorNet(GraphPESModel):
         layers: int = 2,
         direct_force_predictions: bool = False,
     ):
-        properties: list[keys.LabelKey] = ["local_energies"]
+        properties: list[PropertyKey] = ["local_energies"]
         if direct_force_predictions:
             properties.append("forces")
 
@@ -117,7 +119,7 @@ class TensorNet(GraphPESModel):
 
         self.scaler = LocalEnergiesScaler()
 
-    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, torch.Tensor]:
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         X = self.embedding(graph)  # (N, C, 3, 3)
 
         for interaction in self.interactions:
@@ -127,7 +129,7 @@ class TensorNet(GraphPESModel):
         local_energies = self.energy_read_out(X).squeeze()
         local_energies = self.scaler(local_energies, graph)
 
-        results: dict[keys.LabelKey, torch.Tensor] = {
+        results: dict[PropertyKey, torch.Tensor] = {
             "local_energies": local_energies
         }
 
@@ -211,8 +213,8 @@ class EdgeEmbedding(nn.Module):
         I_0, A_0, S_0 = self._initial_edge_embeddings(graph)  # (E, 1, 3, 3)
 
         # 2. encode atomic species of ordered neighbour pairs:
-        h_z_atom = self.z_embedding(graph["atomic_numbers"])  # (N, C)
-        h_z_edge = h_z_atom[graph["neighbour_index"]]  # (2, E, C)
+        h_z_atom = self.z_embedding(graph.Z)  # (N, C)
+        h_z_edge = h_z_atom[graph.neighbour_list]  # (2, E, C)
         h_z_edge = h_z_edge.reshape(E, 2 * C)
         h_z_edge = self.z_map(h_z_edge)  # (E, C)
 
@@ -230,7 +232,7 @@ class EdgeEmbedding(nn.Module):
     ) -> tuple[Tensor, Tensor, Tensor]:
         E = number_of_edges(graph)
         r_hat = neighbour_vectors(graph) / neighbour_distances(graph)[..., None]
-        eye = torch.eye(3, device=graph["atomic_numbers"].device)
+        eye = torch.eye(3, device=graph.Z.device)
         I_ij = torch.repeat_interleave(eye[None, ...], E, dim=0)  # (E, 3, 3)
         A_ij = vector_to_skew_symmetric_matrix(r_hat)
         S_ij = vector_to_symmetric_traceless_matrix(r_hat)

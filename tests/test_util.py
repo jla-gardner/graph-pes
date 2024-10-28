@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 import torch
-from graph_pes.util import (
+from graph_pes.utils.misc import (
     as_possible_tensor,
     build_single_nested_dict,
     differentiate,

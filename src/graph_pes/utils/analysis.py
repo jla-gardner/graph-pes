@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Callable, Sequence
 
 import matplotlib.axes
 import matplotlib.lines
@@ -10,12 +10,25 @@ import torch
 from ase import Atoms
 from cycler import cycler
 from matplotlib.ticker import MaxNLocator
+from torch import Tensor
 
-from .core import GraphPESModel
-from .data.io import to_atomic_graph
-from .graphs import AtomicGraph, AtomicGraphBatch, keys
-from .graphs.operations import to_batch
-from .transform import Transform, identity
+from ..atomic_graph import AtomicGraph, PropertyKey, to_batch
+from ..graph_pes_model import GraphPESModel
+
+Transform = Callable[[Tensor, AtomicGraph], Tensor]
+r"""
+Transforms map a property, :math:`x`, to a target property, :math:`y`,
+conditioned on an :class:`~graph_pes.graphs.AtomicGraph`, :math:`\mathcal{G}`:
+
+.. math::
+
+    T: (x; \mathcal{G}) \mapsto y
+"""
+
+
+def identity(x: Tensor, graph: AtomicGraph) -> Tensor:
+    return x
+
 
 _my_style = {
     "figure.figsize": (3.5, 3),
@@ -54,9 +67,8 @@ def move_axes(ax: matplotlib.axes.Axes | None = None):  # type: ignore
 
 def parity_plot(
     model: GraphPESModel,
-    graphs: AtomicGraphBatch | Sequence[AtomicGraph],
-    property: keys.LabelKey = keys.ENERGY,
-    property_label: str | None = None,
+    graphs: AtomicGraph | Sequence[AtomicGraph],
+    property: PropertyKey = "energy",
     transform: Transform | None = None,
     units: str | None = None,
     ax: matplotlib.axes.Axes | None = None,  # type: ignore
@@ -73,11 +85,7 @@ def parity_plot(
     graphs
         The graphs to make predictions on.
     property
-        The property to plot, e.g. :code:`keys.ENERGY`.
-    property_label
-        The string that the property is indexed by on the graphs. If not
-        provided, defaults to the value of :code:`property`, e.g.
-        :code:`keys.ENERGY` :math:`\rightarrow` :code:`"energy"`.
+        The property to plot, e.g. :code:`"energy"`.
     transform
         The transform to apply to the predictions and labels before plotting.
         If not provided, no transform is applied.
@@ -130,16 +138,19 @@ def parity_plot(
     """
     # deal with defaults
     transform = transform or identity
-    if property_label is None:
-        property_label = property
 
     # get the predictions and labels
-    if isinstance(graphs, Sequence):
+    if not isinstance(graphs, AtomicGraph):
         graphs = to_batch(graphs)
 
-    ground_truth = transform(graphs[property_label], graphs).detach()
-    pred = model.predict(graphs, properties=[property])[property]
-    predictions = transform(pred, graphs).detach()
+    raw_ground_truth = graphs.properties.get(property, None)
+    if raw_ground_truth is None:
+        raise ValueError(f"Property {property} not in graphs")
+    ground_truth = transform(raw_ground_truth, graphs).detach()
+
+    raw_pred = model.predict(graphs, properties=[property]).get(property, None)
+    assert raw_pred is not None
+    predictions = transform(raw_pred, graphs).detach()
 
     # plot
     ax: plt.Axes = ax or plt.gca()
@@ -153,7 +164,9 @@ def parity_plot(
     ax.axline((z, z), slope=1, c="k", ls="--", lw=1)
 
     # aesthetics
-    axis_label = f"{property_label}  ({units})" if units else property_label
+    axis_label = (
+        f"{property.capitalize()} ({units})" if units else property.capitalize()
+    )
     ax.set_xlabel(f"True {axis_label}")
     ax.set_ylabel(f"Predicted {axis_label}")
     ax.set_aspect("equal", "datalim")
@@ -222,7 +235,7 @@ def dimer_curve(
 
     rs = np.linspace(rmin, rmax, 200)
     dimers = [Atoms(system, positions=[[0, 0, 0], [r, 0, 0]]) for r in rs]
-    graphs = [to_atomic_graph(d, cutoff=rmax + 0.1) for d in dimers]
+    graphs = [AtomicGraph.from_ase(d, cutoff=rmax + 0.1) for d in dimers]
     batch = to_batch(graphs)
 
     with torch.no_grad():

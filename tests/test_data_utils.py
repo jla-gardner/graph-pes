@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from graph_pes.data.utils import random_split
+from graph_pes.utils.misc import random_split
 
 
 def test_random_split():

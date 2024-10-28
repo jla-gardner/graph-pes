@@ -3,8 +3,8 @@ from typing import Literal
 import helpers
 import numpy as np
 import pytest
+from graph_pes.atomic_graph import number_of_atoms
 from graph_pes.data import load_atoms_dataset
-from graph_pes.graphs.operations import number_of_atoms
 
 
 @pytest.mark.parametrize("split", ["random", "sequential"])
@@ -19,7 +19,7 @@ def test_shuffling(split: Literal["random", "sequential"]):
 
     if split == "sequential":
         np.testing.assert_allclose(
-            dataset.train[0]["_positions"],
+            dataset.train[0].R,
             helpers.CU_TEST_STRUCTURES[0].positions,
         )
     else:
@@ -48,13 +48,13 @@ def test_property_map():
         cutoff=3.7,
         n_train=8,
         n_valid=2,
-        property_map={"forces": "positions"},
+        property_map={"positions": "forces"},
         split="sequential",
     )
 
     assert "forces" in dataset.train[0]
     np.testing.assert_allclose(
-        dataset.train[0]["forces"],
+        dataset.train[0].properties["forces"],
         helpers.CU_TEST_STRUCTURES[0].positions,
     )
 
@@ -64,5 +64,5 @@ def test_property_map():
             cutoff=3.7,
             n_train=8,
             n_valid=2,
-            property_map={"energy": "UNKNOWN KEY"},
+            property_map={"UNKNOWN Key": "energy"},
         )

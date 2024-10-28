@@ -1,8 +1,8 @@
 # at least check a lack of failure of the plotting scripts
 from ase.build import molecule
-from graph_pes.analysis import dimer_curve, parity_plot
-from graph_pes.data.io import to_atomic_graphs
+from graph_pes.atomic_graph import AtomicGraph
 from graph_pes.models import LennardJones
+from graph_pes.utils.analysis import dimer_curve, parity_plot
 
 
 def test_parity_plot():
@@ -11,7 +11,7 @@ def test_parity_plot():
     for s, e in zip(structures, energies):
         s.info["energy"] = e
 
-    graphs = to_atomic_graphs(structures, cutoff=3.0)
+    graphs = [AtomicGraph.from_ase(s, cutoff=3.0) for s in structures]
     model = LennardJones(cutoff=3.0)
 
     parity_plot(model, graphs)

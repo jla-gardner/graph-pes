@@ -4,7 +4,7 @@ import time
 from typing import Any, Literal
 
 import pytorch_lightning as pl
-from graph_pes.logger import logger
+from graph_pes.utils.logger import logger
 from pytorch_lightning.callbacks import ProgressBar, StochasticWeightAveraging
 from typing_extensions import override
 
@@ -114,7 +114,7 @@ class LoggedProgressBar(ProgressBar):
         print("".join(f"{v:>{widths[k]}}" for k, v in metrics.items()))
 
     @override
-    def get_metrics(
+    def get_metrics(  # type: ignore
         self, trainer: pl.Trainer, pl_module: pl.LightningModule
     ) -> dict[str, str]:
         def logged_value(v: float | int | Any):

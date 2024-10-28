@@ -4,11 +4,13 @@ import ase
 import numpy
 from ase.calculators.calculator import Calculator, all_changes
 from ase.stress import full_3x3_to_voigt_6_stress
-
-from graph_pes.core import GraphPESModel
-from graph_pes.data.io import to_atomic_graph
-from graph_pes.graphs import AtomicGraph, keys
-from graph_pes.graphs.operations import number_of_atoms, to_batch
+from graph_pes.atomic_graph import (
+    AtomicGraph,
+    PropertyKey,
+    number_of_atoms,
+    to_batch,
+)
+from graph_pes.graph_pes_model import GraphPESModel
 
 
 class GraphPESCalculator(Calculator):
@@ -53,7 +55,9 @@ class GraphPESCalculator(Calculator):
         assert self.atoms is not None and isinstance(self.atoms, ase.Atoms)
 
         # account for numerical inprecision by nudging the cutoff up slightly
-        graph = to_atomic_graph(self.atoms, self.model.cutoff.item() + 0.001)
+        graph = AtomicGraph.from_ase(
+            self.atoms, self.model.cutoff.item() + 0.001
+        )
         graph: AtomicGraph = {k: v.to(self.device) for k, v in graph.items()}  # type: ignore
 
         results = {
@@ -74,7 +78,7 @@ class GraphPESCalculator(Calculator):
     def batched_prediction(
         self,
         structures: list[AtomicGraph | ase.Atoms],
-        properties: list[keys.LabelKey] | None = None,
+        properties: list[PropertyKey] | None = None,
         batch_size: int = 5,
     ) -> list[dict[str, numpy.ndarray]]:
         """
@@ -114,7 +118,7 @@ class GraphPESCalculator(Calculator):
         if properties is None:
             properties = ["energy", "forces", "stress"]
         graphs = [
-            to_atomic_graph(s, self.model.cutoff.item() + 0.001)
+            AtomicGraph.from_ase(s, self.model.cutoff.item() + 0.001)
             if isinstance(s, ase.Atoms)
             else s
             for s in structures

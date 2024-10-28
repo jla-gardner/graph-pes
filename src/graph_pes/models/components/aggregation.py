@@ -4,16 +4,20 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Literal
 
 import torch
-from graph_pes.graphs import AtomicGraph, LabelledBatch
-from graph_pes.graphs.operations import (
+from graph_pes.atomic_graph import (
+    AtomicGraph,
     number_of_atoms,
     number_of_edges,
     number_of_neighbours,
     sum_over_neighbours,
 )
-from graph_pes.util import _is_being_documented, left_aligned_div, uniform_repr
+from graph_pes.utils.misc import (
+    is_being_documented,
+    left_aligned_div,
+    uniform_repr,
+)
 
-if TYPE_CHECKING or _is_being_documented():
+if TYPE_CHECKING or is_being_documented():
     NeighbourAggregationMode = Literal[
         "sum", "mean", "constant_fixed", "constant_learnable", "sqrt"
     ]
@@ -39,7 +43,7 @@ class NeighbourAggregation(ABC, torch.nn.Module):
     def forward(self, x: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:
         """Aggregate x over neighbours."""
 
-    def pre_fit(self, graphs: LabelledBatch) -> None:
+    def pre_fit(self, graphs: AtomicGraph) -> None:
         """
         Calculate any quantities that are dependent on the graph structure
         that should be fixed before prediction.
@@ -162,7 +166,7 @@ class ScaledSumNeighbours(NeighbourAggregation):
     def forward(self, x: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:
         return sum_over_neighbours(x, graph) / self.scale
 
-    def pre_fit(self, graphs: LabelledBatch) -> None:
+    def pre_fit(self, graphs: AtomicGraph) -> None:
         """
         Set the scale equal to the average number of neighbours in the
         training set.

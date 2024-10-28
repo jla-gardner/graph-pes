@@ -12,7 +12,7 @@ from graph_pes.scripts.train import (
     parse_args,
     train_from_config,
 )
-from graph_pes.util import nested_merge
+from graph_pes.utils.misc import nested_merge
 
 
 def test_arg_parse():

@@ -12,7 +12,7 @@ import pathlib
 
 import torch
 
-from graph_pes.core import GraphPESModel
+from graph_pes.graph_pes_model import GraphPESModel
 
 from .addition import AdditionModel
 from .e3nn.mace import MACE, ZEmbeddingMACE
@@ -61,7 +61,7 @@ ALL_MODELS: list[type[GraphPESModel]] = [
         "AdditionModel",
         "PairPotential",
         "SmoothedPairPotential",
-    ]  # TODO: remove offsets?
+    ]
 ]
 
 

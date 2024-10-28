@@ -8,7 +8,7 @@ from graph_pes.config.utils import _import, create_from_dict, create_from_string
 from graph_pes.models import SchNet
 from graph_pes.models.addition import AdditionModel
 from graph_pes.training.loss import RMSE, Loss
-from graph_pes.util import nested_merge
+from graph_pes.utils.misc import nested_merge
 
 
 def test_import(tmp_path):

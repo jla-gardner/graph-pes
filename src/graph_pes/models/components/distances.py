@@ -5,10 +5,9 @@ import sys
 from abc import ABC, abstractmethod
 
 import torch
-from torch import Tensor, nn
 
 
-class DistanceExpansion(nn.Module, ABC):
+class DistanceExpansion(torch.nn.Module, ABC):
     r"""
     Abstract base class for an expansion function, :math:`\phi(r) :
     [0, r_{\text{cutoff}}] \rightarrow \mathbb{R}^{n_\text{features}}`.
@@ -49,7 +48,7 @@ class DistanceExpansion(nn.Module, ABC):
             The distances to expand. Guaranteed to have shape :math:`(..., 1)`.
         """
 
-    def forward(self, r: Tensor) -> Tensor:
+    def forward(self, r: torch.Tensor) -> torch.Tensor:
         """
         Call the expansion as normal in PyTorch.
 
@@ -143,7 +142,7 @@ class Bessel(DistanceExpansion):
 
     def __init__(self, n_features: int, cutoff: float, trainable: bool = True):
         super().__init__(n_features, cutoff, trainable)
-        self.frequencies = nn.Parameter(
+        self.frequencies = torch.nn.Parameter(
             torch.arange(1, n_features + 1) * math.pi / cutoff,
             requires_grad=trainable,
         )
@@ -212,11 +211,11 @@ class GaussianSmearing(DistanceExpansion):
         super().__init__(n_features, cutoff, trainable)
 
         sigma = cutoff / n_features
-        self.coef = nn.Parameter(
+        self.coef = torch.nn.Parameter(
             torch.tensor(-1 / (2 * sigma**2)),
             requires_grad=trainable,
         )
-        self.centers = nn.Parameter(
+        self.centers = torch.nn.Parameter(
             torch.linspace(0, cutoff, n_features),
             requires_grad=trainable,
         )
@@ -272,7 +271,7 @@ class SinExpansion(DistanceExpansion):
 
     def __init__(self, n_features: int, cutoff: float, trainable: bool = True):
         super().__init__(n_features, cutoff, trainable)
-        self.frequencies = nn.Parameter(
+        self.frequencies = torch.nn.Parameter(
             torch.arange(1, n_features + 1) * math.pi / cutoff,
             requires_grad=trainable,
         )
@@ -341,11 +340,11 @@ class ExponentialRBF(DistanceExpansion):
         super().__init__(n_features, cutoff, trainable)
 
         c = torch.exp(-torch.tensor(cutoff))
-        self.beta = nn.Parameter(
+        self.beta = torch.nn.Parameter(
             torch.ones(n_features) / (2 * (1 - c) / n_features) ** 2,
             requires_grad=trainable,
         )
-        self.centers = nn.Parameter(
+        self.centers = torch.nn.Parameter(
             torch.linspace(c.item(), 1, n_features),
             requires_grad=trainable,
         )
@@ -355,7 +354,7 @@ class ExponentialRBF(DistanceExpansion):
         return torch.exp(-self.beta * offsets**2)
 
 
-class Envelope(torch.nn.Module):
+class Envelope(torch.torch.nn.Module):
     """
     Any envelope function, :math:`E(r)`, for smoothing potentials
     must implement a forward method that takes in a tensor of distances

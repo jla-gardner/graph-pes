@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pytest
-from graph_pes.core import GraphPESModel
-from graph_pes.graphs import keys
+from graph_pes.atomic_graph import keys
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.graphs.graph_typing import AtomicGraph
 from graph_pes.graphs.operations import (
     neighbour_distances,

@@ -1,7 +1,5 @@
 lightning_logs
 __pycache__
-**/*.egg-info
-build
 
 exclude
 docs/build
@@ -24,10 +22,4 @@ coverage.xml
 .isort.cfg
 .DS_Store
 
-thoughts*
-TODO*
-
-results/
-lammps/
-dumps/
 **.cache

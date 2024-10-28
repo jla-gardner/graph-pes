@@ -9,7 +9,7 @@ import warnings
 from pathlib import Path
 from typing import Any
 
-from graph_pes.logger import logger
+from graph_pes.utils.logger import logger
 
 ALLOWED_PACKAGES = {"torch", "graph_pes"}
 

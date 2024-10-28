@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-from graph_pes.core import GraphPESModel
-from graph_pes.logger import logger
+from graph_pes.atomic_graph import (
+    AtomicGraph,
+    number_of_atoms,
+    number_of_structures,
+)
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.addition import AdditionModel
-from graph_pes.nn import learnable_parameters
+from graph_pes.utils.logger import logger
+from graph_pes.utils.nn import learnable_parameters
 from pytorch_lightning.loggers import Logger as PTLLogger
 
 
@@ -42,4 +47,31 @@ def log_model_info(
                 "n_parameters": all_params,
                 "n_learnable_parameters": learnable_params,
             }
+        )
+
+
+def sanity_check(model: GraphPESModel, batch: AtomicGraph) -> None:
+    outputs = model.get_all_PES_predictions(batch)
+
+    N = number_of_atoms(batch)
+    S = number_of_structures(batch)
+    expected_shapes = {
+        "local_energies": (N,),
+        "forces": (N, 3),
+        "energy": (S),
+        "stress": (S, 3, 3),
+    }
+
+    incorrect = []
+    for key, value in outputs.items():
+        if value.shape != expected_shapes[key]:
+            incorrect.append((key, value.shape, expected_shapes[key]))
+
+    if len(incorrect) > 0:
+        raise ValueError(
+            "Sanity check failed for the following outputs:\n"
+            + "\n".join(
+                f"{key}: {value.shape} != {expected}"
+                for key, value, expected in incorrect
+            )
         )

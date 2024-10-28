@@ -1,6 +1,6 @@
 from graph_pes.models.pairwise import LennardJones
-from graph_pes.nn import MLP
 from graph_pes.training.loss import Loss
+from graph_pes.utils.nn import MLP
 
 
 def test_reprs():

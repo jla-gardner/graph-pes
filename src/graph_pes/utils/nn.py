@@ -13,11 +13,10 @@ from typing import (
 import torch
 import torch.nn
 from ase.data import atomic_numbers, chemical_symbols, covalent_radii
+from graph_pes.utils.misc import left_aligned_mul
 from torch import Tensor
 
-from graph_pes.util import left_aligned_mul
-
-from .util import (
+from .misc import (
     MAX_Z,
     pairs,
     to_significant_figures,

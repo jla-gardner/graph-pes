@@ -5,10 +5,8 @@ from typing import Iterator, Sequence
 
 import torch.utils.data
 
-from graph_pes.graphs import LabelledBatch, LabelledGraph
-from graph_pes.graphs.operations import to_batch
-
-from .dataset import LabelledGraphDataset, SequenceDataset
+from ..atomic_graph import AtomicGraph, to_batch
+from .datasets import GraphDataset, SequenceDataset
 
 
 class GraphDataLoader(torch.utils.data.DataLoader):
@@ -31,12 +29,12 @@ class GraphDataLoader(torch.utils.data.DataLoader):
 
     def __init__(
         self,
-        dataset: LabelledGraphDataset | Sequence[LabelledGraph],
+        dataset: GraphDataset | Sequence[AtomicGraph],
         batch_size: int = 1,
         shuffle: bool = False,
         **kwargs,
     ):
-        if not isinstance(dataset, LabelledGraphDataset):
+        if not isinstance(dataset, GraphDataset):
             dataset = SequenceDataset(dataset)
 
         if "collate_fn" in kwargs:

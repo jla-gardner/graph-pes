@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 import torch
 from ase import Atoms
+from graph_pes.atomic_graph import keys
 from graph_pes.data.io import to_atomic_graphs
 from graph_pes.data.loader import GraphDataLoader
-from graph_pes.graphs import keys
 from graph_pes.graphs.operations import (
     neighbour_distances,
     neighbour_vectors,

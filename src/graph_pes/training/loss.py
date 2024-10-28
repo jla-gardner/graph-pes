@@ -3,10 +3,9 @@ from __future__ import annotations
 from typing import Callable, NamedTuple, Sequence
 
 import torch
-from graph_pes.graphs import LabelledBatch, keys
-from graph_pes.nn import UniformModuleList
-from graph_pes.transform import divide_per_atom
-from graph_pes.util import force_to_single_line, uniform_repr
+from graph_pes.atomic_graph import AtomicGraph, PropertyKey, divide_per_atom
+from graph_pes.utils.misc import force_to_single_line, uniform_repr
+from graph_pes.utils.nn import UniformModuleList
 from torch import Tensor, nn
 
 Metric = Callable[[Tensor, Tensor], Tensor]
@@ -39,17 +38,17 @@ class Loss(nn.Module):
 
     def __init__(
         self,
-        property_key: keys.LabelKey,
+        property_key: PropertyKey,
         metric: Metric | None = None,
     ):
         super().__init__()
-        self.property_key: keys.LabelKey = property_key
+        self.property_key: PropertyKey = property_key
         self.metric = MAE() if metric is None else metric
 
     def forward(
         self,
-        predictions: dict[keys.LabelKey, torch.Tensor],
-        graphs: LabelledBatch,
+        predictions: dict[PropertyKey, torch.Tensor],
+        graphs: AtomicGraph,
     ) -> torch.Tensor:
         """
         Computes the loss value.
@@ -64,7 +63,7 @@ class Loss(nn.Module):
 
         return self.metric(
             predictions[self.property_key],
-            graphs[self.property_key],
+            graphs.properties[self.property_key],
         )
 
     @property
@@ -75,8 +74,8 @@ class Loss(nn.Module):
     # add type hints to play nicely with mypy
     def __call__(
         self,
-        predictions: dict[keys.LabelKey, torch.Tensor],
-        graphs: LabelledBatch,
+        predictions: dict[PropertyKey, torch.Tensor],
+        graphs: AtomicGraph,
     ) -> torch.Tensor:
         return super().__call__(predictions, graphs)
 
@@ -129,8 +128,8 @@ class TotalLoss(torch.nn.Module):
 
     def forward(
         self,
-        predictions: dict[keys.LabelKey, torch.Tensor],
-        graphs: LabelledBatch,
+        predictions: dict[PropertyKey, torch.Tensor],
+        graphs: AtomicGraph,
     ) -> TotalLossResult:
         """
         Computes the total loss value.
@@ -143,9 +142,7 @@ class TotalLoss(torch.nn.Module):
             The graphs containing the labels.
         """
 
-        total_loss = torch.scalar_tensor(
-            0.0, device=graphs["atomic_numbers"].device
-        )
+        total_loss = torch.scalar_tensor(0.0, device=graphs.Z.device)
         components: dict[str, SubLossPair] = {}
 
         for loss, weight in zip(self.losses, self.weights):
@@ -160,8 +157,8 @@ class TotalLoss(torch.nn.Module):
     # add type hints to appease mypy
     def __call__(
         self,
-        predictions: dict[keys.LabelKey, torch.Tensor],
-        graphs: LabelledBatch,
+        predictions: dict[PropertyKey, torch.Tensor],
+        graphs: AtomicGraph,
     ) -> TotalLossResult:
         return super().__call__(predictions, graphs)
 
@@ -204,16 +201,16 @@ class PerAtomEnergyLoss(Loss):
         self,
         metric: Metric | None = None,
     ):
-        super().__init__(keys.ENERGY, metric)
+        super().__init__("energy", metric)
 
     def forward(
         self,
-        predictions: dict[keys.LabelKey, torch.Tensor],
-        graphs: LabelledBatch,
+        predictions: dict[PropertyKey, torch.Tensor],
+        graphs: AtomicGraph,
     ) -> torch.Tensor:
         return self.metric(
-            divide_per_atom(predictions[keys.ENERGY], graphs),
-            divide_per_atom(graphs[keys.ENERGY], graphs),
+            divide_per_atom(predictions["energy"], graphs),
+            divide_per_atom(graphs.properties["energy"], graphs),
         )
 
     @property

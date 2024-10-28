@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Literal, Union
 import dacite
 import yaml
 
-from graph_pes.core import GraphPESModel
-from graph_pes.data.dataset import FittingData
+from graph_pes.data.datasets import FittingData
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.addition import AdditionModel
 from graph_pes.training.loss import Loss, TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer

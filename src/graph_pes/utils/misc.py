@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Sequence, TypeVar, overload
 
+import numpy as np
 import torch
 import torch.distributed
 from torch import Tensor
@@ -133,7 +134,7 @@ def to_significant_figures(x: float | int, sf: int = 3) -> float:
     return float(possibly_scientific)
 
 
-def _is_being_documented():
+def is_being_documented():
     return "sphinx" in sys.modules
 
 
@@ -142,6 +143,7 @@ def uniform_repr(
     *anonymous_things: Any,
     max_width: int = 60,
     stringify: bool = True,
+    indent_width: int = 2,
     **named_things: Any,
 ) -> str:
     def _to_str(thing: Any) -> str:
@@ -156,8 +158,8 @@ def uniform_repr(
     if len(single_liner) < max_width and "\n" not in single_liner:
         return single_liner
 
-    def indent(s: str, n=2) -> str:
-        _indent = " " * n
+    def indent(s: str) -> str:
+        _indent = " " * indent_width
         return "\n".join(f"{_indent}{line}" for line in s.split("\n"))
 
     # if we're here, we need to do a multi-line repr
@@ -338,3 +340,44 @@ def left_aligned_div(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     x = x.transpose(0, -1)  # shape: (a, ..., n)
     result = x / y  # shape: (a, ..., n)
     return result.transpose(0, -1)  # shape: (n, ..., a)
+
+
+def random_split(
+    sequence: Sequence[T],
+    lengths: Sequence[int],
+    seed: int | None = None,
+) -> list[list[T]]:
+    """
+    Randomly split `sequence` into sub-sequences according to `lengths`.
+
+    Parameters
+    ----------
+    sequence: Sequence[E]
+        The sequence to split.
+    lengths: Sequence[int]
+        The lengths of the sub-sequences to create.
+    seed: int | None
+        The random seed to use. If `None`, the current random state is
+        used (non-deterministic).
+
+    Returns
+    -------
+    list[list[E]]
+        A list of sub-sequences.
+
+    Examples
+    --------
+    >>> random_split("abcde", [2, 3])
+    [['b', 'c'], ['a', 'd', 'e']]
+    """
+
+    if sum(lengths) > len(sequence):
+        raise ValueError("Not enough things to split")
+
+    shuffle = np.random.RandomState(seed=seed).permutation(len(sequence))
+    ptr = [0, *np.cumsum(lengths)]
+
+    return [
+        [sequence[i] for i in shuffle[ptr[n] : ptr[n + 1]]]
+        for n in range(len(lengths))
+    ]

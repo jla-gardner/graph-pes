@@ -3,19 +3,19 @@ from __future__ import annotations
 from typing import Sequence
 
 import torch
-from torch import Tensor
 
-from graph_pes.core import GraphPESModel
-from graph_pes.data.dataset import LabelledGraphDataset
-from graph_pes.graphs import AtomicGraph, LabelledGraph, keys
-from graph_pes.graphs.operations import (
+from graph_pes.atomic_graph import (
+    AtomicGraph,
+    PropertyKey,
     is_batch,
     number_of_atoms,
     number_of_structures,
     trim_edges,
 )
-from graph_pes.nn import UniformModuleDict
-from graph_pes.util import uniform_repr
+from graph_pes.data.datasets import GraphDataset
+from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.utils.misc import uniform_repr
+from graph_pes.utils.nn import UniformModuleDict
 
 
 class AdditionModel(GraphPESModel):
@@ -55,8 +55,8 @@ class AdditionModel(GraphPESModel):
         )
         self.models = UniformModuleDict(**models)
 
-    def forward(self, graph: AtomicGraph) -> dict[keys.LabelKey, Tensor]:
-        device = graph["atomic_numbers"].device
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
+        device = graph.Z.device
         N = number_of_atoms(graph)
 
         if is_batch(graph):
@@ -75,7 +75,7 @@ class AdditionModel(GraphPESModel):
                 "local_energies": torch.zeros((N), device=device),
             }
 
-        predictions: dict[keys.LabelKey, Tensor] = {
+        total_predictions: dict[PropertyKey, torch.Tensor] = {
             k: zeros[k] for k in self.implemented_properties
         }
         for model in self.models.values():
@@ -84,12 +84,12 @@ class AdditionModel(GraphPESModel):
                 trimmed, properties=self.implemented_properties
             )
             for key in self.implemented_properties:
-                predictions[key] += preds[key]
+                total_predictions[key] += preds[key]
 
-        return predictions
+        return total_predictions
 
     def pre_fit_all_components(
-        self, graphs: LabelledGraphDataset | Sequence[LabelledGraph]
+        self, graphs: GraphDataset | Sequence[AtomicGraph]
     ):
         for model in self.models.values():
             model.pre_fit_all_components(graphs)
@@ -100,6 +100,7 @@ class AdditionModel(GraphPESModel):
             **self.models,
             stringify=True,
             max_width=80,
+            indent_width=2,
         )
 
     def __getitem__(self, key: str) -> GraphPESModel:

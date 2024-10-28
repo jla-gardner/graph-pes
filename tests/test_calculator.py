@@ -1,6 +1,6 @@
 from ase.build import bulk, molecule
-from graph_pes.calculator import GraphPESCalculator
 from graph_pes.models import LennardJones
+from graph_pes.utils.calculator import GraphPESCalculator
 
 
 def test_calc():
