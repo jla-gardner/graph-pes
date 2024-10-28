@@ -52,6 +52,7 @@ class EnergyOffset(GraphPESModel):
         }
 
     def non_decayable_parameters(self) -> list[torch.nn.Parameter]:
+        """The ``_offsets`` parameter should not be decayed."""
         return [self._offsets]
 
     def __repr__(self):

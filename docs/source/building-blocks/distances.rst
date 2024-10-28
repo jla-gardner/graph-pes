@@ -4,9 +4,8 @@ Distance Expansions
 Available Expansions
 --------------------
 
-``graph-pes`` exposes the :class:`DistanceExpansion <graph_pes.models.components.distances.DistanceExpansion>` 
-base class, which can be used to implement new distance expansions.
-We also provide a few common expansions:
+``graph-pes`` exposes the :class:`~graph_pes.models.components.distances.DistanceExpansion` 
+base class, together with implementations of a few common expansions:
 
 .. autoclass:: graph_pes.models.components.distances.Bessel
     :show-inheritance:

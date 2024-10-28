@@ -244,6 +244,7 @@ class LennardJones(PairPotential):
             self.__class__.__name__,
             epsilon=to_significant_figures(self.epsilon.item(), 3),
             sigma=to_significant_figures(self.sigma.item(), 3),
+            cutoff=to_significant_figures(self.cutoff.item(), 3),
         )
 
     @staticmethod

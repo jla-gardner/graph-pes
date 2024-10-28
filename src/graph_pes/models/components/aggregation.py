@@ -69,13 +69,22 @@ class NeighbourAggregation(ABC, torch.nn.Module):
         """
         Evaluates the following map:
 
-        .. code-block:: python
+        .. list-table::
+           :widths: 30 70
+           :header-rows: 1
 
-            "sum"                -> SumNeighbours()
-            "mean"               -> MeanNeighbours()
-            "constant_fixed"     -> ScaledSumNeighbours(learnable=False)
-            "constant_learnable" -> ScaledSumNeighbours(learnable=True)
-            "sqrt"               -> VariancePreservingSumNeighbours()
+           * - Mode
+             - Aggregation
+           * - ``"sum"``
+             - :class:`SumNeighbours() <SumNeighbours>`
+           * - ``"mean"``
+             - :class:`MeanNeighbours() <MeanNeighbours>`
+           * - ``"constant_fixed"``
+             - :class:`ScaledSumNeighbours(learnable=False) <ScaledSumNeighbours>`
+           * - ``"constant_learnable"``
+             - :class:`ScaledSumNeighbours(learnable=True) <ScaledSumNeighbours>`
+           * - ``"sqrt"``
+             - :class:`VariancePreservingSumNeighbours() <VariancePreservingSumNeighbours>`
 
         Parameters
         ----------
@@ -86,7 +95,7 @@ class NeighbourAggregation(ABC, torch.nn.Module):
         -------
         NeighbourAggregation
             The parsed neighbour aggregation mode.
-        """
+        """  # noqa: E501
         if mode == "sum":
             return SumNeighbours()
         elif mode == "mean":

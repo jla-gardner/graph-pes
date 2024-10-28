@@ -4,6 +4,9 @@ Envelopes
 Available Envelopes
 -------------------
 
+``graph-pes`` exposes the :class:`~graph_pes.models.components.distances.Envelope`
+base class, together with implementations of a few common envelope functions:
+
 .. autoclass:: graph_pes.models.components.distances.PolynomialEnvelope
     :show-inheritance:
 
