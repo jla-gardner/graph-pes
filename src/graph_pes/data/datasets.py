@@ -25,22 +25,45 @@ T = TypeVar("T", covariant=True)
 
 
 class SizedDataset(Protocol[T]):
-    def __getitem__(self, index: int) -> T: ...
-    def __len__(self) -> int: ...
-    def __iter__(self) -> Iterator[T]: ...
+    """
+    A protocol for datasets that can be indexed into and have a length.
+    """
+
+    def __getitem__(self, index: int) -> T:
+        """Index into the dataset."""
+        ...
+
+    def __len__(self) -> int:
+        """The number of elements in the dataset."""
+        ...
+
+    def __iter__(self) -> Iterator[T]:
+        """Iterate over the dataset."""
+        ...
 
 
 class GraphDataset(torch.utils.data.Dataset, ABC):
     """
     Abstract base class for datasets of
     :class:`~graph_pes.AtomicGraph` instances.
+
+    All subclasses are fully compatible with :class:`torch.utils.data.Dataset`,
+    and with distributed training protocols providing that the
+    :meth:`~graph_pes.data.GraphDataset.prepare_data` and
+    :meth:`~graph_pes.data.GraphDataset.setup` methods are implemented
+    correctly.
     """
 
     @abstractmethod
-    def __getitem__(self, index: int) -> AtomicGraph: ...
+    def __getitem__(self, index: int) -> AtomicGraph:
+        """
+        Indexing into the dataset should return an
+        :class:`~graph_pes.AtomicGraph`.
+        """
 
     @abstractmethod
-    def __len__(self) -> int: ...
+    def __len__(self) -> int:
+        """The number of graphs in the dataset."""
 
     def prepare_data(self):
         """
@@ -84,7 +107,7 @@ class GraphDataset(torch.utils.data.Dataset, ABC):
 
         Returns
         -------
-        LabelledGraphDataset
+        GraphDataset
             A dataset with only the first `n` elements.
         """
         if n > len(self):
@@ -116,6 +139,7 @@ class GraphDataset(torch.utils.data.Dataset, ABC):
         ]
 
     def __iter__(self) -> Iterator[AtomicGraph]:
+        """Iterate over the dataset."""
         for i in range(len(self)):
             yield self[i]
 
@@ -126,9 +150,9 @@ class ReMappedDataset(GraphDataset):
 
     Parameters
     ----------
-    dataset
+    dataset: GraphDataset
         The dataset to remap.
-    indices
+    indices: Sequence[int]
         The remapped indices to use.
     """
 
@@ -146,13 +170,14 @@ class ReMappedDataset(GraphDataset):
 
 class ShuffledDataset(ReMappedDataset):
     """
-    A dataset that shuffles the order of the underlying dataset.
+    A dataset that wraps an existing dataset, and mimics a shuffled
+    version of it.
 
     Parameters
     ----------
-    dataset
+    dataset: GraphDataset
         The dataset to shuffle.
-    seed
+    seed: int
         The random seed to use for shuffling.
     """
 
@@ -171,7 +196,7 @@ class SequenceDataset(GraphDataset):
 
     Parameters
     ----------
-    graphs
+    graphs: Sequence[AtomicGraph]
         The graphs to wrap.
     """
 
@@ -187,19 +212,31 @@ class SequenceDataset(GraphDataset):
 
 class ASEDataset(GraphDataset):
     """
-    A dataset that wraps an ASE dataset.
+    A dataset that wraps a dataset of :class:`ase.Atoms` objects.
+
+    We make no assumptions as to the format of the underlying dataset,
+    so long as we can index into it, and know its length. This means
+    that we can wrap:
+
+    * a list of :class:`ase.Atoms` objects
+    * an ``lmdb``-backed dataset (as from e.g. `load-atoms <https://jla-gardner.github.io/load-atoms/>`__)
+    * any other collection of :class:`ase.Atoms` objects that we can index into
 
     Parameters
     ----------
-    structures
+    structures: SizedDataset[ase.Atoms] | typing.Sequence[ase.Atoms]
         The ASE dataset to wrap.
-    cutoff
+    cutoff: float
         The cutoff to use when creating neighbour indexes for the graphs.
-    pre_transform
-        Whether to precompute the neighbour indexes for the graphs.
-    property_mapping
-        A mapping from properties defined on the ASE Atoms objects to their
-        appropriate names in ``graph-pes``.
+    pre_transform: bool
+        Whether to precompute the the :class:`~graph_pes.AtomicGraph`
+        objects, or only do so on-the-fly when the dataset is accessed.
+        This pre-computations stores the graphs in memory, and so will be
+        prohibitively expensive for large datasets.
+    property_mapping: Mapping[str, PropertyKey] | None
+        A mapping from properties defined on the :class:`ase.Atoms` objects to
+        their appropriate names in ``graph-pes``, see
+        :meth:`~graph_pes.AtomicGraph.from_ase`.
     """
 
     def __init__(
@@ -294,7 +331,10 @@ def load_atoms_dataset(
     property_map: dict[str, PropertyKey] | None = None,
 ) -> FittingData:
     """
-    Load an ``ASE``/``load-atoms`` dataset and split into train and valid sets.
+    Load an dataset of :class:`ase.Atoms` objects using
+    `load-atoms <https://jla-gardner.github.io/load-atoms/>`__,
+    convert them to :class:`~graph_pes.AtomicGraph` instances, and split into
+    train and valid sets.
 
     Parameters
     ----------

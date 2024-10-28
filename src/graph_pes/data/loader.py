@@ -11,13 +11,14 @@ from .datasets import GraphDataset, SequenceDataset
 
 class GraphDataLoader(torch.utils.data.DataLoader):
     r"""
-    A data loader for merging :class:`~graph_pes.AtomicGraph` objects
+    A helper class for merging :class:`~graph_pes.AtomicGraph` objects
     into a single batch, represented as another :class:`~graph_pes.AtomicGraph`
-    containing disjoint subgraphs per structure.
+    containing disjoint subgraphs per structure (see
+    :func:`~graph_pes.atomic_graph.to_batch`).
 
     Parameters
     ----------
-    dataset
+    dataset: GraphDataset | Sequence[AtomicGraph]
         The dataset to load.
     batch_size
         The batch size.
@@ -55,5 +56,5 @@ class GraphDataLoader(torch.utils.data.DataLoader):
             **kwargs,
         )
 
-    def __iter__(self) -> Iterator[LabelledBatch]:  # type: ignore
+    def __iter__(self) -> Iterator[AtomicGraph]:  # type: ignore
         return super().__iter__()

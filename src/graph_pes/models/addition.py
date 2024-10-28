@@ -20,8 +20,11 @@ from graph_pes.utils.nn import UniformModuleDict
 
 class AdditionModel(GraphPESModel):
     """
-    A wrapper that makes predictions as the sum of the predictions
-    of its constituent models.
+    A utility class for combining the predictions of multiple models.
+
+    This is particularly useful for e.g. combining an many-body model with an
+    :class:`~graph_pes.models.offsets.EnergyOffset` model to account for the
+    arbitrary per-atom energy offsets produced by labelling codes.
 
     Parameters
     ----------

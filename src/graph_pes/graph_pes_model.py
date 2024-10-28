@@ -367,7 +367,7 @@ class GraphPESModel(nn.Module, ABC):
                     "This may take some time. Consider using a smaller, "
                     "representative collection of structures for pre-fitting. "
                     "Set ``max_n_pre_fit`` in your config, or "
-                    "see LabelledGraphDataset.sample() for more information.",
+                    "see GraphDataset.sample() for more information.",
                     stacklevel=2,
                 )
 
