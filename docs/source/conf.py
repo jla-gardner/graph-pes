@@ -65,6 +65,10 @@ nitpick_ignore = [
     ("py:class", "e3nn.*"),
     ("py:class", "optional"),
     ("py:class", "o3.Irreps"),
+    ("py:class", "graph_pes.config.config.LossSpec"),
+    ("py:class", "graph_pes.config.config.FittingConfig"),
+    ("py:class", "graph_pes.config.config.SWAConfig"),
+    ("py:class", "graph_pes.config.config.GeneralConfig"),
 ]
 
 # override the default css to match the furo theme

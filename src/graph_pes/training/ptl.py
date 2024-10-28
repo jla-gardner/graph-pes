@@ -87,7 +87,11 @@ def train_with_lightning(
         pass
 
     # - load the best weights
-    task.load_best_weights(model, trainer)
+    try:
+        task.load_best_weights(model, trainer)
+    except Exception as e:
+        logger.error(f"Failed to load best weights: {e}")
+        pass
 
 
 class LearnThePES(pl.LightningModule):

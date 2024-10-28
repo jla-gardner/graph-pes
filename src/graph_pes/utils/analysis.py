@@ -103,7 +103,7 @@ def parity_plot(
 
     .. code-block:: python
 
-        parity_plot(model, train, keys.ENERGY)
+        parity_plot(model, train, "energy")
 
     .. image:: Cu-LJ-default-parity.svg
         :align: center
@@ -124,7 +124,7 @@ def parity_plot(
             parity_plot(
                 model,
                 data,
-                keys.ENERGY,
+                "energy",
                 transform=DividePerAtom(),
                 units="eV / atom",
                 label=name,

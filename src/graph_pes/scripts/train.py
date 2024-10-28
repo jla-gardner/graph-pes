@@ -312,6 +312,7 @@ def train_from_config(config: Config):
     except Exception as e:
         cleanup()
         save_model()
+        logger.error(f"Training failed: {e}")
         raise e
 
     log("Training complete.")

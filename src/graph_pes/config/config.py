@@ -23,12 +23,19 @@ from .utils import create_from_data, create_from_string
 
 @dataclass
 class LossSpec:
+    """
+    Specification for a component of a
+    :class:`~graph_pes.training.loss.TotalLoss`.
+    """
+
     component: Union[str, Dict[str, Any]]
     weight: Union[int, float] = 1.0
 
 
 @dataclass
 class FittingOptions:
+    """Options for the fitting process."""
+
     pre_fit_model: bool
     """Whether to pre-fit the model before training."""
 
@@ -110,16 +117,12 @@ class SWAConfig:
 
 @dataclass
 class FittingConfig(FittingOptions):
-    """Configuration for the fitting process:"""
+    """Configuration for the fitting process."""
 
     optimizer: Union[str, Dict[str, Any]]
     """
-    Specification for the optimizer.
-
-    ``graph-pes`` provides a few common optimisers, but you can also 
-    roll your own.
-    
-    Point to something that instantiates a graph_pes optimiser:
+    Specification for the optimizer. Point to something that instantiates a
+    :class:`~graph_pes.training.opt.Optimizer`.
 
     Examples
     --------
@@ -144,8 +147,7 @@ class FittingConfig(FittingOptions):
     scheduler: Union[str, Dict[str, Any], None]
     """
     Specification for the learning rate scheduler. Optional.
-
-    TODO: more schedules/flexibility
+    Default is to have no learning rate schedule (``None``).
 
     Examples
     --------
@@ -159,7 +161,14 @@ class FittingConfig(FittingOptions):
     """
 
     swa: Union[SWAConfig, None]
-    """Configuration for Stochastic Weight Averaging. Optional."""
+    """
+    Optional, defaults to ``None``.
+
+    .. dropdown:: ``swa`` options
+
+        .. autoclass:: graph_pes.config.config.SWAConfig()
+            :members:
+    """
 
     ### Methods ###
 
@@ -174,6 +183,8 @@ class FittingConfig(FittingOptions):
 
 @dataclass
 class GeneralConfig:
+    """General configuration for a training run."""
+
     seed: int
     """The global random seed for reproducibility."""
 
@@ -219,164 +230,181 @@ class Config:
         To point to a class or function with arguments, use a nested dictionary
         structure like so:
 
-    .. code-block:: yaml
+        .. code-block:: yaml
 
-        graph_pes.models.SchNet:
-            cutoff: 5.0
-            n_layers: 3
+            graph_pes.models.SchNet:
+                cutoff: 5.0
+                n_layers: 3
     """
 
     model: Union[str, Dict[str, Any]]
-    """
-    Specification for the model.
+    """        
+    The model to train.
 
-    Examples
-    --------
-    To specify a single model with parameters:
+    .. dropdown:: ``model`` options
 
-    .. code-block:: yaml
-    
-        model:
-            graph_pes.models.LennardJones:
-                sigma: 0.1
-                epsilon: 1.0
-    
-    or, if no parameters are needed:
+        To specify a single model with parameters:
 
-    .. code-block:: yaml
-    
-        model: my_model.SpecialModel()
-    
-    To specify multiple components of an 
-    :class:`~graph_pes.models.AdditionModel`, create a list of specications as 
-    above, using whatever unique names you please:
+        .. code-block:: yaml
+        
+            model:
+                graph_pes.models.LennardJones:
+                    sigma: 0.1
+                    epsilon: 1.0
+        
+        or, if no parameters are needed:
 
-    .. code-block:: yaml
-    
-        model:
-            offset:
-                graph_pes.models.FixedOffset: {H: -123.4, C: -456.7}
-            many-body: graph_pes.models.SchNet()
+        .. code-block:: yaml
+        
+            model: my_model.SpecialModel()
+        
+        To specify multiple components of an 
+        :class:`~graph_pes.models.AdditionModel`, create a list of 
+        specications as above, using whatever unique names you please:
+
+        .. code-block:: yaml
+        
+            model:
+                offset:
+                    graph_pes.models.FixedOffset: {H: -123.4, C: -456.7}
+                many-body: graph_pes.models.SchNet()
     """
 
     data: Union[str, Dict[str, Any]]
     """
-    Specification for the data. 
+    The data to train on.
+
+    .. dropdown:: ``data`` options
     
-    Point to one of the following:
+        Point to one of the following:
 
-    - a callable that returns a :class:`~graph_pes.data.FittingData` 
-      instance
-    - a dictionary mapping ``"train"`` and ``"valid"`` keys to callables that
-      return :class:`~graph_pes.data.GraphDataset` instances
+        - a callable that returns a :class:`~graph_pes.data.FittingData` 
+          instance
+        - a dictionary mapping ``"train"`` and ``"valid"`` keys to callables 
+          that return :class:`~graph_pes.data.GraphDataset` instances
 
-    Examples
-    --------
-    Load custom data from a function with no arguments:
+        Load custom data from a function with no arguments:
 
-    .. code-block:: yaml
-        
-        data: my_module.my_fitting_data()
+        .. code-block:: yaml
+            
+            data: my_module.my_fitting_data()
 
-    Point to :func:`graph_pes.data.load_atoms_dataset` with arguments:
+        Point to :func:`graph_pes.data.load_atoms_dataset` with arguments:
 
-    .. code-block:: yaml
+        .. code-block:: yaml
 
-        data:
-            graph_pes.data.load_atoms_dataset:
-                id: QM9
-                cutoff: 5.0
-                n_train: 10000
-                n_val: 1000
-                property_map:
-                    energy: U0
-
-    Point to separate train and validation datasets, taking a random
-    1,000 structures from the training file to train from, and all
-    structures from the validation file:
-
-    .. code-block:: yaml
-
-        data:
-            train:
-                graph_pes.data.file_dataset:
-                    path: training_data.xyz
+            data:
+                graph_pes.data.load_atoms_dataset:
+                    id: QM9
                     cutoff: 5.0
-                    n: 1000
-                    shuffle: true
-                    seed: 42
-            valid:
-                graph_pes.data.file_dataset:
-                    path: validation_data.xyz
-                    cutoff: 5.0
+                    n_train: 10000
+                    n_val: 1000
+                    property_map:
+                        energy: U0
+
+        Point to separate train and validation datasets, taking a random
+        1,000 structures from the training file to train from, and all
+        structures from the validation file:
+
+        .. code-block:: yaml
+
+            data:
+                train:
+                    graph_pes.data.file_dataset:
+                        path: training_data.xyz
+                        cutoff: 5.0
+                        n: 1000
+                        shuffle: true
+                        seed: 42
+                valid:
+                    graph_pes.data.file_dataset:
+                        path: validation_data.xyz
+                        cutoff: 5.0
     """
 
     loss: Union[str, Dict[str, Any], List[LossSpec]]
     """
-    Specification for the loss function. This can be a single loss function
-    or a list of loss functions with weights.
+    The loss function to use.
 
-    Examples
-    --------
-    To specify a single loss function:
+    .. dropdown:: ``loss`` options
 
-    .. code-block:: yaml
-    
-        loss: graph_pes.training.loss.PerAtomEnergyLoss()
+        To specify a single loss function:
 
-    or with parameters:
+        .. code-block:: yaml
+        
+            loss: graph_pes.training.loss.PerAtomEnergyLoss()
 
-    .. code-block:: yaml
+        or with parameters:
+
+        .. code-block:: yaml
+            
+                loss:
+                    graph_pes.training.loss.Loss:
+                        property_key: energy
+                        metric: graph_pes.training.loss.RMSE()
+
+        To specify multiple loss functions with weights:
+
+        .. code-block:: yaml
         
             loss:
-                graph_pes.training.loss.Loss:
-                    property_key: energy
-                    metric: graph_pes.training.loss.RMSE()
-
-    To specify multiple loss functions with weights:
-
-    .. code-block:: yaml
-    
-        loss:
-            - component: graph_pes.training.loss.Loss:
-                property_key: energy
-                metric: graph_pes.training.loss.RMSE()
-              weight: 1.0
-            - component: graph_pes.training.loss.Loss:
-                property_key: forces
-                metric: graph_pes.training.loss.MAE()
-              weight: 10.0
+                - component: graph_pes.training.loss.Loss:
+                      property_key: energy
+                      metric: graph_pes.training.loss.RMSE()
+                  weight: 1.0
+                - component: graph_pes.training.loss.Loss:
+                      property_key: forces
+                      metric: graph_pes.training.loss.MAE()
+                weight: 10.0
+        
+        .. autoclass:: graph_pes.config.config.LossSpec()
+            :members:
     """
 
     fitting: FittingConfig
-    """see :class:`~graph_pes.config.spec.FittingConfig`"""
+    """
+    Extended configuration for the fitting process.
+
+    .. dropdown:: ``fitting`` options
+
+        .. autoclass:: graph_pes.config.config.FittingConfig()
+            :members:
+            :inherited-members:
+    """
 
     general: GeneralConfig
-    """Miscellaneous configuration options."""
+    """
+    General configuration for a training run.
+
+    .. dropdown:: ``general`` options
+
+        .. autoclass:: graph_pes.config.config.GeneralConfig()
+            :members:
+    """
 
     wandb: Union[Dict[str, Any], None]
     """
-    Configuration for Weights & Biases logging.
-    
-    If ``None``, logging is disabled. Otherwise, provide a dictionary of
-    overrides to pass to lightning's `WandbLogger <https://lightning.ai/docs/pytorch/stable/extensions/generated/lightning.pytorch.loggers.WandbLogger.html>`__.
+    Configure Weights & Biases logging.
 
-    Examples
-    --------
-    Custom project, entity and tags:
+    .. dropdown:: ``wandb`` options
 
-    .. code-block:: yaml
-    
-        wandb:
-            project: my_project
-            entity: my_entity
-            tags: [my_tag]
+        Disable weights & biases logging:
 
-    Disable weights & biases logging:
+        .. code-block:: yaml
+            
+                wandb: null
 
-    .. code-block:: yaml
+        Otherwise, provide a dictionary of
+        overrides to pass to lightning's `WandbLogger <https://lightning.ai/docs/pytorch/stable/extensions/generated/lightning.pytorch.loggers.WandbLogger.html>`__.
+
+        .. code-block:: yaml
         
-            wandb: null
+            wandb:
+                project: my_project
+                entity: my_entity
+                tags: [my_tag]
+
+        
     """  # noqa: E501
 
     ### Methods ###

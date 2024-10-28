@@ -5,7 +5,7 @@ from typing import Any
 
 import yaml
 
-from .spec import Config, FittingOptions
+from .config import Config, FittingOptions
 
 __all__ = [
     "Config",

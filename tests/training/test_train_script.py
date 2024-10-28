@@ -5,7 +5,7 @@ from pathlib import Path
 
 import yaml
 from graph_pes.config import Config, get_default_config_values
-from graph_pes.config.spec import SWAConfig
+from graph_pes.config.config import SWAConfig
 from graph_pes.scripts.train import (
     extract_config_from_command_line,
     parse_args,

@@ -63,14 +63,12 @@ class CFConv(torch.nn.Module):
 
     def forward(
         self,
-        node_features: torch.Tensor,  # (n_atoms, F)
+        channels: torch.Tensor,  # (n_atoms, F)
         edge_distances: torch.Tensor,  # (E,)
         graph: AtomicGraph,
     ) -> torch.Tensor:  # (n_atoms, F)
         edge_features = self.filter_generator(edge_distances)  # (E, F)
-        neighbour_features = index_over_neighbours(
-            node_features, graph
-        )  # (E, F)
+        neighbour_features = index_over_neighbours(channels, graph)  # (E, F)
 
         messages = neighbour_features * edge_features  # (E, F)
 
@@ -114,7 +112,7 @@ class SchNetInteraction(torch.nn.Module):
 
     def __init__(
         self,
-        node_features: int,
+        channels: int,
         expansion_features: int,
         cutoff: float,
         basis_type: type[DistanceExpansion],
@@ -124,14 +122,14 @@ class SchNetInteraction(torch.nn.Module):
         # schnet interaction block's are composed of 3 elements
 
         # 1. linear transform to get new node features
-        self.linear = torch.nn.Linear(node_features, node_features, bias=False)
+        self.linear = torch.nn.Linear(channels, channels, bias=False)
 
         # 2. cfconv to mix these new features with distances information,
         # and aggregate over neighbors to create completely new node features
         filter_generator = torch.nn.Sequential(
             basis_type(expansion_features, cutoff),
             MLP(
-                [expansion_features, node_features, node_features],
+                [expansion_features, channels, channels],
                 activation=ShiftedSoftplus(),
             ),
         )
@@ -139,18 +137,18 @@ class SchNetInteraction(torch.nn.Module):
 
         # 3. mlp to further embed these new node features
         self.mlp = MLP(
-            [node_features, node_features, node_features],
+            [channels, channels, channels],
             activation=ShiftedSoftplus(),
         )
 
     def forward(
         self,
-        node_features: torch.Tensor,
+        channels: torch.Tensor,
         neighbour_distances: torch.Tensor,
         graph: AtomicGraph,
     ):
         # 1. linear transform to get new node features
-        h = self.linear(node_features)
+        h = self.linear(channels)
 
         # 2. cfconv to mix these new features with distances information,
         # and aggregate over neighbors to create completely new node features
@@ -187,7 +185,7 @@ class SchNet(GraphPESModel):
 
     Parameters
     ----------
-    node_features
+    channels
         Number of features per node.
     expansion_features
         Number of features used for the radial basis expansion.
@@ -204,7 +202,7 @@ class SchNet(GraphPESModel):
     def __init__(
         self,
         cutoff: float = DEFAULT_CUTOFF,
-        node_features: int = 64,
+        channels: int = 64,
         expansion_features: int = 50,
         layers: int = 3,
         expansion: type[DistanceExpansion] | None = None,
@@ -217,17 +215,15 @@ class SchNet(GraphPESModel):
         if expansion is None:
             expansion = GaussianSmearing
 
-        self.chemical_embedding = PerElementEmbedding(node_features)
+        self.chemical_embedding = PerElementEmbedding(channels)
 
         self.interactions = UniformModuleList(
-            SchNetInteraction(
-                node_features, expansion_features, cutoff, expansion
-            )
+            SchNetInteraction(channels, expansion_features, cutoff, expansion)
             for _ in range(layers)
         )
 
         self.read_out = MLP(
-            [node_features, node_features // 2, 1],
+            [channels, channels // 2, 1],
             activation=ShiftedSoftplus(),
         )
 

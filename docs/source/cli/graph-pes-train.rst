@@ -1,5 +1,3 @@
-TODO: write this
-
 .. _cli-reference:
 
 ``graph-pes-train``
@@ -28,6 +26,45 @@ TODO: write this
 
     Copyright 2023-24, John Gardner
 
+Usage
+-----
+
+Train from a config file:
+
+.. code-block:: bash
+
+    $ graph-pes-train config.yaml 
+
+Train from a config file, overriding a specific option:
+
+.. code-block:: bash
+
+    $ graph-pes-train config.yaml fitting^trainer_kwargs^max_epochs=10
+
+Train from multiple config files:
+
+.. code-block:: bash
+
+    $ graph-pes-train config-1.yaml config-2.yaml
+
+
+Example configs:
+----------------
+
+.. _minimal config:
+.. dropdown:: A minimal config: ``minimal.yaml``
+
+    .. literalinclude:: ../../../configs/minimal.yaml
+        :language: yaml
+        :caption: minimal.yaml
+
+    This config can be so small because ``graph-pes-train`` loads in 
+    default values from ``defaults.yaml`` and overwrites them with any 
+    values you specify in the config file:
+
+    .. literalinclude:: ../../../src/graph_pes/config/defaults.yaml
+        :language: yaml
+        :caption: defaults.yaml
 
 
 Configuration
@@ -57,41 +94,3 @@ All available configuration options are documented below. For example config fil
 .. autoclass:: graph_pes.config.Config()
     :members:
     :exclude-members: hash
-
-.. autoclass:: graph_pes.config.spec.FittingConfig()
-    :members:
-    :inherited-members:
-
-.. autoclass:: graph_pes.config.spec.SWAConfig()
-    :members:
-
-.. autoclass:: graph_pes.config.spec.GeneralConfig()
-    :members:
-
-.. autoclass:: graph_pes.config.spec.LossSpec()
-    :members:
-
-
-Defaults
---------
-
-The default configuration is defined in `defaults.yaml <https://github.com/jla-gardner/graph-pes/blob/main/src/graph_pes/config/defaults.yaml>`_:
-
-.. literalinclude:: ../../../src/graph_pes/config/defaults.yaml
-    :language: yaml
-    :caption: defaults.yaml
-
-
-Examples
---------
-
-.. _minimal config:
-
-Minimal
-+++++++
-
-Train ...
-
-.. literalinclude:: ../../../configs/minimal.yaml
-    :language: yaml
-    :caption: minimal.yaml

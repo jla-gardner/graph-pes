@@ -28,7 +28,7 @@ class Loss(nn.Module):
 
     .. code-block:: python
 
-        energy_rmse_loss = Loss(keys.ENERGY, RMSE())
+        energy_rmse_loss = Loss("energy", RMSE())
         energy_rmse_value = energy_rmse_loss(
             predictions,  # a dict of key (energy/force/etc.) to value
             graphs,

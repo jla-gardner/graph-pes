@@ -58,7 +58,7 @@ def test_counting():
     _schnet_dim = 50
     model = AdditionModel(
         offset=LearnableOffset(),
-        schnet=SchNet(node_features=_schnet_dim),
+        schnet=SchNet(channels=_schnet_dim),
     )
 
     non_pre_fit_params = sum(p.numel() for p in model.parameters())

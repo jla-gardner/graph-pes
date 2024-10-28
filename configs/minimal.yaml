@@ -1,17 +1,10 @@
-# minimal.yaml:
-#    a minimal configuration to pass to graph-pes-train
-#
-#
-# Here we train a SchNet model on the energy labels of QM7 structures
-# There is no need to learn per-atom offsets, since the energy labels on
-# QM7 are **atomisation energies**, and hence the energies of isolated atoms
-# are identically 0.
-
+# train a SchNet model...
 model:
     graph_pes.models.SchNet:
         layers: 3
-        node_features: 64
+        channels: 64
 
+# ...using some of the QM7 structures...
 data:
     graph_pes.data.load_atoms_dataset:
         id: QM7
@@ -19,32 +12,5 @@ data:
         n_train: 5_000
         n_valid: 100
 
+# ...training on energy labels
 loss: graph_pes.training.loss.PerAtomEnergyLoss()
-
-# train for at most 1,000 epochs, but stop once the validation loss
-# has not improved for 50 epochs. Use the Adam optimizer, with a batch
-# size of 64, on whatever accelerator is available (cpu, gpu, tpu, mps, etc.)
-fitting:
-    trainer_kwargs:
-        max_epochs: 1_000
-        accelerator: auto
-
-    early_stopping_patience: 50
-
-    optimizer:
-        graph_pes.training.opt.Optimizer:
-            name: torch.optim.Adam
-            lr: 0.003
-
-    loader_kwargs:
-        batch_size: 64
-
-# configure weights and biases
-wandb:
-    project: graph-pes
-    tags: [minimal, qm7, schnet]
-
-# save model, logs, checkpoints, etc. to `graph-pes-results/schnet+qm7`
-general:
-    root_dir: graph-pes-results
-    run_id: schnet+qm7
