@@ -8,3 +8,5 @@
 - [ ] fix PAINN and TensorNet equivariance
 - [ ] dtype tests
 - [ ] use "channels" everywhere
+- [ ] delete this file
+- [ ] fix notebooks

@@ -12,7 +12,8 @@ from .datasets import GraphDataset, SequenceDataset
 class GraphDataLoader(torch.utils.data.DataLoader):
     r"""
     A data loader for merging :class:`~graph_pes.AtomicGraph` objects
-    into :class:`~graph_pes.AtomicGraphBatch` objects.
+    into a single batch, represented as another :class:`~graph_pes.AtomicGraph`
+    containing disjoint subgraphs per structure.
 
     Parameters
     ----------

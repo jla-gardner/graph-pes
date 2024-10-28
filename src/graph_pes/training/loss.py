@@ -14,7 +14,7 @@ Metric = Callable[[Tensor, Tensor], Tensor]
 class Loss(nn.Module):
     r"""
     A :class:`Loss` instance applies its :class:`Metric` to the predictions and
-    labels for a given property in a :class:`~graph_pes.graphs.LabelledBatch`.
+    labels for a given property in a :class:`~graph_pes.AtomicGraph`.
 
     Parameters
     ----------

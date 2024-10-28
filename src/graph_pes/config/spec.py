@@ -268,7 +268,7 @@ class Config:
     - a callable that returns a :class:`~graph_pes.data.FittingData` 
       instance
     - a dictionary mapping ``"train"`` and ``"valid"`` keys to callables that
-      return :class:`~graph_pes.data.LabelledGraphDataset` instances
+      return :class:`~graph_pes.data.GraphDataset` instances
 
     Examples
     --------

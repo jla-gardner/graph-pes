@@ -52,9 +52,11 @@ class GraphPESModel(nn.Module, ABC):
               - :code:`(3, 3)`
               - :code:`(M, 3, 3)`
 
-    assuming an input of an :class:`~graph_pes.AtomicGraph` with
-    :code:`N` atoms, or an :class:`~graph_pes.AtomicGraphBatch` composed
-    of :code:`M` graphs, each with :code:`N` atoms:
+    assuming an input of an :class:`~graph_pes.AtomicGraph` representing a
+    single structure composed of ``N`` atoms, or an
+    :class:`~graph_pes.AtomicGraph` composed of ``M`` structures and containing
+    a total of ``N`` atoms. (see :func:`~graph_pes.atomic_graph.is_batch` for
+    more information about batching).
 
     Implementations must override the
     :meth:`~graph_pes.GraphPESModel.forward` method to generate a
@@ -115,7 +117,7 @@ class GraphPESModel(nn.Module, ABC):
 
         Returns
         -------
-        dict[keys.LabelKey, torch.Tensor]
+        dict[PropertyKey, torch.Tensor]
             A dictionary mapping each implemented property to a tensor of
             predictions (see above for the expected shapes). Use
             :func:`~graph_pes.atomic_graph.is_batch` to check if the

@@ -12,15 +12,14 @@ import torch.utils.data
 from load_atoms import load_dataset
 from locache import persist
 
-from graph_pes.utils.logger import logger
-from graph_pes.utils.misc import uniform_repr
-
-from ..atomic_graph import (
+from graph_pes.atomic_graph import (
     ALL_PROPERTY_KEYS,
     AtomicGraph,
     PropertyKey,
     available_properties,
 )
+from graph_pes.utils.logger import logger
+from graph_pes.utils.misc import uniform_repr
 
 T = TypeVar("T", covariant=True)
 

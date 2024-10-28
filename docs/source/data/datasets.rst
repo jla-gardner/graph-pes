@@ -3,6 +3,8 @@ Datasets
 
 TODO: Write me
 
+.. autoclass:: graph_pes.data.GraphDataset
+
 .. autofunction:: graph_pes.data.load_atoms_dataset
 
 

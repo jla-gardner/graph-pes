@@ -21,6 +21,7 @@
     models/root
     fitting/root
     building-blocks/root
+    utils
 
 .. toctree::
     :maxdepth: 2

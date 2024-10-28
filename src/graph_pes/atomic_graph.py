@@ -628,9 +628,9 @@ def sum_per_structure(x: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:
 
     >>> import torch
     >>> from ase.build import molecule
-    >>> from graph_pes.data import sum_per_structure, to_atomic_graph
+    >>> from graph_pes.atomic_graph import sum_per_structure, AtomicGraph
     >>> water = molecule("H2O")
-    >>> graph = to_atomic_graph(water, cutoff=1.5)
+    >>> graph = AtomicGraph.from_ase(water, cutoff=1.5)
     >>> # summing over a vector gives a scalar
     >>> sum_per_structure(torch.ones(3), graph)
     tensor(3.)
@@ -642,9 +642,9 @@ def sum_per_structure(x: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:
 
     >>> import torch
     >>> from ase.build import molecule
-    >>> from graph_pes.data import sum_per_structure, to_atomic_graph, to_batch
+    >>> from graph_pes.atomic_graph import sum_per_structure, AtomicGraph, to_batch
     >>> water = molecule("H2O")
-    >>> graph = to_atomic_graph(water, cutoff=1.5)
+    >>> graph = AtomicGraph.from_ase(water, cutoff=1.5)
     >>> batch = to_batch([graph, graph])
     >>> batch
     AtomicGraphBatch(structures: 2, atoms: 6, edges: 8, has_cell: False)
@@ -654,7 +654,7 @@ def sum_per_structure(x: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:
     >>> # summing over higher order tensors gives a tensor
     >>> sum_per_structure(torch.ones(6, 3, 4), graph).shape
     torch.Size([2, 3, 4])
-    """
+    """  # noqa: E501
 
     if is_batch(graph):
         batch = graph.other["batch"]
