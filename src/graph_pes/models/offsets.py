@@ -61,12 +61,14 @@ class EnergyOffset(GraphPESModel):
 class FixedOffset(EnergyOffset):
     """
     An :class:`~graph_pes.models.offsets.EnergyOffset` model with pre-defined
-    and fixed energy offsets for each element.
+    and fixed energy offsets for each element. These do not change during
+    training. Any element not specified in the ``final_values`` argument will
+    be assigned an energy offset of zero.
 
     Parameters
     ----------
     final_values
-        A dictionary of fixed energy offsets for each atomic species.
+        A dictionary mapping element symbols to fixed energy offset values.
 
     Examples
     --------
@@ -88,7 +90,8 @@ class LearnableOffset(EnergyOffset):
 
     During pre-fitting, for each element in the training data not specified by
     the user, the model will estimate the energy offset from the data using
-    ridge regression (see TODO)
+    ridge regression (see
+    :func:`~graph_pes.utils.shift_and_scale.guess_per_element_mean_and_var`).
 
     Parameters
     ----------

@@ -21,7 +21,7 @@ from graph_pes.utils.nn import PerElementParameter
 
 class PairPotential(GraphPESModel, ABC):
     r"""
-    An abstract base class for PES models that calculate system energy as
+    An abstract base class for PES models that calculate total energy as
     a sum over pairwise interactions:
 
     .. math::
@@ -256,7 +256,7 @@ class LennardJones(PairPotential):
     ):
         """
         Create a :class:`LennardJones` potential with an interface
-        identical to the ASE :class:`~ase.calculators.lj.LennardJones`
+        identical to the ASE :class:`ase.calculators.lj.LennardJones`
         calculator.
 
         Please refer to the ASE documentation for more details.
@@ -388,14 +388,15 @@ class LennardJonesMixture(PairPotential):
     for that element.
 
     Interactions between atoms of different elements are calculated using
-    effective parameters $\sigma_{i\neq j}$ and $\varepsilon_{i\neq j}$,
-    which are calculated as:
+    effective parameters :math:`\sigma_{i\neq j}` and :math:`\varepsilon_{i
+    \neq j}`, which are calculated as:
 
     * :math:`\sigma_{i\neq j} = \nu_{ij} \cdot (\sigma_i + \sigma_j) / 2`
     * :math:`\varepsilon_{i\neq j} = \zeta_{ij} \cdot \sqrt{\varepsilon_i
       \cdot \varepsilon_j}`
 
-    where $\nu_{ij}$ is a mixing parameter that controls the width of the
+    where :math:`\nu_{ij}` is a mixing parameter that controls the width of the
+    potential well.
 
     For more details, see `wikipedia <https://en.wikipedia.org/wiki/Lennard-Jones_potential#Mixtures_of_Lennard-Jones_substances>`_.
     """
