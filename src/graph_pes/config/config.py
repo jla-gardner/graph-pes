@@ -29,7 +29,10 @@ class LossSpec:
     """
 
     component: Union[str, Dict[str, Any]]
+    """Point to a :class:`~graph_pes.training.loss.Loss` instance."""
+
     weight: Union[int, float] = 1.0
+    """The weight of this loss component."""
 
 
 @dataclass
@@ -53,9 +56,8 @@ class FittingOptions:
 
     trainer_kwargs: Dict[str, Any]
     """
-    Key-word arguments to pass to the PTL trainer.
-    
-    See their docs. # TODO
+    Key-word arguments to pass to the `PyTorch Lightning Trainer 
+    <https://lightning.ai/docs/pytorch/stable/common/trainer.html>`__ .
     
     Example
     -------
@@ -72,8 +74,19 @@ class FittingOptions:
     Key-word arguments to pass to the underlying 
     :class:`torch.utils.data.DataLoader`.
 
-    See their docs. # TODO
-    """
+    See the `PyTorch documentation <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`__ for details.
+
+    Example
+    -------
+    .. code-block:: yaml
+    
+        loader_kwargs:
+            shuffle: true
+            seed: 42
+            batch_size: 32
+            persistent_workers: true
+            num_workers: 4
+    """  # noqa: E501
 
 
 @dataclass
@@ -213,28 +226,6 @@ class Config:
     """
     A schema for a configuration file to train a
     :class:`~graph_pes.GraphPESModel`.
-
-    While parsing your configuration file, we will attempt to import
-    any class, object or function that you specify via a fully qualified
-    name. This allows you to point both to classes and functions that
-    ``graph-pes`` provides, as well as your own custom code.
-
-    .. note::
-        To point to an object, simplify specify the **fully qualified name**,
-        e.g. ``my_module.my_object``.
-
-        If you want to use the return value of a
-        function with no arguments, append ``()`` to the name, e.g.
-        ``my_module.my_function()``.
-
-        To point to a class or function with arguments, use a nested dictionary
-        structure like so:
-
-        .. code-block:: yaml
-
-            graph_pes.models.SchNet:
-                cutoff: 5.0
-                n_layers: 3
     """
 
     model: Union[str, Dict[str, Any]]
@@ -384,7 +375,7 @@ class Config:
 
     wandb: Union[Dict[str, Any], None]
     """
-    Configure Weights & Biases logging.
+    Configure `Weights & Biases <https://wandb.ai/site>`__ logging.
 
     .. dropdown:: ``wandb`` options
 
@@ -431,7 +422,7 @@ class Config:
             raise ValueError(
                 "Your configuration file could not be successfully parsed. "
                 "Please check that it is formatted correctly. For examples, "
-                "please see ..."  # TODO
+                "please see https://jla-gardner.github.io/graph-pes/cli/graph-pes-train.html"
             ) from e
 
     def hash(self) -> str:
