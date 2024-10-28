@@ -195,7 +195,7 @@ class GraphPESModel(nn.Module, ABC):
                 scaling_per_atom = torch.index_select(
                     scaling,
                     dim=0,
-                    index=graph[keys.BATCH],  # type: ignore
+                    index=graph.other["batch"],
                 )  # (n_atoms, 3, 3)
 
                 # to go from (N, 3) @ (N, 3, 3) -> (N, 3), we need un/squeeze:
@@ -215,9 +215,16 @@ class GraphPESModel(nn.Module, ABC):
             # gradients to flow backwards through the energy calculation
             # and allow us to calculate the stress tensor as the gradient
             # of the energy wrt the change in cell.
-            graph = graph._replace(R=new_positions, cell=new_cell)
-            # graph[keys._POSITIONS] = new_positions
-            # graph[keys.CELL] = new_cell
+
+            graph = AtomicGraph(  # can't use _replace here due to TorchScript
+                Z=graph.Z,
+                R=new_positions,  # <- new positions
+                cell=new_cell,  # <- new cell
+                neighbour_list=graph.neighbour_list,
+                neighbour_cell_offsets=graph.neighbour_cell_offsets,
+                properties=graph.properties,
+                other=graph.other,
+            )
 
         else:
             change_to_cell = torch.zeros_like(graph.cell)
@@ -274,7 +281,15 @@ class GraphPESModel(nn.Module, ABC):
             predictions["stress"] = dE_dC / cell_volume
 
         # put things back to how they were before
-        graph = graph._replace(R=existing_positions, cell=existing_cell)
+        graph = AtomicGraph(  # can't use _replace here due to TorchScript
+            Z=graph.Z,
+            R=existing_positions,  # <- old positions
+            cell=existing_cell,  # <- old cell
+            neighbour_list=graph.neighbour_list,
+            neighbour_cell_offsets=graph.neighbour_cell_offsets,
+            properties=graph.properties,
+            other=graph.other,
+        )
 
         # make sure we don't leave auxiliary predictions
         # e.g. local_energies if we only asked for energy

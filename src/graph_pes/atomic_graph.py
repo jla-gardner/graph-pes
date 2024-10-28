@@ -19,6 +19,7 @@ from ase.neighborlist import neighbor_list
 from typing_extensions import TypeAlias
 
 from graph_pes.utils.misc import (
+    all_equal,
     is_being_documented,
     left_aligned_div,
     left_aligned_mul,
@@ -26,7 +27,6 @@ from graph_pes.utils.misc import (
 )
 
 DEFAULT_CUTOFF: Final[float] = 5.0
-CUTOFF: Final[str] = "cutoff"
 
 
 PropertyKey: TypeAlias = Literal["local_energies", "forces", "energy", "stress"]
@@ -57,7 +57,7 @@ class AtomicGraph(NamedTuple):
     properties: Dict[PropertyKey, torch.Tensor]
     other: Dict[str, torch.Tensor]  # noqa: UP006 <- torchscript issue
 
-    def to(self, device: torch.device) -> "AtomicGraph":
+    def to(self, device: Union[torch.device, str]) -> "AtomicGraph":
         properties: dict[PropertyKey, torch.Tensor] = {
             k: v.to(device) for k, v in self.properties.items()
         }
@@ -178,7 +178,7 @@ class AtomicGraph(NamedTuple):
 
         # properties
         properties: dict[PropertyKey, torch.Tensor] = {}
-        other: dict[str, torch.Tensor] = {CUTOFF: torch.tensor(cutoff)}
+        other: dict[str, torch.Tensor] = {"cutoff": torch.tensor(cutoff)}
 
         if property_mapping is None:
             all_keys = set(structure.info) | set(structure.arrays)
@@ -229,14 +229,14 @@ class AtomicGraph(NamedTuple):
         info["atoms"] = number_of_atoms(self)
         info["edges"] = number_of_edges(self)
         info["has_cell"] = has_cell(self)
-        if CUTOFF in self.other:
-            info["cutoff"] = self.other[CUTOFF].item()
+        if "cutoff" in self.other:
+            info["cutoff"] = self.other["cutoff"].item()
         if self.properties:
             info["properties"] = available_properties(self)
         actual_other = {
             k: v
             for k, v in self.other.items()
-            if k not in {CUTOFF, "batch", "ptr"}
+            if k not in {"cutoff", "batch", "ptr"}
         }
         if actual_other:
             info["other"] = list(actual_other.keys())
@@ -300,6 +300,18 @@ def to_batch(
 
     for key in graphs[0].other:
         if key in ["batch", "ptr"]:
+            continue
+
+        # special handling for cutoff
+        if key == "cutoff":
+            cutoffs = [g.other["cutoff"] for g in graphs]
+            if not all_equal(cutoffs):
+                warnings.warn(
+                    "Attempting to batch graphs with different cutoffs: "
+                    f"{cutoffs}. Using the maximum cutoff.",
+                    stacklevel=2,
+                )
+            other["cutoff"] = torch.tensor(cutoffs).max()
             continue
 
         # if all of the value tensors have the same number of entries
@@ -494,7 +506,9 @@ def trim_edges(graph: AtomicGraph, cutoff: float) -> AtomicGraph:
         The maximum distance between atoms to keep the edge.
     """
 
-    existing_cutoff = graph.other.get(CUTOFF, torch.tensor(float("inf"))).item()
+    existing_cutoff = graph.other.get(
+        "cutoff", torch.tensor(float("inf"))
+    ).item()
     if existing_cutoff < cutoff:
         warnings.warn(
             f"Graph already has a cutoff of {existing_cutoff} which is "
@@ -511,8 +525,9 @@ def trim_edges(graph: AtomicGraph, cutoff: float) -> AtomicGraph:
     neighbour_cell_offsets = graph.neighbour_cell_offsets[mask, :]
 
     other = graph.other.copy()
-    other[CUTOFF] = torch.tensor(cutoff)
+    other["cutoff"] = torch.tensor(cutoff)
 
+    # can't use _replace here due to TorchScript
     return AtomicGraph(
         Z=graph.Z,
         R=graph.R,

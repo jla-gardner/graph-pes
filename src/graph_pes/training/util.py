@@ -58,7 +58,7 @@ def sanity_check(model: GraphPESModel, batch: AtomicGraph) -> None:
     expected_shapes = {
         "local_energies": (N,),
         "forces": (N, 3),
-        "energy": (S),
+        "energy": (S,),
         "stress": (S, 3, 3),
     }
 
@@ -71,7 +71,7 @@ def sanity_check(model: GraphPESModel, batch: AtomicGraph) -> None:
         raise ValueError(
             "Sanity check failed for the following outputs:\n"
             + "\n".join(
-                f"{key}: {value.shape} != {expected}"
+                f"{key}: {value} != {expected}"
                 for key, value, expected in incorrect
             )
         )

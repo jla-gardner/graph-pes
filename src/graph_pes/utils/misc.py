@@ -381,3 +381,21 @@ def random_split(
         [sequence[i] for i in shuffle[ptr[n] : ptr[n + 1]]]
         for n in range(len(lengths))
     ]
+
+
+def all_equal(iterable: Iterable[T]) -> bool:
+    """
+    Check if all elements in an iterable are the same. If the
+    iterable is empty, return `False`.
+
+    Returns
+    -------
+    bool
+        Whether all elements in `iterable` are the same.
+    """
+    iterator = iter(iterable)
+    try:
+        first = next(iterator)
+    except StopIteration:
+        return False
+    return all(first == x for x in iterator)

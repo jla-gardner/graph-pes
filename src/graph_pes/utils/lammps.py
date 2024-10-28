@@ -8,6 +8,22 @@ from graph_pes.atomic_graph import AtomicGraph, PropertyKey
 from graph_pes.graph_pes_model import GraphPESModel
 
 
+def as_lammps_data(
+    graph: AtomicGraph,
+    compute_virial: bool = False,
+    debug: bool = False,
+) -> dict[str, torch.Tensor]:
+    return {
+        "atomic_numbers": graph.Z,
+        "positions": graph.R,
+        "cell": graph.cell,
+        "neighbour_list": graph.neighbour_list,
+        "neighbour_cell_offsets": graph.neighbour_cell_offsets,
+        "compute_virial": torch.tensor(compute_virial),
+        "debug": torch.tensor(debug),
+    }
+
+
 class LAMMPSModel(torch.nn.Module):
     def __init__(self, model: GraphPESModel):
         super().__init__()
@@ -33,12 +49,14 @@ class LAMMPSModel(torch.nn.Module):
             properties.append("stress")
 
         # graph_data is a dict, so we need to convert it to an AtomicGraph
-        graph = AtomicGraph.create(
+        graph = AtomicGraph(
             Z=graph_data["atomic_numbers"],
             R=graph_data["positions"],
             cell=graph_data["cell"],
             neighbour_list=graph_data["neighbour_list"],
             neighbour_cell_offsets=graph_data["neighbour_cell_offsets"],
+            properties={},
+            other={},
         )
         preds = self.model.predict(graph, properties=properties)
 

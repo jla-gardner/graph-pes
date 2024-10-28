@@ -58,7 +58,7 @@ class GraphPESCalculator(Calculator):
         graph = AtomicGraph.from_ase(
             self.atoms, self.model.cutoff.item() + 0.001
         )
-        graph: AtomicGraph = {k: v.to(self.device) for k, v in graph.items()}  # type: ignore
+        graph = graph.to(self.device)
 
         results = {
             k: v.detach().cpu().numpy()

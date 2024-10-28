@@ -4,7 +4,7 @@ from ase.build import molecule
 from graph_pes import AtomicGraph
 from graph_pes.atomic_graph import PropertyKey
 from graph_pes.models import LennardJones
-from graph_pes.utils.lammps import LAMMPSModel
+from graph_pes.utils.lammps import LAMMPSModel, as_lammps_data
 
 CUTOFF = 1.5
 
@@ -33,12 +33,8 @@ def test_lammps_model(compute_virial: bool):
 
     assert lammps_model.get_cutoff() == torch.tensor(CUTOFF)
 
-    lammps_graph: dict[str, torch.Tensor] = {
-        **graph,
-        "compute_virial": torch.tensor(compute_virial),
-        "debug": torch.tensor(False),
-    }
-    lammps_outputs = lammps_model(lammps_graph)
+    lammps_data = as_lammps_data(graph, compute_virial=compute_virial)
+    lammps_outputs = lammps_model(lammps_data)
 
     # check outputs
     if compute_virial:
@@ -63,12 +59,8 @@ def test_debug_logging(capsys):
     # create a LAMMPS model, and get LAMMPS predictions
     lammps_model = LAMMPSModel(LennardJones())
 
-    lammps_graph: dict[str, torch.Tensor] = {
-        **graph,
-        "compute_virial": torch.tensor(True),
-        "debug": torch.tensor(True),
-    }  # type: ignore
-    lammps_model(lammps_graph)
+    lammps_data = as_lammps_data(graph, compute_virial=True, debug=True)
+    lammps_model(lammps_data)
 
     logs = capsys.readouterr().out
     assert "Received graph:" in logs

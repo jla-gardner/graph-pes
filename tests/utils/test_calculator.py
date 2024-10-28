@@ -4,7 +4,7 @@ from graph_pes.utils.calculator import GraphPESCalculator
 
 
 def test_calc():
-    calc = GraphPESCalculator(LennardJones(), cutoff=5)
+    calc = GraphPESCalculator(LennardJones())
     ethanol = molecule("CH3CH2OH")
     ethanol.calc = calc
 

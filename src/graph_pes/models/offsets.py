@@ -3,6 +3,7 @@ from __future__ import annotations
 import warnings
 
 import torch
+from ase.data import atomic_numbers
 
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey
 from graph_pes.graph_pes_model import GraphPESModel
@@ -116,8 +117,12 @@ class LearnableOffset(EnergyOffset):
             requires_grad=True,
         )
         super().__init__(offsets)
-        # TODO: keep track of which where specified!
-        self._values_were_specified = bool(initial_values)
+
+        Zs = torch.tensor(
+            [atomic_numbers[symbol] for symbol in initial_values],
+            dtype=torch.long,
+        )
+        self.register_buffer("_pre_specified_Zs", Zs)
 
     @torch.no_grad()
     def pre_fit(self, graphs: AtomicGraph) -> None:
@@ -134,14 +139,8 @@ class LearnableOffset(EnergyOffset):
         graphs
             The training data.
         """
-        if self._values_were_specified:
-            logger.debug(
-                "Energy offsets were specified by the user. "
-                "Skipping the calculation of mean energy offsets."
-            )
-            return
 
-        if "energy" not in graphs:
+        if "energy" not in graphs.properties:
             warnings.warn(
                 "No energy labels found in the training data. "
                 "Can't guess suitable per-element energy offsets for "
@@ -156,6 +155,8 @@ class LearnableOffset(EnergyOffset):
             graphs.properties["energy"], graphs
         )
         for z, offset in offsets.items():
+            if torch.any(self._pre_specified_Zs == z):
+                continue
             self._offsets[z] = offset
 
         logger.warning(f"""

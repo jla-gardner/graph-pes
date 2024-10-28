@@ -73,7 +73,7 @@ def test_energy_offset_fitting():
 
     graphs = [AtomicGraph.from_ase(atoms, cutoff=1.5) for atoms in structures]
     batch = to_batch(graphs)
-    assert "energy" in batch
+    assert "energy" in batch.properties
 
     model = LearnableOffset()
     model.pre_fit_all_components(graphs)
@@ -86,7 +86,7 @@ def test_energy_offset_fitting():
     model = LearnableOffset(H=20)
     model.pre_fit_all_components(graphs)
     assert model._offsets[1].item() == pytest.approx(20)
-    assert model._offsets[6].item() == 0
+    assert model._offsets[6].item() == pytest.approx(C_energy)
 
     # check suitable warning logged if no energy data
     model = LearnableOffset()

@@ -45,14 +45,11 @@ def _create_batch(
         for Z in Zs:
             total_E += rng.normal(mu[Z], sigma[Z])
         graphs.append(
-            dict(
-                atomic_numbers=torch.LongTensor(Zs),
-                _positions=torch.randn(structure_size, 3),
-                energy=torch.tensor(total_E),
-                _neighbour_cell_offsets=torch.zeros((2, 0)),
-                neighbour_index=torch.zeros((2, 0), dtype=torch.long),
-                cell=torch.eye(3),
-            )  # type: ignore
+            AtomicGraph.create(
+                Z=torch.LongTensor(Zs),
+                R=torch.randn(structure_size, 3),
+                properties={"energy": torch.tensor(total_E)},
+            )
         )
     return to_batch(graphs)
 

@@ -19,7 +19,7 @@ def test_integration(model: GraphPESModel):
     ]
 
     batch = to_batch(graphs)
-    assert "energy" in batch
+    assert "energy" in batch.properties
 
     model.pre_fit_all_components(graphs[:8])
 

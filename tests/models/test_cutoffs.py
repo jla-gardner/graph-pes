@@ -5,7 +5,6 @@ from dataclasses import dataclass
 import pytest
 from graph_pes import GraphPESModel
 from graph_pes.atomic_graph import (
-    CUTOFF,
     AtomicGraph,
     PropertyKey,
     neighbour_distances,
@@ -93,7 +92,7 @@ def test_cutoff_trimming():
 
     trimmed_graph = trim_edges(graph, cutoff=3.0)
     assert graph is not trimmed_graph
-    assert trimmed_graph.other[CUTOFF].item() == 3.0
+    assert trimmed_graph.other["cutoff"].item() == 3.0
 
     # check that trimming a second time with the same cutoff is a no-op
     doubly_trimmed_graph = trim_edges(trimmed_graph, cutoff=3.0)
@@ -102,4 +101,4 @@ def test_cutoff_trimming():
     # but that if the cutoff is further reduced then the trimming occurs
     doubly_trimmed_graph = trim_edges(trimmed_graph, cutoff=2.0)
     assert doubly_trimmed_graph is not trimmed_graph
-    assert doubly_trimmed_graph.other[CUTOFF].item() == 2.0
+    assert doubly_trimmed_graph.other["cutoff"].item() == 2.0

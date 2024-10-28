@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence, cast
+from typing import Sequence
 
 import torch
 
@@ -11,7 +11,6 @@ from graph_pes.atomic_graph import (
     is_batch,
     number_of_atoms,
     number_of_structures,
-    trim_edges,
 )
 from graph_pes.data.datasets import GraphDataset
 from graph_pes.graph_pes_model import GraphPESModel
@@ -74,9 +73,13 @@ class AdditionModel(GraphPESModel):
                 "local_energies": torch.zeros((N), device=device),
             }
 
-        properties: list[PropertyKey] = [
-            prop for prop in self.implemented_properties if prop != "stress"
-        ]
+        # only predict stresses if the graph has a cell!
+        # no list comprehension here due to TorchScript
+        properties: list[PropertyKey] = []
+        for prop in self.implemented_properties:
+            if prop != "stress":
+                properties.append(prop)
+
         if has_cell(graph):
             zeros["stress"] = torch.zeros_like(graph.cell)
             properties.append("stress")

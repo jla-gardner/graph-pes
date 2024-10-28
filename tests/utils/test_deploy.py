@@ -8,7 +8,7 @@ from ase.build import molecule
 from graph_pes import AtomicGraph, GraphPESModel
 from graph_pes.atomic_graph import number_of_atoms
 from graph_pes.models.pairwise import LennardJones, SmoothedPairPotential
-from graph_pes.utils.lammps import deploy_model
+from graph_pes.utils.lammps import as_lammps_data, deploy_model
 
 from .. import helpers
 
@@ -51,14 +51,8 @@ def test_deploy(model: GraphPESModel, tmp_path: Path):
     assert loaded_model.get_cutoff() == model_cutoff
 
     # 4. test outputs
-    loaded_outputs = loaded_model(
-        # mock the graph that would be passed through from LAMMPS
-        {
-            **graph,
-            "compute_virial": torch.tensor(True),
-            "debug": torch.tensor(False),
-        }
-    )
+    lammps_data = as_lammps_data(graph, compute_virial=True)
+    loaded_outputs = loaded_model(lammps_data)
     assert isinstance(loaded_outputs, dict)
     assert set(loaded_outputs.keys()) == {
         "energy",
