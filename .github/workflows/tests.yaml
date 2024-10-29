@@ -14,7 +14,6 @@ jobs:
         with:
           python-version: 3.8
       - name: Install ruff
-        # TODO: manage this version
         run: pip install ruff==0.5.5
       - name: Run ruff
         run: ruff check
@@ -38,8 +37,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install pandoc
-        run: sudo apt-get install -y --no-install-recommends pandoc
       - name: Cache dependencies
         # Caching the python environment. This is different to just caching the
         # pip wheels, as we save on the installation time of large packages such
@@ -67,6 +64,28 @@ jobs:
         if: matrix.python-version == '3.8'
         with:
           token: ${{secrets.CODECOV_TOKEN}}
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      ### SETUP ###
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.8
+      - name: Install pandoc
+        run: sudo apt-get install -y --no-install-recommends pandoc
+      - name: Cache dependencies
+        # Caching the python environment. This is different to just caching the
+        # pip wheels, as we save on the installation time of large packages such
+        # as torch.
+        uses: actions/cache@v4.0.2
+        id: cache
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
+      - name: Install graph-pes and required dependencies
+        run: pip install -e".[docs]"
       ### DOCS ###
       - name: Build docs
         # -n: nitpick:
