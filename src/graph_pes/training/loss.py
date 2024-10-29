@@ -3,11 +3,10 @@ from __future__ import annotations
 from typing import Callable, Literal, NamedTuple, Sequence
 
 import torch
-from torch import Tensor, nn
-
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey, divide_per_atom
 from graph_pes.utils.misc import force_to_single_line, uniform_repr
 from graph_pes.utils.nn import UniformModuleList
+from torch import Tensor, nn
 
 Metric = Callable[[Tensor, Tensor], Tensor]
 

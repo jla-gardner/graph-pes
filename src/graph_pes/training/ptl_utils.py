@@ -4,10 +4,9 @@ import time
 from typing import Any, Literal
 
 import pytorch_lightning as pl
+from graph_pes.utils.logger import logger
 from pytorch_lightning.callbacks import ProgressBar, StochasticWeightAveraging
 from typing_extensions import override
-
-from graph_pes.utils.logger import logger
 
 
 class VerboseSWACallback(StochasticWeightAveraging):

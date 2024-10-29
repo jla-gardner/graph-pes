@@ -5,16 +5,6 @@ from typing import Literal
 
 import pytorch_lightning as pl
 import torch
-from pytorch_lightning.callbacks import (
-    EarlyStopping,
-    LearningRateMonitor,
-    ModelCheckpoint,
-    ProgressBar,
-    RichProgressBar,
-)
-from pytorch_lightning.loggers import Logger
-from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
-
 from graph_pes.atomic_graph import (
     AtomicGraph,
     PropertyKey,
@@ -29,6 +19,15 @@ from graph_pes.training.opt import LRScheduler, Optimizer
 from graph_pes.training.ptl_utils import LoggedProgressBar, ModelTimer
 from graph_pes.training.util import log_model_info, sanity_check
 from graph_pes.utils.logger import logger
+from pytorch_lightning.callbacks import (
+    EarlyStopping,
+    LearningRateMonitor,
+    ModelCheckpoint,
+    ProgressBar,
+    RichProgressBar,
+)
+from pytorch_lightning.loggers import Logger
+from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
 
 VALIDATION_LOSS_KEY = "valid/loss/total"
 

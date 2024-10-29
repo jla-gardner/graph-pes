@@ -58,7 +58,9 @@ class AdditionModel(GraphPESModel):
         )
         self.models = UniformModuleDict(**models)
 
-    def predict(self, graph: AtomicGraph, properties: list[PropertyKey]) -> dict[PropertyKey, torch.Tensor]:
+    def predict(
+        self, graph: AtomicGraph, properties: list[PropertyKey]
+    ) -> dict[PropertyKey, torch.Tensor]:
         device = graph.Z.device
         N = number_of_atoms(graph)
 
@@ -79,8 +81,6 @@ class AdditionModel(GraphPESModel):
         if has_cell(graph):
             zeros["stress"] = torch.zeros_like(graph.cell)
             properties.append("stress")
-
-
 
         total_predictions: dict[PropertyKey, torch.Tensor] = {
             k: zeros[k] for k in properties
