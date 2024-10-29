@@ -80,6 +80,32 @@ def load_model(
     -------
     GraphPESModel
         The model.
+
+    Examples
+    --------
+
+    Use this function to load an existing model for further training using
+    ``graph-pes-train``:
+
+    .. code-block:: yaml
+
+        model:
+            graph_pes.models.load_model:
+                path: path/to/model.pt
+
+    To account for some new energy offset in your training data, you could do
+    something like this:
+    (see also :func:`~graph_pes.models.load_model_component`)
+
+    .. code-block:: yaml
+
+        model:
+            # add an offset to an existing model before fine-tuning
+            offset:
+                graph_pes.models.LearnableOffset: {}
+            many-body:
+                graph_pes.models.load_model:
+                    path: path/to/model.pt
     """
     path = pathlib.Path(path)
     if not path.exists():
@@ -103,6 +129,21 @@ def load_model_component(path: str | pathlib.Path, key: str) -> GraphPESModel:
     -------
     GraphPESModel
         The component.
+
+    Examples
+    --------
+
+    Train on data with a new energy offset:
+
+    .. code-block:: yaml
+
+        model:
+            offset:
+                graph_pes.models.LearnableOffset: {}
+            many-body:
+                graph_pes.models.load_model_component:
+                    path: path/to/model.pt
+                    key: many-body
     """
 
     base_model = load_model(path)

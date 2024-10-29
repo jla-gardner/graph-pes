@@ -15,7 +15,7 @@ Loading Models
 ==============
 
 .. autofunction:: graph_pes.models.load_model
-
+.. autofunction:: graph_pes.models.load_model_component
 
 Available Models
 ================
