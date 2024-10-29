@@ -166,6 +166,8 @@ class FittingConfig(FittingOptions):
 
     scheduler: Union[str, Dict[str, Any], None]
     """
+    .. _learning rate scheduler:
+    
     Specification for the learning rate scheduler. Optional.
     Default is to have no learning rate schedule (``None``).
 
@@ -186,6 +188,8 @@ class FittingConfig(FittingOptions):
     Optional, defaults to ``None``.
 
     .. dropdown:: ``swa`` options
+
+        .. _stochastic weight averaging:
 
         .. autoclass:: graph_pes.config.config.SWAConfig()
             :members:

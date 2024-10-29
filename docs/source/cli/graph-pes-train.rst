@@ -48,6 +48,19 @@ Train from multiple config files:
     $ graph-pes-train config-1.yaml config-2.yaml
 
 
+.. _multi-GPU training:
+
+Multi-GPU training:
++++++++++++++++++++
+
+The ``graph-pes-train`` command supports multi-GPU out of the box, relying on PyTorch Lightning's native support for distributed training.
+By default, ``graph-pes-train`` will attempt to use all available GPUs. You can override this by exporting the ``CUDA_VISIBLE_DEVICES`` environment variable:
+
+.. code-block:: bash
+
+    $ export CUDA_VISIBLE_DEVICES=0,1
+    $ graph-pes-train config.yaml
+
 Example configs:
 ----------------
 

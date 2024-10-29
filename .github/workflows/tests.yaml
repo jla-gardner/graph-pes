@@ -85,6 +85,7 @@ jobs:
           path: ${{ env.pythonLocation }}
           key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
       - name: Install graph-pes and required dependencies
+        # -e flag to install in place, allowing for correct links
         run: pip install -e".[docs]"
       ### DOCS ###
       - name: Build docs

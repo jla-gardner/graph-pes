@@ -243,7 +243,7 @@ def random_id(
     """
 
     if lengths is None:
-        lengths = [8]
+        lengths = [6, 6]
 
     if use_existing:
         rng = random
@@ -262,7 +262,7 @@ def random_dir(root: Path) -> Path:
     """Find a random directory that doesn't exist in `root`."""
 
     while True:
-        new_dir = root / random_id(lengths=[8, 8, 8])
+        new_dir = root / random_id()
         if not new_dir.exists():
             return new_dir
 
