@@ -374,7 +374,7 @@ class GraphPESModel(nn.Module, ABC):
             self.pre_fit(graph_batch)
             # pre-fit any sub-module with a pre_fit method
             for module in self.modules():
-                if hasattr(module, "pre_fit"):
+                if hasattr(module, "pre_fit") and module is not self:
                     module.pre_fit(graph_batch)
 
             self._has_been_pre_fit = torch.tensor(1)

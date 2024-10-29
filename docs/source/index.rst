@@ -96,16 +96,26 @@ Open any of these notebooks to get started. Install ``graph-pes`` to follow alon
     .. grid-item-card::
         :text-align: center
 
-        .. button-ref:: quickstart/train-a-model
-            :ref-type: doc
+        .. button-link:: quickstart/quickstart.html#Train-a-model
             :click-parent:
+
+            Train a model
     
     .. grid-item-card::
         :text-align: center
 
-        .. button-ref:: quickstart/model-fine-tuning
-            :ref-type: doc
+        .. button-link:: quickstart/quickstart.html#Model-analysis
             :click-parent:
+
+            Analyse a model
+
+    .. grid-item-card::
+        :text-align: center
+
+        .. button-link:: quickstart/quickstart.html#Fine-tuning
+            :click-parent:
+
+            Fine-tune a model
 
     .. grid-item-card::
         :text-align: center
@@ -115,15 +125,6 @@ Open any of these notebooks to get started. Install ``graph-pes`` to follow alon
             :click-parent:
 
             Run LAMMPS MD
-
-    .. grid-item-card::
-        :text-align: center
-
-        .. button-ref:: quickstart/model-analysis
-            :ref-type: doc
-            :click-parent:
-
-            Analyse a model
 
     .. grid-item-card::
         :text-align: center

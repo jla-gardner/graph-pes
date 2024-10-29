@@ -116,7 +116,7 @@ def load_model(
 
 def load_model_component(path: str | pathlib.Path, key: str) -> GraphPESModel:
     """
-    Load a component from an :class:`~graph_pes.core.AdditionModel`.
+    Load a component from an :class:`~graph_pes.models.AdditionModel`.
 
     Parameters
     ----------
