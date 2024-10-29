@@ -1,0 +1,89 @@
+model:
+    offset:
+        graph_pes.models.FixedOffset: {H: -123.4, C: -456.7}
+    core-repulsion:
+        graph_pes.models.ZBLCoreRepulsion:
+            trainable: true
+            cutoff: 5.0
+    many-body:
+        graph_pes.models.NequIP:
+            elements: [C, H, O, N]
+            cutoff: 3.7
+            channels: 128
+            hidden_irreps: 0e + 1o
+            self_connection: true
+
+data:
+    train:
+        graph_pes.data.file_dataset:
+            path: training_data.xyz
+            cutoff: 3.7
+            n: 1000
+            shuffle: true
+            seed: 42
+    valid:
+        graph_pes.data.file_dataset:
+            path: validation_data.xyz
+            cutoff: 3.7
+
+loss:
+    - component: graph_pes.training.loss.PerAtomEnergyLoss()
+    - component:
+        graph_pes.training.loss.Loss:
+            property_key: forces
+            metric: RMSE
+      weight: 3.0
+    - component:
+        graph_pes.training.loss.Loss:
+            property_key: stress
+            metric: RMSE
+      weight: 10.0
+
+fitting:
+    pre_fit_model: true
+    max_n_pre_fit: 1000
+    early_stopping_patience: 50
+    
+    trainer_kwargs:
+        max_epochs: 1000
+        accelerator: gpu
+        accumulate_grad_batches: 4
+        val_check_interval: 0.25
+
+    optimizer:
+        graph_pes.training.opt.Optimizer:
+            name: AdamW
+            lr: 0.003
+            weight_decay: 0.01
+            amsgrad: true
+    
+    scheduler:
+        graph_pes.training.opt.LRScheduler:
+            name: ReduceLROnPlateau
+            patience: 10
+            factor: 0.8
+    
+    swa:
+        lr: 0.001
+        start: 0.8
+        anneal_epochs: 10
+        strategy: linear
+    
+    loader_kwargs:
+        batch_size: 32
+        num_workers: 4
+        shuffle: true
+        persistent_workers: true
+
+general:
+    seed: 42
+    root_dir: /path/to/root
+    run_id: kitchen-sink-run
+    log_level: INFO
+    progress: rich
+
+wandb:
+    project: my_project
+    entity: my_entity
+    tags: [kitchen-sink, test]
+    name: kitchen-sink-run

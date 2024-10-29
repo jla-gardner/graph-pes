@@ -1,0 +1,57 @@
+model:
+    offset:
+        graph_pes.models.LearnableOffset: {}
+    core-repulsion:
+        graph_pes.models.ZBLCoreRepulsion:
+            trainable: true
+            cutoff: 3.7
+    many-body:
+        graph_pes.models.MACE:
+            elements: [C]
+            cutoff: 3.7
+            channels: 128
+            hidden_irreps: 0e + 1o
+            self_connection: true
+
+data:
+    graph_pes.data.load_atoms_dataset:
+        id: C-GAP-20U
+        cutoff: 3.7
+        n_train: 5000
+        n_valid: -1
+        split: random
+
+loss:
+    - component: graph_pes.training.loss.PerAtomEnergyLoss()
+      weight: 1.0
+    - component:
+        graph_pes.training.loss.Loss:
+            property_key: forces
+            metric: RMSE
+      weight: 3.0
+
+fitting:
+    trainer_kwargs:
+        max_epochs: 1000
+        accelerator: gpu
+
+    early_stopping_patience: 50
+
+    optimizer:
+        graph_pes.training.opt.Optimizer:
+            name: AdamW
+            lr: 0.003
+
+    scheduler:
+        graph_pes.training.opt.LRScheduler:
+            name: ReduceLROnPlateau
+            patience: 10
+            factor: 0.8
+
+    loader_kwargs:
+        batch_size: 32
+        num_workers: 4
+
+general:
+    seed: 42
+    run_id: mace-c-gap-20u

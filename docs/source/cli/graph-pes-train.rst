@@ -51,20 +51,43 @@ Train from multiple config files:
 Example configs:
 ----------------
 
+The minimal config required to use ``graph-pes-train`` provides a model, some data and a loss function:
+
 .. _minimal config:
-.. dropdown:: A minimal config: ``minimal.yaml``
+.. dropdown:: ``minimal.yaml``
 
     .. literalinclude:: ../../../configs/minimal.yaml
         :language: yaml
-        :caption: minimal.yaml
 
-    This config can be so small because ``graph-pes-train`` loads in 
-    default values from ``defaults.yaml`` and overwrites them with any 
-    values you specify in the config file:
+This config can be so small because ``graph-pes-train`` loads in 
+default values from ``defaults.yaml`` and overwrites them with any 
+values you specify in the config file (see below):
+
+.. dropdown:: ``defaults.yaml``
 
     .. literalinclude:: ../../../src/graph_pes/config/defaults.yaml
         :language: yaml
-        :caption: defaults.yaml
+
+
+A more realistic configuration might look like this:
+
+.. dropdown:: ``realistic.yaml``
+
+    We train a :class:`~graph_pes.models.MACE` model (accounting for core repulsions and arbitraty energy offsets) on the `C-GAP-20U dataset <https://jla-gardner.github.io/load-atoms/datasets/C-GAP-20U.html>`__:
+
+    .. literalinclude:: ../../../configs/realistic.yaml
+        :language: yaml
+
+
+Finally, here is a `"kitchen sink"` config that attempts to specify every possible option:
+
+.. dropdown:: ``kitchen-sink.yaml``
+
+    .. literalinclude:: ../../../configs/kitchen-sink.yaml
+        :language: yaml
+
+
+For more information as to the structure of these config files, and the various options available, read on:
 
 
 Complete ``config`` API
@@ -78,14 +101,14 @@ Configuration for the ``graph-pes-train`` command line tool is represented as a 
 
 The final nested configuration dictionary is built up from these values in a left to right manner, with later items taking precedence over earlier ones in the case of conflicts.
 
-For example, to train a :class:`~graph_pes.models.SchNet` model with 2 layers, you would run:
+For example:
 
 .. code-block:: bash
 
     graph-pes-train minimal.yaml model^graph_pes.model.SchNet^layers=2
 
 
-will train a model :class:`~graph_pes.models.SchNet` model with **2** layers (rather than the 3 specified in :ref:`minimal.yaml <minimal config>`).
+will train a model :class:`~graph_pes.models.SchNet` model with **2** layers (rather than the 3 specified in :ref:`minimal.yaml <minimal config>` above).
 
 
 Under-the-hood, ``graph-pes-train`` uses `dacite <https://github.com/konradhalas/dacite/tree/master/>`_ to convert this nested configuration dictionary into a series of nested dataclasses, the structure of which is defined by the :class:`~graph_pes.config.Config` dataclass, and subsequent children.

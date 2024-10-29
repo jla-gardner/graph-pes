@@ -40,7 +40,10 @@ class FittingOptions:
     """Options for the fitting process."""
 
     pre_fit_model: bool
-    """Whether to pre-fit the model before training."""
+    """
+    Whether to pre-fit the model before training. See
+    :meth:`graph_pes.GraphPESModel.pre_fit_all_components` for details.
+    """
 
     max_n_pre_fit: Union[int, None]
     """
@@ -62,11 +65,12 @@ class FittingOptions:
     Example
     -------
     .. code-block:: yaml
-    
-        trainer:
-            max_epochs: 100
-            gpus: 1
-            check_val_every_n_epoch: 5
+        
+        fitting:
+            trainer:
+                max_epochs: 10000
+                accelerator: gpu
+                accumulate_grad_batches: 4
     """
 
     loader_kwargs: Dict[str, Any]
@@ -79,13 +83,14 @@ class FittingOptions:
     Example
     -------
     .. code-block:: yaml
-    
-        loader_kwargs:
-            shuffle: true
-            seed: 42
-            batch_size: 32
-            persistent_workers: true
-            num_workers: 4
+
+        fitting:    
+            loader_kwargs:
+                shuffle: true
+                seed: 42
+                batch_size: 32
+                persistent_workers: true
+                num_workers: 4
     """  # noqa: E501
 
 
@@ -142,19 +147,21 @@ class FittingConfig(FittingOptions):
     The default (see :func:`~graph_pes.training.opt.Optimizer` for details):
 
     .. code-block:: yaml
-    
-        optimizer:
-            graph_pes.training.opt.Optimizer:
-                name: Adam
-                lr: 3e-3
-                weight_decay: 0.0
-                amsgrad: false
+
+        fitting:        
+            optimizer:
+                graph_pes.training.opt.Optimizer:
+                    name: Adam
+                    lr: 3e-3
+                    weight_decay: 0.0
+                    amsgrad: false
 
     Or a custom one:
     
     .. code-block:: yaml
-    
-        optimizer: my.module.MagicOptimizer()
+
+        fitting:
+            optimizer: my.module.MagicOptimizer()
     """
 
     scheduler: Union[str, Dict[str, Any], None]
@@ -166,9 +173,10 @@ class FittingConfig(FittingOptions):
     --------
     .. code-block:: yaml
     
-        scheduler:
-            graph_pes.training.opt.LRScheduler:
-                name: ReduceLROnPlateau
+        fitting:
+            scheduler:
+                graph_pes.training.opt.LRScheduler:
+                    name: ReduceLROnPlateau
                 factor: 0.5
                 patience: 10
     """
@@ -234,24 +242,22 @@ class Config:
 
     .. dropdown:: ``model`` options
 
-        To specify a single model with parameters:
+        Either point to something that instantiates a
+        :class:`~graph_pes.GraphPESModel`...:
 
         .. code-block:: yaml
-        
+
+            # basic Lennard-Jones model
             model:
                 graph_pes.models.LennardJones:
                     sigma: 0.1
                     epsilon: 1.0
-        
-        or, if no parameters are needed:
-
-        .. code-block:: yaml
-        
+            
+            # or some custom model
             model: my_model.SpecialModel()
         
-        To specify multiple components of an 
-        :class:`~graph_pes.models.AdditionModel`, create a list of 
-        specications as above, using whatever unique names you please:
+        ...or pass a dictionary mapping custom names to
+        :class:`~graph_pes.GraphPESModel` instances:
 
         .. code-block:: yaml
         
@@ -259,6 +265,11 @@ class Config:
                 offset:
                     graph_pes.models.FixedOffset: {H: -123.4, C: -456.7}
                 many-body: graph_pes.models.SchNet()
+
+        The latter will instantiate an :class:`~graph_pes.models.AdditionModel`
+        with :class:`~graph_pes.models.FixedOffset` and
+        :class:`~graph_pes.models.SchNet` components. This is a useful approach
+        for dealing with arbitrary offset energies.
     """
 
     data: Union[str, Dict[str, Any]]
@@ -319,22 +330,23 @@ class Config:
 
     .. dropdown:: ``loss`` options
 
-        To specify a single loss function:
-
-        .. code-block:: yaml
-        
-            loss: graph_pes.training.loss.PerAtomEnergyLoss()
-
-        or with parameters:
+        This config should either point to something that instantiates a
+        :class:`~graph_pes.training.loss.Loss`...
 
         .. code-block:: yaml
             
-                loss:
-                    graph_pes.training.loss.Loss:
-                        property_key: energy
-                        metric: graph_pes.training.loss.RMSE()
+            # basic per-atom energy loss
+            loss: graph_pes.training.loss.PerAtomEnergyLoss()
 
-        To specify multiple loss functions with weights:
+            # or more fine-grained control
+            loss:
+                graph_pes.training.loss.Loss:
+                    property_key: energy
+                    metric: graph_pes.training.loss.RMSE()
+
+        ...or specify a list of :class:`~graph_pes.config.config.LossSpec`
+        instances, each of which points to a 
+        :class:`~graph_pes.training.loss.Loss` instance and specifies a weight:
 
         .. code-block:: yaml
         
@@ -375,7 +387,7 @@ class Config:
 
     wandb: Union[Dict[str, Any], None]
     """
-    Configure `Weights & Biases <https://wandb.ai/site>`__ logging.
+    Configure Weights and Biases logging.
 
     .. dropdown:: ``wandb`` options
 
@@ -386,7 +398,7 @@ class Config:
                 wandb: null
 
         Otherwise, provide a dictionary of
-        overrides to pass to lightning's `WandbLogger <https://lightning.ai/docs/pytorch/stable/extensions/generated/lightning.pytorch.loggers.WandbLogger.html>`__.
+        overrides to pass to lightning's `WandbLogger <https://lightning.ai/docs/pytorch/stable/extensions/generated/lightning.pytorch.loggers.WandbLogger.html>`__
 
         .. code-block:: yaml
         
@@ -394,8 +406,7 @@ class Config:
                 project: my_project
                 entity: my_entity
                 tags: [my_tag]
-
-        
+                
     """  # noqa: E501
 
     ### Methods ###

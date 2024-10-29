@@ -23,6 +23,7 @@ from graph_pes.utils.misc import (
     is_being_documented,
     left_aligned_div,
     left_aligned_mul,
+    to_significant_figures,
     uniform_repr,
 )
 
@@ -64,17 +65,87 @@ class AtomicGraph(NamedTuple):
     ++++++++++
 
     Below we assume the graph contains ``N`` atoms, ``E`` edges (and ``S``
-    structures if the graph is batched):
+    structures if the graph is batched).
+
+    We use two examples to illustrate the various properties:
+
+
+    .. dropdown:: Water molecule
+
+        .. code-block:: python
+
+            >>> from ase.build import molecule
+            >>> from load_atoms import view
+            >>> water = molecule("H2O")
+            >>> view(water, show_bonds=True)
+
+        .. raw:: html
+            :file: ../../docs/source/_static/water.html
+
+        We can see that there are 3 atoms, with 2 bonds (and therefore 4
+        directed edges):
+
+        .. code-block:: python
+
+            >>> from graph_pes import AtomicGraph
+            >>> water_graph = AtomicGraph.from_ase(water, cutoff=1.2)
+            >>> water_graph
+            AtomicGraph(atoms=3, edges=4, has_cell=False, cutoff=1.2)
+
+    .. dropdown:: Sodium crystal
+
+        .. code-block:: python
+
+            >>> from ase.build import bulk
+            >>> from load_atoms import view
+            >>> sodium = bulk("Na")
+            >>> view(sodium.repeat(3), show_bonds=True)
+
+        .. raw:: html
+            :file: ../../docs/source/_static/Na.html
+
+        This structure has a single atom within a periodic cell. If you
+        look closely, you can see that this atom has 8 nearest neighbours.
+        Only "source" atoms within the unit cell are included in the
+        neighbour list, and hence there are 8 edges:
+
+        .. code-block:: python
+
+            >>> sodium_graph = AtomicGraph.from_ase(sodium, cutoff=3.7)
+            >>> sodium_graph
+            AtomicGraph(atoms=1, edges=8, has_cell=True, cutoff=3.7)
     """
 
     Z: torch.Tensor
     """
     The atomic numbers of the atoms in the graph, of shape ``(N,)``.
+
+    .. code-block:: python
+
+        >>> water_graph.Z
+        tensor([8, 1, 1])
+    
+    .. code-block:: python
+
+        >>> sodium_graph.Z
+        tensor([11])
     """
 
     R: torch.Tensor
     """
     The cartesian positions of the atoms in the graph, of shape ``(N, 3)``.
+
+    .. code-block:: python
+
+        >>> water_graph.R
+        tensor([[ 0.0000,  0.0000,  0.1193],
+                [ 0.0000,  0.7632, -0.4770],
+                [ 0.0000, -0.7632, -0.4770]])
+    
+    .. code-block:: python
+        
+        >>> sodium_graph.R
+        tensor([[0., 0., 0.]])
     """
 
     cell: torch.Tensor
@@ -82,6 +153,20 @@ class AtomicGraph(NamedTuple):
     The unit cell vectors, of shape ``(3, 3)`` for a single structure, or
     ``(S, 3, 3)`` for a batched graph. If the structure is non-periodic,
     this will be all zeros.
+
+    .. code-block:: python
+
+        >>> water_graph.cell
+        tensor([[0., 0., 0.],
+                [0., 0., 0.],
+                [0., 0., 0.]])
+    
+    .. code-block:: python
+        
+        >>> sodium_graph.cell
+        tensor([[-2.1150,  2.1150,  2.1150],
+                [ 2.1150, -2.1150,  2.1150],
+                [ 2.1150,  2.1150, -2.1150]])
     """
 
     neighbour_list: torch.Tensor
@@ -89,6 +174,18 @@ class AtomicGraph(NamedTuple):
     A neighbour list, of shape ``(2, E)``, where 
     ``i, j = graph.neighbour_list[:, k]`` is the ``k``'th directed edge
     in the graph, linking atom ``i`` to atom ``j``.
+
+    .. code-block:: python
+
+        >>> water_graph.neighbour_list
+        tensor([[0, 0, 1, 2],
+                [1, 2, 0, 0]])
+    
+    .. code-block:: python
+        
+        >>> sodium_graph.neighbour_list
+        tensor([[0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0]])
     """
 
     neighbour_cell_offsets: torch.Tensor
@@ -107,6 +204,27 @@ class AtomicGraph(NamedTuple):
         )
 
     In the case of an isolated, non-periodic structure, these will be all zeros.
+
+    .. code-block:: python
+
+        >>> water_graph.neighbour_cell_offsets
+        tensor([[0., 0., 0.],
+                [0., 0., 0.],
+                [0., 0., 0.],
+                [0., 0., 0.]])
+    
+    .. code-block:: python
+
+        >>> sodium_graph.neighbour_cell_offsets
+        tensor([[ 0.,  0.,  1.],
+                [ 0.,  1.,  0.],
+                [ 1.,  1.,  1.],
+                [ 1.,  0.,  0.],
+                [-1.,  0.,  0.],
+                [-1., -1., -1.],
+                [ 0., -1.,  0.],
+                [ 0.,  0., -1.]])
+
     """
 
     properties: Dict[PropertyKey, torch.Tensor]
@@ -344,7 +462,9 @@ class AtomicGraph(NamedTuple):
         info["edges"] = number_of_edges(self)
         info["has_cell"] = has_cell(self)
         if "cutoff" in self.other:
-            info["cutoff"] = self.other["cutoff"].item()
+            info["cutoff"] = to_significant_figures(
+                self.other["cutoff"].item(), 3
+            )
         if self.properties:
             info["properties"] = available_properties(self)
         actual_other = {
