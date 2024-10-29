@@ -25,7 +25,7 @@ loss:
   - component: graph_pes.training.loss.PerAtomEnergyLoss()
   - component: 
       graph_pes.training.loss.Loss:
-        property_key: forces
+        property: forces
         metric: graph_pes.training.loss.RMSE()
 
 # ... with the following settings ...

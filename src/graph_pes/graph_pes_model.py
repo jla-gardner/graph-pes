@@ -235,7 +235,7 @@ class GraphPESModel(nn.Module, ABC):
             graph.R.requires_grad_(True)
 
         # get the implemented properties
-        predictions = self.forward(graph)
+        predictions = self(graph)
 
         if infer_energy:
             if "local_energies" not in predictions:

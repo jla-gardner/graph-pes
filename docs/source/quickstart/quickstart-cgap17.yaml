@@ -1,0 +1,65 @@
+general:
+    run_id: nequip-for-cgap17
+    progress: logged
+
+# train a lightweight NequIP model ...
+model:
+    offset: 
+        graph_pes.models.FixedOffset:
+            C: -148.314002
+    many-body:
+        graph_pes.models.NequIP: # or PaiNN, MACE, TensorNet etc.
+            elements: [C]
+            cutoff: 3.7 # radial cutoff in Å
+            n_layers: 2
+            features:
+                n_channels: [16, 8, 4]
+                l_max: 2
+                use_odd_parity: true
+            self_interaction: linear
+
+# ... on structures from local files ...
+data:
+    train:
+        graph_pes.data.file_dataset:
+            path: train-cgap17.xyz
+            cutoff: 3.7 
+            n: 1280
+            shuffle: false
+    valid:
+        graph_pes.data.file_dataset:
+            path: val-cgap17.xyz
+            cutoff: 3.7 
+ 
+# ... on both energy and forces ...
+loss: 
+    - component: graph_pes.training.loss.PerAtomEnergyLoss()
+    - component: 
+        graph_pes.training.loss.Loss:
+            property: forces
+            metric: RMSE
+
+# ... with the following settings ...
+fitting:
+    trainer_kwargs:
+        max_epochs: 250
+        accelerator: auto
+        check_val_every_n_epoch: 5
+
+    optimizer:
+        graph_pes.training.opt.Optimizer:
+            name: AdamW
+            lr: 0.01
+  
+    scheduler:
+        graph_pes.training.opt.LRScheduler:
+            name: ReduceLROnPlateau
+            factor: 0.5
+            patience: 10
+
+    loader_kwargs:
+        batch_size: 64
+
+# ... and log to Weights & Biases
+wandb:
+    project: graph-pes-quickstart

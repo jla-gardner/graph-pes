@@ -53,13 +53,13 @@ def test_object_creation():
     # 4. test nested instantiation:
     spec = """
     graph_pes.training.loss.Loss:
-        property_key: energy
+        property: energy
         metric: graph_pes.training.loss.RMSE()
     """
     loss_obj = create_from_dict(yaml.safe_load(spec))
     print(loss_obj)
     assert isinstance(loss_obj, Loss)
-    assert loss_obj.property_key == "energy"
+    assert loss_obj.property == "energy"
     assert isinstance(loss_obj.metric, RMSE)
 
 

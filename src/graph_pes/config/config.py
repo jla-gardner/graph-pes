@@ -345,7 +345,7 @@ class Config:
             # or more fine-grained control
             loss:
                 graph_pes.training.loss.Loss:
-                    property_key: energy
+                    property: energy
                     metric: graph_pes.training.loss.RMSE()
 
         ...or specify a list of :class:`~graph_pes.config.config.LossSpec`
@@ -356,11 +356,11 @@ class Config:
         
             loss:
                 - component: graph_pes.training.loss.Loss:
-                      property_key: energy
+                      property: energy
                       metric: graph_pes.training.loss.RMSE()
                   weight: 1.0
                 - component: graph_pes.training.loss.Loss:
-                      property_key: forces
+                      property: forces
                       metric: graph_pes.training.loss.MAE()
                 weight: 10.0
         

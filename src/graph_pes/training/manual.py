@@ -70,7 +70,7 @@ def train_the_model(
     total_loss = process_loss(loss, train_data.properties)
 
     training_on: list[PropertyKey] = [
-        component.property_key for component in total_loss.losses
+        component.property for component in total_loss.losses
     ]
     for prop in training_on:
         if prop not in train_data.properties:

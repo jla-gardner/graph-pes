@@ -26,7 +26,7 @@ loss:
       weight: 1.0
     - component:
         graph_pes.training.loss.Loss:
-            property_key: forces
+            property: forces
             metric: RMSE
       weight: 3.0
 

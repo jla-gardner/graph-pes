@@ -30,12 +30,12 @@ loss:
     - component: graph_pes.training.loss.PerAtomEnergyLoss()
     - component:
         graph_pes.training.loss.Loss:
-            property_key: forces
+            property: forces
             metric: RMSE
       weight: 3.0
     - component:
         graph_pes.training.loss.Loss:
-            property_key: stress
+            property: stress
             metric: RMSE
       weight: 10.0
 

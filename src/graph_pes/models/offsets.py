@@ -36,19 +36,13 @@ class EnergyOffset(GraphPESModel):
     def __init__(self, offsets: PerElementParameter):
         super().__init__(
             cutoff=0,
-            implemented_properties=[
-                "local_energies",
-                "forces",
-                "stress",
-            ],
+            implemented_properties=["local_energies"],
         )
         self._offsets = offsets
 
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         return {
             "local_energies": self._offsets[graph.Z].squeeze(),
-            "forces": torch.zeros_like(graph.R),
-            "stress": torch.zeros_like(graph.cell),
         }
 
     def non_decayable_parameters(self) -> list[torch.nn.Parameter]:

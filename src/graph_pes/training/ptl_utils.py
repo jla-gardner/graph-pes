@@ -4,9 +4,10 @@ import time
 from typing import Any, Literal
 
 import pytorch_lightning as pl
-from graph_pes.utils.logger import logger
 from pytorch_lightning.callbacks import ProgressBar, StochasticWeightAveraging
 from typing_extensions import override
+
+from graph_pes.utils.logger import logger
 
 
 class VerboseSWACallback(StochasticWeightAveraging):
@@ -88,6 +89,14 @@ class LoggedProgressBar(ProgressBar):
     def __init__(self):
         super().__init__()
         self._enabled = True
+        self._start_time = time.time()
+        self._widths: dict[str, int] = {}
+
+    @override
+    def on_train_start(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
+    ):
+        self._start_time = time.time()
 
     @override
     def disable(self):
@@ -107,11 +116,57 @@ class LoggedProgressBar(ProgressBar):
             return
 
         metrics = self.get_metrics(trainer, pl_module)
-        widths = {k: max(len(k), len(v)) + 3 for k, v in metrics.items()}
 
-        if trainer.current_epoch == 0:
-            print("".join(f"{k:>{widths[k]}}" for k in metrics))
-        print("".join(f"{v:>{widths[k]}}" for k, v in metrics.items()))
+        if not self._widths:
+            # first time we're logging things:
+            # calculate the widths of the columns, and print the headers
+
+            # Split headers with more than 1 slash
+            # over two rows
+            def split_header(h: str) -> list[str]:
+                if "/" in h:
+                    parts = h.split("/")
+                    if len(parts) > 2:
+                        return [f"{parts[0]}/{parts[1]}", "/".join(parts[2:])]
+                return [h]
+
+            headers = list(metrics.keys())
+            split_headers = [split_header(h) for h in headers]
+
+            header_widths = {
+                header: max(len(line) for line in lines)
+                for header, lines in zip(headers, split_headers)
+            }
+            content_widths = {
+                header: len(metrics[header]) for header in headers
+            }
+            self._widths = {
+                header: max(header_widths[header], content_widths[header])
+                + (6 if header == "time" else 3)
+                for header in headers
+            }
+
+            # print the headers
+            first_row = [
+                "" if len(lines) == 1 else lines[0] for lines in split_headers
+            ]
+            second_row = [lines[-1] for lines in split_headers]
+
+            print(
+                "".join(
+                    f"{part:>{self._widths[header]}}"
+                    for part, header in zip(first_row, headers)
+                )
+            )
+            print(
+                "".join(
+                    f"{part:>{self._widths[header]}}"
+                    for part, header in zip(second_row, headers)
+                )
+            )
+
+        # print the values for this epoch
+        print("".join(f"{v:>{self._widths[k]}}" for k, v in metrics.items()))
 
     @override
     def get_metrics(  # type: ignore
@@ -126,8 +181,9 @@ class LoggedProgressBar(ProgressBar):
         for k, v in super_metrics.items():
             metrics[k] = logged_value(v)
 
-        # rearrange according to: epoch | valid/* | rest...
+        # rearrange according to: epoch | time | valid/* | rest...
         sorted_metrics = {"epoch": metrics.pop("epoch")}
+        sorted_metrics["time"] = f"{time.time() - self._start_time:.1f}"
         for k in list(metrics):
             if k.startswith("valid/"):
                 sorted_metrics[k] = metrics.pop(k)

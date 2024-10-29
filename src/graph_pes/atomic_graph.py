@@ -358,8 +358,8 @@ class AtomicGraph(NamedTuple):
             structure.arrays.items()
         ):
             if key in property_mapping:
-                property_key = property_mapping[key]
-                properties[property_key] = torch.tensor(value, dtype=dtype)
+                property = property_mapping[key]
+                properties[property] = torch.tensor(value, dtype=dtype)
             elif key in others_to_include:
                 other[key] = torch.tensor(value, dtype=dtype)
 

@@ -58,7 +58,7 @@ class AdditionModel(GraphPESModel):
         )
         self.models = UniformModuleDict(**models)
 
-    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
+    def predict(self, graph: AtomicGraph, properties: list[PropertyKey]) -> dict[PropertyKey, torch.Tensor]:
         device = graph.Z.device
         N = number_of_atoms(graph)
 
@@ -76,26 +76,62 @@ class AdditionModel(GraphPESModel):
                 "local_energies": torch.zeros((N), device=device),
             }
 
-        # only predict stresses if the graph has a cell!
-        # no list comprehension here due to TorchScript
-        properties: list[PropertyKey] = []
-        for prop in self.implemented_properties:
-            if prop != "stress":
-                properties.append(prop)
-
         if has_cell(graph):
             zeros["stress"] = torch.zeros_like(graph.cell)
             properties.append("stress")
 
+
+
         total_predictions: dict[PropertyKey, torch.Tensor] = {
             k: zeros[k] for k in properties
         }
+
         for model in self.models.values():
             preds = model.predict(graph, properties=properties)
             for key, value in preds.items():
                 total_predictions[key] += value
 
         return total_predictions
+
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
+        raise NotImplementedError("AdditionModel is not yet implemented.")
+        # device = graph.Z.device
+        # N = number_of_atoms(graph)
+
+        # if is_batch(graph):
+        #     S = number_of_structures(graph)
+        #     zeros = {
+        #         "energy": torch.zeros((S), device=device),
+        #         "forces": torch.zeros((N, 3), device=device),
+        #         "local_energies": torch.zeros((N), device=device),
+        #     }
+        # else:
+        #     zeros = {
+        #         "energy": torch.zeros((), device=device),
+        #         "forces": torch.zeros((N, 3), device=device),
+        #         "local_energies": torch.zeros((N), device=device),
+        #     }
+
+        # # only predict stresses if the graph has a cell!
+        # # no list comprehension here due to TorchScript
+        # properties: list[PropertyKey] = []
+        # for prop in self.implemented_properties:
+        #     if prop != "stress":
+        #         properties.append(prop)
+
+        # if has_cell(graph):
+        #     zeros["stress"] = torch.zeros_like(graph.cell)
+        #     properties.append("stress")
+
+        # total_predictions: dict[PropertyKey, torch.Tensor] = {
+        #     k: zeros[k] for k in properties
+        # }
+        # for model in self.models.values():
+        #     preds = model.predict(graph, properties=properties)
+        #     for key, value in preds.items():
+        #         total_predictions[key] += value
+
+        # return total_predictions
 
     def pre_fit_all_components(
         self, graphs: GraphDataset | Sequence[AtomicGraph]

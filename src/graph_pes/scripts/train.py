@@ -9,6 +9,9 @@ from pathlib import Path
 import pytorch_lightning
 import torch
 import yaml
+from pytorch_lightning.loggers import CSVLogger
+from pytorch_lightning.loggers import WandbLogger as PTLWandbLogger
+
 from graph_pes.config import Config, get_default_config_values
 from graph_pes.scripts.generation import config_auto_generation
 from graph_pes.training.ptl import create_trainer, train_with_lightning
@@ -20,8 +23,6 @@ from graph_pes.utils.misc import (
     random_dir,
     uniform_repr,
 )
-from pytorch_lightning.loggers import CSVLogger
-from pytorch_lightning.loggers import WandbLogger as PTLWandbLogger
 
 
 class WandbLogger(PTLWandbLogger):

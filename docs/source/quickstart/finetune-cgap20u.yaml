@@ -1,0 +1,55 @@
+general:
+    run_id: finetune-nequip-for-cgap20u
+    progress: logged
+
+# finetune a pre-trained NequIP model ...
+model:
+    graph_pes.models.load_model_component:
+        path: <insert path to model>
+        key: many-body
+
+# ... on structures from local files ...
+data:
+    train:
+        graph_pes.data.file_dataset:
+            path: train-cgap20u.xyz
+            cutoff: 3.7 
+            n: 1280
+            shuffle: false
+    valid:
+        graph_pes.data.file_dataset:
+            path: val-cgap20u.xyz
+            cutoff: 3.7 
+ 
+# ... on both energy and forces ...
+loss: 
+    - component: graph_pes.training.loss.PerAtomEnergyLoss()
+    - component: 
+        graph_pes.training.loss.Loss:
+            property: forces
+            metric: RMSE
+
+# ... with the following settings ...
+fitting:
+    trainer_kwargs:
+        max_epochs: 100
+        accelerator: auto
+        check_val_every_n_epoch: 2
+
+    optimizer:
+        graph_pes.training.opt.Optimizer:
+            name: AdamW
+            lr: 0.003
+  
+    scheduler:
+        graph_pes.training.opt.LRScheduler:
+            name: ReduceLROnPlateau
+            factor: 0.5
+            patience: 10
+
+    loader_kwargs:
+        batch_size: 64
+
+# ... and log to Weights & Biases
+wandb:
+    project: graph-pes-quickstart
