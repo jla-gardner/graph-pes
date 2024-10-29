@@ -412,9 +412,9 @@ void PairGraphPES::compute(int eflag, int vflag)
   }
 
   c10::Dict<std::string, torch::Tensor> input;
-  input.insert("_positions", pos_tensor.to(device));
+  input.insert("positions", pos_tensor.to(device));
   input.insert("neighbour_list", edges_tensor.to(device));
-  input.insert("_neighbour_cell_offsets", edge_cell_shifts_tensor.to(device));
+  input.insert("neighbour_cell_offsets", edge_cell_shifts_tensor.to(device));
   input.insert("cell", cell_tensor.to(device));
   input.insert("atomic_numbers", Z_tensor.to(device));
   input.insert("compute_virial", bool_tensor(vflag, device));
