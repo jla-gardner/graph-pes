@@ -45,8 +45,8 @@ class Interaction(nn.Module):
     ----------
     radial_features
         The number of radial features to expand bond distances into.
-    internal_dim
-        The dimension of the internal representations.
+    channels
+        The number of channels of the internal representations.
     cutoff
         The cutoff distance for the radial features.
     """
@@ -54,22 +54,22 @@ class Interaction(nn.Module):
     def __init__(
         self,
         radial_features: int,
-        internal_dim: int,
+        channels: int,
         cutoff: float,
     ):
         super().__init__()
-        self.internal_dim = internal_dim
+        self.channels = channels
 
         self.filter_generator = HaddamardProduct(
             nn.Sequential(
                 Bessel(radial_features, cutoff),
-                nn.Linear(radial_features, internal_dim * 3),
+                nn.Linear(radial_features, channels * 3),
             ),
             PolynomialEnvelope(cutoff),
         )
 
         self.Phi = MLP(
-            [internal_dim, internal_dim, internal_dim * 3],
+            [channels, channels, channels * 3],
             activation=nn.SiLU(),
         )
 
@@ -86,7 +86,7 @@ class Interaction(nn.Module):
         new_features = self.Phi(scalar_embeddings)  # (N, 3D)
         edge_embeddings = self.filter_generator(d)  # (E, 3D)
         x_ij = index_over_neighbours(new_features, graph) * edge_embeddings
-        a, b, c = torch.split(x_ij, self.internal_dim, dim=-1)  # (E, D)
+        a, b, c = torch.split(x_ij, self.channels, dim=-1)  # (E, D)
 
         # simple sum over neighbours to get scalar messages
         delta_s = sum_over_neighbours(a, graph)
@@ -121,17 +121,17 @@ class Update(nn.Module):
 
     Parameters
     ----------
-    internal_dim
-        The dimension of the internal representations.
+    channels
+        The number of channels of the internal representations.
     """
 
-    def __init__(self, internal_dim: int):
+    def __init__(self, channels: int):
         super().__init__()
-        self.internal_dim = internal_dim
-        self.U = VectorLinear(internal_dim, internal_dim)
-        self.V = VectorLinear(internal_dim, internal_dim)
+        self.channels = channels
+        self.U = VectorLinear(channels, channels)
+        self.V = VectorLinear(channels, channels)
         self.mlp = MLP(
-            [internal_dim * 2, internal_dim, internal_dim * 3],
+            [channels * 2, channels, channels * 3],
             activation=nn.SiLU(),
         )
 
@@ -149,7 +149,7 @@ class Update(nn.Module):
         m = self.mlp(m)  # (N, 3D)
 
         # split the update into 3 parts
-        a, b, c = torch.split(m, self.internal_dim, dim=-1)  # (N, D)
+        a, b, c = torch.split(m, self.channels, dim=-1)  # (N, D)
 
         # vector update:
         delta_v = u * a.unsqueeze(-1)  # (N, D, 3)
@@ -189,8 +189,8 @@ class PaiNN(GraphPESModel):
 
     Parameters
     ----------
-    internal_dim
-        The dimension of the internal representations.
+    channels
+        The number of channels of the internal representations.
     radial_features
         The number of radial features to expand bond distances into.
     layers
@@ -207,14 +207,14 @@ class PaiNN(GraphPESModel):
 
         model:
           graph_pes.models.PaiNN:
-            internal_dim: 32
+            channels: 32
             layers: 3
             cutoff: 5.0
     """  # noqa: E501
 
     def __init__(
         self,
-        internal_dim: int = 32,
+        channels: int = 32,
         radial_features: int = 20,
         layers: int = 3,
         cutoff: float = DEFAULT_CUTOFF,
@@ -224,17 +224,17 @@ class PaiNN(GraphPESModel):
             implemented_properties=["local_energies"],
         )
 
-        self.internal_dim = internal_dim
-        self.z_embedding = PerElementEmbedding(internal_dim)
+        self.channels = channels
+        self.z_embedding = PerElementEmbedding(channels)
         self.interactions = UniformModuleList(
-            Interaction(radial_features, internal_dim, cutoff)
+            Interaction(radial_features, channels, cutoff)
             for _ in range(layers)
         )
         self.updates = UniformModuleList(
-            Update(internal_dim) for _ in range(layers)
+            Update(channels) for _ in range(layers)
         )
         self.read_out = MLP(
-            [internal_dim, internal_dim, 1],
+            [channels, channels, 1],
             activation=nn.SiLU(),
         )
 
@@ -246,7 +246,7 @@ class PaiNN(GraphPESModel):
         scalar_embeddings = self.z_embedding(graph.Z)
         # - vectors as all 0s:
         vector_embeddings = torch.zeros(
-            (number_of_atoms(graph), self.internal_dim, 3),
+            (number_of_atoms(graph), self.channels, 3),
             device=graph.Z.device,
         )
 

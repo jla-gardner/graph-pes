@@ -309,7 +309,7 @@ class _BaseNequIP(GraphPESModel):
         Z_embedding_dim: int,
         radial_features: int,
         # message passing
-        n_layers: int,
+        layers: int,
         node_features: o3.Irreps,
         edge_features: o3.Irreps,
         self_interaction: Literal["linear", "tensor_product"] | None,
@@ -349,8 +349,8 @@ class _BaseNequIP(GraphPESModel):
         # of the atomic number
         current_layer_input: o3.Irreps
         current_layer_input = o3.Irreps(f"{scalar_even_dim}x0e")  # type: ignore
-        layers: list[NequIPMessagePassingLayer] = []
-        for i in range(n_layers):
+        _layers: list[NequIPMessagePassingLayer] = []
+        for i in range(layers):
             layer = NequIPMessagePassingLayer(
                 input_node_irreps=current_layer_input,
                 edge_features=edge_features,
@@ -359,13 +359,13 @@ class _BaseNequIP(GraphPESModel):
                 radial_features=radial_features,
                 Z_embedding_dim=Z_embedding_dim,
                 self_interaction=self_interaction,
-                prune_output_to=None if i < n_layers - 1 else prune_output_to,
+                prune_output_to=None if i < layers - 1 else prune_output_to,
                 neighbour_aggregation=neighbour_aggregation,
             )
-            layers.append(layer)
+            _layers.append(layer)
             current_layer_input = layer.irreps_out
 
-        self.layers = UniformModuleList(layers)
+        self.layers = UniformModuleList(_layers)
         self.energy_readout = LinearReadOut(current_layer_input)
 
         if direct_force_predictions:
@@ -417,7 +417,7 @@ class SimpleIrrepSpec(TypedDict):
 
     Parameters
     ----------
-    n_channels
+    channels
         The number of channels for the node embedding. If an integer, all
         :math:`l`-order irreps will have the same number of channels. If a list,
         the :math:`l`-order irreps will have the number of channels specified by
@@ -433,10 +433,10 @@ class SimpleIrrepSpec(TypedDict):
     .. code:: python
 
         >>> from graph_pes.models.e3nn.nequip import SimpleIrrepSpec
-        >>> SimpleIrrepSpec(n_channels=16, l_max=2, use_odd_parity=True)
+        >>> SimpleIrrepSpec(channels=16, l_max=2, use_odd_parity=True)
     """
 
-    n_channels: int | list[int]
+    channels: int | list[int]
     l_max: int
     use_odd_parity: bool
 
@@ -470,7 +470,7 @@ class CompleteIrrepSpec(TypedDict):
 
 
 DEFAULT_FEATURES: Final[SimpleIrrepSpec] = {
-    "n_channels": 16,
+    "channels": 16,
     "l_max": 2,
     "use_odd_parity": True,
 }
@@ -479,25 +479,25 @@ DEFAULT_FEATURES: Final[SimpleIrrepSpec] = {
 def parse_irrep_specification(
     spec: SimpleIrrepSpec | CompleteIrrepSpec,
 ) -> tuple[o3.Irreps, o3.Irreps]:
-    is_simple = set(spec.keys()) == {"n_channels", "l_max", "use_odd_parity"}
+    is_simple = set(spec.keys()) == {"channels", "l_max", "use_odd_parity"}
     is_complete = set(spec.keys()) == {"node_irreps", "edge_irreps"}
 
     if not is_simple and not is_complete:
         raise ValueError(
             "Invalid irrep specification. Expected a dict with keys "
             "`node_irreps` and `edge_irreps` or a dict with keys "
-            "`n_channels`, `l_max`, and `use_odd_parity`."
+            "`channels`, `l_max`, and `use_odd_parity`."
         )
 
     if is_simple:
         spec = cast(SimpleIrrepSpec, spec)
-        l_max, channels = spec["l_max"], spec["n_channels"]
+        l_max, channels = spec["l_max"], spec["channels"]
         if not isinstance(channels, list):
             channels = [channels] * (l_max + 1)
 
         if len(channels) != l_max + 1:
             raise ValueError(
-                "n_channels must be an integer or a list of length l_max + 1"
+                "channels must be an integer or a list of length l_max + 1"
             )
 
         parities = "oe" if spec["use_odd_parity"] else "e"
@@ -581,7 +581,7 @@ class NequIP(_BaseNequIP):
     features
         A specification of the irreps to use for the node and edge embeddings.
         Can be either a SimpleIrrepSpec or a CompleteIrrepSpec.
-    n_layers
+    layers
         The number of layers for the message passing.
     self_interaction
         The kind of self-interaction to use. If ``None``, no self-interaction
@@ -620,11 +620,11 @@ class NequIP(_BaseNequIP):
             cutoff: 5.0
 
             # use 2 message passing layers
-            n_layers: 2
+            layers: 2
 
             # using SimpleIrrepSpec
             features:
-              n_channels: [64, 32, 8]
+              channels: [64, 32, 8]
               l_max: 2
               use_odd_parity: true
 
@@ -643,11 +643,11 @@ class NequIP(_BaseNequIP):
         ...     elements=["C", "H", "O"],
         ...     cutoff=5.0,
         ...     features={
-        ...         "n_channels": [16, 8, 4],
+        ...         "channels": [16, 8, 4],
         ...         "l_max": 2,
         ...         "use_odd_parity": True
         ...     },
-        ...     n_layers=3,
+        ...     layers=3,
         ... )
         >>> for layer in model.layers:
         ...     print(layer.irreps_in, "->", layer.irreps_out)
@@ -665,7 +665,7 @@ class NequIP(_BaseNequIP):
         ...         "node_irreps": "32x0e + 16x1o + 8x2e",
         ...         "edge_irreps": "1x0e + 1x1o + 1x2e"
         ...     },
-        ...     n_layers=3,
+        ...     layers=3,
         ... )
         >>> for layer in model.layers:
         ...     print(layer.irreps_in, "->", layer.irreps_out)
@@ -683,8 +683,8 @@ class NequIP(_BaseNequIP):
         >>> vanilla = NequIP(
         ...     elements=["C", "H", "O"],
         ...     cutoff=5.0,
-        ...     features={"n_channels": 128, "l_max": 2, "use_odd_parity": True},
-        ...     n_layers=3,
+        ...     features={"channels": 128, "l_max": 2, "use_odd_parity": True},
+        ...     layers=3,
         ...     self_interaction="tensor_product",
         ...     prune_last_layer=False,
         ... )
@@ -694,8 +694,8 @@ class NequIP(_BaseNequIP):
         >>> smaller = NequIP(
         ...     elements=["C", "H", "O"],
         ...     cutoff=5.0,
-        ...     features={"n_channels": 128, "l_max": 2, "use_odd_parity": True},
-        ...     n_layers=3,
+        ...     features={"channels": 128, "l_max": 2, "use_odd_parity": True},
+        ...     layers=3,
         ...     self_interaction="linear",
         ...     prune_last_layer=True,
         ... )
@@ -708,7 +708,7 @@ class NequIP(_BaseNequIP):
         elements: list[str],
         direct_force_predictions: bool = False,
         cutoff: float = DEFAULT_CUTOFF,
-        n_layers: int = 3,
+        layers: int = 3,
         features: SimpleIrrepSpec | CompleteIrrepSpec = DEFAULT_FEATURES,
         self_interaction: Literal["linear", "tensor_product"]
         | None = "tensor_product",
@@ -728,7 +728,7 @@ class NequIP(_BaseNequIP):
             Z_embedding_dim=Z_embedding_dim,
             node_features=node_features,
             edge_features=edge_features,
-            n_layers=n_layers,
+            layers=layers,
             cutoff=cutoff,
             self_interaction=self_interaction,
             prune_last_layer=prune_last_layer,
@@ -762,7 +762,7 @@ class ZEmbeddingNequIP(_BaseNequIP):
         direct_force_predictions: bool = False,
         Z_embed_dim: int = 8,
         features: SimpleIrrepSpec | CompleteIrrepSpec = DEFAULT_FEATURES,
-        n_layers: int = 3,
+        layers: int = 3,
         self_interaction: Literal["linear", "tensor_product"]
         | None = "tensor_product",
         prune_last_layer: bool = True,
@@ -777,7 +777,7 @@ class ZEmbeddingNequIP(_BaseNequIP):
             Z_embedding_dim=Z_embed_dim,
             node_features=node_features,
             edge_features=edge_features,
-            n_layers=n_layers,
+            layers=layers,
             cutoff=cutoff,
             self_interaction=self_interaction,
             prune_last_layer=prune_last_layer,

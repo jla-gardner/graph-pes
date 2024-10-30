@@ -8,7 +8,7 @@ def test_direct_forces():
     model = NequIP(
         direct_force_predictions=True,
         elements=["C", "H"],
-        features=dict(n_channels=4, l_max=1, use_odd_parity=True),
+        features=dict(channels=4, l_max=1, use_odd_parity=True),
     )
     graph = AtomicGraph.from_ase(molecule("CH4"))
 

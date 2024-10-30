@@ -11,9 +11,9 @@ model:
         graph_pes.models.NequIP: # or PaiNN, MACE, TensorNet etc.
             elements: [C]
             cutoff: 3.7 # radial cutoff in Å
-            n_layers: 2
+            layers: 2
             features:
-                n_channels: [16, 8, 4]
+                channels: [16, 8, 4]
                 l_max: 2
                 use_odd_parity: true
             self_interaction: linear

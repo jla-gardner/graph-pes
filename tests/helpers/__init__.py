@@ -32,9 +32,9 @@ def all_model_factories(
     pytorch_lightning.seed_everything(42)
     # make these models as small as possible to speed up tests
     _small_nequip = {
-        "n_layers": 1,
+        "layers": 1,
         "features": dict(
-            n_channels=16,
+            channels=16,
             l_max=1,
             use_odd_parity=False,
         ),
@@ -58,7 +58,7 @@ def all_model_factories(
         },
         PaiNN: {
             "layers": 1,
-            "internal_dim": 16,
+            "channels": 16,
         },
         TensorNet: {
             "layers": 1,

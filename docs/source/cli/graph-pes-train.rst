@@ -141,7 +141,7 @@ Under-the-hood, ``graph-pes-train`` uses `dacite <https://github.com/konradhalas
 
             graph_pes.models.SchNet:
                 cutoff: 5.0
-                n_layers: 3
+                layers: 3
 
       hence another way to point to the return value of some function with no arguments is:
 
