@@ -100,8 +100,8 @@ class SchNetInteraction(torch.nn.Module):
 
     Parameters
     ----------
-    n_features
-        Number of features per node.
+    channels
+        Number of channels of the internal representations.
     expansion_features
         Number of features used for the radial basis expansion.
     cutoff
