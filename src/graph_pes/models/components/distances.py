@@ -61,6 +61,10 @@ class DistanceExpansion(torch.nn.Module, ABC):
             r = r.unsqueeze(-1)
         return self.expand(r)
 
+    # for mypy etc.
+    def __call__(self, r: torch.Tensor) -> torch.Tensor:
+        return super().__call__(r)
+
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(n_features={self.n_features}, "
