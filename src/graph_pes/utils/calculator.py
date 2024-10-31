@@ -1,16 +1,15 @@
 from __future__ import annotations
 
+from typing import TypeVar
+
 import ase
 import numpy
+import torch
 from ase.calculators.calculator import Calculator, all_changes
 from ase.stress import full_3x3_to_voigt_6_stress
-from graph_pes.atomic_graph import (
-    AtomicGraph,
-    PropertyKey,
-    number_of_atoms,
-    to_batch,
-)
+from graph_pes.atomic_graph import AtomicGraph, PropertyKey, has_cell, to_batch
 from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.utils.misc import groups_of, pairs
 
 
 class GraphPESCalculator(Calculator):
@@ -44,7 +43,7 @@ class GraphPESCalculator(Calculator):
     def calculate(
         self,
         atoms: ase.Atoms | None = None,
-        properties: list[str] | None = None,
+        properties: list[str] | list[PropertyKey] | None = None,
         system_changes: list[str] = all_changes,
     ):
         if properties is None:
@@ -75,14 +74,20 @@ class GraphPESCalculator(Calculator):
 
         self.results = results
 
-    def batched_prediction(
+    def calculate_all(
         self,
         structures: list[AtomicGraph | ase.Atoms],
         properties: list[PropertyKey] | None = None,
         batch_size: int = 5,
-    ) -> list[dict[str, numpy.ndarray]]:
+    ) -> list[dict[PropertyKey, numpy.ndarray]]:
         """
-        Make a batched prediction on the given list of structures.
+        Semantically identical to:
+
+        .. code-block::
+
+            [calc.calculate(structure, properties) for structure in structures]
+
+        but with significant acceleration due to internal batching.
 
         Parameters
         ----------
@@ -108,43 +113,91 @@ class GraphPESCalculator(Calculator):
          {'energy': array(...), 'forces': array(...)},
          {'energy': array(...), 'forces': array(...)}]
         """
-        # recursive batching
-        if len(structures) > batch_size:
-            first_batch, rest = structures[:batch_size], structures[batch_size:]
-            return self.batched_prediction(
-                first_batch, properties, batch_size
-            ) + self.batched_prediction(rest, properties, batch_size)
 
-        if properties is None:
-            properties = ["energy", "forces", "stress"]
+        # defaults
         graphs = [
             AtomicGraph.from_ase(s, self.model.cutoff.item() + 0.001)
             if isinstance(s, ase.Atoms)
             else s
             for s in structures
         ]
-        batch_preds = self.model.predict(
-            to_batch(graphs), properties=properties
-        )
+        if properties is None:
+            properties = ["energy", "forces"]
+            if all(map(has_cell, graphs)):
+                properties.append("stress")
 
-        # de-convolve the batch predictions into the original structures
-        preds_list = []
-        atom_index = 0
-        for structure_index, graph in enumerate(graphs):
-            N = number_of_atoms(graph)
-            preds = {}
-            if "energy" in properties:
-                preds["energy"] = batch_preds["energy"][structure_index]
-            if "forces" in properties:
-                preds["forces"] = batch_preds["forces"][
-                    atom_index : atom_index + N
-                ]
-            if "stress" in properties:
-                preds["stress"] = batch_preds["stress"][structure_index]
-            if "local_energies" in properties:
-                preds["local_energies"] = batch_preds["local_energies"][
-                    atom_index : atom_index + N
-                ]
-            preds_list.append(preds)
-            atom_index += N
-        return preds_list
+        results: list[dict[PropertyKey, numpy.ndarray]] = []
+        for batch in map(to_batch, groups_of(batch_size, graphs)):
+            predictions = self.model.predict(batch, properties)
+            seperated = _seperate(predictions, batch)
+            results.extend(map(_to_numpy, seperated))
+
+        if "stress" in properties:
+            for r in results:
+                r["stress"] = full_3x3_to_voigt_6_stress(r["stress"])
+
+        return results
+
+
+## utils ##
+
+T = TypeVar("T")
+TensorLike = TypeVar("TensorLike", torch.Tensor, numpy.ndarray)
+
+
+def _to_numpy(results: dict[T, torch.Tensor]) -> dict[T, numpy.ndarray]:
+    return {key: tensor.detach().numpy() for key, tensor in results.items()}
+
+
+def _seperate(
+    batched_prediction: dict[PropertyKey, TensorLike],
+    batch: AtomicGraph,
+) -> list[dict[PropertyKey, TensorLike]]:
+    preds_list = []
+
+    for idx, (start, stop) in enumerate(pairs(batch.other["ptr"])):
+        preds = {}
+
+        # per-structure properties
+        if "energy" in batched_prediction:
+            preds["energy"] = batched_prediction["energy"][idx]
+        if "stress" in batched_prediction:
+            preds["stress"] = batched_prediction["stress"][idx]
+
+        # per-atom properties
+        if "forces" in batched_prediction:
+            preds["forces"] = batched_prediction["forces"][start:stop]
+        if "local_energies" in batched_prediction:
+            preds["local_energies"] = batched_prediction["local_energies"][
+                start:stop
+            ]
+
+        preds_list.append(preds)
+
+    return preds_list
+
+
+def merge_predictions(
+    predictions: list[dict[PropertyKey, numpy.ndarray]],
+) -> dict[PropertyKey, numpy.ndarray]:
+    """
+    Take a list of property predictions and merge them
+    in a sensible way.
+
+    TODO write
+
+    TODO examples
+    """
+    merged: dict[PropertyKey, numpy.ndarray] = {}
+
+    # stack per-structure properties along new axis
+    for key in ["energy", "stress"]:
+        if key in predictions[0]:
+            merged[key] = numpy.stack([p[key] for p in predictions])
+
+    # concatenat per-atom properties along the first axis
+    for key in ["forces", "local_energies"]:
+        if key in predictions[0]:
+            merged[key] = numpy.concatenate([p[key] for p in predictions])
+
+    return merged

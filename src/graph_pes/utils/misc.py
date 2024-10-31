@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Sequence, TypeVar, overload
 
-import numpy as np
+import numpy
 import torch
 import torch.distributed
 from torch import Tensor
@@ -374,8 +374,8 @@ def random_split(
     if sum(lengths) > len(sequence):
         raise ValueError("Not enough things to split")
 
-    shuffle = np.random.RandomState(seed=seed).permutation(len(sequence))
-    ptr = [0, *np.cumsum(lengths)]
+    shuffle = numpy.random.RandomState(seed=seed).permutation(len(sequence))
+    ptr = [0, *numpy.cumsum(lengths)]
 
     return [
         [sequence[i] for i in shuffle[ptr[n] : ptr[n + 1]]]
@@ -399,3 +399,31 @@ def all_equal(iterable: Iterable[T]) -> bool:
     except StopIteration:
         return False
     return all(first == x for x in iterator)
+
+
+def groups_of(
+    size: int,
+    things: Iterable[T],
+    drop_last: bool = False,
+) -> Iterator[list[T]]:
+    """
+    TODO: write me
+
+    Examples
+    --------
+
+    >>> for group in groups_of(5, range(12)):
+    ...     print(group)
+    [0, 1, 2, 3, 4]
+    [5, 6, 7, 8, 9]
+    [10, 11]
+    """
+    batch = []
+    for thing in things:
+        batch.append(thing)
+        if len(batch) == size:
+            yield batch
+            batch = []
+
+    if batch and not drop_last:
+        yield batch

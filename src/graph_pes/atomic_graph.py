@@ -554,11 +554,9 @@ def to_batch(
 
     properties: dict[PropertyKey, torch.Tensor] = {}
     # - per structure labels are concatenated along a new batch axis (0)
-    for label in ["energy", "stress"]:
-        if label in graphs[0].properties:
-            properties[label] = torch.stack(
-                [g.properties[label] for g in graphs]
-            )
+    for key in ["energy", "stress"]:
+        if key in graphs[0].properties:
+            properties[key] = torch.stack([g.properties[key] for g in graphs])
 
     # - per atom labels are concatenated along the first axis
     for key in ["forces", "local_energies"]:
@@ -580,7 +578,7 @@ def to_batch(
             if not all_equal(cutoffs):
                 warnings.warn(
                     "Attempting to batch graphs with different cutoffs: "
-                    f"{cutoffs}. Using the maximum cutoff.",
+                    f'{cutoffs}. Setting graph.other["cutoff"] to the maximum.',
                     stacklevel=2,
                 )
             other["cutoff"] = torch.tensor(cutoffs).max()
