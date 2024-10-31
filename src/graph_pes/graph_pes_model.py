@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import Sequence
+from typing import Final, Sequence
 
 import torch
 from ase.data import chemical_symbols
@@ -91,12 +91,13 @@ class GraphPESModel(nn.Module, ABC):
     ):
         super().__init__()
 
+        self._GRAPH_PES_VERSION: Final[str] = "0.0.3"
+
         self.cutoff: torch.Tensor
         self.register_buffer("cutoff", torch.tensor(cutoff))
         self._has_been_pre_fit: torch.Tensor
         self.register_buffer("_has_been_pre_fit", torch.tensor(0))
 
-        # setup up the output enhancers
         self.implemented_properties = implemented_properties
         if "local_energies" not in implemented_properties:
             raise ValueError(

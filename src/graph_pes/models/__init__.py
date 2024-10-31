@@ -65,9 +65,7 @@ ALL_MODELS: list[type[GraphPESModel]] = [
 ]
 
 
-def load_model(
-    path: str | pathlib.Path,
-) -> GraphPESModel:
+def load_model(path: str | pathlib.Path) -> GraphPESModel:
     """
     Load a model from a file.
 
@@ -111,7 +109,26 @@ def load_model(
     if not path.exists():
         raise FileNotFoundError(f"Could not find model at {path}")
 
-    return torch.load(path)
+    model = torch.load(path, weights_only=False)
+
+    if not isinstance(model, GraphPESModel):
+        raise ValueError(
+            "Expected the loaded object to be a GraphPESModel "
+            f"but got {type(model)}"
+        )
+
+    import graph_pes
+
+    if model._GRAPH_PES_VERSION != graph_pes.__version__:
+        warnings.warn(
+            "You are attempting to load a model that was trained with "
+            f"a different version of graph-pes ({model._GRAPH_PES_VERSION}) "
+            f"than what you are currently using ({graph_pes.__version__}). "
+            "We won't stop you from doing this, but it may cause issues.",
+            stacklevel=2,
+        )
+
+    return model
 
 
 def load_model_component(path: str | pathlib.Path, key: str) -> GraphPESModel:

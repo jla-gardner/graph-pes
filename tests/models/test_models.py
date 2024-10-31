@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+import graph_pes
 import pytest
 import torch
 from ase import Atoms
@@ -10,7 +13,13 @@ from graph_pes.atomic_graph import (
     number_of_edges,
     to_batch,
 )
-from graph_pes.models import LennardJones, Morse, SchNet
+from graph_pes.models import (
+    LennardJones,
+    Morse,
+    SchNet,
+    load_model,
+    load_model_component,
+)
 from graph_pes.models.addition import AdditionModel
 
 from .. import helpers
@@ -169,3 +178,40 @@ def test_model_outputs(model: GraphPESModel):
         outputs["local_energies"],
         atol=1e-5,
     )
+
+
+def test_load_model(tmp_path: Path):
+    model = LennardJones()
+
+    # test correctness
+    path = tmp_path / "model.pt"
+    torch.save(model, path)
+    loaded = load_model(path)
+    assert model.sigma == loaded.sigma
+
+    # test warning
+    fake_version = graph_pes.__version__ + "fake"
+    model._GRAPH_PES_VERSION = fake_version  # type: ignore
+    torch.save(model, path)
+    with pytest.warns(UserWarning, match="different version of graph-pes"):
+        loaded = load_model(path)
+        assert loaded._GRAPH_PES_VERSION == fake_version
+
+    # def test error
+    torch.save({}, path)
+    with pytest.raises(ValueError, match="to be a GraphPESModel but got"):
+        load_model(path)
+
+
+def test_load_model_component(tmp_path: Path):
+    model = AdditionModel(lj=LennardJones(), schnet=SchNet())
+    path = tmp_path / "model.pt"
+    torch.save(model, path)
+
+    lj = load_model_component(path, "lj")
+    assert lj.sigma == model["lj"].sigma
+
+    # test error
+    torch.save(LennardJones(), path)
+    with pytest.raises(ValueError, match="Expected to load an AdditionModel"):
+        load_model_component(path, "str")
