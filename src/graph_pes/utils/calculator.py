@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import Iterable, TypeVar
 
 import ase
 import numpy
@@ -14,14 +14,16 @@ from graph_pes.utils.misc import groups_of, pairs
 
 class GraphPESCalculator(Calculator):
     """
-    ASE calculator wrapping any GraphPESModel.
+    ASE calculator wrapping any :class:`graph_pes.GraphPESModel`.
 
     Parameters
     ----------
     model
-        The model to use for the calculation.
+        The model to wrap
     device
         The device to use for the calculation, e.g. "cpu" or "cuda".
+        Defaults to ``None``, in which case the model is not moved
+        from its current device.
     **kwargs
         Properties passed to the :class:`ase.calculators.calculator.Calculator`
         base class.
@@ -32,13 +34,15 @@ class GraphPESCalculator(Calculator):
     def __init__(
         self,
         model: GraphPESModel,
-        device: str = "cpu",
+        device: torch.device | str | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.model = model.to(device)
+
+        if device is not None:
+            model = model.to(device)
+        self.model = model
         self.model.eval()
-        self.device = device
 
     def calculate(
         self,
@@ -57,7 +61,7 @@ class GraphPESCalculator(Calculator):
         graph = AtomicGraph.from_ase(
             self.atoms, self.model.cutoff.item() + 0.001
         )
-        graph = graph.to(self.device)
+        graph = graph.to(self.model.device)
 
         results = {
             k: v.detach().cpu().numpy()
@@ -76,7 +80,7 @@ class GraphPESCalculator(Calculator):
 
     def calculate_all(
         self,
-        structures: list[AtomicGraph | ase.Atoms],
+        structures: Iterable[AtomicGraph | ase.Atoms],
         properties: list[PropertyKey] | None = None,
         batch_size: int = 5,
     ) -> list[dict[PropertyKey, numpy.ndarray]]:
@@ -114,6 +118,27 @@ class GraphPESCalculator(Calculator):
          {'energy': array(...), 'forces': array(...)}]
         """
 
+        _, tensor_results = self._calculate_all_keep_tensor(
+            structures, properties, batch_size
+        )
+
+        results = [to_numpy(r) for r in tensor_results]
+
+        if "stress" in results[0]:
+            for r in results:
+                r["stress"] = full_3x3_to_voigt_6_stress(r["stress"])
+
+        return results
+
+    def _calculate_all_keep_tensor(
+        self,
+        structures: Iterable[AtomicGraph | ase.Atoms],
+        properties: list[PropertyKey] | None = None,
+        batch_size: int = 5,
+    ) -> tuple[
+        list[AtomicGraph],
+        list[dict[PropertyKey, torch.Tensor]],
+    ]:
         # defaults
         graphs = [
             AtomicGraph.from_ase(s, self.model.cutoff.item() + 0.001)
@@ -126,17 +151,14 @@ class GraphPESCalculator(Calculator):
             if all(map(has_cell, graphs)):
                 properties.append("stress")
 
-        results: list[dict[PropertyKey, numpy.ndarray]] = []
+        # batched prediction
+        results: list[dict[PropertyKey, torch.Tensor]] = []
         for batch in map(to_batch, groups_of(batch_size, graphs)):
             predictions = self.model.predict(batch, properties)
             seperated = _seperate(predictions, batch)
-            results.extend(map(_to_numpy, seperated))
+            results.extend(seperated)
 
-        if "stress" in properties:
-            for r in results:
-                r["stress"] = full_3x3_to_voigt_6_stress(r["stress"])
-
-        return results
+        return graphs, results
 
 
 ## utils ##
@@ -145,7 +167,7 @@ T = TypeVar("T")
 TensorLike = TypeVar("TensorLike", torch.Tensor, numpy.ndarray)
 
 
-def _to_numpy(results: dict[T, torch.Tensor]) -> dict[T, numpy.ndarray]:
+def to_numpy(results: dict[T, torch.Tensor]) -> dict[T, numpy.ndarray]:
     return {key: tensor.detach().numpy() for key, tensor in results.items()}
 
 
@@ -177,9 +199,12 @@ def _seperate(
     return preds_list
 
 
+Array = TypeVar("Array", torch.Tensor, numpy.ndarray)
+
+
 def merge_predictions(
-    predictions: list[dict[PropertyKey, numpy.ndarray]],
-) -> dict[PropertyKey, numpy.ndarray]:
+    predictions: list[dict[PropertyKey, Array]],
+) -> dict[PropertyKey, Array]:
     """
     Take a list of property predictions and merge them
     in a sensible way.
@@ -188,16 +213,27 @@ def merge_predictions(
 
     TODO examples
     """
-    merged: dict[PropertyKey, numpy.ndarray] = {}
+    if not predictions:
+        return {}
+
+    eg = next(iter(predictions[0].values()))
+    if isinstance(eg, torch.Tensor):
+        stack = torch.stack
+        cat = torch.cat
+    else:
+        stack = numpy.stack
+        cat = numpy.concatenate
+
+    merged: dict[PropertyKey, Array] = {}
 
     # stack per-structure properties along new axis
     for key in ["energy", "stress"]:
         if key in predictions[0]:
-            merged[key] = numpy.stack([p[key] for p in predictions])
+            merged[key] = stack([p[key] for p in predictions])  # type: ignore
 
     # concatenat per-atom properties along the first axis
     for key in ["forces", "local_energies"]:
         if key in predictions[0]:
-            merged[key] = numpy.concatenate([p[key] for p in predictions])
+            merged[key] = cat([p[key] for p in predictions])  # type: ignore
 
     return merged

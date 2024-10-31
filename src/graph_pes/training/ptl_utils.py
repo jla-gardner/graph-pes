@@ -174,7 +174,7 @@ class LoggedProgressBar(ProgressBar):
         def logged_value(v: float | int | Any):
             return f"{v:.5f}" if isinstance(v, float) else str(v)
 
-        metrics = {"epoch": f"{trainer.current_epoch:>5}"}
+        metrics = {"epoch": f"{trainer.current_epoch + 1:>5}"}
         super_metrics = super().get_metrics(trainer, pl_module)
         super_metrics.pop("v_num", None)
         for k, v in super_metrics.items():

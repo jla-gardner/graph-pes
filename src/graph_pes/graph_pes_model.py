@@ -462,3 +462,8 @@ class GraphPESModel(nn.Module, ABC):
             if isinstance(param, PerElementParameter):
                 Zs.update(param._accessed_Zs)
         return [chemical_symbols[Z] for Z in sorted(Zs)]
+
+    @torch.jit.unused
+    @property
+    def device(self) -> torch.device:
+        return self.cutoff.device

@@ -1,5 +1,6 @@
 lightning_logs
 __pycache__
+TODO
 
 exclude
 docs/build

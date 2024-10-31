@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from typing import Callable, Sequence
+from typing import Callable, Iterable
 
+import ase
 import matplotlib.axes
 import matplotlib.lines
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from ase import Atoms
 from cycler import cycler
+from graph_pes.utils.calculator import GraphPESCalculator, merge_predictions
 from matplotlib.ticker import MaxNLocator
 from torch import Tensor
 
@@ -66,12 +67,13 @@ def move_axes(ax: matplotlib.axes.Axes | None = None):  # type: ignore
 
 
 def parity_plot(
-    model: GraphPESModel,
-    graphs: AtomicGraph | Sequence[AtomicGraph],
+    model: GraphPESModel | GraphPESCalculator,
+    structures: Iterable[AtomicGraph] | Iterable[ase.Atoms],
     property: PropertyKey = "energy",
     transform: Transform | None = None,
     units: str | None = None,
     ax: matplotlib.axes.Axes | None = None,  # type: ignore
+    batch_size: int = 5,
     **scatter_kwargs,
 ):
     r"""
@@ -82,8 +84,8 @@ def parity_plot(
     ----------
     model
         The model to for generating predictions.
-    graphs
-        The graphs to make predictions on.
+    structures
+        The structures to make predictions on.
     property
         The property to plot, e.g. :code:`"energy"`.
     transform
@@ -94,6 +96,8 @@ def parity_plot(
         units are used.
     ax
         The axes to plot on. If not provided, the current axes are used.
+    batch_size
+        The size of the batch to use for making predictions.
     scatter_kwargs
         Keyword arguments to pass to :code:`plt.scatter`.
 
@@ -138,26 +142,35 @@ def parity_plot(
     """
     # deal with defaults
     transform = transform or identity
+    calc = (
+        GraphPESCalculator(model) if isinstance(model, GraphPESModel) else model
+    )
 
-    # get the predictions and labels
-    if not isinstance(graphs, AtomicGraph):
-        graphs = to_batch(graphs)
+    # get the predictions
+    graphs, per_struct_predictions = calc._calculate_all_keep_tensor(
+        structures, [property], batch_size
+    )
+    if any(property not in g.properties for g in graphs):
+        raise ValueError(
+            f"Property {property} is not available for all structures "
+            "you passed"
+        )
 
-    raw_ground_truth = graphs.properties.get(property, None)
-    if raw_ground_truth is None:
-        raise ValueError(f"Property {property} not in graphs")
-    ground_truth = transform(raw_ground_truth, graphs).detach()
+    predictions = merge_predictions(per_struct_predictions)
 
-    raw_pred = model.predict(graphs, properties=[property]).get(property, None)
-    assert raw_pred is not None
-    predictions = transform(raw_pred, graphs).detach()
+    # transform
+
+    # okay to form last batch since not passing through model
+    batch = to_batch(graphs)
+    ground_truth = transform(batch.properties[property], batch).detach()
+    predicted = transform(predictions[property], batch)
 
     # plot
     ax: plt.Axes = ax or plt.gca()
 
     default_kwargs = dict(lw=0, clip_on=False)
     scatter_kwargs = {**default_kwargs, **scatter_kwargs}
-    ax.scatter(ground_truth, predictions, **scatter_kwargs)
+    ax.scatter(ground_truth, predicted, **scatter_kwargs)
 
     # get a point guaranteed to be on the plot
     z = ground_truth.view(-1)[0].item()
@@ -197,7 +210,7 @@ def dimer_curve(
     Parameters
     ----------
     model
-        The model to for generating predictions.
+        The model for generating predictions.
     system
         The dimer system. Should be one of: a single element, e.g. :code:`"Cu"`,
         or a pair of elements, e.g. :code:`"CuO"`.
@@ -229,12 +242,12 @@ def dimer_curve(
         :align: center
     """  # noqa: E501
 
-    trial_atoms = Atoms(system)
+    trial_atoms = ase.Atoms(system)
     if len(trial_atoms) != 2:
         system = system + "2"
 
     rs = np.linspace(rmin, rmax, 200)
-    dimers = [Atoms(system, positions=[[0, 0, 0], [r, 0, 0]]) for r in rs]
+    dimers = [ase.Atoms(system, positions=[[0, 0, 0], [r, 0, 0]]) for r in rs]
     graphs = [AtomicGraph.from_ase(d, cutoff=rmax + 0.1) for d in dimers]
     batch = to_batch(graphs)
 
