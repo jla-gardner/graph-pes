@@ -255,7 +255,7 @@ class LearnThePES(pl.LightningModule):
         else:
             path = Path(checkpoint_path)
         logger.info(f'Loading best weights from "{path}"')
-        checkpoint = torch.load(path)
+        checkpoint = torch.load(path, weights_only=True)
         state_dict = {
             k.replace("model.", "", 1): v
             for k, v in checkpoint["state_dict"].items()
