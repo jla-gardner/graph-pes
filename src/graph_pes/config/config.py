@@ -232,6 +232,12 @@ class GeneralConfig:
     progress: Literal["rich", "logged"]
     """The progress bar style to use."""
 
+    float_type: Union[Literal["float16", "float32", "float64"], None]
+    """
+    The dtype to use for model parameters and graph properties.
+    Default is ``None``, which leaves PyTorch to decide.
+    """
+
 
 @dataclass
 class Config:

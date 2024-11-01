@@ -175,8 +175,22 @@ def train_from_config(config: Config):
 
     log = (lambda *args, **kwargs: None) if not is_rank_0 else logger.info
 
-    # general things: seed and logging
+    # general things:
     pytorch_lightning.seed_everything(config.general.seed)
+    dtype_map = {
+        "float16": torch.float16,
+        "float32": torch.float32,
+        "float64": torch.float64,
+    }
+    ftype = config.general.float_type
+    if ftype is not None:
+        if ftype not in dtype_map:
+            raise ValueError(
+                "Expected config.general.float_type to be of one `float16`, "
+                f"`float32` or `float64` but got {ftype}"
+            )
+        logger.info(f"Using {ftype} as default dtype.")
+        torch.set_default_dtype(dtype_map[ftype])
 
     # a nice setting for e3nn components that get scripted upon instantiation
     # - DYNAMIC refers to the fact that they will expect different input sizes

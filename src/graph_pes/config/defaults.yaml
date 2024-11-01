@@ -4,6 +4,7 @@ general:
     run_id: null
     log_level: "INFO"
     progress: rich
+    float_type: null
 
 fitting:
     pre_fit_model: true
