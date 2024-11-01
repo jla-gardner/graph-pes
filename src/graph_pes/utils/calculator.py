@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import Iterable, TypeVar
 
 import ase
@@ -14,7 +15,7 @@ from graph_pes.utils.misc import groups_of, pairs
 
 class GraphPESCalculator(Calculator):
     """
-    ASE calculator wrapping any :class:`graph_pes.GraphPESModel`.
+    ASE calculator wrapping any :class:`~graph_pes.GraphPESModel`.
 
     Parameters
     ----------
@@ -24,6 +25,11 @@ class GraphPESCalculator(Calculator):
         The device to use for the calculation, e.g. "cpu" or "cuda".
         Defaults to ``None``, in which case the model is not moved
         from its current device.
+    skin
+        The additional skin to use for neighbour list calculations.
+        If all atoms have moved less than half of this distance between
+        calls to `calculate`, the neighbour list will be reused, saving
+        (in some cases) significant computation time.
     **kwargs
         Properties passed to the :class:`ase.calculators.calculator.Calculator`
         base class.
@@ -35,14 +41,23 @@ class GraphPESCalculator(Calculator):
         self,
         model: GraphPESModel,
         device: torch.device | str | None = None,
+        skin: float = 1.0,
         **kwargs,
     ):
         super().__init__(**kwargs)
 
-        if device is not None:
-            model = model.to(device)
-        self.model = model
+        device = model.device if device is None else device
+        self.model = model.to(device)
         self.model.eval()
+
+        # caching for accelerated MD / calculation
+        self._cached_graph: AtomicGraph | None = None
+        self._cached_R: numpy.ndarray | None = None
+        self.skin = skin
+
+        # cache stats
+        self.cache_hits = 0
+        self.total_calls = 0
 
     def calculate(
         self,
@@ -50,18 +65,22 @@ class GraphPESCalculator(Calculator):
         properties: list[str] | list[PropertyKey] | None = None,
         system_changes: list[str] = all_changes,
     ):
+        """
+        Calculate the requested properties for the given structure, and store
+        them to ``self.results``, as per a normal
+        :class:`ase.calculators.calculator.Calculator`.
+
+        Underneath-the-hood, this uses a neighbour list cache to speed up
+        repeated calculations on the similar structures (i.e. particularly
+        effective for MD and relaxations).
+        """
+        # call to base-class to ensure setting of atoms attribute
+        super().calculate(atoms, properties, system_changes)
+
         if properties is None:
-            properties = ["energy"]
+            properties = ["energy", "forces"]
 
-        # call to base-class to set atoms attribute
-        super().calculate(atoms)
-        assert self.atoms is not None and isinstance(self.atoms, ase.Atoms)
-
-        # account for numerical inprecision by nudging the cutoff up slightly
-        graph = AtomicGraph.from_ase(
-            self.atoms, self.model.cutoff.item() + 0.001
-        )
-        graph = graph.to(self.model.device)
+        graph = self._get_graph(system_changes)
 
         results = {
             k: v.detach().cpu().numpy()
@@ -77,6 +96,52 @@ class GraphPESCalculator(Calculator):
             results["stress"] = full_3x3_to_voigt_6_stress(results["stress"])
 
         self.results = results
+
+    def _get_graph(
+        self,
+        system_changes: list[str],
+    ) -> AtomicGraph:
+        assert isinstance(self.atoms, ase.Atoms)
+        self.total_calls += 1
+
+        # avoid re-calculating neighbour lists if possible
+        if (
+            set(system_changes) <= {"positions"}
+            and self._cached_graph is not None
+            and self._cached_R is not None
+        ):
+            new_R = self.atoms.positions
+            changes = numpy.linalg.norm(new_R - self._cached_R, axis=-1)
+            if numpy.all(changes < self.skin / 2):
+                self.cache_hits += 1
+                return self._cached_graph._replace(R=torch.tensor(new_R))
+
+        # cache miss
+        graph = AtomicGraph.from_ase(
+            self.atoms, self.model.cutoff.item() + self.skin
+        ).to(self.model.device)
+
+        # set useful cached values
+        self._cached_graph = graph
+        self._cached_R = graph.R.detach().cpu().numpy()
+
+        return graph
+
+    @property
+    def cache_hit_rate(self) -> float:
+        """
+        The ratio of calls to :meth:`calculate` for which the neighbour list
+        was reused.
+        """
+        if self.total_calls == 0:
+            warnings.warn("No calls to calculate yet", stacklevel=2)
+            return 0.0
+        return self.cache_hits / self.total_calls
+
+    def reset_cache_stats(self):
+        """Reset the :attr:`cache_hit_rate` statistic."""
+        self.cache_hits = 0
+        self.total_calls = 0
 
     def calculate_all(
         self,
@@ -107,7 +172,7 @@ class GraphPESCalculator(Calculator):
         --------
         >>> calculator = GraphPESCalculator(model, device="cuda")
         >>> structures = [Atoms(...), Atoms(...), Atoms(...)]
-        >>> predictions = calculator.batched_prediction(
+        >>> predictions = calculator.calculate_all(
         ...     structures,
         ...     properties=["energy", "forces"],
         ...     batch_size=2,
@@ -207,12 +272,24 @@ def merge_predictions(
 ) -> dict[PropertyKey, Array]:
     """
     Take a list of property predictions and merge them
-    in a sensible way.
+    in a sensible way. Implemented for both :class:`torch.Tensor`
+    and :class:`numpy.ndarray`.
 
-    TODO write
+    Parameters
+    ----------
+    predictions
+        A list of property predictions each corresponding to a single
+        structure.
 
-    TODO examples
-    """
+    Examples
+    --------
+    >>> predictions = [
+    ...     {"energy": np.array(1.0), "forces": np.array([[1, 2], [3, 4]])},
+    ...     {"energy": np.array(2.0), "forces": np.array([[5, 6], [7, 8]])},
+    ... ]
+    >>> merge_predictions(predictions)
+    {'energy': array([1., 2.]), 'forces': array([[1, 2], [3, 4], [5, 6], [7, 8]])}
+    """  # noqa: E501
     if not predictions:
         return {}
 
