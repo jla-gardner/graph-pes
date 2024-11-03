@@ -232,11 +232,36 @@ class GeneralConfig:
     progress: Literal["rich", "logged"]
     """The progress bar style to use."""
 
-    float_type: Union[Literal["float16", "float32", "float64"], None]
+    torch: TorchConfig
+    """
+    Configuration for PyTorch.
+
+    .. dropdown:: ``torch`` options
+
+        .. autoclass:: graph_pes.config.config.TorchConfig()
+            :members:
+    """
+
+
+@dataclass
+class TorchConfig:
+    """Configuration for PyTorch."""
+
+    dtype: Literal["float16", "float32", "float64"]
     """
     The dtype to use for model parameters and graph properties.
-    Default is ``None``, which leaves PyTorch to decide.
+    Defaults is ``"float32"``.
     """
+
+    float32_matmul_precision: Literal["highest", "high", "medium"]
+    """
+    The precision to use internally for float32 matrix multiplications. Refer to the
+    `PyTorch documentation <https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html>`__
+    for details.
+
+    Defaults to ``"high"`` to favour accelerated learning over numerical
+    exactness for matmuls.
+    """  # noqa: E501
 
 
 @dataclass

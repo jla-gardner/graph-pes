@@ -175,28 +175,28 @@ def train_from_config(config: Config):
 
     log = (lambda *args, **kwargs: None) if not is_rank_0 else logger.info
 
-    # general things:
-    pytorch_lightning.seed_everything(config.general.seed)
-    dtype_map = {
-        "float16": torch.float16,
-        "float32": torch.float32,
-        "float64": torch.float64,
-    }
-    ftype = config.general.float_type
-    if ftype is not None:
-        if ftype not in dtype_map:
-            raise ValueError(
-                "Expected config.general.float_type to be of one `float16`, "
-                f"`float32` or `float64` but got {ftype}"
-            )
-        logger.info(f"Using {ftype} as default dtype.")
-        torch.set_default_dtype(dtype_map[ftype])
+    # torch things
+    prec = config.general.torch.float32_matmul_precision
+    torch.set_float32_matmul_precision(prec)
+    logger.info(f"Using {prec} precision for float32 matrix multiplications.")
 
+    ftype = config.general.torch.dtype
+    logger.info(f"Using {ftype} as default dtype.")
+    torch.set_default_dtype(
+        {
+            "float16": torch.float16,
+            "float32": torch.float32,
+            "float64": torch.float64,
+        }[ftype]
+    )
     # a nice setting for e3nn components that get scripted upon instantiation
     # - DYNAMIC refers to the fact that they will expect different input sizes
     #   at every iteration (graphs are not all the same size)
     # - 4 is the number of times we attempt to recompile before giving up
     torch.jit.set_fusion_strategy([("DYNAMIC", 4)])
+
+    # general things:
+    pytorch_lightning.seed_everything(config.general.seed)
     set_level(config.general.log_level)
     now_ms = datetime.now().strftime("%F %T.%f")[:-3]
     logger.info(f"Started training at {now_ms}")

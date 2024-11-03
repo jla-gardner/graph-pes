@@ -4,7 +4,9 @@ general:
     run_id: null
     log_level: "INFO"
     progress: rich
-    float_type: null
+    torch:
+        dtype: float32
+        float32_matmul_precision: high
 
 fitting:
     pre_fit_model: true
