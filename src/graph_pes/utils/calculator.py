@@ -53,6 +53,7 @@ class GraphPESCalculator(Calculator):
         # caching for accelerated MD / calculation
         self._cached_graph: AtomicGraph | None = None
         self._cached_R: numpy.ndarray | None = None
+        self._cached_cell: numpy.ndarray | None = None
         self.skin = skin
 
         # cache stats
@@ -74,13 +75,48 @@ class GraphPESCalculator(Calculator):
         repeated calculations on the similar structures (i.e. particularly
         effective for MD and relaxations).
         """
-        # call to base-class to ensure setting of atoms attribute
-        super().calculate(atoms, properties, system_changes)
-
+        # handle defaults
         if properties is None:
             properties = ["energy", "forces"]
 
-        graph = self._get_graph(system_changes)
+        # call to base-class to ensure setting of atoms attribute
+        super().calculate(atoms, properties, system_changes)
+        assert isinstance(self.atoms, ase.Atoms)
+
+        self.total_calls += 1
+
+        graph: AtomicGraph | None = None
+
+        # avoid re-calculating neighbour lists if possible
+        if (
+            set(system_changes) <= {"positions", "cell"}
+            and self._cached_graph is not None
+            and self._cached_R is not None
+            and self._cached_cell is not None
+        ):
+            new_R = self.atoms.positions
+            new_cell = self.atoms.cell.array
+            changes = numpy.linalg.norm(new_R - self._cached_R, axis=-1)
+            cell_changes = numpy.linalg.norm(
+                new_cell - self._cached_cell, axis=-1
+            )
+            # cache hit
+            if numpy.all(changes < self.skin / 2) and numpy.all(
+                cell_changes < self.skin / 2
+            ):
+                self.cache_hits += 1
+                graph = self._cached_graph._replace(
+                    R=torch.tensor(new_R), cell=torch.tensor(new_cell)
+                )
+
+        # cache miss
+        if graph is None:
+            graph = AtomicGraph.from_ase(
+                self.atoms, self.model.cutoff.item() + self.skin
+            ).to(self.model.device)
+            self._cached_graph = graph
+            self._cached_R = graph.R.detach().cpu().numpy()
+            self._cached_cell = graph.cell.detach().cpu().numpy()
 
         results = {
             k: v.detach().cpu().numpy()
@@ -96,36 +132,6 @@ class GraphPESCalculator(Calculator):
             results["stress"] = full_3x3_to_voigt_6_stress(results["stress"])
 
         self.results = results
-
-    def _get_graph(
-        self,
-        system_changes: list[str],
-    ) -> AtomicGraph:
-        assert isinstance(self.atoms, ase.Atoms)
-        self.total_calls += 1
-
-        # avoid re-calculating neighbour lists if possible
-        if (
-            set(system_changes) <= {"positions"}
-            and self._cached_graph is not None
-            and self._cached_R is not None
-        ):
-            new_R = self.atoms.positions
-            changes = numpy.linalg.norm(new_R - self._cached_R, axis=-1)
-            if numpy.all(changes < self.skin / 2):
-                self.cache_hits += 1
-                return self._cached_graph._replace(R=torch.tensor(new_R))
-
-        # cache miss
-        graph = AtomicGraph.from_ase(
-            self.atoms, self.model.cutoff.item() + self.skin
-        ).to(self.model.device)
-
-        # set useful cached values
-        self._cached_graph = graph
-        self._cached_R = graph.R.detach().cpu().numpy()
-
-        return graph
 
     @property
     def cache_hit_rate(self) -> float:
