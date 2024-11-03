@@ -62,7 +62,7 @@ push = false
 "pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
 "src/graph_pes/__init__.py" = ["{version}"]
 "docs/source/conf.py" = ['release = "{version}"']
-"src/graph_pes/graph_pes_mode.py" = ['self._GRAPH_PES_VERSION = "{version}"']
+"src/graph_pes/graph_pes_model.py" = ['self._GRAPH_PES_VERSION: Final\[str\] = "{version}"']
 
 [tool.ruff]
 line-length = 80
