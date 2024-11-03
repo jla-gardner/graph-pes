@@ -116,7 +116,10 @@ class GraphPESCalculator(Calculator):
             ):
                 self.cache_hits += 1
                 graph = self._cached_graph._replace(
-                    R=torch.tensor(new_R), cell=torch.tensor(new_cell)
+                    R=torch.tensor(new_R, dtype=self._cached_graph.R.dtype),
+                    cell=torch.tensor(
+                        new_cell, dtype=self._cached_graph.cell.dtype
+                    ),
                 )
 
         # cache miss
