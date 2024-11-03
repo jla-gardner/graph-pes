@@ -100,3 +100,18 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs/build/
           force_orphan: true
+
+  changelog:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for CHANGELOG.md changes
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          if ! git diff --name-only origin/${{ github.base_ref }}..HEAD | grep -q "CHANGELOG.md"; then
+            echo "Error: No changes to CHANGELOG.md found in this pull request"
+            exit 1
+          fi
