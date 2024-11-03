@@ -17,6 +17,16 @@ class GraphPESCalculator(Calculator):
     """
     ASE calculator wrapping any :class:`~graph_pes.GraphPESModel`.
 
+    Implements a neighbour list caching scheme (see below) controlled by
+    the ``skin`` parameter. Using ``skin > 0.0`` will
+
+    * accelerate MD and minimisations
+    * slow down single point calculations
+
+    If you are predomintantly doing single point calculations, use
+    ``skin=0``, otherwise, tune the ``skin`` paramter for your use case
+    (see below).
+
     Parameters
     ----------
     model
@@ -136,8 +146,9 @@ class GraphPESCalculator(Calculator):
     @property
     def cache_hit_rate(self) -> float:
         """
-        The ratio of calls to :meth:`calculate` for which the neighbour list
-        was reused.
+        The ratio of calls to
+        :meth:`~graph_pes.utils.calculator.GraphPESCalculator.calculate`
+        for which the neighbour list was reused.
         """
         if self.total_calls == 0:
             warnings.warn("No calls to calculate yet", stacklevel=2)
