@@ -335,7 +335,7 @@ class GraphPESModel(nn.Module, ABC):
 
         1. iterates over all the model's :class:`~torch.nn.Module` components
            (inlcuding itself) and calls their :meth:`pre_fit` method (if it exists -
-           see for instance :class:`~graph_pes.models.pairwise.LennardJones` for
+           see for instance :class:`~graph_pes.models.LearnableOffset` for
            an example of a model-specific pre-fit method, and
            :class:`~graph_pes.models.components.scaling.LocalEnergiesScaler` for
            an example of a component-specific pre-fit method).
@@ -365,7 +365,8 @@ class GraphPESModel(nn.Module, ABC):
             model_name = self.__class__.__name__
             warnings.warn(
                 f"This model ({model_name}) has already been pre-fitted. "
-                "This, and any subsequent, call to pre_fit will be ignored.",
+                "This, and any subsequent, call to pre_fit_all_components will "
+                "be ignored.",
                 stacklevel=2,
             )
 

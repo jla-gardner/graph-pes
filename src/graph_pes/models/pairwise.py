@@ -233,12 +233,6 @@ class LennardJones(PairPotential):
         x = self.sigma / r
         return 4 * self.epsilon * (x**12 - x**6)
 
-    def pre_fit(self, graphs: AtomicGraph):
-        # set the distance at which the potential is zero to be
-        # close to the minimum pair-wise distance
-        d = torch.quantile(neighbour_distances(graphs), 0.01)
-        self._log_sigma = torch.nn.Parameter(d.log())
-
     def __repr__(self):
         return uniform_repr(
             self.__class__.__name__,
