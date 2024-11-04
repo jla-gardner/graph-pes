@@ -20,70 +20,20 @@ jobs:
             exit 1
           fi
 
-  find-todos:
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Find added TODOs
-        id: todo-check
-        run: |
-          git fetch origin ${{ github.base_ref }}
-          # Get file name and TODO content, separated by '|||'
-          TODOS=$(git diff origin/${{ github.base_ref }}..HEAD | grep -B 2 '^\+.*TODO' | awk '
-            /^diff --git a\/(.*) b\/(.*)/ {file=$4}  # Capture the "b/" path
-            /^\+.*TODO/ {gsub(/^b\//, "", file); print file "|||" $0}
-          ' || true)
-          # Convert newlines to %0A for GitHub Actions output
-          TODOS="${TODOS//$'\n'/'%0A'}"
-          echo "todos=$TODOS" >> $GITHUB_OUTPUT
-      - name: Comment TODOs on PR
-        if: steps.todo-check.outputs.todos != ''
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const todos = process.env.TODOS.split('%0A');
-            let commentBody = '### TODOs Added in this PR:\n\n';
-            
-            todos.forEach(todo => {
-              if (todo) {
-                const [file, content] = todo.split('|||');
-                commentBody += `**File:** \`${file}\`\n\`\`\`\n${content}\n\`\`\`\n\n`;
-              }
-            });
-            
-            // Find existing comment
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            
-            const todoComment = comments.data.find(comment => 
-              comment.body.startsWith('### TODOs Added in this PR:')
-            );
-            
-            if (todoComment) {
-              // Update existing comment
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: todoComment.id,
-                body: commentBody
-              });
-            } else {
-              // Create new comment
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: commentBody
-              });
-            }
-        env:
-          TODOS: ${{ steps.todo-check.outputs.todos }}
+  
 
+  find_todos:
+    runs-on: ubuntu-latest
+    on:
+      pull_request_review_comment:
+        types: [edited, deleted]
+      pull_request:
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for Todos
+        uses: phntmxyz/pr_todo_checker@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
