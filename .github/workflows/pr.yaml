@@ -35,8 +35,8 @@ jobs:
           git fetch origin ${{ github.base_ref }}
           # Get file name and TODO content, separated by '|||'
           TODOS=$(git diff origin/${{ github.base_ref }}..HEAD | grep -B 2 '^\+.*TODO' | awk '
-            /^diff --git/ {file=$3}
-            /^\+.*TODO/ {print file "|||" $0}
+            /^diff --git a\/(.*) b\/(.*)/ {file=$4}  # Capture the "b/" path
+            /^\+.*TODO/ {gsub(/^b\//, "", file); print file "|||" $0}
           ' || true)
           # Convert newlines to %0A for GitHub Actions output
           TODOS="${TODOS//$'\n'/'%0A'}"
