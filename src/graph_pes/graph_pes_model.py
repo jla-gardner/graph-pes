@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import Final, Sequence
+from typing import Any, Final, Sequence, final
 
 import torch
 from ase.data import chemical_symbols
@@ -74,6 +74,15 @@ class GraphPESModel(nn.Module, ABC):
       symmetric expansion of the unit cell.
 
     For more details on how these are calculated, see :doc:`../theory`.
+
+    :class:`~graph_pes.GraphPESModel` objects save various peices of extra
+    metadata to the ``state_dict`` via the
+    :meth:`~graph_pes.GraphPESModel.get_extra_state` and
+    :meth:`~graph_pes.GraphPESModel.set_extra_state` methods.
+    If you want to save additional extra state to the ``state_dict`` of your
+    model, please implement the :meth:`~graph_pes.GraphPESModel.extra_state`
+    property and corresponding setter to ensure that you do not overwrite
+    these extra metadata items.
 
     Parameters
     ----------
@@ -468,3 +477,59 @@ class GraphPESModel(nn.Module, ABC):
     @property
     def device(self) -> torch.device:
         return self.cutoff.device
+
+    @torch.jit.unused
+    @final
+    def get_extra_state(self) -> dict[str, Any]:
+        """
+        Get the extra state of this instance. Please override the
+        :meth:`~graph_pes.GraphPESModel.extra_state` property to add extra
+        state here.
+        """
+        return {
+            "_GRAPH_PES_VERSION": self._GRAPH_PES_VERSION,
+            "extra": self.extra_state,
+        }
+
+    @torch.jit.unused
+    @final
+    def set_extra_state(self, state: dict[str, Any]) -> None:
+        """
+        Set the extra state of this instance using a dictionary mapping strings
+        to values returned by the :meth:`~graph_pes.GraphPESModel.extra_state`
+        property setter to add extra state here.
+        """
+        version = state.pop("_GRAPH_PES_VERSION", None)
+        if version is not None:
+            current_version = self._GRAPH_PES_VERSION
+            if version != current_version:
+                warnings.warn(
+                    "You are attempting to load a state dict corresponding "
+                    f"to graph-pes version {version}, but the current version "
+                    f"of this model is {current_version}. This may cause "
+                    "errors when loading the model.",
+                    stacklevel=2,
+                )
+            self._GRAPH_PES_VERSION = version  # type: ignore
+
+        # user defined extra state
+        self.extra_state = state["extra"]
+
+    @torch.jit.unused
+    @property
+    def extra_state(self) -> dict[str, Any]:
+        """
+        Override this property to add extra state to the model's
+        ``state_dict``. Must return a dictionary mapping strings to values.
+        """
+        return {}
+
+    @torch.jit.unused
+    @extra_state.setter
+    def extra_state(self, state: dict[str, Any]) -> None:
+        """
+        Set the extra state of this instance using a dictionary mapping strings
+        to values returned by the :meth:`~graph_pes.GraphPESModel.extra_state`
+        property.
+        """
+        pass
