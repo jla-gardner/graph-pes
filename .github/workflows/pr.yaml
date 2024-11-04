@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  changelog:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for CHANGELOG.md changes
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          if ! git diff --name-only origin/${{ github.base_ref }}..HEAD | grep -q "CHANGELOG.md"; then
+            echo "Error: No changes to CHANGELOG.md found in this pull request"
+            exit 1
+          fi
+
+  find-todos:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Find added TODOs
+        id: todo-check
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          TODOS=$(git diff origin/${{ github.base_ref }}..HEAD | grep -B 2 '^\+.*TODO' || true)
+          # Convert newlines to %0A for GitHub Actions output
+          TODOS="${TODOS//$'\n'/'%0A'}"
+          echo "todos=$TODOS" >> $GITHUB_OUTPUT
+
+      - name: Comment TODOs on PR
+        if: steps.todo-check.outputs.todos != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const todos = process.env.TODOS.split('%0A').join('\n');
+            const commentBody = `### TODOs Added in this PR:\n\n\`\`\`\n${todos}\n\`\`\``;
+            
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const todoComment = comments.data.find(comment => 
+              comment.body.startsWith('### TODOs Added in this PR:')
+            );
+            
+            if (todoComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: todoComment.id,
+                body: commentBody
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+        env:
+          TODOS: ${{ steps.todo-check.outputs.todos }}
+
