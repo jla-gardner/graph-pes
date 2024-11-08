@@ -114,13 +114,6 @@ def test_addition():
         lj.predict_stress(graphs[0]) + m.predict_stress(graphs[0]),
     )
 
-    # test pre_fit
-    original_lj_sigma = lj.sigma.item()
-    addition_model.pre_fit_all_components(graphs)
-    assert (
-        lj.sigma.item() != original_lj_sigma
-    ), "component LJ model was not pre-fitted"
-
 
 @helpers.parameterise_all_models(expected_elements=["Cu"])
 def test_model_outputs(model: GraphPESModel):

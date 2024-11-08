@@ -249,7 +249,7 @@ class TorchConfig:
 
     dtype: Literal["float16", "float32", "float64"]
     """
-    The dtype to use for model parameters and graph properties.
+    The dtype to use for all model parameters and graph properties.
     Defaults is ``"float32"``.
     """
 
