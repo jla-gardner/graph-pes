@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Iterable, TypeVar
+from typing import Iterable, TypeVar, overload
 
 import ase
 import numpy
@@ -285,12 +285,17 @@ def _seperate(
     return preds_list
 
 
-Array = TypeVar("Array", torch.Tensor, numpy.ndarray)
-
-
+@overload
 def merge_predictions(
-    predictions: list[dict[PropertyKey, Array]],
-) -> dict[PropertyKey, Array]:
+    predictions: list[dict[PropertyKey, numpy.ndarray]],
+) -> dict[PropertyKey, numpy.ndarray]: ...
+@overload
+def merge_predictions(
+    predictions: list[dict[PropertyKey, torch.Tensor]],
+) -> dict[PropertyKey, torch.Tensor]: ...
+def merge_predictions(
+    predictions: list[dict[PropertyKey, TensorLike]],
+) -> dict[PropertyKey, TensorLike]:
     """
     Take a list of property predictions and merge them
     in a sensible way. Implemented for both :class:`torch.Tensor`
@@ -322,7 +327,7 @@ def merge_predictions(
         stack = numpy.stack
         cat = numpy.concatenate
 
-    merged: dict[PropertyKey, Array] = {}
+    merged: dict[PropertyKey, TensorLike] = {}
 
     # stack per-structure properties along new axis
     for key in ["energy", "stress"]:
