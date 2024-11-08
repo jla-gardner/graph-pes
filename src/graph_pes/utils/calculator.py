@@ -253,7 +253,8 @@ TensorLike = TypeVar("TensorLike", torch.Tensor, numpy.ndarray)
 
 
 def to_numpy(results: dict[T, torch.Tensor]) -> dict[T, numpy.ndarray]:
-    return {key: tensor.detach().numpy() for key, tensor in results.items()}
+    x = {key: tensor.detach().numpy() for key, tensor in results.items()}
+    return {k: v.item() if v.shape == () else v for k, v in x.items()}
 
 
 def _seperate(
