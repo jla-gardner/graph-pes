@@ -114,27 +114,9 @@ class LearnThePES(pl.LightningModule):
         self.optimizer_factory = optimizer
         self.scheduler_factory = scheduler
         self.total_loss = loss
-        self.properties: list[PropertyKey] = [
+        self.train_properties: list[PropertyKey] = [
             component.property for component in self.total_loss.losses
         ]
-
-        # TODO: we want to base this on actually available data
-        # not just the total loss components
-        validation_metrics = []
-
-        existing_loss_names = [l.name for l in self.total_loss.losses]
-
-        if "energy" in self.properties:
-            pael = PerAtomEnergyLoss()
-            if pael.name not in existing_loss_names:
-                validation_metrics.append(PerAtomEnergyLoss())
-
-        if "forces" in self.properties:
-            fr = Loss("forces", RMSE())
-            if fr.name not in existing_loss_names:
-                validation_metrics.append(fr)
-
-        self.validation_metrics = validation_metrics
 
     def forward(self, graphs: AtomicGraph) -> torch.Tensor:
         """Get the energy"""
@@ -160,7 +142,12 @@ class LearnThePES(pl.LightningModule):
             )
 
         # generate prediction:
-        predictions = self.model.predict(graph, properties=self.properties)
+        if prefix == "valid":
+            desired_properties = list(graph.properties.keys())
+        else:
+            desired_properties = self.train_properties
+
+        predictions = self.model.predict(graph, properties=desired_properties)
 
         # compute the loss and its sub-components
         total_loss_result = self.total_loss(predictions, graph)
@@ -173,10 +160,20 @@ class LearnThePES(pl.LightningModule):
 
         # log additional values during validation
         if prefix == "valid":
-            with torch.no_grad():
-                for val_loss in self.validation_metrics:
-                    value = val_loss(predictions, graph)
-                    log(f"metrics/{val_loss.name}", value)
+            val_metrics: list[Loss] = []
+            if "energy" in graph.properties:
+                val_metrics.append(PerAtomEnergyLoss())
+                val_metrics.append(Loss("energy", RMSE()))
+            if "forces" in graph.properties:
+                val_metrics.append(Loss("forces", RMSE()))
+            if "stress" in graph.properties:
+                val_metrics.append(Loss("stress", RMSE()))
+
+            for metric in val_metrics:
+                if metric.name in total_loss_result.components:
+                    continue
+                value = metric(predictions, graph)
+                log(f"metrics/{metric.name}", value)
 
         return total_loss_result.loss_value
 
