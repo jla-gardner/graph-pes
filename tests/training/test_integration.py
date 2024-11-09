@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import pytorch_lightning as pl
 from graph_pes import AtomicGraph, GraphPESModel
 from graph_pes.atomic_graph import to_batch
-from graph_pes.training.manual import Loss, train_the_model
+from graph_pes.config import FittingOptions
+from graph_pes.data.datasets import FittingData, SequenceDataset
+from graph_pes.training.loss import Loss, TotalLoss
+from graph_pes.training.opt import Optimizer
+from graph_pes.training.trainer import train_with_lightning
 
 from .. import helpers
 
@@ -18,25 +23,33 @@ def test_integration(model: GraphPESModel):
         for atoms in helpers.CU_TEST_STRUCTURES
     ]
 
+    # Split data into train/val sets
+    train_graphs = graphs[:8]
+    val_graphs = graphs[8:]
+
     batch = to_batch(graphs)
     assert "energy" in batch.properties
 
-    model.pre_fit_all_components(graphs[:8])
-
-    loss = Loss("energy")
+    # Create loss and get initial performance
+    loss = TotalLoss([Loss("energy")])
     before = loss(model.predict(batch, ["energy"]), batch)
 
-    train_the_model(
-        model,
-        train_data=graphs[:8],
-        val_data=graphs[8:],
-        loss=loss,
-        trainer_options=dict(
-            max_epochs=2,
-            accelerator="cpu",
-            callbacks=[],
+    # Create trainer and train
+    train_with_lightning(
+        trainer=pl.Trainer(max_epochs=10, accelerator="cpu"),
+        model=model,
+        data=FittingData(
+            train=SequenceDataset(train_graphs),
+            valid=SequenceDataset(val_graphs),
         ),
-        pre_fit_model=False,
+        loss=loss,
+        fit_config=FittingOptions(
+            pre_fit_model=False,
+            loader_kwargs={"batch_size": 4},
+            max_n_pre_fit=100,
+            early_stopping_patience=None,
+        ),
+        optimizer=Optimizer("Adam", lr=3e-4),
     )
 
     after = loss(model.predict(batch, ["energy"]), batch)

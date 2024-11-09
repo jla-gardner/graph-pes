@@ -16,7 +16,7 @@ from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.addition import AdditionModel
 from graph_pes.training.loss import Loss, TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
-from graph_pes.training.ptl_utils import VerboseSWACallback
+from graph_pes.training.util import VerboseSWACallback
 
 from .utils import create_from_data, create_from_string
 
@@ -55,22 +55,6 @@ class FittingOptions:
     """
     The number of epochs to wait for improvement in the total validation loss
     before stopping training. Set to ``None`` to disable early stopping.
-    """
-
-    trainer_kwargs: Dict[str, Any]
-    """
-    Key-word arguments to pass to the `PyTorch Lightning Trainer 
-    <https://lightning.ai/docs/pytorch/stable/common/trainer.html>`__ .
-    
-    Example
-    -------
-    .. code-block:: yaml
-        
-        fitting:
-            trainer:
-                max_epochs: 10000
-                accelerator: gpu
-                accumulate_grad_batches: 4
     """
 
     loader_kwargs: Dict[str, Any]
@@ -193,6 +177,22 @@ class FittingConfig(FittingOptions):
 
         .. autoclass:: graph_pes.config.config.SWAConfig()
             :members:
+    """
+
+    trainer_kwargs: Dict[str, Any]
+    """
+    Key-word arguments to pass to the `PyTorch Lightning Trainer 
+    <https://lightning.ai/docs/pytorch/stable/common/trainer.html>`__ .
+    
+    Example
+    -------
+    .. code-block:: yaml
+        
+        fitting:
+            trainer:
+                max_epochs: 10000
+                accelerator: gpu
+                accumulate_grad_batches: 4
     """
 
     ### Methods ###

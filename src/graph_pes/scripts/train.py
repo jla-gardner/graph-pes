@@ -11,7 +11,7 @@ import torch
 import yaml
 from graph_pes.config import Config, get_default_config_values
 from graph_pes.scripts.generation import config_auto_generation
-from graph_pes.training.ptl import create_trainer, train_with_lightning
+from graph_pes.training.trainer import create_trainer, train_with_lightning
 from graph_pes.utils.lammps import deploy_model
 from graph_pes.utils.logger import log_to_file, logger, set_level
 from graph_pes.utils.misc import (
