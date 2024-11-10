@@ -11,4 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Automatically detect validation metrics from available properties.
 
+### Changed
+
+Improved documentation for LAMMPS integration.
+
 ## [0.0.3] - 2024-10-31
