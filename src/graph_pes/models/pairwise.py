@@ -372,7 +372,6 @@ class Morse(PairPotential):
         )
 
 
-# TODO: improve this class
 class LennardJonesMixture(PairPotential):
     r"""
     An extension of the simple :class:`LennardJones` potential to

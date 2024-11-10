@@ -186,7 +186,6 @@ class NequIPMessagePassingLayer(torch.nn.Module):
             torch.nn.Sequential(
                 distances.Bessel(radial_features, cutoff, trainable=True),
                 MLP(
-                    # TODO: parameterise this
                     [radial_features] * 3 + [n_required_weights],
                     activation=torch.nn.SiLU(),
                 ),

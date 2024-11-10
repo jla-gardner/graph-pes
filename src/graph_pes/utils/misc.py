@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import random
+import re
 import string
 import sys
 from pathlib import Path
@@ -172,10 +173,11 @@ def uniform_repr(
 
 
 def force_to_single_line(s: str) -> str:
-    # TODO: yuck: replace leading and trailing white space with single?
-    # or just use tabulate
-    lines = [line.strip() for line in s.split("\n")]
-    return " ".join(lines)
+    """
+    Convert a multi-line string to a single line by replacing all whitespace
+    sequences (including newlines) with a single space.
+    """
+    return re.sub(r"\s+", " ", s.strip())
 
 
 def nested_merge_all(*dicts: dict) -> dict:
@@ -407,16 +409,34 @@ def groups_of(
     drop_last: bool = False,
 ) -> Iterator[list[T]]:
     """
-    TODO: write me
+    Split an iterable into groups of a specified size.
+
+    Parameters
+    ----------
+    size : int
+        The size of each group.
+    things : Iterable[T]
+        The iterable to split into groups.
+    drop_last : bool, default=False
+        If True, drop the last group if it's smaller than the specified size.
+        If False, yield the last group even if incomplete.
+
+    Returns
+    -------
+    Iterator[list[T]]
+        An iterator yielding lists of items, where each list has length `size`
+        (except possibly the last one if `drop_last=False`).
 
     Examples
     --------
-
     >>> for group in groups_of(5, range(12)):
     ...     print(group)
     [0, 1, 2, 3, 4]
     [5, 6, 7, 8, 9]
     [10, 11]
+
+    >>> list(groups_of(2, range(5), drop_last=True))
+    [[0, 1], [2, 3]]
     """
     batch = []
     for thing in things:

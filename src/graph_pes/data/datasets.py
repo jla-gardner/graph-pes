@@ -132,7 +132,6 @@ class GraphDataset(torch.utils.data.Dataset, ABC):
         """The properties that are available to train on with this dataset"""
 
         # assume all data points have the same labels
-        # TODO: is there a nice way to enforce this?
         example_graph = self[0]
         return [
             key for key in ALL_PROPERTY_KEYS if key in example_graph.properties

@@ -30,7 +30,6 @@ from .pairwise import (
 from .schnet import SchNet
 from .tensornet import TensorNet
 
-# TODO get rid of this all business
 __all__ = [
     "AdditionModel",
     "FixedOffset",
@@ -50,18 +49,16 @@ __all__ = [
     "ZEmbeddingNequIP",
 ]
 
-# TODO: nicer way to do this?
+MODEL_EXCLUSIONS = {
+    "FixedOffset",
+    "LearnableOffset",
+    "AdditionModel",
+    "PairPotential",
+    "SmoothedPairPotential",
+}
+
 ALL_MODELS: list[type[GraphPESModel]] = [
-    globals()[model]
-    for model in __all__
-    if model
-    not in [
-        "FixedOffset",
-        "LearnableOffset",
-        "AdditionModel",
-        "PairPotential",
-        "SmoothedPairPotential",
-    ]
+    globals()[model] for model in __all__ if model not in MODEL_EXCLUSIONS
 ]
 
 

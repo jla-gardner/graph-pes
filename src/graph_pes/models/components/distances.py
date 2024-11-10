@@ -32,9 +32,7 @@ class DistanceExpansion(torch.nn.Module, ABC):
     def __init__(self, n_features: int, cutoff: float, trainable: bool = True):
         super().__init__()
         self.n_features = n_features
-        # TODO: check serialization - need to register as buffer to be included
-        # in state_dict?
-        self.cutoff = cutoff
+        self.register_buffer("cutoff", torch.tensor(cutoff))
         self.trainable = trainable
 
     @abstractmethod
@@ -68,7 +66,7 @@ class DistanceExpansion(torch.nn.Module, ABC):
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(n_features={self.n_features}, "
-            f"cutoff={self.cutoff}, trainable={self.trainable})"
+            f"cutoff={self.cutoff.item()}, trainable={self.trainable})"
         )
 
 

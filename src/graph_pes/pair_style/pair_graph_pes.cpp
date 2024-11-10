@@ -158,7 +158,6 @@ void PairGraphPES::coeff(int narg, char **arg)
     allocate();
 
   // create a list of the element symbols, H, He etc.
-  // TODO: check these are correct
   const char *element_symbols[] = {
       "X", "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si",
       "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu",
@@ -179,7 +178,6 @@ void PairGraphPES::coeff(int narg, char **arg)
   if (strcmp(arg[0], "*") != 0 || strcmp(arg[1], "*") != 0)
     error->all(FLERR, "Expected pair_coeff * * ...");
 
-  // TODO: what actually is this?
   // signal to LAMMPS to use init_one to set the cutoff (pretty archane)
   for (int i = 1; i <= ntypes; i++)
     for (int j = i; j <= ntypes; j++)

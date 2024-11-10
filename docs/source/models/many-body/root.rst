@@ -1,7 +1,7 @@
 Many Body Models
 ================
 
-.. TODO write someting here
+``graph-pes`` has re-implemented the following, popular many-bodied, machine-learned interatomic potentials:
 
 .. toctree::
     :maxdepth: 1
