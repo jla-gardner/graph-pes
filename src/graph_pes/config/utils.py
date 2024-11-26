@@ -221,12 +221,20 @@ def _create_from_dict(d: dict[str, Any], depth: int) -> dict[str, Any] | Any:
             )
             try:
                 callable = _import(k)
-                result = callable(**kwargs)
+            except ImportError:
+                warn_about_import_error(k)
+                callable = None
+
+            if callable is not None:
+                try:
+                    result = callable(**kwargs)
+                except Exception as e:
+                    log(f"failed to call {callable} with {kwargs}: {e}")
+                    raise e
+
                 log(f"successfully created {result}")
                 log(f"final result: {result}")
                 return result
-            except ImportError:
-                warn_about_import_error(k)
 
     # 3. if dict has more than one key, return it as is
     log(f"final result: {new_d}")

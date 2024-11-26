@@ -305,8 +305,8 @@ def train_from_config(config: Config):
             )
             torch.save(model, model_path)
             log(f"Model saved to {model_path}")
-            log(f"Deploying model for use with LAMMPS to {lammps_model_path}")
             deploy_model(model, path=lammps_model_path)
+            log(f"Deployed model for use with LAMMPS to {lammps_model_path}")
 
         except Exception as e:
             logger.error(f"Failed to save model: {e}")
@@ -333,6 +333,11 @@ def train_from_config(config: Config):
 
     save_model()
     cleanup()
+
+    log(
+        "Post-training cleanup complete. "
+        "Awaiting final pytorch lightning shutdown..."
+    )
 
 
 def main():

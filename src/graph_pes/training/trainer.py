@@ -122,6 +122,14 @@ class LearnThePES(pl.LightningModule):
         """Get the energy"""
         return self.model.predict_energy(graphs)
 
+    def on_train_start(self):
+        super().on_train_start()
+        self.model.train()
+
+    def on_validation_start(self):
+        super().on_validation_start()
+        self.model.eval()
+
     def _step(self, graph: AtomicGraph, prefix: Literal["train", "valid"]):
         """Get (and log) the losses for a training/validation step."""
 
@@ -156,7 +164,7 @@ class LearnThePES(pl.LightningModule):
         log("loss/total", total_loss_result.loss_value)
         for name, loss_pair in total_loss_result.components.items():
             log(f"metrics/{name}", loss_pair.loss_value)
-            log(f"loss/{name}_component", loss_pair.weighted_loss_value)
+            log(f"loss/{name}_weighted", loss_pair.weighted_loss_value)
 
         # log additional values during validation
         if prefix == "valid":
@@ -171,6 +179,7 @@ class LearnThePES(pl.LightningModule):
 
             for metric in val_metrics:
                 if metric.name in total_loss_result.components:
+                    # don't double log
                     continue
                 value = metric(predictions, graph)
                 log(f"metrics/{metric.name}", value)

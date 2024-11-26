@@ -202,6 +202,7 @@ def dimer_curve(
     rmin: float = 0.9,
     rmax: float = 5.0,
     ax: matplotlib.axes.Axes | None = None,  # type: ignore
+    auto_lim: bool = True,
     **plot_kwargs,
 ) -> matplotlib.lines.Line2D:
     r"""
@@ -264,19 +265,22 @@ def dimer_curve(
     line = ax.plot(rs, energy, **plot_kwargs)[0]
     assert isinstance(line, matplotlib.lines.Line2D)
 
-    limiting_energy = energy[-1]
-    if (energy[:-1] < limiting_energy).any():
-        well_depth = limiting_energy - energy[:-1].min()
-    else:
-        well_depth = 0.1
-    bottom = limiting_energy - well_depth * 1.1
-    top = limiting_energy + well_depth * 1.1
-    ax.set_ylim(bottom, top)
+    if auto_lim:
+        limiting_energy = energy[-1]
+        if (energy[:-1] < limiting_energy).any():
+            well_depth = limiting_energy - energy[:-1].min()
+        else:
+            well_depth = 0.1
+        bottom = limiting_energy - well_depth * 1.1
+        top = limiting_energy + well_depth * 1.1
+        ax.set_ylim(bottom, top)
+
+        first_in_view = np.where(energy < top)[0][0]
+        ax.set_xlim(rs[first_in_view].item() - 0.2, rs[-1] + 0.2)
+
     ax.set_xlabel("r (Å)")
     ax.set_ylabel(f"Dimer Energy ({units})" if units else "Dimer Energy")
 
-    first_in_view = np.where(energy < top)[0][0]
-    ax.set_xlim(rs[first_in_view].item() - 0.2, rs[-1] + 0.2)
     move_axes(ax)
 
     # 5 ticks each

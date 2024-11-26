@@ -518,19 +518,18 @@ class GraphPESModel(nn.Module, ABC):
 
     @torch.jit.unused
     @property
-    def extra_state(self) -> dict[str, Any]:
+    def extra_state(self) -> Any:
         """
         Override this property to add extra state to the model's
-        ``state_dict``. Must return a dictionary mapping strings to values.
+        ``state_dict``.
         """
         return {}
 
     @torch.jit.unused
     @extra_state.setter
-    def extra_state(self, state: dict[str, Any]) -> None:
+    def extra_state(self, state: Any) -> None:
         """
-        Set the extra state of this instance using a dictionary mapping strings
-        to values returned by the :meth:`~graph_pes.GraphPESModel.extra_state`
-        property.
+        Set the extra state of this instance using a value returned by the
+        :meth:`~graph_pes.GraphPESModel.extra_state` property.
         """
         pass

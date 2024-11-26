@@ -16,6 +16,7 @@ import ase
 import numpy as np
 import torch
 from ase.neighborlist import neighbor_list
+from ase.stress import voigt_6_to_full_3x3_stress
 from typing_extensions import TypeAlias
 
 from graph_pes.utils.misc import (
@@ -359,7 +360,11 @@ class AtomicGraph(NamedTuple):
         ):
             if key in property_mapping:
                 property = property_mapping[key]
+                # ensure stress is always 3x3, not voigt notation
+                if property == "stress" and value.shape == (6,):
+                    value = voigt_6_to_full_3x3_stress(value)
                 properties[property] = torch.tensor(value, dtype=dtype)
+
             elif key in others_to_include:
                 other[key] = torch.tensor(value, dtype=dtype)
 
