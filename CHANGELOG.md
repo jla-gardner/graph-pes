@@ -15,4 +15,6 @@ Automatically detect validation metrics from available properties.
 
 Improved documentation for LAMMPS integration.
 
+Fixed a bug where stress was not converted to 3x3 from Voigt notation in some cases.
+
 ## [0.0.3] - 2024-10-31
