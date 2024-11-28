@@ -146,24 +146,31 @@ def parity_plot(
         GraphPESCalculator(model) if isinstance(model, GraphPESModel) else model
     )
 
+    graphs = [
+        AtomicGraph.from_ase(s, calc.model.cutoff.item() + 0.001)
+        if isinstance(s, ase.Atoms)
+        else s
+        for s in structures
+    ]
+
     # get the predictions
-    graphs, per_struct_predictions = calc._calculate_all_keep_tensor(
-        structures, [property], batch_size
-    )
+    per_struct_predictions = calc.calculate_all(graphs, [property], batch_size)
     if any(property not in g.properties for g in graphs):
         raise ValueError(
             f"Property {property} is not available for all structures "
             "you passed"
         )
 
-    predictions = merge_predictions(per_struct_predictions)
+    predictions = torch.tensor(
+        merge_predictions(per_struct_predictions)[property]
+    )
 
     # transform
 
-    # okay to form last batch since not passing through model
+    # okay to form a big batch since not passing through model
     batch = to_batch(graphs)
     ground_truth = transform(batch.properties[property], batch).detach()
-    predicted = transform(predictions[property], batch)
+    predicted = transform(predictions, batch)
 
     # plot
     ax: plt.Axes = ax or plt.gca()

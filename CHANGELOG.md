@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+Allow for using arbitrary devices with `GraphPESCalculator`s.
+
 ## [0.0.4] - 2024-11-26
 
 ### Added

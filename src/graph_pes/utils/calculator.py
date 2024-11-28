@@ -263,15 +263,15 @@ def _seperate(
 
 
 @overload
-def merge_predictions(
-    predictions: list[dict[PropertyKey, numpy.ndarray]],
+def merge_predictions(  # type: ignore
+    predictions: list[dict[PropertyKey, numpy.ndarray | float]],
 ) -> dict[PropertyKey, numpy.ndarray]: ...
 @overload
 def merge_predictions(
-    predictions: list[dict[PropertyKey, torch.Tensor]],
+    predictions: list[dict[PropertyKey, torch.Tensor | float]],
 ) -> dict[PropertyKey, torch.Tensor]: ...
 def merge_predictions(
-    predictions: list[dict[PropertyKey, TensorLike]],
+    predictions: list[dict[PropertyKey, TensorLike | float]],
 ) -> dict[PropertyKey, TensorLike]:
     """
     Take a list of property predictions and merge them
