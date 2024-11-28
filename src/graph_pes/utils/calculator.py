@@ -131,6 +131,8 @@ class GraphPESCalculator(Calculator):
             self._cached_R = graph.R.detach().cpu().numpy()
             self._cached_cell = graph.cell.detach().cpu().numpy()
 
+        graph = graph.to(self.model.device)
+
         results = {
             k: v.detach().cpu().numpy()
             for k, v in self.model.predict(
@@ -168,7 +170,7 @@ class GraphPESCalculator(Calculator):
         structures: Iterable[AtomicGraph | ase.Atoms],
         properties: list[PropertyKey] | None = None,
         batch_size: int = 5,
-    ) -> list[dict[PropertyKey, numpy.ndarray]]:
+    ) -> list[dict[PropertyKey, numpy.ndarray | float]]:
         """
         Semantically identical to:
 
@@ -187,63 +189,38 @@ class GraphPESCalculator(Calculator):
             The properties to predict.
         batch_size
             The number of structures to predict at once.
-
-        Examples
-        --------
-        >>> calculator = GraphPESCalculator(model, device="cuda")
-        >>> structures = [Atoms(...), Atoms(...), Atoms(...)]
-        >>> predictions = calculator.calculate_all(
-        ...     structures,
-        ...     properties=["energy", "forces"],
-        ...     batch_size=2,
-        ... )
-        >>> print(predictions)
-        [{'energy': array(...), 'forces': array(...)},
-         {'energy': array(...), 'forces': array(...)},
-         {'energy': array(...), 'forces': array(...)}]
         """
-
-        _, tensor_results = self._calculate_all_keep_tensor(
-            structures, properties, batch_size
-        )
-
-        results = [to_numpy(r) for r in tensor_results]
-
-        if "stress" in results[0]:
-            for r in results:
-                r["stress"] = full_3x3_to_voigt_6_stress(r["stress"])
-
-        return results
-
-    def _calculate_all_keep_tensor(
-        self,
-        structures: Iterable[AtomicGraph | ase.Atoms],
-        properties: list[PropertyKey] | None = None,
-        batch_size: int = 5,
-    ) -> tuple[
-        list[AtomicGraph],
-        list[dict[PropertyKey, torch.Tensor]],
-    ]:
-        # defaults
+        # Convert structures to graphs and handle defaults
         graphs = [
             AtomicGraph.from_ase(s, self.model.cutoff.item() + 0.001)
             if isinstance(s, ase.Atoms)
             else s
             for s in structures
         ]
+        graphs = [g.to(self.model.device) for g in graphs]
+
         if properties is None:
             properties = ["energy", "forces"]
             if all(map(has_cell, graphs)):
                 properties.append("stress")
 
-        # batched prediction
-        results: list[dict[PropertyKey, torch.Tensor]] = []
+        # Batched prediction
+        tensor_results: list[dict[PropertyKey, torch.Tensor]] = []
         for batch in map(to_batch, groups_of(batch_size, graphs)):
             predictions = self.model.predict(batch, properties)
-            seperated = _seperate(predictions, batch)
-            results.extend(seperated)
+            separated = _seperate(predictions, batch)
+            tensor_results.extend(separated)
 
-        return graphs, results
+        results: list[dict[PropertyKey, numpy.ndarray | float]] = [
+            {k: to_numpy(v) for k, v in r.items()} for r in tensor_results
+        ]
+
+        # Convert stress tensors to Voigt notation
+        if "stress" in properties:
+            for r in results:
+                r["stress"] = full_3x3_to_voigt_6_stress(r["stress"])
+
+        return results
 
 
 ## utils ##
@@ -252,9 +229,9 @@ T = TypeVar("T")
 TensorLike = TypeVar("TensorLike", torch.Tensor, numpy.ndarray)
 
 
-def to_numpy(results: dict[T, torch.Tensor]) -> dict[T, numpy.ndarray]:
-    x = {key: tensor.detach().numpy() for key, tensor in results.items()}
-    return {k: v.item() if v.shape == () else v for k, v in x.items()}
+def to_numpy(t: torch.Tensor) -> numpy.ndarray | float:
+    n = t.detach().cpu().numpy()
+    return n.item() if n.shape == () else n
 
 
 def _seperate(
