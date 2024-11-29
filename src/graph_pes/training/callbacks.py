@@ -47,13 +47,16 @@ class DumpModel(GraphPESCallback):
     def on_validation_epoch_end(
         self, trainer: Trainer, pl_module: LightningModule
     ):
+        if not trainer.is_global_zero:
+            return
+
         epoch = trainer.current_epoch
         if epoch % self.every_n_val_checks != 0:
             return
 
         model_path = self.root / "dumps" / f"model_{epoch}.pt"
         model_path.parent.mkdir(exist_ok=True)
-        torch.save(self.get_model(pl_module).cpu(), model_path)
+        torch.save(self.get_model(pl_module).to("cpu"), model_path)
 
 
 def log_offset(model: LearnableOffset, logger: Logger):
@@ -73,6 +76,9 @@ class OffsetLogger(GraphPESCallback):
     def on_validation_epoch_end(
         self, trainer: Trainer, pl_module: LightningModule
     ):
+        if not trainer.is_global_zero:
+            return
+
         if not trainer.logger:
             return
 
