@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from abc import ABC
 from pathlib import Path
 from typing import cast
@@ -56,7 +57,8 @@ class DumpModel(GraphPESCallback):
 
         model_path = self.root / "dumps" / f"model_{epoch}.pt"
         model_path.parent.mkdir(exist_ok=True)
-        torch.save(self.get_model(pl_module).to("cpu"), model_path)
+        clone = copy.deepcopy(self.get_model(pl_module))
+        torch.save(clone.to("cpu"), model_path)
 
 
 def log_offset(model: LearnableOffset, logger: Logger):
