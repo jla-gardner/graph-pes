@@ -34,6 +34,10 @@ fitting:
     trainer_kwargs:
         max_epochs: 1000
         accelerator: gpu
+    
+    callbacks:
+        - graph_pes.training.callbacks.DumpModel:
+            every_n_val_checks: 10
 
     early_stopping_patience: 50
 

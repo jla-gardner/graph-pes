@@ -143,12 +143,12 @@ class SchNetInteraction(torch.nn.Module):
 
     def forward(
         self,
-        channels: torch.Tensor,
+        features: torch.Tensor,
         neighbour_distances: torch.Tensor,
         graph: AtomicGraph,
     ):
         # 1. linear transform to get new node features
-        h = self.linear(channels)
+        h = self.linear(features)
 
         # 2. cfconv to mix these new features with distances information,
         # and aggregate over neighbors to create completely new node features

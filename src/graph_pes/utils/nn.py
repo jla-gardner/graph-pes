@@ -236,7 +236,7 @@ class PerElementParameter(torch.nn.Parameter):
     def __init__(self, data: Tensor, requires_grad: bool = True):
         super().__init__()
         # set extra state
-        self._accessed_Zs = set()
+        self._accessed_Zs: set[int] = set()
         # set this to an arbitrary value: this gets updated post-init
         self._index_dims: int = 1
 
@@ -372,7 +372,7 @@ class PerElementParameter(torch.nn.Parameter):
                 ["Z"] + [chemical_symbols[Z] for Z in self._accessed_Zs]
             )
             for col_Z in self._accessed_Zs:
-                row = [chemical_symbols[col_Z]]
+                row: list[str | float] = [chemical_symbols[col_Z]]
                 for row_Z in self._accessed_Zs:
                     row.append(
                         to_significant_figures(self[col_Z, row_Z].item())

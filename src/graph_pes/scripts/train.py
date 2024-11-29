@@ -11,6 +11,7 @@ import torch
 import yaml
 from graph_pes.config import Config, get_default_config_values
 from graph_pes.scripts.generation import config_auto_generation
+from graph_pes.training.callbacks import GraphPESCallback
 from graph_pes.training.trainer import create_trainer, train_with_lightning
 from graph_pes.utils.lammps import deploy_model
 from graph_pes.utils.logger import log_to_file, logger, set_level
@@ -248,10 +249,16 @@ def train_from_config(config: Config):
 
     # create the trainer
     trainer_kwargs = {**config.fitting.trainer_kwargs}
+
+    callbacks = trainer_kwargs.pop("callbacks", [])
     if config.fitting.swa is not None:
-        trainer_kwargs.setdefault("callbacks", []).append(
-            config.fitting.swa.instantiate_lightning_callback()
-        )
+        callbacks.append(config.fitting.swa.instantiate_lightning_callback())
+    callbacks.extend(config.fitting.instantiate_callbacks())
+
+    for cb in callbacks:
+        if isinstance(cb, GraphPESCallback):
+            cb._register_root(output_dir)
+
     trainer = create_trainer(
         early_stopping_patience=config.fitting.early_stopping_patience,
         logger=lightning_logger,
@@ -259,6 +266,7 @@ def train_from_config(config: Config):
         kwarg_overloads=trainer_kwargs,
         output_dir=output_dir,
         progress=config.general.progress,
+        callbacks=callbacks,
     )
     assert trainer.logger is not None
     trainer.logger.log_hyperparams(config.to_nested_dict())

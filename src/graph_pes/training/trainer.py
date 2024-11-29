@@ -8,10 +8,12 @@ from graph_pes.config import FittingOptions
 from graph_pes.data.datasets import FittingData
 from graph_pes.data.loader import GraphDataLoader
 from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.training.callbacks import OffsetLogger
 from graph_pes.training.loss import TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
 from graph_pes.training.task import PESLearningTask
 from graph_pes.training.util import (
+    VALIDATION_LOSS_KEY,
     LoggedProgressBar,
     ModelTimer,
     log_model_info,
@@ -26,8 +28,6 @@ from pytorch_lightning.callbacks import (
     RichProgressBar,
 )
 from pytorch_lightning.loggers import Logger
-
-VALIDATION_LOSS_KEY = "valid/loss/total"
 
 
 def train_with_lightning(
@@ -102,51 +102,60 @@ def create_trainer(
     logger: Logger | None = None,
     output_dir: Path | None = None,
     progress: Literal["rich", "logged"] = "rich",
+    callbacks: list[pl.Callback] | None = None,
 ) -> pl.Trainer:
-    # create the default callbacks
-    callbacks: dict[str, pl.Callback] = dict(
-        lr=LearningRateMonitor(logging_interval="epoch"),
-        checkpoint=ModelCheckpoint(
-            dirpath=None if not output_dir else output_dir / "checkpoints",
-            monitor=VALIDATION_LOSS_KEY if valid_available else None,
-            filename="best",
-            mode="min",
-            save_top_k=1,
-            save_weights_only=True,
-        ),
-        progress_bar={
-            "rich": RichProgressBar(),
-            "logged": LoggedProgressBar(),
-        }[progress],
-        timer=ModelTimer(),
-    )
+    if callbacks is None:
+        callbacks = []
+    if kwarg_overloads is None:
+        kwarg_overloads = {}
+    callbacks.extend(kwarg_overloads.pop("callbacks", []))
+
+    # add on default callbacks
+    callbacks.append(ModelTimer())
+
+    if not any(isinstance(c, ProgressBar) for c in callbacks):
+        callbacks.append(
+            {"rich": RichProgressBar(), "logged": LoggedProgressBar()}[progress]
+        )
+
+    if not any(isinstance(c, OffsetLogger) for c in callbacks):
+        callbacks.append(OffsetLogger())
+
+    if not any(isinstance(c, ModelCheckpoint) for c in callbacks):
+        checkpoint_dir = None if not output_dir else output_dir / "checkpoints"
+        callbacks.extend(
+            [
+                ModelCheckpoint(
+                    dirpath=checkpoint_dir,
+                    monitor=VALIDATION_LOSS_KEY if valid_available else None,
+                    filename="best",
+                    mode="min",
+                    save_top_k=1,
+                    save_weights_only=True,
+                ),
+                ModelCheckpoint(
+                    dirpath=checkpoint_dir,
+                    filename="last",
+                    save_weights_only=True,
+                ),
+            ]
+        )
+
+    if not any(isinstance(c, LearningRateMonitor) for c in callbacks):
+        callbacks.append(LearningRateMonitor(logging_interval="epoch"))
+
     if early_stopping_patience is not None:
         if not valid_available:
             raise ValueError(
                 "Early stopping requires validation data to be available"
             )
-        callbacks["early_stopping"] = EarlyStopping(
-            monitor=VALIDATION_LOSS_KEY,
-            patience=early_stopping_patience,
-            mode="min",
-            min_delta=1e-6,
+        callbacks.append(
+            EarlyStopping(
+                monitor=VALIDATION_LOSS_KEY,
+                patience=early_stopping_patience,
+                mode="min",
+                min_delta=1e-6,
+            )
         )
 
-    # find any user defined callbacks ...
-    overloads = kwarg_overloads or {}
-    overloaded_callbacks = overloads.pop("callbacks", [])
-
-    # ... and overwrite the default callbacks where necessary
-    for cb in overloaded_callbacks:
-        # we don't want two progress bars: use the non-default one
-        if isinstance(cb, ProgressBar):
-            callbacks["progress_bar"] = cb
-        # all other callbacks are just added on as extras
-        else:
-            callbacks[str(cb)] = cb
-
-    return pl.Trainer(
-        **overloads,
-        logger=logger,
-        callbacks=list(callbacks.values()),
-    )
+    return pl.Trainer(**kwarg_overloads, logger=logger, callbacks=callbacks)

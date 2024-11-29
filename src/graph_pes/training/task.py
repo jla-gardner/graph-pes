@@ -13,7 +13,7 @@ from graph_pes.atomic_graph import (
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.training.loss import RMSE, Loss, PerAtomEnergyLoss, TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
-from graph_pes.training.trainer import VALIDATION_LOSS_KEY
+from graph_pes.training.util import VALIDATION_LOSS_KEY
 from graph_pes.utils.logger import logger
 from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
 

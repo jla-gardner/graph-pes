@@ -263,3 +263,6 @@ class LoggedProgressBar(ProgressBar):
         sorted_metrics.update(metrics)
 
         return sorted_metrics
+
+
+VALIDATION_LOSS_KEY = "valid/loss/total"

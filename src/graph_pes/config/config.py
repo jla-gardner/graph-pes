@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Literal, Union
 
 import dacite
 import yaml
+from pytorch_lightning import Callback
 
 from graph_pes.data.datasets import FittingData
 from graph_pes.graph_pes_model import GraphPESModel
@@ -195,6 +196,13 @@ class FittingConfig(FittingOptions):
                 accumulate_grad_batches: 4
     """
 
+    callbacks: List[Dict[str, Any]]
+    """
+    List of dictionaries, each of which points to a 
+    :class:`~pytorch_lightning.Callback` or 
+    :class:`~graph_pes.training.callbacks.GraphPESCallback` instance.
+    """
+
     ### Methods ###
 
     def instantiate_optimizer(self) -> Optimizer:
@@ -204,6 +212,9 @@ class FittingConfig(FittingOptions):
         if self.scheduler is None:
             return None
         return create_from_data(self.scheduler)
+
+    def instantiate_callbacks(self) -> List[Callback]:
+        return [create_from_data(c) for c in self.callbacks]
 
 
 @dataclass
@@ -443,6 +454,12 @@ class Config:
                 tags: [my_tag]
                 
     """  # noqa: E501
+
+    misc: Dict[str, Any]
+    """
+    Miscellaneous configuration - unused by ``graph-pes``, but useful for
+    passing through configuration for external tools.
+    """
 
     ### Methods ###
 

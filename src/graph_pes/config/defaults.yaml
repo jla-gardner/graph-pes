@@ -33,5 +33,6 @@ fitting:
     early_stopping_patience: null
     scheduler: null
     swa: null
+    callbacks: []
 
 wandb: {}
