@@ -157,3 +157,16 @@ Under-the-hood, ``graph-pes-train`` uses `dacite <https://github.com/konradhalas
 .. autoclass:: graph_pes.config.Config()
     :members:
     :exclude-members: hash
+
+
+Callbacks
+---------
+
+Callbacks can be added to the trainer by specifying them in the ``callbacks`` section of the config file. 
+You can point to any class that inherits from :class:`~pytorch_lightning.Callback`. We have implemented a few useful ones:
+
+.. autoclass:: graph_pes.training.callbacks.OffsetLogger
+
+.. autoclass:: graph_pes.training.callbacks.DumpModel
+
+.. autoclass:: graph_pes.training.callbacks.GraphPESCallback
