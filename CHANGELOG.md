@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Allow for using arbitrary devices with `GraphPESCalculator`s.
 
+Allow the user to configure and define custom callbacks for the trainer. Implemented `OffsetLogger` and `DumpModel`.
+
 ## [0.0.4] - 2024-11-26
 
 ### Added
