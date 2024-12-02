@@ -28,7 +28,7 @@ class GraphPESCallback(Callback, ABC):
         self.root = root
 
     def get_model(self, pl_module: LightningModule) -> GraphPESModel:
-        return cast(GraphPESModel, pl_module)
+        return cast(GraphPESModel, pl_module.model)
 
 
 class DumpModel(GraphPESCallback):
