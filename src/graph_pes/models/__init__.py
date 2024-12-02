@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import warnings
 
 warnings.filterwarnings(
@@ -13,6 +14,7 @@ import pathlib
 import torch
 
 from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.utils.logger import logger
 
 from .addition import AdditionModel
 from .e3nn.mace import MACE, ZEmbeddingMACE
@@ -62,7 +64,24 @@ ALL_MODELS: list[type[GraphPESModel]] = [
 ]
 
 
-def load_model(path: str | pathlib.Path) -> GraphPESModel:
+def freeze_model(module: torch.nn.Module) -> None:
+    """Freeze all parameters in a module."""
+    for param in module.parameters():
+        param.requires_grad = False
+
+
+def freeze_components_matching(module: torch.nn.Module, pattern: str) -> None:
+    """Freeze all parameters in a module matching a given pattern."""
+    for name, param in module.named_parameters():
+        if re.match(pattern, name):
+            logger.info(f"Freezing {name}")
+            param.requires_grad = False
+
+
+def load_model(
+    path: str | pathlib.Path,
+    freeze: bool | list[str] = False,
+) -> GraphPESModel:
     """
     Load a model from a file.
 
@@ -70,6 +89,9 @@ def load_model(path: str | pathlib.Path) -> GraphPESModel:
     ----------
     path
         The path to the file.
+    freeze
+        If ``True``, freeze all model parameters. If a list of strings, freeze
+        all parameters that match any of the regular expressions in the list.
 
     Returns
     -------
@@ -124,6 +146,12 @@ def load_model(path: str | pathlib.Path) -> GraphPESModel:
             "We won't stop you from doing this, but it may cause issues.",
             stacklevel=2,
         )
+
+    if isinstance(freeze, bool) and freeze:
+        freeze_model(model)
+    elif isinstance(freeze, list):
+        for pattern in freeze:
+            freeze_components_matching(model, pattern)
 
     return model
 
