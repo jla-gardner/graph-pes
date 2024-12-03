@@ -20,15 +20,15 @@ def test_model_instantiation():
     # 1. test single model with no params:
     dummy_data = get_dummy_config_dict()
     dummy_data["model"] = "+SchNet()"
-    dummy_data = Config.from_dict(dummy_data)
-    model = dummy_data.get_model()
+    dummy_data, config = Config.from_raw_config_dicts(dummy_data)
+    model = config.get_model()
     assert isinstance(model, SchNet)
 
     # 2. test single model with params:
     dummy_data = get_dummy_config_dict()
     dummy_data["model"] = {"+SchNet": {"cutoff": 3.7}}
-    dummy_data = Config.from_dict(dummy_data)
-    model = dummy_data.get_model()
+    dummy_data, config = Config.from_raw_config_dicts(dummy_data)
+    model = config.get_model()
     assert isinstance(model, SchNet)
     assert model.cutoff == 3.7
 
@@ -41,8 +41,8 @@ many-body:
    +SchNet: {cutoff: 3.7}
 """
     )
-    dummy_data = Config.from_dict(dummy_data)
-    model = dummy_data.get_model()
+    dummy_data, config = Config.from_raw_config_dicts(dummy_data)
+    model = config.get_model()
     assert isinstance(model, AdditionModel)
     assert len(model.models) == 2
     assert isinstance(model.models["many-body"], SchNet)
@@ -52,17 +52,17 @@ many-body:
     # clearly incorrect
     dummy_data["model"] = 3
     with pytest.raises(ValueError, match="could not be successfully parsed."):
-        Config.from_dict(dummy_data).get_model()
+        Config.from_raw_config_dicts(dummy_data)
 
     # not a GraphPESModel
     dummy_data["model"] = "+torch.nn.ReLU()"
     with pytest.raises(ValueError):
-        Config.from_dict(dummy_data).get_model()
+        Config.from_raw_config_dicts(dummy_data)
 
     # incorrect AdditionModel spec
     dummy_data["model"] = {"a": "+torch.nn.ReLU()"}
     with pytest.raises(ValueError):
-        Config.from_dict(dummy_data).get_model()
+        Config.from_raw_config_dicts(dummy_data)
 
 
 def test_optimizer():
@@ -75,7 +75,7 @@ def test_optimizer():
                 lr: 0.001
     """)
     actual_data = nested_merge(dummy_data, user_data)
-    config = Config.from_dict(actual_data)
+    _, config = Config.from_raw_config_dicts(actual_data)
 
     dummy_model = SchNet()
     optimizer_instance = config.fitting.optimizer(dummy_model)
@@ -85,7 +85,7 @@ def test_optimizer():
 def test_scheduler():
     # no default scheduler
     dummy_data = get_dummy_config_dict()
-    config = Config.from_dict(dummy_data)
+    _, config = Config.from_raw_config_dicts(dummy_data)
     scheduler = config.fitting.scheduler
     assert scheduler is None
 
@@ -100,7 +100,7 @@ def test_scheduler():
     """)
     dummy_data = get_dummy_config_dict()
     actual_data = nested_merge(dummy_data, user_data)
-    config = Config.from_dict(actual_data)
+    _, config = Config.from_raw_config_dicts(actual_data)
 
     scheduler = config.fitting.scheduler
     assert scheduler is not None

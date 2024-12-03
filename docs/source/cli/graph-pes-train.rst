@@ -16,10 +16,12 @@
     args        Config files and command line specifications. 
                 Config files should be YAML (.yaml/.yml) files. 
                 Command line specifications should be in the form 
-                nested^key=value. Final config is built up from 
+                nested/key=value. Final config is built up from 
                 these items in a left to right manner, with later 
                 items taking precedence over earlier ones in the 
-                case of conflicts.
+                case of conflicts. The data2objects package is used 
+                to resolve references and create objects directly 
+                from the config dictionary.
 
     optional arguments:
     -h, --help  show this help message and exit
@@ -39,7 +41,7 @@ Train from a config file, overriding a specific option:
 
 .. code-block:: bash
 
-    $ graph-pes-train config.yaml fitting^trainer_kwargs^max_epochs=10
+    $ graph-pes-train config.yaml fitting/trainer_kwargs/max_epochs=10
 
 Train from multiple config files:
 
@@ -110,7 +112,7 @@ Configuration for the ``graph-pes-train`` command line tool is represented as a 
 
 1. the default values defined in `defaults.yaml <https://github.com/jla-gardner/graph-pes/blob/main/src/graph_pes/config/defaults.yaml>`_
 2. values you define in the config file/s you pass to ``graph-pes-train``:  ``<config-1.yaml> <config-2.yaml> ...``
-3. additional command line arguments you pass to ``graph-pes-train``: ``<nested^key=value> <nested^key=value> ...``
+3. additional command line arguments you pass to ``graph-pes-train``: ``<nested/key=value> <nested/key=value> ...``
 
 The final nested configuration dictionary is built up from these values in a left to right manner, with later items taking precedence over earlier ones in the case of conflicts.
 
@@ -118,7 +120,7 @@ For example:
 
 .. code-block:: bash
 
-    graph-pes-train minimal.yaml model^graph_pes.model.SchNet^layers=2
+    graph-pes-train minimal.yaml model/+SchNet/layers=2
 
 
 will train a model :class:`~graph_pes.models.SchNet` model with **2** layers (rather than the 3 specified in :ref:`minimal.yaml <minimal config>` above).

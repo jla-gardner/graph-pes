@@ -7,7 +7,6 @@ from datetime import datetime
 from hashlib import sha256
 from pathlib import Path
 
-import data2objects
 import pytorch_lightning
 import torch
 import yaml
@@ -58,10 +57,12 @@ def parse_args():
             "Config files and command line specifications. "
             "Config files should be YAML (.yaml/.yml) files. "
             "Command line specifications should be in the form "
-            "nested/key=value. "
+            "my/nested/key=value. "
             "Final config is built up from these items in a left "
             "to right manner, with later items taking precedence "
-            "over earlier ones in the case of conflicts."
+            "over earlier ones in the case of conflicts. "
+            "The data2objects package is used to resolve references "
+            "and create objects directly from the config dictionary."
         ),
     )
 
@@ -165,8 +166,7 @@ def train_from_config(config_data: dict):
     # information from rank 0 to other ranks by saving information into files
     # in this directory.
 
-    config_data = data2objects.fill_referenced_parts(config_data)  # type: ignore
-    config = Config.from_dict(config_data)
+    config_data, config = Config.from_raw_config_dicts(config_data)
     communication_dir = Path(config.general.root_dir) / ".communication"
 
     # the config will be shared across all ranks, but will be different

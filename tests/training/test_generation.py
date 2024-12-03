@@ -44,5 +44,5 @@ def test_autogen(monkeypatch):
 
     monkeypatch.setattr("builtins.input", mimic_autogen_inputs)
     config_data = extract_config_from_command_line()
-    config = Config.from_dict(config_data)
+    _, config = Config.from_raw_config_dicts(config_data)
     assert isinstance(config.loss, PerAtomEnergyLoss)

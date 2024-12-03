@@ -12,10 +12,7 @@ fitting:
     pre_fit_model: true
     max_n_pre_fit: 5_000
 
-    optimizer:
-        +Optimizer:
-            name: AdamW
-            lr: 0.001
+    optimizer: null # intentional : see config.py for details
 
     # train for 100 epochs on the best device available
     trainer_kwargs:
