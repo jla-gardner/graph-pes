@@ -1,16 +1,16 @@
 # train a SchNet model...
 model:
-    graph_pes.models.SchNet:
+    +SchNet:
         layers: 3
         channels: 64
 
 # ...using some of the QM7 structures...
 data:
-    graph_pes.data.load_atoms_dataset:
+    +load_atoms_dataset:
         id: QM7
         cutoff: 5.0
         n_train: 5_000
         n_valid: 100
 
 # ...training on energy labels
-loss: graph_pes.training.loss.PerAtomEnergyLoss()
+loss: +PerAtomEnergyLoss()

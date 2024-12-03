@@ -13,7 +13,7 @@ fitting:
     max_n_pre_fit: 5_000
 
     optimizer:
-        graph_pes.training.opt.Optimizer:
+        +Optimizer:
             name: AdamW
             lr: 0.001
 

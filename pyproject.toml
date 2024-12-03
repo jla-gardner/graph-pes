@@ -18,7 +18,7 @@ keywords = []
 dependencies = [
     "torch",
     "pytorch-lightning",
-    "ase==3.22.1", # TODO: unpin this? or pin other versions?
+    "ase==3.22.1",       # TODO: unpin this? or pin other versions?
     "numpy",
     "rich",
     "dacite",
@@ -27,6 +27,7 @@ dependencies = [
     "locache",
     "load-atoms",
     "wandb",
+    "data2objects",
 ]
 requires-python = ">=3.8"
 
@@ -62,7 +63,9 @@ push = false
 "pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
 "src/graph_pes/__init__.py" = ["{version}"]
 "docs/source/conf.py" = ['release = "{version}"']
-"src/graph_pes/graph_pes_model.py" = ['self._GRAPH_PES_VERSION: Final\[str\] = "{version}"']
+"src/graph_pes/graph_pes_model.py" = [
+    'self._GRAPH_PES_VERSION: Final\[str\] = "{version}"',
+]
 
 [tool.ruff]
 line-length = 80

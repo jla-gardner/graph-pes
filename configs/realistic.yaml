@@ -1,12 +1,11 @@
 model:
-    offset:
-        graph_pes.models.LearnableOffset: {}
+    offset: +LearnableOffset()
     core-repulsion:
-        graph_pes.models.ZBLCoreRepulsion:
+        +ZBLCoreRepulsion:
             trainable: true
             cutoff: 3.7
     many-body:
-        graph_pes.models.MACE:
+        +MACE:
             elements: [C]
             cutoff: 3.7
             channels: 128
@@ -14,7 +13,7 @@ model:
             self_connection: true
 
 data:
-    graph_pes.data.load_atoms_dataset:
+    +load_atoms_dataset:
         id: C-GAP-20U
         cutoff: 3.7
         n_train: 5000
@@ -22,10 +21,9 @@ data:
         split: random
 
 loss:
-    - component: graph_pes.training.loss.PerAtomEnergyLoss()
-      weight: 1.0
+    - component: +PerAtomEnergyLoss()
     - component:
-        graph_pes.training.loss.Loss:
+        +Loss:
             property: forces
             metric: RMSE
       weight: 3.0
@@ -36,18 +34,18 @@ fitting:
         accelerator: gpu
     
     callbacks:
-        - graph_pes.training.callbacks.DumpModel:
+        - +graph_pes.training.callbacks.DumpModel:
             every_n_val_checks: 10
 
     early_stopping_patience: 50
 
     optimizer:
-        graph_pes.training.opt.Optimizer:
+        +Optimizer:
             name: AdamW
             lr: 0.003
 
     scheduler:
-        graph_pes.training.opt.LRScheduler:
+        +LRScheduler:
             name: ReduceLROnPlateau
             patience: 10
             factor: 0.8

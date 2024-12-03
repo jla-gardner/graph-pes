@@ -6,7 +6,7 @@ model:
         MACE(), ZEmbeddingMACE()]. Default: SchNet()
     type: str
     value: "SchNet()"
-    prefix: "graph_pes.models."
+    prefix: "+graph_pes.models."
 
 loss:
     prompt: >
@@ -14,10 +14,10 @@ loss:
         Default: PerAtomEnergyLoss()
     type: str
     value: "PerAtomEnergyLoss()"
-    prefix: "graph_pes.training.loss."
+    prefix: "+graph_pes.training.loss."
 
 data:
-    graph_pes.data.load_atoms_dataset:
+    +load_atoms_dataset:
         id:
             prompt: >
                 Select a dataset to train on.  This must be either a) a path to
@@ -39,7 +39,7 @@ data:
 
 fitting:
     optimizer:
-        graph_pes.training.opt.Optimizer:
+        +Optimizer:
             name:
                 prompt: >
                     Select an optimizer, check documentation for options.

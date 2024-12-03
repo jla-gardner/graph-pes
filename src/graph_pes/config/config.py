@@ -5,31 +5,28 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from hashlib import sha256
 from typing import Any, Dict, List, Literal, Union
 
 import dacite
-import yaml
+import data2objects
 from pytorch_lightning import Callback
 
-from graph_pes.data.datasets import FittingData
+from graph_pes.data.datasets import FittingData, GraphDataset
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.addition import AdditionModel
 from graph_pes.training.loss import Loss, TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
 from graph_pes.training.util import VerboseSWACallback
 
-from .utils import create_from_data, create_from_string
-
 
 @dataclass
-class LossSpec:
+class WeightedLoss:
     """
     Specification for a component of a
     :class:`~graph_pes.training.loss.TotalLoss`.
     """
 
-    component: Union[str, Dict[str, Any]]
+    component: Loss
     """Point to a :class:`~graph_pes.training.loss.Loss` instance."""
 
     weight: Union[int, float] = 1.0
@@ -122,7 +119,7 @@ class SWAConfig:
 class FittingConfig(FittingOptions):
     """Configuration for the fitting process."""
 
-    optimizer: Union[str, Dict[str, Any]]
+    optimizer: Optimizer
     """
     Specification for the optimizer. Point to something that instantiates a
     :class:`~graph_pes.training.opt.Optimizer`.
@@ -135,7 +132,7 @@ class FittingConfig(FittingOptions):
 
         fitting:        
             optimizer:
-                graph_pes.training.opt.Optimizer:
+                +Optimizer:
                     name: Adam
                     lr: 3e-3
                     weight_decay: 0.0
@@ -146,10 +143,10 @@ class FittingConfig(FittingOptions):
     .. code-block:: yaml
 
         fitting:
-            optimizer: my.module.MagicOptimizer()
+            optimizer: +my.module.MagicOptimizer()
     """
 
-    scheduler: Union[str, Dict[str, Any], None]
+    scheduler: Union[LRScheduler, None]
     """
     .. _learning rate scheduler:
     
@@ -162,10 +159,10 @@ class FittingConfig(FittingOptions):
     
         fitting:
             scheduler:
-                graph_pes.training.opt.LRScheduler:
+                +LRScheduler:
                     name: ReduceLROnPlateau
-                factor: 0.5
-                patience: 10
+                    factor: 0.5
+                    patience: 10
     """
 
     swa: Union[SWAConfig, None]
@@ -196,25 +193,11 @@ class FittingConfig(FittingOptions):
                 accumulate_grad_batches: 4
     """
 
-    callbacks: List[Dict[str, Any]]
+    callbacks: List[Callback]
     """
-    List of dictionaries, each of which points to a 
-    :class:`~pytorch_lightning.Callback` or 
-    :class:`~graph_pes.training.callbacks.GraphPESCallback` instance.
+    List of :class:`~pytorch_lightning.Callback` or 
+    :class:`~graph_pes.training.callbacks.GraphPESCallback` instances.
     """
-
-    ### Methods ###
-
-    def instantiate_optimizer(self) -> Optimizer:
-        return create_from_data(self.optimizer)
-
-    def instantiate_scheduler(self) -> LRScheduler | None:
-        if self.scheduler is None:
-            return None
-        return create_from_data(self.scheduler)
-
-    def instantiate_callbacks(self) -> List[Callback]:
-        return [create_from_data(c) for c in self.callbacks]
 
 
 @dataclass
@@ -282,7 +265,7 @@ class Config:
     :class:`~graph_pes.GraphPESModel`.
     """
 
-    model: Union[str, Dict[str, Any]]
+    model: Union[GraphPESModel, Dict[str, GraphPESModel]]
     """        
     The model to train.
 
@@ -295,12 +278,12 @@ class Config:
 
             # basic Lennard-Jones model
             model:
-                graph_pes.models.LennardJones:
+                +LennardJones:
                     sigma: 0.1
                     epsilon: 1.0
             
             # or some custom model
-            model: my_model.SpecialModel()
+            model: +my_model.SpecialModel()
         
         ...or pass a dictionary mapping custom names to
         :class:`~graph_pes.GraphPESModel` instances:
@@ -309,8 +292,8 @@ class Config:
         
             model:
                 offset:
-                    graph_pes.models.FixedOffset: {H: -123.4, C: -456.7}
-                many-body: graph_pes.models.SchNet()
+                    +FixedOffset: {H: -123.4, C: -456.7}
+                many-body: +SchNet()
 
         The latter will instantiate an :class:`~graph_pes.models.AdditionModel`
         with :class:`~graph_pes.models.FixedOffset` and
@@ -318,18 +301,16 @@ class Config:
         for dealing with arbitrary offset energies.
     """
 
-    data: Union[str, Dict[str, Any]]
+    data: Union[FittingData, Dict[Literal["train", "valid"], GraphDataset]]
     """
     The data to train on.
 
     .. dropdown:: ``data`` options
     
-        Point to one of the following:
-
-        - a callable that returns a :class:`~graph_pes.data.FittingData` 
-          instance
-        - a dictionary mapping ``"train"`` and ``"valid"`` keys to callables 
-          that return :class:`~graph_pes.data.GraphDataset` instances
+        Point to something that can create a 
+        :class:`~graph_pes.data.FittingData` instance, or a dictionary mapping 
+        ``"train"`` and ``"valid"`` keys to 
+        :class:`~graph_pes.data.GraphDataset` instances:
 
         Load custom data from a function with no arguments:
 
@@ -342,7 +323,7 @@ class Config:
         .. code-block:: yaml
 
             data:
-                graph_pes.data.load_atoms_dataset:
+                +load_atoms_dataset:
                     id: QM9
                     cutoff: 5.0
                     n_train: 10000
@@ -358,19 +339,19 @@ class Config:
 
             data:
                 train:
-                    graph_pes.data.file_dataset:
+                    +file_dataset:
                         path: training_data.xyz
                         cutoff: 5.0
                         n: 1000
                         shuffle: true
                         seed: 42
                 valid:
-                    graph_pes.data.file_dataset:
+                    +file_dataset:
                         path: validation_data.xyz
                         cutoff: 5.0
     """
 
-    loss: Union[str, Dict[str, Any], List[LossSpec]]
+    loss: Union[Loss, TotalLoss, List[WeightedLoss]]
     """
     The loss function to use.
 
@@ -382,13 +363,13 @@ class Config:
         .. code-block:: yaml
             
             # basic per-atom energy loss
-            loss: graph_pes.training.loss.PerAtomEnergyLoss()
+            loss: +PerAtomEnergyLoss()
 
             # or more fine-grained control
             loss:
-                graph_pes.training.loss.Loss:
+                +Loss:
                     property: energy
-                    metric: graph_pes.training.loss.RMSE()
+                    metric: +RMSE()
 
         ...or specify a list of :class:`~graph_pes.config.config.LossSpec`
         instances, each of which points to a 
@@ -397,13 +378,9 @@ class Config:
         .. code-block:: yaml
         
             loss:
-                - component: graph_pes.training.loss.Loss:
-                      property: energy
-                      metric: graph_pes.training.loss.RMSE()
+                - component: +PerAtomEnergyLoss()
                   weight: 1.0
-                - component: graph_pes.training.loss.Loss:
-                      property: forces
-                      metric: graph_pes.training.loss.MAE()
+                - component: +Loss: {property: forces, metric: +MAE()}
                 weight: 10.0
         
         .. autoclass:: graph_pes.config.config.LossSpec()
@@ -458,27 +435,49 @@ class Config:
     misc: Dict[str, Any]
     """
     Miscellaneous configuration - unused by ``graph-pes``, but useful for
-    passing through configuration for external tools.
+    passing through configuration for external tools, or for defining
+    constants used in several places in the config:
+
+    ```yaml
+    misc:
+        CUTOFF: 5.0
+
+    model:
+        +my_module.create_model:
+            cutoff: '!~/misc/CUTOFF'
+    
+    data:
+        +my_module.create_data:
+            cutoff: '!~/misc/CUTOFF'
+    ```
     """
 
     ### Methods ###
 
-    def to_nested_dict(self) -> Dict[str, Any]:
-        def _maybe_as_dict(obj):
-            if isinstance(obj, list):
-                return [_maybe_as_dict(v) for v in obj]
-            elif not hasattr(obj, "__dict__"):
-                return obj
-            return {k: _maybe_as_dict(v) for k, v in obj.__dict__.items()}
-
-        return _maybe_as_dict(self)  # type: ignore
-
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Config:
+    def from_dict(cls, data_dict: dict[str, Any]) -> Config:
+        import graph_pes
+        import graph_pes.data
+        import graph_pes.models
+        import graph_pes.training
+        import graph_pes.training.loss
+        import graph_pes.training.opt
+
+        object_dict = data2objects.from_dict(
+            data_dict,
+            modules=[
+                graph_pes,
+                graph_pes.models,
+                graph_pes.training,
+                graph_pes.training.opt,
+                graph_pes.training.loss,
+                graph_pes.data,
+            ],
+        )
         try:
             return dacite.from_dict(
                 data_class=cls,
-                data=data,
+                data=object_dict,
                 config=dacite.Config(strict=True),
             )
         except Exception as e:
@@ -488,117 +487,53 @@ class Config:
                 "please see https://jla-gardner.github.io/graph-pes/cli/graph-pes-train.html"
             ) from e
 
-    def hash(self) -> str:
-        """
-        Get a unique identifier for this configuration.
-
-        Returns
-        -------
-        str
-            The SHA-256 hash of the configuration.
-        """
-        return sha256(str(self.to_nested_dict()).encode()).hexdigest()
-
-    def __repr__(self):
-        # yaml dump the nested config, complete with defaults,
-        # as it would appear in a config.yaml file
-        return yaml.dump(self.to_nested_dict(), indent=3, sort_keys=False)
-
-    def instantiate_model(self) -> GraphPESModel:
-        obj = create_from_data(self.model)
-        if isinstance(obj, GraphPESModel):
-            return obj
-
-        elif isinstance(obj, dict):
-            all_string_keys = all(isinstance(k, str) for k in obj)
-            all_model_values = all(
-                isinstance(v, GraphPESModel) for v in obj.values()
-            )
-
-            if not all_string_keys or not all_model_values:
+    def get_model(self) -> GraphPESModel:
+        if isinstance(self.model, GraphPESModel):
+            return self.model
+        elif isinstance(self.model, dict):
+            if not all(
+                isinstance(m, GraphPESModel) for m in self.model.values()
+            ):
                 raise ValueError(
-                    "Expected a dictionary of named GraphPESModels, "
-                    f"but got {obj}."
+                    "Expected all values in the model dictionary to be "
+                    "GraphPESModel instances."
                 )
-
-            try:
-                return AdditionModel(**obj)
-            except Exception as e:
-                raise ValueError(
-                    f"Parsed a dictionary, {obj}, from the model config, "
-                    "but could not instantiate an AdditionModel from it."
-                ) from e
-
+            return AdditionModel(**self.model)
         raise ValueError(
             "Expected to be able to parse a GraphPESModel or a "
             "dictionary of named GraphPESModels from the model config, "
-            f"but got something else: {obj}"
+            f"but got something else: {self.model}"
         )
 
-    def instantiate_data(self) -> FittingData:
-        result: Any = None
+    def get_data(self) -> FittingData:
+        if isinstance(self.data, FittingData):
+            return self.data
+        elif isinstance(self.data, dict):
+            return FittingData(**self.data)
 
-        if isinstance(self.data, str):
-            result = create_from_string(self.data)
+        raise ValueError(
+            "Expected to be able to parse a FittingData instance or a "
+            "dictionary mapping 'train' and 'valid' keys to GraphDataset "
+            "instances from the data config, but got something else: "
+            f"{self.data}"
+        )
 
-        if isinstance(self.data, dict):
-            if len(self.data) == 1:
-                result = create_from_data(self.data)
-            elif len(self.data) == 2:
-                assert self.data.keys() == {"train", "valid"}
-                result = FittingData(
-                    train=create_from_data(self.data["train"]),
-                    valid=create_from_data(self.data["valid"]),
-                )
-
-        if result is None:
-            raise ValueError(
-                "Unexpected data specification. "
-                "Please provide a callable or a dictionary containing "
-                "a single key (the fully qualified name of some callable) "
-                "or two keys ('train' and 'valid') mapping to callables."
-            )
-
-        if not isinstance(result, FittingData):
-            raise ValueError(
-                "Expected to parse a FittingData instance from the data "
-                f"config, but got {result}."
-            )
-
-        return result
-
-    def instantiate_loss(self) -> TotalLoss:
-        if isinstance(self.loss, (str, dict)):
-            loss = create_from_data(self.loss)
-            if isinstance(loss, Loss):
-                return TotalLoss([loss])
-            elif isinstance(loss, TotalLoss):
-                return loss
-            else:
+    def get_loss(self) -> TotalLoss:
+        if isinstance(self.loss, Loss):
+            return TotalLoss([self.loss])
+        elif isinstance(self.loss, TotalLoss):
+            return self.loss
+        elif isinstance(self.loss, list):
+            if not all(isinstance(l, WeightedLoss) for l in self.loss):
                 raise ValueError(
-                    "Expected to parse a Loss or TotalLoss instance from the "
-                    "loss config, but got something else: {loss}"
+                    "Expected a list of WeightedLoss instances from the loss "
+                    f"config, but got {self.loss}."
                 )
-
-        if not all(isinstance(l, LossSpec) for l in self.loss):
-            raise ValueError(
-                "Expected a list of LossSpec instances from the loss config, "
-                f"but got {self.loss}."
+            return TotalLoss(
+                [l.component for l in self.loss], [l.weight for l in self.loss]
             )
-
-        weights = [l.weight for l in self.loss]
-        losses = [create_from_data(l.component) for l in self.loss]
-
-        if not all(isinstance(w, (int, float)) for w in weights):
-            raise ValueError(
-                "Expected a list of weights from the loss config, "
-                f"but got {weights}."
-            )
-
-        if not all(isinstance(l, Loss) for l in losses):
-            raise ValueError(
-                "Expected a list of Loss instances from the loss config, "
-                f"but got {losses}."
-            )
-
-        return TotalLoss(losses, weights)
+        raise ValueError(
+            "Expected to be able to parse a Loss, TotalLoss, or a list of "
+            "WeightedLoss instances from the loss config, but got something "
+            f"else: {self.loss}"
+        )

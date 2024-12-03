@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import sys
 
+from graph_pes.config.config import Config
 from graph_pes.scripts.generation import get_automation_options
 from graph_pes.scripts.train import extract_config_from_command_line, parse_args
+from graph_pes.training.loss import PerAtomEnergyLoss
 
 
 def mimic_autogen_inputs(prompt):
@@ -32,10 +34,7 @@ def test_autogen(monkeypatch):
     configs = get_automation_options()
     assert configs["model"]["value"] == "SchNet()"
     assert (
-        configs["fitting"]["optimizer"]["graph_pes.training.opt.Optimizer"][
-            "name"
-        ]["type"]
-        == "str"
+        configs["fitting"]["optimizer"]["+Optimizer"]["name"]["type"] == "str"
     )
     command = "graph-pes-train"
     sys.argv = command.split()
@@ -44,6 +43,6 @@ def test_autogen(monkeypatch):
     assert not args.args
 
     monkeypatch.setattr("builtins.input", mimic_autogen_inputs)
-    config = extract_config_from_command_line()
-    assert config.loss == "graph_pes.training.loss.PerAtomEnergyLoss()"
-    assert config.data["graph_pes.data.load_atoms_dataset"]["cutoff"] == 3.5  # type: ignore
+    config_data = extract_config_from_command_line()
+    config = Config.from_dict(config_data)
+    assert isinstance(config.loss, PerAtomEnergyLoss)

@@ -1,12 +1,12 @@
 model:
     offset:
-        graph_pes.models.FixedOffset: {H: -123.4, C: -456.7}
+        +FixedOffset: {H: -123.4, C: -456.7}
     core-repulsion:
-        graph_pes.models.ZBLCoreRepulsion:
+        +ZBLCoreRepulsion:
             trainable: true
             cutoff: 5.0
     many-body:
-        graph_pes.models.NequIP:
+        +NequIP:
             elements: [C, H, O, N]
             cutoff: 3.7
             channels: 128
@@ -15,28 +15,24 @@ model:
 
 data:
     train:
-        graph_pes.data.file_dataset:
+        +file_dataset:
             path: training_data.xyz
             cutoff: 3.7
             n: 1000
             shuffle: true
             seed: 42
     valid:
-        graph_pes.data.file_dataset:
+        +file_dataset:
             path: validation_data.xyz
             cutoff: 3.7
 
 loss:
-    - component: graph_pes.training.loss.PerAtomEnergyLoss()
+    - component: +PerAtomEnergyLoss()
     - component:
-        graph_pes.training.loss.Loss:
-            property: forces
-            metric: RMSE
+        +Loss: {property: forces, metric: RMSE}
       weight: 3.0
     - component:
-        graph_pes.training.loss.Loss:
-            property: stress
-            metric: RMSE
+        +Loss: {property: stress, metric: RMSE}
       weight: 10.0
 
 fitting:
@@ -51,14 +47,14 @@ fitting:
         val_check_interval: 0.25
 
     optimizer:
-        graph_pes.training.opt.Optimizer:
+        +Optimizer:
             name: AdamW
             lr: 0.003
             weight_decay: 0.01
             amsgrad: true
     
     scheduler:
-        graph_pes.training.opt.LRScheduler:
+        +LRScheduler:
             name: ReduceLROnPlateau
             patience: 10
             factor: 0.8
