@@ -226,7 +226,40 @@ def prod(iterable):
 
 
 class PerElementParameter(torch.nn.Parameter):
-    """ """
+    """
+    A subclass of :class:`torch.nn.Parameter` that is indexed by atomic
+    number/s. Crucially, this subclass overrides the :meth:`numel` method,
+    for accurately counting the number of relevant and learnable parameters.
+
+    Examples
+    --------
+    Imagine the case where you have a model parameter with a value for each
+    element in the periodic table. If you only train the model on a dataset
+    containing a few elements, you don't want to count the total number of
+    parameters, as this will be unnecessarily large.
+
+    >>> # don't do this!
+    >>> per_element_parameter = torch.nn.Parameter(torch.randn(119))
+    >>> per_element_parameter.numel()
+    119
+    >>> per_element_parameter
+    Parameter containing:
+    tensor([ 1.2838e-01, -1.4507e+00,  1.3465e-01, -9.5786e-01, ...,
+            -1.3329e+00, -1.5515e+00,  2.1106e+00, -9.7268e-01],
+       requires_grad=True)
+
+    >>> # do this instead
+    >>> per_element_paramter = PerElementParameter.of_shape((1,))
+    >>> per_element_parameter.register_elements([1, 6, 8])
+    >>> per_element_parameter.numel()
+    3
+    >>> per_element_parameter
+    PerElementParameter({'O': -0.278, 'H': 0.157, 'C': -0.0379}, trainable=True)
+
+    ``graph-pes-train`` automatically registers all elements that a model
+    encounters during training, so you rarely need to call
+    :meth:`register_elements` yourself.
+    """
 
     def __new__(
         cls, data: Tensor, requires_grad: bool = True
@@ -253,6 +286,43 @@ class PerElementParameter(torch.nn.Parameter):
         default_value: float | None = None,
         requires_grad: bool = True,
     ) -> PerElementParameter:
+        """
+        Create a :class:`PerElementParameter` with a given shape for each
+        element in the periodic table.
+
+        Parameters
+        ----------
+        shape
+            The shape of the parameter for each element.
+        index_dims
+            The number of dimensions to index by.
+        default_value
+            The value to initialise the parameter with. If ``None``, the
+            parameter is initialised with random values.
+        requires_grad
+            Whether the parameter should be learnable.
+
+        Returns
+        -------
+        PerElementParameter
+            The created parameter.
+
+        Examples
+        --------
+        Create a parameter intended to be indexed by a single atomic number,
+        i.e. ``pep[Z]``:
+
+        >>> PerElementParameter.of_shape((3,)).shape
+        torch.Size([119, 3])
+        >>> PerElementParameter.of_shape((3, 4)).shape
+        torch.Size([119, 3, 4])
+
+        Create a parameter intended to be indexed by two atomic numbers, i.e.
+        ``pep[Z1, Z2]``:
+
+        >>> PerElementParameter.of_shape((3,), index_dims=2).shape
+        torch.Size([119, 119, 3])
+        """
         actual_shape = tuple([MAX_Z + 1] * index_dims) + shape
         if default_value is not None:
             data = torch.full(actual_shape, float(default_value))
@@ -270,6 +340,33 @@ class PerElementParameter(torch.nn.Parameter):
         default_value: float = 0.0,
         **values: float,
     ) -> PerElementParameter:
+        """
+        Create a :class:`PerElementParameter` containing a single value for
+        each element in the periodic table from a dictionary of values.
+
+        Parameters
+        ----------
+        requires_grad
+            Whether the parameter should be learnable.
+        default_value
+            The value to initialise the parameter with. If ``None``, the
+            parameter is initialised with random values.
+        values
+            A dictionary of values, indexed by element symbol.
+
+        Returns
+        -------
+        PerElementParameter
+            The created parameter.
+
+        Examples
+        --------
+        >>> from graph_pes.utils.nn import PerElementParameter
+        >>> pep = PerElementParameter.from_dict(H=1.0, O=2.0)
+        >>> pep.register_elements([1, 6, 8])
+        >>> pep
+        PerElementParameter({'H': 1.0, 'C': 0.0, 'O': 2.0}, trainable=True)
+        """
         pep = PerElementParameter.of_length(
             1, requires_grad=requires_grad, default_value=default_value
         )
@@ -291,6 +388,9 @@ class PerElementParameter(torch.nn.Parameter):
         default_value: float | None = None,
         requires_grad: bool = True,
     ) -> PerElementParameter:
+        """
+        Alias for ``PerElementParameter.of_shape((length,), **kwargs)``.
+        """
         return PerElementParameter.of_shape(
             (length,), index_dims, default_value, requires_grad
         )
@@ -301,6 +401,10 @@ class PerElementParameter(torch.nn.Parameter):
         cls,
         scaling_factor: float = 1.0,
     ) -> PerElementParameter:
+        """
+        Create a :class:`PerElementParameter` containing the covalent radii of
+        each element in the periodic table.
+        """
         pep = PerElementParameter.of_length(1, default_value=1.0)
         for Z in range(1, MAX_Z + 1):
             pep[Z] = torch.tensor(covalent_radii[Z]) * scaling_factor
@@ -417,7 +521,7 @@ def _rebuild_per_element_parameter(data, requires_grad, state):
 
 class PerElementEmbedding(torch.nn.Module):
     """
-    A per-element equivalent of `torch.nn.Embedding`.
+    A per-element equivalent of :class:`torch.nn.Embedding`.
 
     Parameters
     ----------

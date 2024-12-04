@@ -2,7 +2,8 @@
 PyTorch Helpers
 ###############
 
-.. autoclass:: graph_pes.utils.nn.PerElementParameter()
+.. autoclass:: graph_pes.utils.nn.PerElementParameter
+   :show-inheritance:
    :members:
 
 .. autoclass:: graph_pes.utils.nn.PerElementEmbedding
