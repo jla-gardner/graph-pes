@@ -17,4 +17,4 @@ data:
 loss: +PerAtomEnergyLoss()
 
 misc:
-    cutoff: 5.0
+    CUTOFF: 5.0
