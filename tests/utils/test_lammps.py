@@ -25,7 +25,7 @@ def test_lammps_model(compute_virial: bool):
     model = LennardJones(cutoff=CUTOFF)
     props: list[PropertyKey] = ["energy", "forces"]
     if compute_virial:
-        props.append("stress")
+        props.append("virial")
     outputs = model.predict(graph, properties=props)
 
     # create a LAMMPS model, and get LAMMPS predictions
@@ -40,9 +40,6 @@ def test_lammps_model(compute_virial: bool):
     if compute_virial:
         assert "virial" in lammps_outputs
         assert lammps_outputs["virial"].shape == (6,)
-        assert (
-            outputs["stress"].shape == lammps_outputs["stress"].shape == (3, 3)
-        )
 
     assert torch.allclose(
         outputs["energy"].float(),

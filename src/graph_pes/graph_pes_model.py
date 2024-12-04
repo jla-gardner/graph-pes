@@ -51,6 +51,9 @@ class GraphPESModel(nn.Module, ABC):
             * - :code:`"stress"`
               - :code:`(3, 3)`
               - :code:`(M, 3, 3)`
+            * - :code:`"virial"`
+              - :code:`(3, 3)`
+              - :code:`(M, 3, 3)`
 
     assuming an input of an :class:`~graph_pes.AtomicGraph` representing a
     single structure composed of ``N`` atoms, or an
@@ -71,7 +74,8 @@ class GraphPESModel(nn.Module, ABC):
     * ``"forces"``: as the negative gradient of the energy with respect to the
       atomic positions.
     * ``"stress"``: as the negative gradient of the energy with respect to a
-      symmetric expansion of the unit cell.
+      symmetric expansion of the unit cell, normalised by the cell volume.
+    * ``"virial"``: as ``-stress * volume``.
 
     For more details on how these are calculated, see :doc:`../theory`.
 
@@ -156,33 +160,38 @@ class GraphPESModel(nn.Module, ABC):
             The graph representation of the structure/s.
         properties
             The properties to predict. Can be any combination of
-            ``"energy"``, ``"forces"``, ``"stress"``, and ``"local_energies"``.
+            ``"energy"``, ``"forces"``, ``"stress"``, ``"virial"``, and
+            ``"local_energies"``.
         """
 
         # before anything, remove unnecessary edges:
         graph = trim_edges(graph, self.cutoff.item())
 
         # check to see if we need to infer any properties
-        infer_stress = (
-            "stress" in properties
-            and "stress" not in self.implemented_properties
-        )
         infer_forces = (
             "forces" in properties
             and "forces" not in self.implemented_properties
         )
+        infer_stress_information = (
+            # we need to infer stress information if we're asking for
+            # the stress or the virial and the model doesn't
+            # implement either of them direct
+            ("stress" in properties or "virial" in properties)
+            and "stress" not in self.implemented_properties
+            and "virial" not in self.implemented_properties
+        )
+        if infer_stress_information and not has_cell(graph):
+            raise ValueError("Can't predict stress without cell information.")
         infer_energy = (
-            any([infer_stress, infer_forces])
+            any([infer_stress_information, infer_forces])
             or "energy" not in self.implemented_properties
         )
-        if infer_stress and not has_cell(graph):
-            raise ValueError("Can't predict stress without cell information.")
 
         existing_positions = graph.R
         existing_cell = graph.cell
 
         # inference specific set up
-        if infer_stress:
+        if infer_stress_information:
             # See About>Theory in the graph-pes for an explanation of the
             # maths behind this.
             #
@@ -265,7 +274,7 @@ class GraphPESModel(nn.Module, ABC):
 
         # ugly triple if loops to be efficient with autograd
         # while also Torchscript compatible
-        if infer_forces and infer_stress:
+        if infer_forces and infer_stress_information:
             assert "energy" in predictions
             dE_dR, dE_dC = differentiate_all(
                 predictions["energy"],
@@ -273,6 +282,7 @@ class GraphPESModel(nn.Module, ABC):
                 keep_graph=self.training,
             )
             predictions["forces"] = -dE_dR
+            predictions["virial"] = -dE_dC
             predictions["stress"] = dE_dC / cell_volume
 
         elif infer_forces:
@@ -283,14 +293,29 @@ class GraphPESModel(nn.Module, ABC):
                 keep_graph=self.training,
             )
             predictions["forces"] = -dE_dR
-        elif infer_stress:
+        elif infer_stress_information:
             assert "energy" in predictions
             dE_dC = differentiate(
                 predictions["energy"],
                 change_to_cell,
                 keep_graph=self.training,
             )
+            predictions["virial"] = -dE_dC
             predictions["stress"] = dE_dC / cell_volume
+
+        # finally, we might not have needed autograd to infer stress/virial
+        # if the other was implemented on the base class:
+        if not infer_stress_information:
+            if (
+                "stress" in properties
+                and "stress" not in self.implemented_properties
+            ):
+                predictions["stress"] = -predictions["virial"] / cell_volume
+            if (
+                "virial" in properties
+                and "virial" not in self.implemented_properties
+            ):
+                predictions["virial"] = -predictions["stress"] * cell_volume
 
         # put things back to how they were before
         graph = AtomicGraph(  # can't use _replace here due to TorchScript
@@ -444,7 +469,7 @@ class GraphPESModel(nn.Module, ABC):
             "local_energies",
         ]
         if has_cell(graph):
-            properties.append("stress")
+            properties.extend(["stress", "virial"])
         return self.predict(graph, properties)
 
     def predict_energy(self, graph: AtomicGraph) -> torch.Tensor:
@@ -459,6 +484,10 @@ class GraphPESModel(nn.Module, ABC):
         """Convenience method to predict just the stress."""
         return self.predict(graph, ["stress"])["stress"]
 
+    def predict_virial(self, graph: AtomicGraph) -> torch.Tensor:
+        """Convenience method to predict just the virial."""
+        return self.predict(graph, ["virial"])["virial"]
+
     def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
         """Convenience method to predict just the local energies."""
         return self.predict(graph, ["local_energies"])["local_energies"]
@@ -467,7 +496,6 @@ class GraphPESModel(nn.Module, ABC):
     @property
     def elements_seen(self) -> list[str]:
         """The elements that the model has seen during training."""
-
         Zs = set()
         for param in self.parameters():
             if isinstance(param, PerElementParameter):

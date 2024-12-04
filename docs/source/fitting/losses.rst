@@ -5,7 +5,7 @@ Losses
 In ``graph-pes``, we distinguish between metrics and losses:
 
 * A :class:`~graph_pes.training.loss.Metric` is some function that takes two tensors and returns a scalar value measuring the discrepancy between them.
-* A :class:`~graph_pes.training.loss.Loss` acts to apply a given :class:`~graph_pes.training.loss.Metric` to some predictions and labels, where both of these inputs are dictionaries mapping from label keys (e.g. ``"energy"``, ``"forces"``, ``"stress"``) to tensors.
+* A :class:`~graph_pes.training.loss.Loss` acts to apply a given :class:`~graph_pes.training.loss.Metric` to some predictions and labels, where both of these inputs are dictionaries mapping from label keys (e.g. ``"energy"``, ``"forces"``, ``"stress"``, ``"virial"``) to tensors.
 
 
 Metrics

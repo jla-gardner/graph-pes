@@ -8,6 +8,17 @@ from graph_pes.atomic_graph import AtomicGraph, PropertyKey
 from graph_pes.graph_pes_model import GraphPESModel
 
 
+def full_3x3_to_voigt_6(tensor: torch.Tensor) -> torch.Tensor:
+    voigt_6 = torch.zeros(6, device=tensor.device, dtype=tensor.dtype)
+    voigt_6[0] = tensor[0, 0]
+    voigt_6[1] = tensor[1, 1]
+    voigt_6[2] = tensor[2, 2]
+    voigt_6[3] = tensor[0, 1]
+    voigt_6[4] = tensor[0, 2]
+    voigt_6[5] = tensor[1, 2]
+    return voigt_6
+
+
 def as_lammps_data(
     graph: AtomicGraph,
     compute_virial: bool = False,
@@ -46,7 +57,7 @@ class LAMMPSModel(torch.nn.Module):
         compute_virial = graph_data["compute_virial"].item()
         properties: list[PropertyKey] = ["energy", "forces", "local_energies"]
         if compute_virial:
-            properties.append("stress")
+            properties.append("virial")
 
         # graph_data is a dict, so we need to convert it to an AtomicGraph
         graph = AtomicGraph(
@@ -69,21 +80,7 @@ class LAMMPSModel(torch.nn.Module):
             # LAMMPS expects the **virial** in Voigt notation
             # we provide the **stress** in full 3x3 matrix notation
             # therefore, convert:
-            volume = graph.cell.det().abs().item()
-
-            assert "stress" in preds
-            virial_tensor = -preds["stress"] * volume
-            virial_voigt = torch.zeros(
-                6,
-                device=preds["stress"].device,
-                dtype=preds["stress"].dtype,
-            )
-            virial_voigt[0] = virial_tensor[0, 0]
-            virial_voigt[1] = virial_tensor[1, 1]
-            virial_voigt[2] = virial_tensor[2, 2]
-            virial_voigt[3] = virial_tensor[0, 1]
-            virial_voigt[4] = virial_tensor[0, 2]
-            preds["virial"] = virial_voigt  # type: ignore
+            preds["virial"] = full_3x3_to_voigt_6(preds["virial"])
 
         return preds  # type: ignore
 

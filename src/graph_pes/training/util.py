@@ -66,6 +66,7 @@ def sanity_check(model: GraphPESModel, batch: AtomicGraph) -> None:
         "forces": (N, 3),
         "energy": (S,),
         "stress": (S, 3, 3),
+        "virial": (S, 3, 3),
     }
 
     incorrect = []

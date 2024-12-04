@@ -226,6 +226,8 @@ def prod(iterable):
 
 
 class PerElementParameter(torch.nn.Parameter):
+    """ """
+
     def __new__(
         cls, data: Tensor, requires_grad: bool = True
     ) -> PerElementParameter:

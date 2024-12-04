@@ -202,7 +202,7 @@ class GraphPESCalculator(Calculator):
         if properties is None:
             properties = ["energy", "forces"]
             if all(map(has_cell, graphs)):
-                properties.append("stress")
+                properties.extend(["stress", "virial"])
 
         # Batched prediction
         tensor_results: list[dict[PropertyKey, torch.Tensor]] = []
@@ -216,9 +216,10 @@ class GraphPESCalculator(Calculator):
         ]
 
         # Convert stress tensors to Voigt notation
-        if "stress" in properties:
-            for r in results:
-                r["stress"] = full_3x3_to_voigt_6_stress(r["stress"])
+        for r in results:
+            for key in ["stress", "virial"]:
+                if key in r:
+                    r[key] = full_3x3_to_voigt_6_stress(r[key])
 
         return results
 
@@ -248,6 +249,8 @@ def _seperate(
             preds["energy"] = batched_prediction["energy"][idx]
         if "stress" in batched_prediction:
             preds["stress"] = batched_prediction["stress"][idx]
+        if "virial" in batched_prediction:
+            preds["virial"] = batched_prediction["virial"][idx]
 
         # per-atom properties
         if "forces" in batched_prediction:

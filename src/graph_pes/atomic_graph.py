@@ -31,12 +31,15 @@ from graph_pes.utils.misc import (
 DEFAULT_CUTOFF: Final[float] = 5.0
 
 
-PropertyKey: TypeAlias = Literal["local_energies", "forces", "energy", "stress"]
+PropertyKey: TypeAlias = Literal[
+    "local_energies", "forces", "energy", "stress", "virial"
+]
 ALL_PROPERTY_KEYS: Final[List[PropertyKey]] = [
     "local_energies",
     "forces",
     "energy",
     "stress",
+    "virial",
 ]
 
 if not TYPE_CHECKING and not is_being_documented():
@@ -255,6 +258,11 @@ class AtomicGraph(NamedTuple):
           
             (``(S, 3, 3)`` if batched)
           - stress tensor (see :doc:`../theory`)
+        * - :code:`"virial"`
+          - ``(3, 3)`` 
+          
+            (``(S, 3, 3)`` if batched)
+          - virial stress tensor (see :doc:`../theory`)
     """
 
     other: Dict[str, torch.Tensor]  # noqa: UP006 <- torchscript issue
@@ -287,8 +295,9 @@ class AtomicGraph(NamedTuple):
             An optional mapping of the form ``{key_on_structure:
             key_for_graph}`` defining how relevant properties are labelled on
             the :class:`ase.Atoms` object. If not provided, this function will
-            extract all of ``"energy"``, ``"forces"``, or ``"stress"`` from the
-            ``.info`` and ``.arrays`` dicts if they are present.
+            extract all of ``"energy"``, ``"forces"``, ``"stress"``, or
+            ``"virial"`` from the ``.info`` and ``.arrays`` dicts if they are
+            present.
         others_to_include
             An optional list of other ``.info``/``.arrays`` keys to include in
             the graph's ``other`` dict. The corresponding values will be
@@ -349,7 +358,7 @@ class AtomicGraph(NamedTuple):
             all_keys = set(structure.info) | set(structure.arrays)
             property_mapping = {
                 k: cast(PropertyKey, k)
-                for k in ["energy", "forces", "stress"]
+                for k in ["energy", "forces", "stress", "virial"]
                 if k in all_keys
             }
         if others_to_include is None:
@@ -361,7 +370,9 @@ class AtomicGraph(NamedTuple):
             if key in property_mapping:
                 property = property_mapping[key]
                 # ensure stress is always 3x3, not voigt notation
-                if property == "stress" and value.shape == (6,):
+                if property in ["stress", "virial"] and value.reshape(
+                    -1
+                ).shape == (6,):
                     value = voigt_6_to_full_3x3_stress(value)
                 properties[property] = torch.tensor(value, dtype=dtype)
 
@@ -559,7 +570,7 @@ def to_batch(
 
     properties: dict[PropertyKey, torch.Tensor] = {}
     # - per structure labels are concatenated along a new batch axis (0)
-    for key in ["energy", "stress"]:
+    for key in ["energy", "stress", "virial"]:
         if key in graphs[0].properties:
             properties[key] = torch.stack([g.properties[key] for g in graphs])
 
@@ -622,6 +633,14 @@ def is_batch(graph: AtomicGraph) -> bool:
 
 
 ############################### PROPERTIES ###############################
+
+
+def get_cell_volume(graph: AtomicGraph) -> float:
+    """
+    Get the volume of the unit cell.
+    """
+
+    return torch.det(graph.cell).abs().item()
 
 
 def number_of_atoms(graph: AtomicGraph) -> int:

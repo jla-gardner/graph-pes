@@ -23,7 +23,13 @@ Links: [Google Colab Quickstart](https://colab.research.google.com/github/jla-ga
 
 ## Quickstart
 
-For a 0-install quickstart experience, please see [this Google Colab](https://colab.research.google.com/github/jla-gardner/graph-pes/blob/main/docs/source/quickstart/quickstart.ipynb), which you can also find in our [documentation](https://jla-gardner.github.io/graph-pes/quickstart/quickstart.html).
+```bash
+pip install graph-pes
+wget https://tinyurl.com/graph-pes-quickstart-cgap17
+graph-pes-train quickstart-cgap17.yaml
+```
+
+Alternatively, for a 0-install quickstart experience, please see [this Google Colab](https://colab.research.google.com/github/jla-gardner/graph-pes/blob/main/docs/source/quickstart/quickstart.ipynb), which you can also find in our [documentation](https://jla-gardner.github.io/graph-pes/quickstart/quickstart.html).
 
 
 ## Contributing

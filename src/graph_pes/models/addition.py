@@ -89,18 +89,18 @@ class AdditionModel(GraphPESModel):
 
         if has_cell(graph):
             zeros["stress"] = torch.zeros_like(graph.cell)
-            properties.append("stress")
+            zeros["virial"] = torch.zeros_like(graph.cell)
 
-        total_predictions: dict[PropertyKey, torch.Tensor] = {
-            k: zeros[k] for k in properties
-        }
+        final_predictions = {}
+        for key in properties:
+            final_predictions[key] = zeros[key]
 
         for model in self.models.values():
             preds = model.predict(graph, properties=properties)
             for key, value in preds.items():
-                total_predictions[key] += value
+                final_predictions[key] += value
 
-        return total_predictions
+        return final_predictions
 
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         if not self._all_models_same_properties.item():
