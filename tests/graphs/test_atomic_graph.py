@@ -219,3 +219,14 @@ def test_angle_measures():
     # and a range of bond lengths
     for length in torch.linspace(0.5, 2, 10):
         check_angle_measures(1.0, length.item(), 123)
+
+
+def test_triplets_on_isolated_atoms():
+    # deliberately no neighbour list
+    graph = AtomicGraph.create_with_defaults(
+        R=torch.rand(3, 3), Z=torch.rand(3)
+    )
+    assert graph.neighbour_list.shape == (2, 0)
+
+    triplets, _ = neighbour_triplets(graph)
+    assert triplets.shape == (0, 3)

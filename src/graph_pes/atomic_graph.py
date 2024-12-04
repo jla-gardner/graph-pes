@@ -431,11 +431,11 @@ class AtomicGraph(NamedTuple):
         """
 
         if cell is None:
-            cell = torch.zeros(3, 3)
+            cell = torch.zeros(3, 3, device=R.device).float()
         if neighbour_list is None:
-            neighbour_list = torch.zeros(2, 0)
+            neighbour_list = torch.zeros(2, 0, device=R.device).long()
         if neighbour_cell_offsets is None:
-            neighbour_cell_offsets = torch.zeros(0, 3)
+            neighbour_cell_offsets = torch.zeros(0, 3, device=R.device).float()
         if properties is None:
             properties = {}
         if other is None:
@@ -686,6 +686,9 @@ def neighbour_vectors(graph: AtomicGraph) -> torch.Tensor:
 
     # avoid tuple de-structuring to keep torchscript happy
     i, j = graph.neighbour_list[0], graph.neighbour_list[1]  # (E,)
+    if i.shape[0] == 0:
+        return torch.zeros(0, 3, device=graph.R.device)
+
     cell_per_edge = cell[batch[i]]  # (E, 3, 3)
     distance_offsets = torch.einsum(
         "kl,klm->km",
@@ -848,6 +851,12 @@ def neighbour_triplets(graph: AtomicGraph) -> Tuple[torch.Tensor, torch.Tensor]:
         vkj = relevant_vectors[_idx]  # (N**2 - N, 2, 3)
         triplets_vectors.append(vkj)
 
+    if len(triplet_idxs) == 0:
+        return (
+            torch.zeros(0, 3, device=graph.R.device).long(),
+            torch.zeros(0, 2, 3, device=graph.R.device),
+        )
+
     triplet_idxs = torch.vstack(triplet_idxs)
     triplets_vectors = torch.vstack(triplets_vectors)
 
@@ -879,6 +888,14 @@ def triplet_bond_descriptors(
     """
 
     _, vector_triplets = neighbour_triplets(graph)
+
+    if vector_triplets.shape[0] == 0:
+        return (
+            torch.zeros(0, device=graph.R.device).float(),
+            torch.zeros(0, device=graph.R.device).float(),
+            torch.zeros(0, device=graph.R.device).float(),
+        )
+
     v1 = vector_triplets[:, 0]
     v2 = vector_triplets[:, 1]
 
