@@ -447,3 +447,36 @@ def groups_of(
 
     if batch and not drop_last:
         yield batch
+
+
+def angle_spanned_by(v1: torch.Tensor, v2: torch.Tensor):
+    """
+    Calculate angles between corresponding vectors in two batches.
+
+    Parameters
+    ----------
+    v1
+        First batch of vectors, shape (N, 3)
+    v2
+        Second batch of vectors, shape (N, 3)
+
+    Returns
+    -------
+    torch.Tensor
+        Angles in radians, shape (N,)
+    """
+    # Compute dot product
+    dot_product = torch.sum(v1 * v2, dim=1)
+
+    # Compute magnitudes
+    v1_mag = torch.linalg.vector_norm(v1, dim=1)
+    v2_mag = torch.linalg.vector_norm(v2, dim=1)
+
+    # Compute cosine of angle, add small epsilon to prevent division by zero
+    cos_angle = dot_product / (v1_mag * v2_mag + 1e-8)
+
+    # Clamp cosine values to handle numerical instabilities
+    cos_angle = torch.clamp(cos_angle, -1.0, 1.0)
+
+    # Compute angle using arccos
+    return torch.arccos(cos_angle)
