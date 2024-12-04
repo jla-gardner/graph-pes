@@ -7,11 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+Support for `"virial"` property predictions, as well as `"stress"`.
+
 ### Changed
 
 Migrated to using [data2objects](https://github.com/jla-gardner/data2objects) for configurations - this affects all configuration files.
 
 Improved saving behaviour of models.
+
+Improved the documentation for the `PerElementParameter` class.
 
 ## [0.0.7] - 2024-12-02
 
