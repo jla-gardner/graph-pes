@@ -1,13 +1,20 @@
+general:
+    seed: 42
+    run_id: mace-c-gap-20u
+
+misc:
+    CUTOFF: 3.7
+
 model:
     offset: +LearnableOffset()
     core-repulsion:
         +ZBLCoreRepulsion:
             trainable: true
-            cutoff: 3.7
+            cutoff: "!~/misc/CUTOFF"
     many-body:
         +MACE:
             elements: [C]
-            cutoff: 3.7
+            cutoff: "!~/misc/CUTOFF"
             channels: 128
             hidden_irreps: 0e + 1o
             self_connection: true
@@ -15,7 +22,7 @@ model:
 data:
     +load_atoms_dataset:
         id: C-GAP-20U
-        cutoff: 3.7
+        cutoff: "!~/misc/CUTOFF"
         n_train: 5000
         n_valid: -1
         split: random
@@ -23,19 +30,19 @@ data:
 loss:
     - component: +PerAtomEnergyLoss()
     - component:
-        +Loss:
-            property: forces
-            metric: RMSE
+          +Loss:
+              property: forces
+              metric: RMSE
       weight: 3.0
 
 fitting:
     trainer_kwargs:
         max_epochs: 1000
         accelerator: gpu
-    
+
     callbacks:
         - +graph_pes.training.callbacks.DumpModel:
-            every_n_val_checks: 10
+              every_n_val_checks: 10
 
     early_stopping_patience: 50
 
@@ -53,7 +60,3 @@ fitting:
     loader_kwargs:
         batch_size: 32
         num_workers: 4
-
-general:
-    seed: 42
-    run_id: mace-c-gap-20u

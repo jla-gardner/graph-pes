@@ -40,7 +40,6 @@
     :hidden:
 
     theory
-    tech-stack
     development
 
 
@@ -88,7 +87,7 @@ A 3-in-1 toolset:
 Quick-start
 ===========
 
-Open any of these notebooks to get started. Install ``graph-pes`` to follow along locally, or run the code in the cloud using Google Colab.
+Open any of these notebooks to get started. Install ``graph-pes`` to follow along locally, or run the code in the cloud using `Google Colab <https://colab.research.google.com/github/jla-gardner/graph-pes/blob/main/docs/source/quickstart/quickstart.ipynb>`__.
 
 .. grid:: 1 2 3 3
     :gutter: 2

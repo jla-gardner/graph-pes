@@ -3,14 +3,18 @@ model:
     +SchNet:
         layers: 3
         channels: 64
+        cutoff: "!~/misc/CUTOFF"
 
 # ...using some of the QM7 structures...
 data:
     +load_atoms_dataset:
         id: QM7
-        cutoff: 5.0
+        cutoff: "!~/misc/CUTOFF"
         n_train: 5_000
         n_valid: 100
 
 # ...training on energy labels
 loss: +PerAtomEnergyLoss()
+
+misc:
+    cutoff: 5.0

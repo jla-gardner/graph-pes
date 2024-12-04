@@ -63,17 +63,71 @@ By default, ``graph-pes-train`` will attempt to use all available GPUs. You can 
     $ export CUDA_VISIBLE_DEVICES=0,1
     $ graph-pes-train config.yaml
 
-Example configs:
-----------------
+Config files
+------------
 
-The minimal config required to use ``graph-pes-train`` provides a model, some data and a loss function:
+Configuration for the ``graph-pes-train`` command line tool is represented as a nested dictionary. The values of this dictionary are sourced from three places:
+
+1. the default values defined in `defaults.yaml <https://github.com/jla-gardner/graph-pes/blob/main/src/graph_pes/config/defaults.yaml>`_
+2. values you define in the config file/s you pass to ``graph-pes-train``:  ``<config-1.yaml> <config-2.yaml> ...``
+3. additional command line arguments you pass to ``graph-pes-train``: ``<nested/key=value> <nested/key=value> ...``
+
+The final nested configuration dictionary is built up from these values in a left to right manner, with later items taking precedence over earlier ones in the case of conflicts.
+
+The structure of config files used by ``graph-pes-train`` is that of a ``.yaml`` file containing a nested dictionary of items:
 
 .. _minimal config:
-.. dropdown:: ``minimal.yaml``
 
-    .. literalinclude:: ../../../configs/minimal.yaml
-        :language: yaml
+.. literalinclude:: ../../../configs/minimal.yaml
+    :caption: ``minimal.yaml``
+    :language: yaml
 
+For a full list of available options in these config files, see :ref:`the below API reference <complete config API>` and :ref:`the kitchen sink config example <kitchen sink config>`.
+
+.. note::
+    
+    Under-the-hood, ``graph-pes-train`` turns the final nested config dictionary into a :class:`~graph_pes.config.Config` object via a 3 step process:
+
+    1. all reference strings (of the form ``!~/absolute/path/to/object`` or ``!../relative/path/to/object``) are replaced with the corresponding value.
+       For example:
+
+       .. code-block:: yaml
+
+           a: {b: "!~/c"}  # absolute reference
+           c: 2
+           d: {e: "!../c"}  # relative reference
+
+       will be transformed into:
+
+       .. code-block:: yaml
+
+           a: {b: 2}
+           c: 2
+           d: {e: 2}
+    
+    2. all "special" keys starting with a ``+`` are interpreted as references to Python objects. These are imported and replaced with the actual 
+       object they point to using the `data2objects <https://github.com/jla-gardner/data2objects>`__ package - see there for more details.
+       You can use this format to point to any Python object, defined in ``graph-pes`` or otherwise! To point to your own custom classes/objects/functions,
+       use the fully-qualified name, e.g. ``+my_module.MyModelClass``. By default, ``graph-pes-train`` will look for objects within the following modules:
+
+       .. code-block:: python
+
+           graph_pes
+           graph_pes.models
+           graph_pes.training
+           graph_pes.training.opt
+           graph_pes.training.loss
+           graph_pes.data
+
+       and hence ``+NequIP`` is shorthand for ``+graph_pes.models.NequIP``.
+       Ending the name with ``()`` will call the function/class constructor with no arguments. Pointing the key to a nested dictionary will pass those values as keyword arguments to the constructor. Hence, above, ``+PerAtomEnergyLoss()`` will resolve to a ``~graph_pes.training.loss.PerAtomEnergyLoss`` object, while the :class:`~graph_pes.models.SchNet` model will be constructed with the keyword arguments specified in the config.
+    
+    3. the resulting dictionary of python objects is then converted, using `dacite <https://github.com/konradhalas/dacite/tree/master/>`__, into a final nested :class:`~graph_pes.config.Config` object.
+
+Example configs
++++++++++++++++
+
+The minimal config required to use ``graph-pes-train`` provides a model, some data and a loss function, as can be seen :ref:`above <minimal config>`.
 This config can be so small because ``graph-pes-train`` loads in 
 default values from ``defaults.yaml`` and overwrites them with any 
 values you specify in the config file (see below):
@@ -83,6 +137,13 @@ values you specify in the config file (see below):
     .. literalinclude:: ../../../src/graph_pes/config/defaults.yaml
         :language: yaml
 
+Note the use of the :attr:`~graph_pes.config.Config.misc` section of the config to store constants, which can then be referenced multiple times elsewhere in the config - this allows you to easily scan over these constants in an elegant manner:
+
+.. code-block:: bash
+
+    $ for cutoff in 3.5 4.5 5.5; do
+    >     graph-pes-train realistic.yaml misc/CUTOFF=$cutoff
+    > done
 
 A more realistic configuration might look like this:
 
@@ -96,6 +157,7 @@ A more realistic configuration might look like this:
 
 Finally, here is a `"kitchen sink"` config that attempts to specify every possible option:
 
+.. _kitchen sink config:
 .. dropdown:: ``kitchen-sink.yaml``
 
     .. literalinclude:: ../../../configs/kitchen-sink.yaml
@@ -105,67 +167,21 @@ Finally, here is a `"kitchen sink"` config that attempts to specify every possib
 For more information as to the structure of these config files, and the various options available, read on:
 
 
+.. _complete config API:
+
 Complete ``config`` API
 -----------------------
 
-Configuration for the ``graph-pes-train`` command line tool is represented as a nested dictionary. The values of this dictionary are sourced from three places:
-
-1. the default values defined in `defaults.yaml <https://github.com/jla-gardner/graph-pes/blob/main/src/graph_pes/config/defaults.yaml>`_
-2. values you define in the config file/s you pass to ``graph-pes-train``:  ``<config-1.yaml> <config-2.yaml> ...``
-3. additional command line arguments you pass to ``graph-pes-train``: ``<nested/key=value> <nested/key=value> ...``
-
-The final nested configuration dictionary is built up from these values in a left to right manner, with later items taking precedence over earlier ones in the case of conflicts.
-
-For example:
-
-.. code-block:: bash
-
-    graph-pes-train minimal.yaml model/+SchNet/layers=2
-
-
-will train a model :class:`~graph_pes.models.SchNet` model with **2** layers (rather than the 3 specified in :ref:`minimal.yaml <minimal config>` above).
-
-
-Under-the-hood, ``graph-pes-train`` uses `dacite <https://github.com/konradhalas/dacite/tree/master/>`_ to convert this nested configuration dictionary into a series of nested dataclasses, the structure of which is defined by the :class:`~graph_pes.config.Config` dataclass, and subsequent children.
-
-.. note::
-
-    Several configuration options expect you to point towards some data
-    that can be turned into a Python object. The format for this is as follows. To point to:
-
-    * an object defined in some module, simplify specify the **fully qualified name**,
-      e.g. ``my_module.my_object``.
-    * a function that you want to use the return value of, append ``()`` to the name, e.g.
-      ``my_module.my_function()``. 
-    * the return value of some function/class constructor for which you also want to provide arguments, use a nested dictionary structure like so:
-
-      .. code-block:: yaml
-
-            graph_pes.models.SchNet:
-                cutoff: 5.0
-                layers: 3
-
-      hence another way to point to the return value of some function with no arguments is:
-
-      .. code-block:: yaml
-
-            my_module.my_function: {}
-
-    Use this format to point to any Python object, defined in ``graph-pes`` or otherwise. To prevent malicious execution of
-    arbitrary code, ``graph-pes-train`` will only attempt to import and/or execute code that you have marked as safe using
-    a ``,`` seperated list of module names exported to the ``GRAPH_PES_ALLOW_IMPORT`` environment variable. The above therefore requires:
-    ``GRAPH_PES_ALLOW_IMPORT=my_module graph-pes-train <config.yaml>``.
-
 .. autoclass:: graph_pes.config.Config()
     :members:
-    :exclude-members: hash
+    :exclude-members: from_raw_config_dicts
 
 
 Callbacks
 ---------
 
 Callbacks can be added to the trainer by specifying them in the ``callbacks`` section of the config file. 
-You can point to any class that inherits from :class:`~pytorch_lightning.Callback`. We have implemented a few useful ones:
+You can point to any class that inherits from the PyTorch Lightning :class:`~pytorch_lightning.Callback` class. We have implemented a few useful ones:
 
 .. autoclass:: graph_pes.training.callbacks.OffsetLogger
 

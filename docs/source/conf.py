@@ -65,12 +65,13 @@ nitpick_ignore = [
     ("py:class", "e3nn.*"),
     ("py:class", "optional"),
     ("py:class", "o3.Irreps"),
-    ("py:class", "graph_pes.config.config.LossSpec"),
+    ("py:class", "graph_pes.config.config.WeightedLoss"),
     ("py:class", "graph_pes.config.config.FittingConfig"),
     ("py:class", "graph_pes.config.config.SWAConfig"),
     ("py:class", "graph_pes.config.config.GeneralConfig"),
     ("py:class", "graph_pes.config.config.TorchConfig"),
     ("py:class", "pytorch_lightning.Callback"),
+    ("py:class", "pytorch_lightning.callbacks.callback.Callback"),
 ]
 
 # override the default css to match the furo theme
