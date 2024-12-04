@@ -19,4 +19,4 @@ Useful Types and Aliases
 
 .. class:: graph_pes.atomic_graph.PropertyKey
 
-    Type alias for ``Literal["energy", "forces", "stress", "local_energies"]``.
+    Type alias for ``Literal["energy", "forces", "stress", "virial", "local_energies"]``.

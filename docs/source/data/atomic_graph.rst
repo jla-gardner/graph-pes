@@ -47,7 +47,8 @@ work for both isolated and batched :class:`~graph_pes.AtomicGraph` instances.
 .. autofunction:: graph_pes.atomic_graph.available_properties
 .. autofunction:: graph_pes.atomic_graph.number_of_structures
 .. autofunction:: graph_pes.atomic_graph.structure_sizes
-
+.. autofunction:: graph_pes.atomic_graph.neighbour_triplets
+.. autofunction:: graph_pes.atomic_graph.triplet_bond_descriptors
 
 Graph Operations
 ----------------
