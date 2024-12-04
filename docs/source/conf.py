@@ -108,3 +108,6 @@ nbsphinx_prolog = """
     </style>
 """
 nbsphinx_prompt_width = "0"
+
+pygments_style = "friendly"
+pygments_dark_style = "monokai"
