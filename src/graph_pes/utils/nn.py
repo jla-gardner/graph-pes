@@ -276,6 +276,12 @@ class PerElementParameter(torch.nn.Parameter):
         self._index_dims: int = 1
 
     def register_elements(self, Zs: Iterable[int]) -> None:
+        """
+        Register the elements that are relevant for the parameter.
+
+        This is typically only used internally - you shouldn't call this
+        yourself in any of your model definitions.
+        """
         self._accessed_Zs.update(sorted(Zs))
 
     @classmethod
