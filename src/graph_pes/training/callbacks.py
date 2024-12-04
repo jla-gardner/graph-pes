@@ -10,6 +10,9 @@ from ase.data import chemical_symbols
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.addition import AdditionModel
 from graph_pes.models.offsets import LearnableOffset
+from graph_pes.training.util import VALIDATION_LOSS_KEY
+from graph_pes.utils.lammps import deploy_model
+from graph_pes.utils.logger import logger
 from pytorch_lightning import Callback, LightningModule, Trainer
 from pytorch_lightning.loggers import Logger
 
@@ -29,6 +32,15 @@ class GraphPESCallback(Callback, ABC):
 
     def get_model(self, pl_module: LightningModule) -> GraphPESModel:
         return cast(GraphPESModel, pl_module.model)
+
+    def get_model_on_cpu(self, pl_module: LightningModule) -> GraphPESModel:
+        model = self.get_model(pl_module)
+        model = copy.deepcopy(model)
+        model.to("cpu")
+        return model
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(root={self.root})"
 
 
 class DumpModel(GraphPESCallback):
@@ -57,8 +69,7 @@ class DumpModel(GraphPESCallback):
 
         model_path = self.root / "dumps" / f"model_{epoch}.pt"
         model_path.parent.mkdir(exist_ok=True)
-        clone = copy.deepcopy(self.get_model(pl_module))
-        torch.save(clone.to("cpu"), model_path)
+        torch.save(self.get_model_on_cpu(pl_module), model_path)
 
 
 def log_offset(model: LearnableOffset, logger: Logger):
@@ -91,3 +102,47 @@ class OffsetLogger(GraphPESCallback):
         offsets = [c for c in model.models if isinstance(c, LearnableOffset)]
         if offsets:
             log_offset(offsets[0], trainer.logger)
+
+
+class SaveBestModel(GraphPESCallback):
+    """
+    Save the best model to ``<output_dir>/best_model.pt``.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.best_val_loss = float("inf")
+
+    def on_validation_end(self, trainer: Trainer, pl_module: LightningModule):
+        if not trainer.is_global_zero or not self.root:
+            return
+
+        # get current validation loss
+        current_loss = trainer.callback_metrics.get(VALIDATION_LOSS_KEY, None)
+        if current_loss is None:
+            return
+
+        # if the validation loss has improved, save the model
+        if current_loss < self.best_val_loss:
+            self.best_val_loss = current_loss
+            cpu_model = self.get_model_on_cpu(pl_module)
+            logger.debug(f"New best model: validation loss {current_loss}")
+
+            # log the final path to the trainer.logger.summary
+            model_path = self.root / "model.pt"
+            lammps_model_path = self.root / "lammps_model.pt"
+
+            assert trainer.logger is not None
+            trainer.logger.log_hyperparams(
+                {
+                    "model_path": model_path,
+                    "lammps_model_path": lammps_model_path,
+                }
+            )
+            torch.save(cpu_model, model_path)
+            logger.debug(f"Model saved to {model_path}")
+
+            deploy_model(cpu_model, path=lammps_model_path)
+            logger.debug(
+                f"Deployed model for use with LAMMPS to {lammps_model_path}"
+            )

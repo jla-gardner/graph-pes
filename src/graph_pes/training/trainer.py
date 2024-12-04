@@ -8,7 +8,7 @@ from graph_pes.config import FittingOptions
 from graph_pes.data.datasets import FittingData
 from graph_pes.data.loader import GraphDataLoader
 from graph_pes.graph_pes_model import GraphPESModel
-from graph_pes.training.callbacks import OffsetLogger
+from graph_pes.training.callbacks import OffsetLogger, SaveBestModel
 from graph_pes.training.loss import TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
 from graph_pes.training.task import PESLearningTask
@@ -79,6 +79,7 @@ def train_with_lightning(
 
     # - train the model
     error = None
+    logger.info("Starting fit...")
     try:
         trainer.fit(task, train_loader, valid_loader)
     except Exception as e:
@@ -111,7 +112,7 @@ def create_trainer(
     callbacks.extend(kwarg_overloads.pop("callbacks", []))
 
     # add on default callbacks
-    callbacks.append(ModelTimer())
+    callbacks.extend([ModelTimer(), SaveBestModel()])
 
     if not any(isinstance(c, ProgressBar) for c in callbacks):
         callbacks.append(

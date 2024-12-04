@@ -14,7 +14,6 @@ from graph_pes.config import Config, get_default_config_values
 from graph_pes.scripts.generation import config_auto_generation
 from graph_pes.training.callbacks import GraphPESCallback
 from graph_pes.training.trainer import create_trainer, train_with_lightning
-from graph_pes.utils.lammps import deploy_model
 from graph_pes.utils.logger import log_to_file, logger, set_level
 from graph_pes.utils.misc import (
     build_single_nested_dict,
@@ -267,10 +266,6 @@ def train_from_config(config_data: dict):
         callbacks.append(config.fitting.swa.instantiate_lightning_callback())
     callbacks.extend(config.fitting.callbacks)
 
-    for cb in callbacks:
-        if isinstance(cb, GraphPESCallback):
-            cb._register_root(output_dir)
-
     trainer = create_trainer(
         early_stopping_patience=config.fitting.early_stopping_patience,
         logger=lightning_logger,
@@ -280,6 +275,12 @@ def train_from_config(config_data: dict):
         progress=config.general.progress,
         callbacks=callbacks,
     )
+
+    actual_callbacks: list[pl.Callback] = trainer.callbacks  # type: ignore
+    for cb in actual_callbacks:
+        if isinstance(cb, GraphPESCallback):
+            cb._register_root(output_dir)
+
     assert trainer.logger is not None
     trainer.logger.log_hyperparams(config_data)
 
@@ -303,34 +304,6 @@ def train_from_config(config_data: dict):
     total_loss = config.get_loss()
     log(total_loss)
 
-    def save_model():
-        if not is_rank_0:
-            return
-
-        try:
-            # place model onto cpu
-            nonlocal model
-            model = model.to("cpu")
-
-            # log the final path to the trainer.logger.summary
-            model_path = output_dir / "model.pt"
-            lammps_model_path = output_dir / "lammps_model.pt"
-
-            assert trainer.logger is not None
-            trainer.logger.log_hyperparams(
-                {
-                    "model_path": model_path,
-                    "lammps_model_path": lammps_model_path,
-                }
-            )
-            torch.save(model, model_path)
-            log(f"Model saved to {model_path}")
-            deploy_model(model, path=lammps_model_path)
-            log(f"Deployed model for use with LAMMPS to {lammps_model_path}")
-
-        except Exception as e:
-            logger.error(f"Failed to save model: {e}")
-
     logger.info(f"Starting training on rank {trainer.global_rank}.")
     try:
         train_with_lightning(
@@ -345,15 +318,11 @@ def train_from_config(config_data: dict):
 
     except Exception as e:
         cleanup()
-        save_model()
         logger.error(f"Training failed: {e}")
         raise e
 
     log("Training complete.")
-
-    save_model()
     cleanup()
-
     log(
         "Post-training cleanup complete. "
         "Awaiting final pytorch lightning shutdown..."
