@@ -93,6 +93,8 @@ class PESLearningTask(pl.LightningModule):
                 val_metrics.append(Loss("forces", RMSE()))
             if "stress" in graph.properties:
                 val_metrics.append(Loss("stress", RMSE()))
+            if "virial" in graph.properties:
+                val_metrics.append(Loss("virial", RMSE()))
 
             for metric in val_metrics:
                 if metric.name in total_loss_result.components:
