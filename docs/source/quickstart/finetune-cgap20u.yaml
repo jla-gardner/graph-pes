@@ -12,12 +12,14 @@ model:
 data:
     train:
         +file_dataset:
+            # take the first 1280 structures from train-cgap20u.xyz
             path: train-cgap20u.xyz
             cutoff: 3.7
             n: 1280
             shuffle: false
     valid:
         +file_dataset:
+            # use all structures from val-cgap20u.xyz
             path: val-cgap20u.xyz
             cutoff: 3.7
 
