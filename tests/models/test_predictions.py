@@ -93,7 +93,7 @@ def test_stress_and_virial():
     torch.testing.assert_close(s, -v / volume)
 
     # ensure correct scaling
-    np.prod = np.product  # fix for numpy 1.25
+    np.product = np.prod  # fix ase for new versions of numpy
     structure2 = structure.copy().repeat((2, 2, 2))
     graph2 = AtomicGraph.from_ase(structure2, cutoff=5.0)
     s2 = model.predict_stress(graph2)
