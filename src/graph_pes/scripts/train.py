@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import os
+import random
 import shutil
 from datetime import datetime
 from hashlib import sha256
 from pathlib import Path
 
-import pytorch_lightning
+import numpy as np
 import torch
 import yaml
 from graph_pes.config import Config, get_default_config_values
@@ -23,6 +25,15 @@ from graph_pes.utils.misc import (
 )
 from pytorch_lightning.loggers import CSVLogger
 from pytorch_lightning.loggers import WandbLogger as PTLWandbLogger
+
+
+def set_global_seed(seed: int):
+    # a non-verbose version of pl.seed_everything
+    os.environ["PL_GLOBAL_SEED"] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    os.environ["PL_SEED_WORKERS"] = "0"
 
 
 class WandbLogger(PTLWandbLogger):
@@ -165,13 +176,13 @@ def train_from_config(config_data: dict):
     # information from rank 0 to other ranks by saving information into files
     # in this directory.
 
-    config_data, config = Config.from_raw_config_dicts(config_data)
-    communication_dir = Path(config.general.root_dir) / ".communication"
-
     # the config will be shared across all ranks, but will be different
     # between different training runs: hence a sha256 hash of the config
     # is a good unique identifier for the training run:
     training_run_id = sha256(str(config_data).encode()).hexdigest()
+    communication_dir = (
+        Path(config_data["general"]["root_dir"]) / ".communication"
+    )
     training_run_dir = communication_dir / training_run_id
     is_rank_0 = not training_run_dir.exists()
     training_run_dir.mkdir(exist_ok=True, parents=True)
@@ -185,15 +196,24 @@ def train_from_config(config_data: dict):
             if not any(communication_dir.iterdir()):
                 shutil.rmtree(communication_dir)
 
-    log = (lambda *args, **kwargs: None) if not is_rank_0 else logger.info
+    set_level(config_data["general"]["log_level"])
+    info = (lambda *args, **kwargs: None) if not is_rank_0 else logger.info
+    debug = (lambda *args, **kwargs: None) if not is_rank_0 else logger.debug
+
+    now_ms = datetime.now().strftime("%F %T.%f")[:-3]
+    info(f"Started `graph-pes-train` at {now_ms}")
+
+    debug("Parsing config...")
+    config_data, config = Config.from_raw_config_dicts(config_data)
+    info("Successfully parsed config.")
 
     # torch things
     prec = config.general.torch.float32_matmul_precision
     torch.set_float32_matmul_precision(prec)
-    logger.info(f"Using {prec} precision for float32 matrix multiplications.")
+    debug(f"Using {prec} precision for float32 matrix multiplications.")
 
     ftype = config.general.torch.dtype
-    logger.info(f"Using {ftype} as default dtype.")
+    debug(f"Using {ftype} as default dtype.")
     torch.set_default_dtype(
         {
             "float16": torch.float16,
@@ -208,12 +228,11 @@ def train_from_config(config_data: dict):
     torch.jit.set_fusion_strategy([("DYNAMIC", 4)])
 
     # general things:
-    pytorch_lightning.seed_everything(config.general.seed)
-    set_level(config.general.log_level)
-    now_ms = datetime.now().strftime("%F %T.%f")[:-3]
-    logger.info(f"Started training at {now_ms}")
+    set_global_seed(config.general.seed)
 
     # generate / look up the output directory for this training run
+    # and handle the case where there is an ID collision by incrementing
+    # the version number
     if is_rank_0:
         # set up directory structure
         if config.general.run_id is None:
@@ -235,8 +254,6 @@ def train_from_config(config_data: dict):
                 )
 
         output_dir.mkdir(parents=True)
-        # save the config, but with the run ID updated
-        config_data["general"]["run_id"] = output_dir.name
         with open(output_dir / "train-config.yaml", "w") as f:
             yaml.dump(config_data, f)
 
@@ -248,7 +265,19 @@ def train_from_config(config_data: dict):
         # get the output directory from rank 0
         with open(training_run_dir / OUTPUT_DIR) as f:
             output_dir = Path(f.read())
-    log(f"Output directory: {output_dir}")
+
+    # update the run id
+    config_data["general"]["run_id"] = output_dir.name
+    config.general.run_id = output_dir.name
+    info(f"ID for this training run: {config.general.run_id}")
+    info(f"""\
+Output for this training run can be found at:
+   └─ {output_dir}
+      ├─ logs/rank-0.log    # find a verbose log here
+      ├─ model.pt           # the best model
+      ├─ lammps_model.pt    # the best model deployed to LAMMPS
+      └─ train-config.yaml  # the complete config used for this run\
+""")
 
     # set up a logger on every rank - PTL handles this gracefully so that
     # e.g. we don't spin up >1 wandb experiment
@@ -256,16 +285,19 @@ def train_from_config(config_data: dict):
         lightning_logger = WandbLogger(output_dir, **config.wandb)
     else:
         lightning_logger = CSVLogger(save_dir=output_dir, name="")
-    log(f"Logging using {lightning_logger}")
+    debug(f"Logging using {lightning_logger}")
 
     # create the trainer
     trainer_kwargs = {**config.fitting.trainer_kwargs}
 
+    # extract the callbacks from trainer_kwargs, since we
+    # handle them specially below
     callbacks = trainer_kwargs.pop("callbacks", [])
     if config.fitting.swa is not None:
         callbacks.append(config.fitting.swa.instantiate_lightning_callback())
     callbacks.extend(config.fitting.callbacks)
 
+    debug("Creating trainer...")
     trainer = create_trainer(
         early_stopping_patience=config.fitting.early_stopping_patience,
         logger=lightning_logger,
@@ -276,6 +308,8 @@ def train_from_config(config_data: dict):
         callbacks=callbacks,
     )
 
+    # special handling for GraphPESCallback: we need to register the
+    # output directory with it so that it knows where to save the model etc.
     actual_callbacks: list[pl.Callback] = trainer.callbacks  # type: ignore
     for cb in actual_callbacks:
         if isinstance(cb, GraphPESCallback):
@@ -288,23 +322,24 @@ def train_from_config(config_data: dict):
     log_to_file(file=output_dir / "logs" / f"rank-{trainer.global_rank}.log")
 
     # instantiate and log things
-    log(config)
+    debug(f"Config:\n{config_data}")
 
     model = config.get_model()  # gets logged later
 
     data = config.get_data()
-    log(data)
+    debug(f"Data:\n{data}")
 
     optimizer = config.fitting.optimizer
-    log(optimizer)
+    debug(f"Optimizer:\n{optimizer}")
 
     scheduler = config.fitting.scheduler
-    log(scheduler if scheduler is not None else "No LR scheduler.")
+    _scheduler_str = scheduler if scheduler is not None else "No LR scheduler."
+    debug(f"Scheduler:\n{_scheduler_str}")
 
     total_loss = config.get_loss()
-    log(total_loss)
+    debug(f"Total loss:\n{total_loss}")
 
-    logger.info(f"Starting training on rank {trainer.global_rank}.")
+    debug(f"Starting training on rank {trainer.global_rank}.")
     try:
         train_with_lightning(
             trainer,
@@ -321,11 +356,11 @@ def train_from_config(config_data: dict):
         logger.error(f"Training failed: {e}")
         raise e
 
-    log("Training complete.")
+    info("Training complete.")
     cleanup()
-    log(
+    info(
         "Post-training cleanup complete. "
-        "Awaiting final pytorch lightning shutdown..."
+        "Awaiting final Lightning and W&B shutdown..."
     )
 
 

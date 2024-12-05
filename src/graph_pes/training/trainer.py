@@ -57,7 +57,7 @@ def train_with_lightning(
     valid_loader = GraphDataLoader(data.valid, **loader_kwargs)
 
     # - maybe do some pre-fitting
-    if trainer.global_rank == 0 and fit_config.pre_fit_model:
+    if fit_config.pre_fit_model:
         pre_fit_dataset = data.train
         if fit_config.max_n_pre_fit is not None:
             pre_fit_dataset = pre_fit_dataset.sample(fit_config.max_n_pre_fit)
@@ -72,6 +72,7 @@ def train_with_lightning(
         log_model_info(model, trainer.logger)
 
     # - sanity checks
+    logger.info("Sanity checking the model...")
     sanity_check(model, next(iter(train_loader)))
 
     # - create the task (a pytorch lightning module)

@@ -24,7 +24,7 @@ def log_model_info(
 ) -> None:
     """Log the number of parameters in a model."""
 
-    logger.info(f"Model:\n{model}")
+    logger.debug(f"Model:\n{model}")
 
     if isinstance(model, AdditionModel):
         model_names = [
