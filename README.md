@@ -16,7 +16,7 @@ Links: [Google Colab Quickstart](https://colab.research.google.com/github/jla-ga
 ## Features
 
 - Experiment with new model architectures by inheriting from our `GraphPESModel` base class.
-- Train your own or existing models (e.g., [SchNet](https://jla-gardner.github.io/graph-pes/models/many-body/schnet.html), [NequIP](https://jla-gardner.github.io/graph-pes/models/many-body/nequip.html), [PaiNN](https://jla-gardner.github.io/graph-pes/models/many-body/pinn.html), [MACE](https://jla-gardner.github.io/graph-pes/models/many-body/mace.html), etc.).
+- [Train your own](https://jla-gardner.github.io/graph-pes/quickstart/implement-a-model.html) or existing models (e.g., [SchNet](https://jla-gardner.github.io/graph-pes/models/many-body/schnet.html), [NequIP](https://jla-gardner.github.io/graph-pes/models/many-body/nequip.html), [PaiNN](https://jla-gardner.github.io/graph-pes/models/many-body/pinn.html), [MACE](https://jla-gardner.github.io/graph-pes/models/many-body/mace.html), etc.).
 - Easily configure distributed training, learning rate scheduling, weights and biases logging, and other features using our `graph-pes-train` [command line interface](https://jla-gardner.github.io/graph-pes/cli/graph-pes-train.html).
 - Use our data-loading pipeline within your [own training loop](https://jla-gardner.github.io/graph-pes/quickstart/custom-training-loop.html).
 - Run molecular dynamics simulations via [LAMMPS](https://jla-gardner.github.io/graph-pes/tools/lammps.html) (or [ASE](https://jla-gardner.github.io/graph-pes/tools/ase.html)) using any `GraphPESModel` and the `pair_style graph_pes` LAMMPS command.
