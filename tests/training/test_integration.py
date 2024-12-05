@@ -36,7 +36,7 @@ def test_integration(model: GraphPESModel):
 
     # Create trainer and train
     train_with_lightning(
-        trainer=pl.Trainer(max_epochs=10, accelerator="cpu"),
+        trainer=pl.Trainer(max_epochs=30, accelerator="cpu"),
         model=model,
         data=FittingData(
             train=SequenceDataset(train_graphs),

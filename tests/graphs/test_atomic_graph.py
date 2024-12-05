@@ -15,6 +15,7 @@ from graph_pes.atomic_graph import (
     number_of_atoms,
     number_of_edges,
     number_of_neighbours,
+    sum_over_central_atom_index,
     sum_over_neighbours,
     triplet_bond_descriptors,
 )
@@ -146,37 +147,32 @@ def check_angle_measures(a: float, b: float, theta: float):
             [torch.cos(rad_theta) * b, torch.sin(rad_theta) * b, 0],
         ]
     )
-    Z = torch.tensor([1, 2, 3])
 
-    graph = AtomicGraph.from_ase(molecule("H2O"))._replace(R=R, Z=Z)
+    graph = AtomicGraph.from_ase(molecule("H2O"))._replace(R=R)
 
-    triplets, _ = neighbour_triplets(graph)
-    angle, r_ij, r_ik = triplet_bond_descriptors(graph)
+    triplet_idxs, angle, r_ij, r_ik = triplet_bond_descriptors(graph)
 
-    assert len(angle) == len(triplets) == 6
+    assert len(angle) == len(triplet_idxs) == 6
 
     ############################################################
-    # first triplet is 1-2-3
+    # first triplet is 0-1-2
     # therefore angle is theta
     # and r_ij and r_ik are a and b
-    t1 = triplets[0]
-    assert list(graph.Z[t1]) == [1, 2, 3]
+    assert list(triplet_idxs[0]) == [0, 1, 2]
     torch.testing.assert_close(angle[0], rad_theta)
     torch.testing.assert_close(r_ij[0], torch.tensor(a))
     torch.testing.assert_close(r_ik[0], torch.tensor(b))
 
     ############################################################
-    # second triplet is 1-3-2
-    t2 = triplets[1]
-    assert list(graph.Z[t2]) == [1, 3, 2]
+    # second triplet is 0-2-1
+    assert list(triplet_idxs[1]) == [0, 2, 1]
     torch.testing.assert_close(angle[1], rad_theta)
     torch.testing.assert_close(r_ij[1], torch.tensor(b))
     torch.testing.assert_close(r_ik[1], torch.tensor(a))
 
     ############################################################
-    # third triplet is 2-1-3
-    t3 = triplets[2]
-    assert list(graph.Z[t3]) == [2, 1, 3]
+    # third triplet is 1-0-2
+    assert list(triplet_idxs[2]) == [1, 0, 2]
     torch.testing.assert_close(r_ij[2], torch.tensor(a))
     # use cosine rule to get r_ik
     c = torch.sqrt(a**2 + b**2 - 2 * a * b * torch.cos(rad_theta))
@@ -187,25 +183,22 @@ def check_angle_measures(a: float, b: float, theta: float):
     torch.testing.assert_close(angle[2], phi)
 
     ############################################################
-    # fourth triplet is 2-3-1
-    t4 = triplets[3]
-    assert list(graph.Z[t4]) == [2, 3, 1]
+    # fourth triplet is 1-2-0
+    assert list(triplet_idxs[3]) == [1, 2, 0]
     torch.testing.assert_close(r_ij[3], c)
     torch.testing.assert_close(r_ik[3], torch.tensor(a))
     torch.testing.assert_close(angle[3], phi)
 
     ############################################################
-    # fifth triplet is 3-1-2
-    t5 = triplets[4]
-    assert list(graph.Z[t5]) == [3, 1, 2]
+    # fifth triplet is 2-0-1
+    assert list(triplet_idxs[4]) == [2, 0, 1]
     sin_zeta = a * torch.sin(rad_theta) / c
     zeta = torch.asin(sin_zeta)
     torch.testing.assert_close(angle[4], zeta)
 
     ############################################################
-    # sixth triplet is 3-2-1
-    t6 = triplets[5]
-    assert list(graph.Z[t6]) == [3, 2, 1]
+    # sixth triplet is 2-1-0
+    assert list(triplet_idxs[5]) == [2, 1, 0]
     torch.testing.assert_close(r_ij[5], c)
     torch.testing.assert_close(r_ik[5], torch.tensor(b))
     torch.testing.assert_close(angle[5], zeta)
@@ -230,3 +223,39 @@ def test_triplets_on_isolated_atoms():
 
     triplets, _ = neighbour_triplets(graph)
     assert triplets.shape == (0, 3)
+
+    atoms = Atoms("H", positions=[(0.5, 0.5, 0.5)], cell=np.eye(3), pbc=True)
+    graph = AtomicGraph.from_ase(atoms, cutoff=1.1)
+    assert number_of_atoms(graph) == 1
+
+    # 6 neighbours (up, down, left, right, front, back)
+    assert number_of_edges(graph) == 6
+
+    # 6 * 5 = 30 triplets
+    # (up, [down, left, right, front, back]),
+    # (down, [up, left, right, front, back]),
+    # etc.
+    triplets, _ = neighbour_triplets(graph)
+    assert triplets.shape == (30, 3)
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [tuple(), (4,), (4, 5)],
+)
+def test_sum_over_central_atom(shape: tuple[int, ...]):
+    graph = AtomicGraph.create_with_defaults(
+        R=torch.rand(2, 3),
+        Z=torch.tensor([1, 1]),
+    )
+
+    p = torch.rand(7, *shape)
+    index = torch.tensor([0] * 7)
+
+    result = sum_over_central_atom_index(p, index, graph)
+    assert result.shape == (2, *shape)
+
+    # check that the sum is correct
+    torch.testing.assert_close(result[0], p.sum(dim=0))
+    # and that the other elements are zero
+    torch.testing.assert_close(result[1], torch.zeros_like(p[0]))

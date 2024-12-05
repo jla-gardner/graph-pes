@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Added neighbour-triplet based properties.
 
+Generalised summations of properties defined on arbitrary collections of central atoms.
+
 ### Changed
 
 Fix a bug when batching graphs with different properties.

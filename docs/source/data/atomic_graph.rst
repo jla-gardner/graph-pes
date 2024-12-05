@@ -58,6 +58,7 @@ All of these are fully compatible with batched :class:`~graph_pes.AtomicGraph` i
 
 .. autofunction:: graph_pes.atomic_graph.is_local_property
 .. autofunction:: graph_pes.atomic_graph.index_over_neighbours
+.. autofunction:: graph_pes.atomic_graph.sum_over_central_atom_index
 .. autofunction:: graph_pes.atomic_graph.sum_over_neighbours
 .. autofunction:: graph_pes.atomic_graph.sum_per_structure
 .. autofunction:: graph_pes.atomic_graph.divide_per_atom

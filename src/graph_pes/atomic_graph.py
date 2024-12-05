@@ -782,8 +782,11 @@ def neighbour_triplets(graph: AtomicGraph) -> Tuple[torch.Tensor, torch.Tensor]:
     r"""
     Find all the triplets :math:`(i, j, k)` such that
     :math:`k` and :math:`j` are neighbours of :math:`i`,
-    and :math:`j, k` are not the same atom (i.e.
-    :math:`j \neq k` for non periodic graphs).
+    and:
+
+    * :math:`j \neq k` for non periodic graphs
+    * :math:`j, k` do not refer to the same image of an atom (respecting pbcs)
+      for periodic graphs
 
     Returns
     -------
@@ -867,13 +870,15 @@ def neighbour_triplets(graph: AtomicGraph) -> Tuple[torch.Tensor, torch.Tensor]:
 
 def triplet_bond_descriptors(
     graph: AtomicGraph,
-) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     r"""
     For each triplet :math:`(i, j, k)`, get the bond angle :math:`\theta_{jk}`
     (in radians) and the two bond lengths :math:`r_{ij}` and :math:`r_{ik}`.
 
     Returns
     -------
+    triplet_idxs
+        The triplet indices, :math:`(i, j, k)`, of shape ``(Y, 3)``.
     angle
         The bond angle :math:`\theta_{jk}`, shape ``(Y,)``.
     r_ij
@@ -889,10 +894,11 @@ def triplet_bond_descriptors(
     tensor([103.9999, 103.9999,  38.0001,  38.0001,  38.0001,  38.0001])
     """
 
-    _, vector_triplets = neighbour_triplets(graph)
+    triplet_idxs, vector_triplets = neighbour_triplets(graph)
 
     if vector_triplets.shape[0] == 0:
         return (
+            triplet_idxs,
             torch.zeros(0, device=graph.R.device).float(),
             torch.zeros(0, device=graph.R.device).float(),
             torch.zeros(0, device=graph.R.device).float(),
@@ -902,6 +908,7 @@ def triplet_bond_descriptors(
     v2 = vector_triplets[:, 1]
 
     return (
+        triplet_idxs,
         angle_spanned_by(v1, v2),
         torch.linalg.vector_norm(v1, dim=-1),
         torch.linalg.vector_norm(v2, dim=-1),
@@ -972,6 +979,73 @@ def trim_edges(graph: AtomicGraph, cutoff: float) -> AtomicGraph:
     )
 
 
+def sum_over_central_atom_index(
+    p: torch.Tensor,
+    central_atom_index: torch.Tensor,
+    graph: AtomicGraph,
+) -> torch.Tensor:
+    r"""
+    Efficient, shape-preserving sum of a property, :math:`p`, defined over a
+    ``central_atom_index``, to get a per-atom property, :math:`P`,
+    such that:
+
+    .. code-block:: python
+
+        # i in central_atom_index
+        P[i] == torch.sum(p[central_atom_index == i], dim=0)
+        # i not in central_atom_index
+        P[i] == torch.zeros_like(p[0])
+
+    .. seealso::
+
+        :func:`sum_over_neighbours` for the explicit case where
+        ``p`` is a per-edge property.
+
+    Parameters
+    ----------
+    p
+        The property to sum, of shape ``(Y, ...)``.
+    central_atom_index
+        The central atoms relevant to each element of ``p``, of shape ``(Y,)``.
+    graph
+        The graph to sum the property for.
+
+    Returns
+    -------
+    P: torch.Tensor
+        The summed property, of shape ``(N, ...)``.
+    """
+
+    N = number_of_atoms(graph)
+
+    # optimised implementations for common cases
+    if p.dim() == 1:
+        zeros = torch.zeros(N, dtype=p.dtype, device=p.device)
+        return zeros.scatter_add(0, central_atom_index, p)
+
+    elif p.dim() == 2:
+        C = p.shape[1]
+        zeros = torch.zeros(N, C, dtype=p.dtype, device=p.device)
+        return zeros.scatter_add(
+            0,
+            central_atom_index.unsqueeze(1).expand(-1, C),
+            p,
+        )
+
+    shape = (N,) + p.shape[1:]
+    zeros = torch.zeros(shape, dtype=p.dtype, device=p.device)
+
+    if p.shape[0] == 0:
+        # return all zeros if there are no atoms
+        return zeros
+
+    # create `index`, where index.shape = p.shape
+    # and (index[e] == central_atoms[e]).all()
+    ones = torch.ones_like(p)
+    index = left_aligned_mul(ones, central_atom_index).long()
+    return zeros.scatter_add(0, index, p)
+
+
 def sum_over_neighbours(p: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:
     r"""
     Shape-preserving sum over neighbours of a per-edge property, :math:`p_{ij}`,
@@ -999,31 +1073,7 @@ def sum_over_neighbours(p: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:
         The graph to sum the property for.
     """
 
-    N = number_of_atoms(graph)
-    central_atoms = graph.neighbour_list[0]  # shape: (E,)
-
-    # optimised implementations for common cases
-    if p.dim() == 1:
-        zeros = torch.zeros(N, dtype=p.dtype, device=p.device)
-        return zeros.scatter_add(0, central_atoms, p)
-
-    elif p.dim() == 2:
-        C = p.shape[1]
-        zeros = torch.zeros(N, C, dtype=p.dtype, device=p.device)
-        return zeros.scatter_add(0, central_atoms.unsqueeze(1).expand(-1, C), p)
-
-    shape = (N,) + p.shape[1:]
-    zeros = torch.zeros(shape, dtype=p.dtype, device=p.device)
-
-    if p.shape[0] == 0:
-        # return all zeros if there are no atoms
-        return zeros
-
-    # create `index`, where index.shape = p.shape
-    # and (index[e] == central_atoms[e]).all()
-    ones = torch.ones_like(p)
-    index = left_aligned_mul(ones, central_atoms).long()
-    return zeros.scatter_add(0, index, p)
+    return sum_over_central_atom_index(p, graph.neighbour_list[0], graph)
 
 
 def sum_per_structure(x: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:

@@ -106,12 +106,14 @@ class OffsetLogger(GraphPESCallback):
 
 class SaveBestModel(GraphPESCallback):
     """
-    Save the best model to ``<output_dir>/best_model.pt``.
+    Save the best model to ``<output_dir>/model.pt`` and deploy it to
+    ``<output_dir>/lammps_model.pt``.
     """
 
     def __init__(self):
         super().__init__()
         self.best_val_loss = float("inf")
+        self.try_to_deploy = True
 
     def on_validation_end(self, trainer: Trainer, pl_module: LightningModule):
         if not trainer.is_global_zero or not self.root:
@@ -142,7 +144,15 @@ class SaveBestModel(GraphPESCallback):
             torch.save(cpu_model, model_path)
             logger.debug(f"Model saved to {model_path}")
 
-            deploy_model(cpu_model, path=lammps_model_path)
-            logger.debug(
-                f"Deployed model for use with LAMMPS to {lammps_model_path}"
-            )
+            if self.try_to_deploy:
+                try:
+                    deploy_model(cpu_model, path=lammps_model_path)
+                    logger.debug(
+                        f"Deployed model for use with LAMMPS to "
+                        f"{lammps_model_path}"
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to deploy model for use with LAMMPS: {e}"
+                    )
+                    self.try_to_deploy = False

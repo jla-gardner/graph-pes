@@ -38,7 +38,7 @@ class LocalEnergiesScaler(nn.Module):
         Scale the local energies by the per-element scaling factor.
         """
         scales = self.per_element_scaling[graph.Z].squeeze()
-        return local_energies * scales
+        return local_energies.squeeze() * scales
 
     # add typing for mypy etc
     def __call__(
