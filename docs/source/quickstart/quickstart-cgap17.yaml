@@ -1,5 +1,5 @@
 general:
-    run_id: nequip-for-cgap17
+    run_id: quickstart-cgap17
     progress: logged
 
 # train a lightweight NequIP model ...

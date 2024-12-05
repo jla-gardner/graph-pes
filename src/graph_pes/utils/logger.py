@@ -51,4 +51,4 @@ def set_level(level: str | int):
     """Set the logging level."""
 
     _handler.setLevel(level)
-    logger.info(f"Set logging level to {level}")
+    logger.debug(f"Set logging level to {level}")

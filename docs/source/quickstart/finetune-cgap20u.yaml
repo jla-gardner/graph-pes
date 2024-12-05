@@ -1,5 +1,5 @@
 general:
-    run_id: finetune-nequip-for-cgap20u
+    run_id: finetune-cgap20u
     progress: logged
 
 # finetune a pre-trained NequIP model ...
@@ -32,9 +32,8 @@ loss:
 # ... with the following settings ...
 fitting:
     trainer_kwargs:
-        max_epochs: 100
+        max_epochs: 150
         accelerator: auto
-        check_val_every_n_epoch: 2
 
     optimizer:
         +Optimizer:

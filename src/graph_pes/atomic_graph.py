@@ -572,12 +572,14 @@ def to_batch(
     properties: dict[PropertyKey, torch.Tensor] = {}
     # - per structure labels are concatenated along a new batch axis (0)
     for key in ["energy", "stress", "virial"]:
-        if key in graphs[0].properties:
+        key = cast(PropertyKey, key)
+        if all(key in g.properties for g in graphs):
             properties[key] = torch.stack([g.properties[key] for g in graphs])
 
     # - per atom labels are concatenated along the first axis
     for key in ["forces", "local_energies"]:
-        if key in graphs[0].properties:
+        key = cast(PropertyKey, key)
+        if all(key in g.properties for g in graphs):
             properties[key] = torch.cat([g.properties[key] for g in graphs])
 
     # - finally, add in the other stuff: this is a bit tricky
