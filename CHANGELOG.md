@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Added neighbour-triplet based properties.
 
+### Changed
+
+Fix a bug when batching graphs with different properties.
+
+Made training runs less verbose (redirected to `logs/rank-0.log`).
+
 ## [0.0.8] - 2024-12-04
 
 ### Added
