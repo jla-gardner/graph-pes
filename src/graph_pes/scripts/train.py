@@ -356,12 +356,8 @@ Output for this training run can be found at:
         logger.error(f"Training failed: {e}")
         raise e
 
-    info("Training complete.")
+    info("Training complete. Awaiting final Lightning and W&B shutdown...")
     cleanup()
-    info(
-        "Post-training cleanup complete. "
-        "Awaiting final Lightning and W&B shutdown..."
-    )
 
 
 def main():

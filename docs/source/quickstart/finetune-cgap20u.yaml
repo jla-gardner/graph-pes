@@ -35,6 +35,8 @@ fitting:
         max_epochs: 150
         accelerator: auto
 
+    pre_fit_model: false
+
     optimizer:
         +Optimizer:
             name: AdamW
