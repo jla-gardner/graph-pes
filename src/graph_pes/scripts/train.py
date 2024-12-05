@@ -361,6 +361,10 @@ Output for this training run can be found at:
 
 
 def main():
+    # set the load-atoms verbosity to 1 by default to avoid
+    # spamming logs with `rich` output
+    os.environ["LOAD_ATOMS_VERBOSE"] = os.getenv("LOAD_ATOMS_VERBOSE", "1")
+
     config = extract_config_from_command_line()
     train_from_config(config)
 
