@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+Fix a bug in the `analysis.parity_plot` function.
+
+## [0.0.10] - 2024-12-05
+
 ## [0.0.9] - 2024-12-05
 
 ### Added
