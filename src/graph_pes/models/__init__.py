@@ -107,7 +107,7 @@ def load_model(
     .. code-block:: yaml
 
         model:
-            graph_pes.models.load_model:
+            +load_model:
                 path: path/to/model.pt
 
     To account for some new energy offset in your training data, you could do
@@ -118,10 +118,9 @@ def load_model(
 
         model:
             # add an offset to an existing model before fine-tuning
-            offset:
-                graph_pes.models.LearnableOffset: {}
+            offset: +LearnableOffset()
             many-body:
-                graph_pes.models.load_model:
+                +load_model:
                     path: path/to/model.pt
     """
     path = pathlib.Path(path)
@@ -156,7 +155,11 @@ def load_model(
     return model
 
 
-def load_model_component(path: str | pathlib.Path, key: str) -> GraphPESModel:
+def load_model_component(
+    path: str | pathlib.Path,
+    key: str,
+    freeze: bool | list[str] = False,
+) -> GraphPESModel:
     """
     Load a component from an :class:`~graph_pes.models.AdditionModel`.
 
@@ -166,6 +169,9 @@ def load_model_component(path: str | pathlib.Path, key: str) -> GraphPESModel:
         The path to the file.
     key
         The key to load.
+    freeze
+        If ``True``, freeze all model parameters. If a list of strings, freeze
+        all parameters that match any of the regular expressions in the list.
 
     Returns
     -------
@@ -180,10 +186,9 @@ def load_model_component(path: str | pathlib.Path, key: str) -> GraphPESModel:
     .. code-block:: yaml
 
         model:
-            offset:
-                graph_pes.models.LearnableOffset: {}
+            offset: +LearnableOffset()
             many-body:
-                graph_pes.models.load_model_component:
+                +load_model_component:
                     path: path/to/model.pt
                     key: many-body
     """
