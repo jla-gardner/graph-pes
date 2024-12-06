@@ -7,9 +7,11 @@ from graph_pes.utils.misc import (
     as_possible_tensor,
     build_single_nested_dict,
     differentiate,
+    full_3x3_to_voigt_6,
     nested_merge,
     nested_merge_all,
     random_split,
+    voigt_6_to_full_3x3,
 )
 
 possible_tensors = [
@@ -94,3 +96,23 @@ def test_random_split():
 
     with pytest.raises(ValueError, match="Not enough things to split"):
         random_split(indices, lengths=[20, 20], seed=0)
+
+
+def test_stress_conversions():
+    # non-batched
+    stress = torch.rand(3, 3)
+    # symmetrize:
+    stress = (stress + stress.T) / 2
+    voigt = full_3x3_to_voigt_6(stress)
+    assert voigt.shape == (6,)
+    stress_again = voigt_6_to_full_3x3(voigt)
+    torch.testing.assert_close(stress_again, stress)
+
+    # batched
+    stress = torch.rand(2, 3, 3)
+    # symmetrize:
+    stress = (stress + stress.transpose(1, 2)) / 2
+    voigt = full_3x3_to_voigt_6(stress)
+    assert voigt.shape == (2, 6)
+    stress_again = voigt_6_to_full_3x3(voigt)
+    torch.testing.assert_close(stress_again, stress)

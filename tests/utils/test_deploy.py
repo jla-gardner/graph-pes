@@ -11,8 +11,8 @@ from graph_pes.models.pairwise import LennardJones, SmoothedPairPotential
 from graph_pes.utils.lammps import (
     as_lammps_data,
     deploy_model,
-    full_3x3_to_voigt_6,
 )
+from graph_pes.utils.misc import full_3x3_to_voigt_6
 
 from .. import helpers
 

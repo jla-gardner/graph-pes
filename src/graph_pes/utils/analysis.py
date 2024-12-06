@@ -10,6 +10,7 @@ import numpy as np
 import torch
 from cycler import cycler
 from graph_pes.utils.calculator import GraphPESCalculator, merge_predictions
+from graph_pes.utils.misc import voigt_6_to_full_3x3
 from matplotlib.ticker import MaxNLocator
 from torch import Tensor
 
@@ -164,11 +165,14 @@ def parity_plot(
     predictions = torch.tensor(
         merge_predictions(per_struct_predictions)[property]
     )
-
-    # transform
+    if property in ["stress", "virial"]:
+        # reconvert from calculator ase format to 3x3
+        predictions = voigt_6_to_full_3x3(predictions)
 
     # okay to form a big batch since not passing through model
     batch = to_batch(graphs)
+
+    # transform
     ground_truth = transform(batch.properties[property], batch).detach()
     predicted = transform(predictions, batch)
 

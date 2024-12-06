@@ -480,3 +480,64 @@ def angle_spanned_by(v1: torch.Tensor, v2: torch.Tensor):
 
     # Compute angle using arccos
     return torch.arccos(cos_angle)
+
+
+def full_3x3_to_voigt_6(tensor: torch.Tensor) -> torch.Tensor:
+    """
+    Convert a (optionally batched) 3x3 tensor to Voigt notation.
+
+    Parameters
+    ----------
+    tensor
+        A (optionally batched) 3x3 tensor, shape ``(..., 3, 3)``.
+
+    Returns
+    -------
+    torch.Tensor
+        A tensor of shape ``(..., 6)``, in Voigt notation.
+    """
+    if tensor.ndim == 2:
+        tensor = tensor.unsqueeze(0)
+    N = tensor.shape[0]
+
+    voigt_6 = torch.zeros(N, 6, device=tensor.device, dtype=tensor.dtype)
+    voigt_6[..., 0] = tensor[..., 0, 0]
+    voigt_6[..., 1] = tensor[..., 1, 1]
+    voigt_6[..., 2] = tensor[..., 2, 2]
+    voigt_6[..., 3] = tensor[..., 0, 1]
+    voigt_6[..., 4] = tensor[..., 0, 2]
+    voigt_6[..., 5] = tensor[..., 1, 2]
+    return voigt_6.squeeze()
+
+
+def voigt_6_to_full_3x3(tensor: torch.Tensor) -> torch.Tensor:
+    """
+    Convert a (optionally batched) 6-element tensor in Voigt notation to a
+    3x3 tensor.
+
+    Parameters
+    ----------
+    tensor
+        A (optionally batched) 6-element tensor in Voigt notation,
+        shape ``(..., 6)``.
+
+    Returns
+    -------
+    torch.Tensor
+        A tensor of shape ``(..., 3, 3)``.
+    """
+    if tensor.ndim == 1:
+        tensor = tensor.unsqueeze(0)
+    N = tensor.shape[0]
+
+    full_3x3 = torch.zeros(N, 3, 3, device=tensor.device, dtype=tensor.dtype)
+    full_3x3[..., 0, 0] = tensor[..., 0]
+    full_3x3[..., 1, 1] = tensor[..., 1]
+    full_3x3[..., 2, 2] = tensor[..., 2]
+    full_3x3[..., 0, 1] = tensor[..., 3]
+    full_3x3[..., 1, 0] = tensor[..., 3]
+    full_3x3[..., 0, 2] = tensor[..., 4]
+    full_3x3[..., 2, 0] = tensor[..., 4]
+    full_3x3[..., 1, 2] = tensor[..., 5]
+    full_3x3[..., 2, 1] = tensor[..., 5]
+    return full_3x3.squeeze()

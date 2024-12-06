@@ -2,11 +2,8 @@
     <a href="https://jla-gardner.github.io/graph-pes/">
         <img src="docs/source/_static/logo-text.svg" width="90%"/>
     </a>
-</div>
 
 `graph-pes` is a framework built to accelerate the development of machine-learned potential energy surface (PES) models that act on graph representations of atomic structures.
-
-<div align="center">
 
 Links: [Google Colab Quickstart](https://colab.research.google.com/github/jla-gardner/graph-pes/blob/main/docs/source/quickstart/quickstart.ipynb) - [Documentation](https://jla-gardner.github.io/graph-pes/) - [PyPI](https://pypi.org/project/graph-pes/)
 
@@ -24,7 +21,7 @@ Links: [Google Colab Quickstart](https://colab.research.google.com/github/jla-ga
 ## Quickstart
 
 ```bash
-pip install graph-pes
+pip install -q graph-pes
 wget https://tinyurl.com/graph-pes-minimal-config -O config.yaml
 graph-pes-train config.yaml
 ```
