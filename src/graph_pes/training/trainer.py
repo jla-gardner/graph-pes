@@ -79,22 +79,16 @@ def train_with_lightning(
     task = PESLearningTask(model, loss, optimizer, scheduler)
 
     # - train the model
-    error = None
     logger.info("Starting fit...")
     try:
         trainer.fit(task, train_loader, valid_loader)
     except Exception as e:
         logger.error(f"Training failed: {e}")
-        error = e
-
-    # - load the best weights
-    try:
-        task.load_best_weights(model, trainer)
-    except Exception as e:
-        logger.error(f"Failed to load best weights: {e}")
-        if error is None:
-            error = e
-        raise error from None
+    finally:
+        try:
+            task.load_best_weights(model, trainer)
+        except Exception as e:
+            logger.error(f"Failed to load best weights: {e}")
 
 
 def create_trainer(
