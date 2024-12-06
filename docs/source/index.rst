@@ -58,7 +58,6 @@ graph-pes
     :file: hide-title.html
 
 ``graph-pes`` is a set of tools designed to accelerate the development of machine-learned potential energy surfaces (ML-PESs) that act on graph representations of atomic structures. 
-For the source code, please see the `GitHub repository <https://github.com/jla-gardner/graph-pes>`__.
 
 A 3-in-1 toolset:
 =================
@@ -168,4 +167,5 @@ Install ``graph-pes`` from PyPI using pip (installs all dependencies):
     pip install graph-pes
 
 
+Please see the `GitHub repository <https://github.com/jla-gardner/graph-pes>`__ for the source code.
 
