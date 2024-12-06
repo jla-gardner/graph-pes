@@ -1,6 +1,6 @@
 model:
     offset:
-        +FixedOffset: {H: -123.4, C: -456.7}
+        +FixedOffset: { H: -123.4, C: -456.7 }
     core-repulsion:
         +ZBLCoreRepulsion:
             trainable: true
@@ -27,19 +27,25 @@ data:
             cutoff: 3.7
 
 loss:
-    - component: +PerAtomEnergyLoss()
-    - component:
-        +Loss: {property: forces, metric: RMSE}
-      weight: 3.0
-    - component:
-        +Loss: {property: stress, metric: RMSE}
-      weight: 10.0
+    - +PerAtomEnergyLoss()
+    - +WeightedLoss:
+          component:
+              +Loss:
+                  property: forces
+                  metric: RMSE
+          weight: 3.0
+    - +WeightedLoss:
+          component:
+              +Loss:
+                  property: stress
+                  metric: RMSE
+          weight: 10.0
 
 fitting:
     pre_fit_model: true
     max_n_pre_fit: 1000
     early_stopping_patience: 50
-    
+
     trainer_kwargs:
         max_epochs: 1000
         accelerator: gpu
@@ -52,19 +58,19 @@ fitting:
             lr: 0.003
             weight_decay: 0.01
             amsgrad: true
-    
+
     scheduler:
         +LRScheduler:
             name: ReduceLROnPlateau
             patience: 10
             factor: 0.8
-    
+
     swa:
         lr: 0.001
         start: 0.8
         anneal_epochs: 10
         strategy: linear
-    
+
     loader_kwargs:
         batch_size: 32
         num_workers: 4

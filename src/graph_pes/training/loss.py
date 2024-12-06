@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Callable, Literal, NamedTuple, Sequence
 
 import torch
@@ -9,6 +10,7 @@ from graph_pes.utils.nn import UniformModuleList
 from torch import Tensor, nn
 
 Metric = Callable[[Tensor, Tensor], Tensor]
+MetricName = Literal["MAE", "RMSE", "MSE"]
 
 
 class Loss(nn.Module):
@@ -31,7 +33,7 @@ class Loss(nn.Module):
         energy_rmse_loss = Loss("energy", RMSE())
         energy_rmse_value = energy_rmse_loss(
             predictions,  # a dict of key (energy/force/etc.) to value
-            graphs,
+            graph.properties,
         )
 
     """
@@ -39,7 +41,7 @@ class Loss(nn.Module):
     def __init__(
         self,
         property: PropertyKey,
-        metric: Metric | Literal["MAE", "RMSE"] | None = None,
+        metric: Metric | MetricName = "RMSE",
     ):
         super().__init__()
         self.property: PropertyKey = property
@@ -87,6 +89,20 @@ class Loss(nn.Module):
         )
 
 
+@dataclass
+class WeightedLoss:
+    """
+    Specification for a component of a
+    :class:`~graph_pes.training.loss.TotalLoss`.
+    """
+
+    component: Loss
+    """Point to a :class:`~graph_pes.training.loss.Loss` instance."""
+
+    weight: int | float = 1.0
+    """The weight of this loss component."""
+
+
 class SubLossPair(NamedTuple):
     loss_value: torch.Tensor
     weighted_loss_value: torch.Tensor
@@ -112,19 +128,20 @@ class TotalLoss(torch.nn.Module):
     ----------
     losses
         The collection of losses to aggregate.
-    weights
-        The weights to apply to each loss. If ``None``, defaults to
-        :math:`w_i = 1 \;\; \forall \; i`.
     """
 
-    def __init__(
-        self,
-        losses: Sequence[Loss],
-        weights: Sequence[float | int] | None = None,
-    ):
+    def __init__(self, losses: Sequence[Loss | WeightedLoss]):
         super().__init__()
-        self.losses = UniformModuleList(losses)
-        self.weights = weights or [1.0] * len(losses)
+        _losses = [
+            loss if isinstance(loss, Loss) else loss.component
+            for loss in losses
+        ]
+        _weights = [
+            loss.weight if isinstance(loss, WeightedLoss) else 1.0
+            for loss in losses
+        ]
+        self.losses = UniformModuleList(_losses)
+        self.weights = _weights
 
     def forward(
         self,
@@ -185,21 +202,22 @@ class PerAtomEnergyLoss(Loss):
 
     .. math::
         \mathcal{L} = \text{metric}\left(
-        \sum_i \frac{\hat{E}_i}{N_i}, \sum_i \frac{E_i}{N_i} \right)
+        \bigoplus_i \frac{\hat{E}_i}{N_i}, \bigoplus_i\frac{E_i}{N_i} \right)
 
     where :math:`\hat{E}_i` is the predicted energy for structure :math:`i`,
-    :math:`E_i` is the true energy for structure :math:`i`, and :math:`N_i`
-    is the number of atoms in structure :math:`i`.
+    :math:`E_i` is the true energy for structure :math:`i`, :math:`N_i`
+    is the number of atoms in structure :math:`i` and :math:`\bigoplus_i`
+    denotes the cocatenation over all structures in the batch.
 
     Parameters
     ----------
     metric
-        The loss metric to use. Defaults to :class:`MAE`.
+        The loss metric to use. Defaults to :class:`RMSE`.
     """
 
     def __init__(
         self,
-        metric: Metric | None = None,
+        metric: Metric | MetricName = "RMSE",
     ):
         super().__init__("energy", metric)
 
@@ -221,16 +239,27 @@ class PerAtomEnergyLoss(Loss):
 ## METRICS ##
 
 
-def parse_metric(metric: Metric | Literal["MAE", "RMSE"] | None) -> Metric:
+def parse_metric(metric: Metric | MetricName | None) -> Metric:
     if isinstance(metric, str):
-        if metric not in ("MAE", "RMSE"):
-            raise ValueError(
-                f"Invalid metric: {metric}. Expected 'MAE' or 'RMSE'."
-            )
-        metric = MAE() if metric == "MAE" else RMSE()
+        return {
+            "MAE": MAE(),
+            "RMSE": RMSE(),
+            "MSE": MSE(),
+        }[metric]
+
     if metric is None:
-        metric = RMSE()
+        return RMSE()
+
     return metric
+
+
+class MSE(torch.nn.MSELoss):
+    r"""
+    Mean squared error metric:
+
+    .. math::
+        \frac{1}{N} \sum_i^N \left( \hat{P}_i - P_i \right)^2
+    """
 
 
 class RMSE(torch.nn.MSELoss):
@@ -240,9 +269,6 @@ class RMSE(torch.nn.MSELoss):
     .. math::
         \sqrt{ \frac{1}{N} \sum_i^N \left( \hat{P}_i - P_i \right)^2 }
     """
-
-    def __init__(self):
-        super().__init__()
 
     def forward(
         self, input: torch.Tensor, target: torch.Tensor
@@ -257,9 +283,6 @@ class MAE(torch.nn.L1Loss):
     .. math::
         \frac{1}{N} \sum_i^N \left| \hat{P}_i - P_i \right|
     """
-
-    def __init__(self):
-        super().__init__()
 
 
 def _get_metric_name(metric: Metric) -> str:

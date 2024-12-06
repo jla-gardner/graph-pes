@@ -20,8 +20,11 @@ Metrics
 
         Metric = Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
 
+
+
 .. autoclass:: graph_pes.training.loss.RMSE()
 .. autoclass:: graph_pes.training.loss.MAE()
+.. autoclass:: graph_pes.training.loss.MSE()
 
 
 Losses
@@ -31,8 +34,19 @@ Losses
     :show-inheritance:
     :members: name
 
+
+
 .. autoclass:: graph_pes.training.loss.TotalLoss
     :show-inheritance:
 
 .. autoclass:: graph_pes.training.loss.PerAtomEnergyLoss
     
+Helpers
+-------
+
+.. class:: graph_pes.training.loss.MetricName
+
+    A type alias for a ``Literal["RMSE", "MAE", "MSE"]``.
+
+.. autoclass:: graph_pes.training.loss.WeightedLoss
+    :members:

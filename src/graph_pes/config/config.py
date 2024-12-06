@@ -15,24 +15,10 @@ from pytorch_lightning import Callback
 from graph_pes.data.datasets import FittingData, GraphDataset
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.addition import AdditionModel
-from graph_pes.training.loss import Loss, TotalLoss
+from graph_pes.training.loss import Loss, TotalLoss, WeightedLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
 from graph_pes.training.util import VerboseSWACallback
 from graph_pes.utils.misc import nested_merge_all
-
-
-@dataclass
-class WeightedLoss:
-    """
-    Specification for a component of a
-    :class:`~graph_pes.training.loss.TotalLoss`.
-    """
-
-    component: Loss
-    """Point to a :class:`~graph_pes.training.loss.Loss` instance."""
-
-    weight: Union[int, float] = 1.0
-    """The weight of this loss component."""
 
 
 @dataclass
@@ -354,7 +340,7 @@ class Config:
                         cutoff: 5.0
     """
 
-    loss: Union[Loss, TotalLoss, List[WeightedLoss]]
+    loss: Union[Loss, WeightedLoss, TotalLoss, List[Union[WeightedLoss, Loss]]]
     """
     The loss function to use.
 
@@ -372,23 +358,19 @@ class Config:
             loss:
                 +Loss:
                     property: energy
-                    metric: +RMSE()
+                    metric: MAE  # defaults to RMSE if not specified
 
-        ...or specify a list of :class:`~graph_pes.config.config.WeightedLoss`
-        instances, each of which points to a 
-        :class:`~graph_pes.training.loss.Loss` instance with an optional weight
-        (defaults to ``1.0``):
+        ...or specify a list of :class:`~graph_pes.training.loss.WeightedLoss`
+        and/or :class:`~graph_pes.training.loss.Loss` instances:
 
         .. code-block:: yaml
         
             loss:
-                - component: +PerAtomEnergyLoss()
-                  weight: 1.0
-                - component: +Loss: {property: forces, metric: +MAE()}
-                  weight: 10.0
-        
-        .. autoclass:: graph_pes.config.config.WeightedLoss()
-            :members:
+                # specify a loss with several sub-losses:
+                - +PerAtomEnergyLoss()  # defaults to weight 1.0
+                - +WeightedLoss:
+                    component: +Loss: {property: forces, metric: +MSE()}
+                    weight: 10.0
     """
 
     fitting: FittingConfig
@@ -547,14 +529,7 @@ class Config:
         elif isinstance(self.loss, TotalLoss):
             return self.loss
         elif isinstance(self.loss, list):
-            if not all(isinstance(l, WeightedLoss) for l in self.loss):
-                raise ValueError(
-                    "Expected a list of WeightedLoss instances from the loss "
-                    f"config, but got {self.loss}."
-                )
-            return TotalLoss(
-                [l.component for l in self.loss], [l.weight for l in self.loss]
-            )
+            return TotalLoss(self.loss)
         raise ValueError(
             "Expected to be able to parse a Loss, TotalLoss, or a list of "
             "WeightedLoss instances from the loss config, but got something "

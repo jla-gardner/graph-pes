@@ -32,11 +32,12 @@ data:
             path: val-cgap17.xyz
             cutoff: 3.7
 
-# ... on both energy and forces ...
+# ... on both energy and forces (weighted 1:1) ...
 loss:
-    - component: +PerAtomEnergyLoss()
-    - component:
-          +Loss: { property: forces, metric: RMSE }
+    - +PerAtomEnergyLoss()
+    - +Loss:
+          property: forces
+          metric: RMSE
 
 # ... with the following settings ...
 fitting:
