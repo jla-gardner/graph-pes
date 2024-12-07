@@ -99,7 +99,9 @@ class OffsetLogger(GraphPESCallback):
         if not isinstance(model, AdditionModel):
             return
 
-        offsets = [c for c in model.models if isinstance(c, LearnableOffset)]
+        offsets = [
+            c for c in model.models.values() if isinstance(c, LearnableOffset)
+        ]
         if offsets:
             log_offset(offsets[0], trainer.logger)
 

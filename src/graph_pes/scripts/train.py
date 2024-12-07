@@ -308,22 +308,21 @@ Output for this training run can be found at:
         callbacks=callbacks,
     )
 
+    # route logs to a unique file for each rank: PTL now knows the global rank!
+    log_to_file(file=output_dir / "logs" / f"rank-{trainer.global_rank}.log")
+
     # special handling for GraphPESCallback: we need to register the
     # output directory with it so that it knows where to save the model etc.
     actual_callbacks: list[pl.Callback] = trainer.callbacks  # type: ignore
     for cb in actual_callbacks:
         if isinstance(cb, GraphPESCallback):
             cb._register_root(output_dir)
+    debug(f"Callbacks: {actual_callbacks}")
 
     assert trainer.logger is not None
     trainer.logger.log_hyperparams(config_data)
 
-    # route logs to a unique file for each rank: PTL now knows the global rank!
-    log_to_file(file=output_dir / "logs" / f"rank-{trainer.global_rank}.log")
-
     # instantiate and log things
-    debug(f"Config:\n{config_data}")
-
     model = config.get_model()  # gets logged later
 
     data = config.get_data()
