@@ -13,6 +13,8 @@ Users can now freeze model components when they load them.
 
 A new `ScalesLogger` callback is available to log per-element scaling factors.
 
+A new, general `Loss` base class. The existing `Loss` class has now been renamed to `PropertyLoss`, and inherits from the new base class.
+
 ### Changed
 
 Fix a bug in the `analysis.parity_plot` function.
