@@ -59,9 +59,7 @@ plt.rcParams.update(_my_style)
 
 
 def move_axes(ax: matplotlib.axes.Axes | None = None):  # type: ignore
-    """
-    Move the axes to the center of the figure
-    """
+    """Move the axes outward."""
     ax: plt.Axes = ax or plt.gca()
     ax.spines["left"].set_position(("outward", 10))
     ax.spines["bottom"].set_position(("outward", 10))
@@ -211,7 +209,7 @@ def dimer_curve(
     units: str | None = None,
     set_to_zero: bool = True,
     rmin: float = 0.9,
-    rmax: float = 5.0,
+    rmax: float | None = None,
     ax: matplotlib.axes.Axes | None = None,  # type: ignore
     auto_lim: bool = True,
     **plot_kwargs,
@@ -258,6 +256,8 @@ def dimer_curve(
     if len(trial_atoms) != 2:
         system = system + "2"
 
+    if rmax is None:
+        rmax = model.cutoff.item() + 0.5
     rs = np.linspace(rmin, rmax, 200)
     dimers = [ase.Atoms(system, positions=[[0, 0, 0], [r, 0, 0]]) for r in rs]
     graphs = [AtomicGraph.from_ase(d, cutoff=rmax + 0.1) for d in dimers]

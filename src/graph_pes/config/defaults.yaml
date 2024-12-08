@@ -26,11 +26,15 @@ fitting:
         batch_size: 4
         pin_memory: false
 
+    # log any per-element offset/scaling factors
+    callbacks:
+        - +OffsetLogger()
+        - +ScalesLogger()
+
     # "fancy"/optional training options disabled
     early_stopping_patience: null
     scheduler: null
     swa: null
-    callbacks: []
 
 wandb: {}
 misc: {}

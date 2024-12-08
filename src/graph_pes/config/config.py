@@ -465,6 +465,7 @@ class Config:
         import graph_pes.data
         import graph_pes.models
         import graph_pes.training
+        import graph_pes.training.callbacks
         import graph_pes.training.loss
         import graph_pes.training.opt
 
@@ -477,6 +478,7 @@ class Config:
                 graph_pes.training.opt,
                 graph_pes.training.loss,
                 graph_pes.data,
+                graph_pes.training.callbacks,
             ],
         )
         try:

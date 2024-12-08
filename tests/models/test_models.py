@@ -53,15 +53,16 @@ def test_isolated_atom():
     assert model.predict_energy(graph) == 0
 
 
-def test_pre_fit():
+def test_pre_fit(caplog):
     model = LennardJones()
     model.pre_fit_all_components(graphs)
 
-    with pytest.warns(
-        UserWarning,
-        match="has already been pre-fitted",
-    ):
-        model.pre_fit_all_components(graphs)
+    model.pre_fit_all_components(graphs)
+    assert any(
+        record.levelname == "WARNING"
+        and "has already been pre-fitted" in record.message
+        for record in caplog.records
+    )
 
 
 @helpers.parameterise_model_classes(expected_elements=["Cu"])

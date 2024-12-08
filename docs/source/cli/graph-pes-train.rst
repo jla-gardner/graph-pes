@@ -185,6 +185,8 @@ You can point to any class that inherits from the PyTorch Lightning :class:`~pyt
 
 .. autoclass:: graph_pes.training.callbacks.OffsetLogger
 
+.. autoclass:: graph_pes.training.callbacks.ScalesLogger
+
 .. autoclass:: graph_pes.training.callbacks.DumpModel
 
 .. autoclass:: graph_pes.training.callbacks.GraphPESCallback

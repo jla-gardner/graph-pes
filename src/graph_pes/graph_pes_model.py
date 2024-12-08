@@ -388,7 +388,7 @@ class GraphPESModel(nn.Module, ABC):
         # 2a. if the graph has already been pre-fitted: warn
         if self._has_been_pre_fit:
             model_name = self.__class__.__name__
-            warnings.warn(
+            logger.warning(
                 f"This model ({model_name}) has already been pre-fitted. "
                 "This, and any subsequent, call to pre_fit_all_components will "
                 "be ignored.",
@@ -398,7 +398,7 @@ class GraphPESModel(nn.Module, ABC):
         # 2b. if the model has not been pre-fitted: pre-fit
         else:
             if len(graphs) > 10_000:
-                warnings.warn(
+                logger.warning(
                     f"Pre-fitting on a large dataset ({len(graphs):,} graphs). "
                     "This may take some time. Consider using a smaller, "
                     "representative collection of structures for pre-fitting. "

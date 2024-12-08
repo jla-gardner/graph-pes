@@ -102,7 +102,11 @@ names = ["LennardJonesMixture", "AdditionModel"]
 
 
 @pytest.mark.parametrize("model", models, ids=names)
-def test(tmp_path: Path, model: GraphPESModel):
+def test(
+    tmp_path: Path,
+    model: GraphPESModel,
+    caplog: pytest.LogCaptureFixture,
+):
     assert model.elements_seen == []
 
     # show the model C and H
@@ -119,8 +123,12 @@ def test(tmp_path: Path, model: GraphPESModel):
     # show the model C, H, and O
     acetaldehyde = molecule("CH3CHO")
     acetaldehyde.info["energy"] = 2.0
-    with pytest.warns(UserWarning, match="has already been pre-fitted"):
-        model.pre_fit_all_components(
-            [AtomicGraph.from_ase(acetaldehyde, cutoff=3.0)]
-        )
+    model.pre_fit_all_components(
+        [AtomicGraph.from_ase(acetaldehyde, cutoff=3.0)]
+    )
+    assert any(
+        record.levelname == "WARNING"
+        and "has already been pre-fitted" in record.message
+        for record in caplog.records
+    )
     assert model.elements_seen == ["H", "C", "O"]

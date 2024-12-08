@@ -9,6 +9,7 @@ import torch
 from ase.data import chemical_symbols
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.addition import AdditionModel
+from graph_pes.models.components.scaling import LocalEnergiesScaler
 from graph_pes.models.offsets import LearnableOffset
 from graph_pes.training.util import VALIDATION_LOSS_KEY
 from graph_pes.utils.lammps import deploy_model
@@ -74,10 +75,9 @@ class DumpModel(GraphPESCallback):
 
 def log_offset(model: LearnableOffset, logger: Logger):
     Zs = model._offsets._accessed_Zs
-    for Z in Zs:
-        logger.log_metrics(
-            {f"offset.{chemical_symbols[Z]}": model._offsets[Z].item()}
-        )
+    logger.log_metrics(
+        {f"offset/{chemical_symbols[Z]}": model._offsets[Z].item() for Z in Zs}
+    )
 
 
 class OffsetLogger(GraphPESCallback):
@@ -104,6 +104,45 @@ class OffsetLogger(GraphPESCallback):
         ]
         if offsets:
             log_offset(offsets[0], trainer.logger)
+
+
+def log_scales(model: GraphPESModel, logger: Logger, name: str | None = None):
+    if isinstance(model, AdditionModel):
+        for name, child in model.models.items():
+            log_scales(child, logger, name)
+        return
+
+    prefix = f"scale/{name}" if name else "scale"
+    scaler = next(
+        (c for c in model.modules() if isinstance(c, LocalEnergiesScaler)), None
+    )
+    if not scaler:
+        return
+    scaling = scaler.per_element_scaling
+    logger.log_metrics(
+        {
+            f"{prefix}/{chemical_symbols[Z]}": scaling[Z].item()
+            for Z in scaling._accessed_Zs
+        }
+    )
+
+
+class ScalesLogger(GraphPESCallback):
+    """
+    Log any learned, per-element scaling factors of the model at the
+    end of each validation epoch.
+    """
+
+    def on_validation_epoch_end(
+        self, trainer: Trainer, pl_module: LightningModule
+    ):
+        if not trainer.is_global_zero:
+            return
+
+        if not trainer.logger:
+            return
+
+        log_scales(self.get_model(pl_module), trainer.logger)
 
 
 class SaveBestModel(GraphPESCallback):
