@@ -19,12 +19,17 @@ class Loss(nn.Module, ABC):
     """
     A general base class for all loss functions in ``graph-pes``.
 
-    Implementations should override:
+    Implementations **must** override:
 
     * :meth:`forward` to compute the loss value.
     * :meth:`name` to return the name of the loss function.
     * :meth:`required_properties` to return the properties that this loss
       function needs to have available in order to compute its value.
+
+    Additionally, implementations can optionally override:
+
+    * :meth:`pre_fit` to perform any necessary operations before training
+      commences.
     """
 
     @abstractmethod
@@ -56,6 +61,20 @@ class Loss(nn.Module, ABC):
     @abstractmethod
     def name(self) -> str:
         """The name of this loss function, for logging purposes."""
+
+    def pre_fit(self, training_data: AtomicGraph):
+        """
+        Perform any necessary operations before training commences.
+
+        For example, this could be used to pre-compute a standard deviation
+        of some property in the training data, which could then be used in
+        :meth:`forward`.
+
+        Parameters
+        ----------
+        training_data
+            The training data to pre-fit this loss function to.
+        """
 
     # add type hints to play nicely with mypy
     def __call__(

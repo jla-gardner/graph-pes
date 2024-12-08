@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Literal
 
 import pytorch_lightning as pl
+from graph_pes.atomic_graph import to_batch
 from graph_pes.config import FittingOptions
 from graph_pes.data.datasets import FittingData
 from graph_pes.data.loader import GraphDataLoader
@@ -57,15 +58,18 @@ def train_with_lightning(
     valid_loader = GraphDataLoader(data.valid, **loader_kwargs)
 
     # - maybe do some pre-fitting
+    pre_fit_dataset = data.train
+    if fit_config.max_n_pre_fit is not None:
+        pre_fit_dataset = pre_fit_dataset.sample(fit_config.max_n_pre_fit)
     if fit_config.pre_fit_model:
-        pre_fit_dataset = data.train
-        if fit_config.max_n_pre_fit is not None:
-            pre_fit_dataset = pre_fit_dataset.sample(fit_config.max_n_pre_fit)
         logger.info(
             f"Pre-fitting the model on {len(pre_fit_dataset):,} samples"
         )
         model.pre_fit_all_components(pre_fit_dataset)
     trainer.strategy.barrier("pre-fit")
+
+    for subloss in loss.losses:
+        subloss.pre_fit(to_batch(list(pre_fit_dataset)))
 
     # - log the model info
     if trainer.global_rank == 0:

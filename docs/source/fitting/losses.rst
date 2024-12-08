@@ -14,7 +14,7 @@ Losses
 
 .. autoclass:: graph_pes.training.loss.Loss
     :show-inheritance:
-    :members: name, forward, required_properties
+    :members: name, forward, required_properties, pre_fit
 
 .. autoclass:: graph_pes.training.loss.PropertyLoss
     :show-inheritance:
