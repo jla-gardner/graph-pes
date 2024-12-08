@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+Users can now freeze model components when they load them.
+
+A new `ScalesLogger` callback is available to log per-element scaling factors.
+
 ### Changed
 
 Fix a bug in the `analysis.parity_plot` function.
+
+Fixed a bug in the `OffsetLogger` callback.
 
 ## [0.0.10] - 2024-12-05
 
