@@ -4,8 +4,22 @@ Losses
 
 In ``graph-pes``, we distinguish between metrics and losses:
 
+* A :class:`~graph_pes.training.loss.Loss` is some function that takes a model, a batch of graphs, and some predictions, and returns a scalar value measuring something that training should seek to minimise. 
+  This could be a prediction error, a model weight penalty, or something else.
 * A :class:`~graph_pes.training.loss.Metric` is some function that takes two tensors and returns a scalar value measuring the discrepancy between them.
-* A :class:`~graph_pes.training.loss.Loss` acts to apply a given :class:`~graph_pes.training.loss.Metric` to some predictions and labels, where both of these inputs are dictionaries mapping from label keys (e.g. ``"energy"``, ``"forces"``, ``"stress"``, ``"virial"``) to tensors.
+
+
+Losses
+======
+
+.. autoclass:: graph_pes.training.loss.Loss
+    :show-inheritance:
+    :members: name, forward, required_properties
+
+.. autoclass:: graph_pes.training.loss.PropertyLoss
+    :show-inheritance:
+
+.. autoclass:: graph_pes.training.loss.PerAtomEnergyLoss
 
 
 Metrics
@@ -27,22 +41,13 @@ Metrics
 .. autoclass:: graph_pes.training.loss.MSE()
 
 
-Losses
-======
 
-.. autoclass:: graph_pes.training.loss.Loss
-    :show-inheritance:
-    :members: name
-
-
+    
+Helpers
+=======
 
 .. autoclass:: graph_pes.training.loss.TotalLoss
     :show-inheritance:
-
-.. autoclass:: graph_pes.training.loss.PerAtomEnergyLoss
-    
-Helpers
--------
 
 .. class:: graph_pes.training.loss.MetricName
 

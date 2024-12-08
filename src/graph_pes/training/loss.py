@@ -21,10 +21,10 @@ class Loss(nn.Module, ABC):
 
     Implementations should override:
 
-    * :meth:`forward` method to compute the loss value.
-    * :meth:`name` method to return the name of the loss function.
-    * :meth:`required_properties` method to return the properties required by
-      the loss function.
+    * :meth:`forward` to compute the loss value.
+    * :meth:`name` to return the name of the loss function.
+    * :meth:`required_properties` to return the properties that this loss
+      function needs to have available in order to compute its value.
     """
 
     @abstractmethod
@@ -34,8 +34,8 @@ class Loss(nn.Module, ABC):
         graph: AtomicGraph,
         predictions: dict[PropertyKey, torch.Tensor],
     ) -> torch.Tensor:
-        """
-        :class:`Loss`/ s can act on any of:
+        r"""
+        :class:`Loss`\ s can act on any of:
 
         Parameters
         ----------
@@ -172,6 +172,8 @@ class TotalLoss(torch.nn.Module):
 
     where :math:`\mathcal{L}_i` is the :math:`i`-th loss and :math:`w_i` is the
     corresponding weight.
+
+    ``graph-pes`` models are trained by minimising a :class:`TotalLoss` value.
 
     Parameters
     ----------
