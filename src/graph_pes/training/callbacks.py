@@ -73,10 +73,22 @@ class DumpModel(GraphPESCallback):
         torch.save(self.get_model_on_cpu(pl_module), model_path)
 
 
-def log_offset(model: LearnableOffset, logger: Logger):
-    Zs = model._offsets._accessed_Zs
+def log_offset(model: GraphPESModel, logger: Logger):
+    if not isinstance(model, AdditionModel):
+        return
+
+    offsets = [
+        c for c in model.models.values() if isinstance(c, LearnableOffset)
+    ]
+    if not offsets:
+        return
+
+    Zs = offsets[0]._offsets._accessed_Zs
     logger.log_metrics(
-        {f"offset/{chemical_symbols[Z]}": model._offsets[Z].item() for Z in Zs}
+        {
+            f"offset/{chemical_symbols[Z]}": offsets[0]._offsets[Z].item()
+            for Z in Zs
+        }
     )
 
 
@@ -95,15 +107,7 @@ class OffsetLogger(GraphPESCallback):
         if not trainer.logger:
             return
 
-        model = self.get_model(pl_module)
-        if not isinstance(model, AdditionModel):
-            return
-
-        offsets = [
-            c for c in model.models.values() if isinstance(c, LearnableOffset)
-        ]
-        if offsets:
-            log_offset(offsets[0], trainer.logger)
+        log_offset(self.get_model(pl_module), trainer.logger)
 
 
 def log_scales(model: GraphPESModel, logger: Logger, name: str | None = None):

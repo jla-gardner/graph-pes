@@ -132,3 +132,16 @@ def test(
         for record in caplog.records
     )
     assert model.elements_seen == ["H", "C", "O"]
+
+
+def test_large_pre_fit(caplog: pytest.LogCaptureFixture):
+    model = LennardJonesMixture()
+    methane = molecule("CH4")
+    graph = AtomicGraph.from_ase(methane, cutoff=0.5)
+    graphs = [graph] * 10_001
+    model.pre_fit_all_components(graphs)
+    assert any(
+        record.levelname == "WARNING"
+        and "Pre-fitting on a large dataset" in record.message
+        for record in caplog.records
+    )
