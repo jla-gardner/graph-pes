@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Callable, Literal, NamedTuple, Sequence
 
 import torch
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey, divide_per_atom
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.utils.misc import force_to_single_line, uniform_repr
 from graph_pes.utils.nn import UniformModuleList
 from torch import Tensor, nn
@@ -13,10 +15,63 @@ Metric = Callable[[Tensor, Tensor], Tensor]
 MetricName = Literal["MAE", "RMSE", "MSE"]
 
 
-class Loss(nn.Module):
+class Loss(nn.Module, ABC):
+    """
+    A general base class for all loss functions in ``graph-pes``.
+
+    Implementations should override:
+
+    * :meth:`forward` method to compute the loss value.
+    * :meth:`name` method to return the name of the loss function.
+    * :meth:`required_properties` method to return the properties required by
+      the loss function.
+    """
+
+    @abstractmethod
+    def forward(
+        self,
+        model: GraphPESModel,
+        graph: AtomicGraph,
+        predictions: dict[PropertyKey, torch.Tensor],
+    ) -> torch.Tensor:
+        """
+        :class:`Loss`/ s can act on any of:
+
+        Parameters
+        ----------
+        model
+            The model being trained.
+        graph
+            The graph (usually a batch) the ``model`` was applied to.
+        predictions
+            The predictions from the ``model`` for the given ``graph``.
+        """
+
+    @property
+    @abstractmethod
+    def required_properties(self) -> list[PropertyKey]:
+        """The properties that are required by this loss function."""
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """The name of this loss function, for logging purposes."""
+
+    # add type hints to play nicely with mypy
+    def __call__(
+        self,
+        model: GraphPESModel,
+        graph: AtomicGraph,
+        predictions: dict[PropertyKey, torch.Tensor],
+    ) -> torch.Tensor:
+        return super().__call__(model, graph, predictions)
+
+
+class PropertyLoss(Loss):
     r"""
-    A :class:`Loss` instance applies its :class:`Metric` to the predictions and
-    labels for a given property in a :class:`~graph_pes.AtomicGraph`.
+    A :class:`PropertyLoss` instance applies its :class:`Metric` to compare a
+    model's predictions to the true values for a given property of a
+    :class:`~graph_pes.AtomicGraph`.
 
     Parameters
     ----------
@@ -35,7 +90,6 @@ class Loss(nn.Module):
             predictions,  # a dict of key (energy/force/etc.) to value
             graph.properties,
         )
-
     """
 
     def __init__(
@@ -49,8 +103,9 @@ class Loss(nn.Module):
 
     def forward(
         self,
+        model: GraphPESModel,
+        graph: AtomicGraph,
         predictions: dict[PropertyKey, torch.Tensor],
-        graphs: AtomicGraph,
     ) -> torch.Tensor:
         """
         Computes the loss value.
@@ -58,14 +113,12 @@ class Loss(nn.Module):
         Parameters
         ----------
         predictions
-            The predictions from the model.
-        graphs
-            The graphs containing the labels.
+            The predictions from the ``model`` for the given ``graph``.
         """
 
         return self.metric(
             predictions[self.property],
-            graphs.properties[self.property],
+            graph.properties[self.property],
         )
 
     @property
@@ -73,13 +126,9 @@ class Loss(nn.Module):
         """Get the name of this loss for logging purposes."""
         return f"{self.property}_{_get_metric_name(self.metric)}"
 
-    # add type hints to play nicely with mypy
-    def __call__(
-        self,
-        predictions: dict[PropertyKey, torch.Tensor],
-        graphs: AtomicGraph,
-    ) -> torch.Tensor:
-        return super().__call__(predictions, graphs)
+    @property
+    def required_properties(self) -> list[PropertyKey]:
+        return [self.property]
 
     def __repr__(self) -> str:
         return uniform_repr(
@@ -145,8 +194,9 @@ class TotalLoss(torch.nn.Module):
 
     def forward(
         self,
+        model: GraphPESModel,
+        graph: AtomicGraph,
         predictions: dict[PropertyKey, torch.Tensor],
-        graphs: AtomicGraph,
     ) -> TotalLossResult:
         """
         Computes the total loss value.
@@ -155,15 +205,15 @@ class TotalLoss(torch.nn.Module):
         ----------
         predictions
             The predictions from the model.
-        graphs
-            The graphs containing the labels.
+        graph
+            The graph (usually a batch) the ``model`` was applied to.
         """
 
-        total_loss = torch.scalar_tensor(0.0, device=graphs.Z.device)
+        total_loss = torch.scalar_tensor(0.0, device=graph.Z.device)
         components: dict[str, SubLossPair] = {}
 
         for loss, weight in zip(self.losses, self.weights):
-            loss_value = loss(predictions, graphs)
+            loss_value = loss(model, graph, predictions)
             weighted_loss_value = loss_value * weight
 
             total_loss += weighted_loss_value
@@ -174,10 +224,11 @@ class TotalLoss(torch.nn.Module):
     # add type hints to appease mypy
     def __call__(
         self,
+        model: GraphPESModel,
+        graph: AtomicGraph,
         predictions: dict[PropertyKey, torch.Tensor],
-        graphs: AtomicGraph,
     ) -> TotalLossResult:
-        return super().__call__(predictions, graphs)
+        return super().__call__(model, graph, predictions)
 
     def __repr__(self) -> str:
         losses = ["(loss)"] + [
@@ -195,7 +246,7 @@ class TotalLoss(torch.nn.Module):
 ############################# CUSTOM LOSSES #############################
 
 
-class PerAtomEnergyLoss(Loss):
+class PerAtomEnergyLoss(PropertyLoss):
     r"""
     A loss function that evaluates some metric on the total energy normalised
     by the number of atoms in the structure.
@@ -223,12 +274,13 @@ class PerAtomEnergyLoss(Loss):
 
     def forward(
         self,
+        model: GraphPESModel,
+        graph: AtomicGraph,
         predictions: dict[PropertyKey, torch.Tensor],
-        graphs: AtomicGraph,
     ) -> torch.Tensor:
         return self.metric(
-            divide_per_atom(predictions["energy"], graphs),
-            divide_per_atom(graphs.properties["energy"], graphs),
+            divide_per_atom(predictions["energy"], graph),
+            divide_per_atom(graph.properties["energy"], graph),
         )
 
     @property

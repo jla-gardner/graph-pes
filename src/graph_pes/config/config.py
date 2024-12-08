@@ -356,7 +356,7 @@ class Config:
 
             # or more fine-grained control
             loss:
-                +Loss:
+                +PropertyLoss:
                     property: energy
                     metric: MAE  # defaults to RMSE if not specified
 
@@ -369,8 +369,24 @@ class Config:
                 # specify a loss with several sub-losses:
                 - +PerAtomEnergyLoss()  # defaults to weight 1.0
                 - +WeightedLoss:
-                    component: +Loss: {property: forces, metric: +MSE()}
+                    component: +PropertyLoss: { property: forces, metric: MSE }
                     weight: 10.0
+
+        ...or point to your own custom loss implementation, either in isolation:
+
+        .. code-block:: yaml
+
+            loss: 
+                +my.module.CustomLoss: { alpha: 0.5 }
+
+        ...or as just another component of a 
+        :class:`~graph_pes.training.loss.TotalLoss`:
+
+        .. code-block:: yaml
+
+            loss:
+                - +PerAtomEnergyLoss()
+                - +my.module.CustomLoss: { alpha: 0.5 }
     """
 
     fitting: FittingConfig

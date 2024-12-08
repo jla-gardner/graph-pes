@@ -11,7 +11,14 @@ from graph_pes.atomic_graph import (
     number_of_structures,
 )
 from graph_pes.graph_pes_model import GraphPESModel
-from graph_pes.training.loss import RMSE, Loss, PerAtomEnergyLoss, TotalLoss
+from graph_pes.training.loss import (
+    MAE,
+    RMSE,
+    Loss,
+    PerAtomEnergyLoss,
+    PropertyLoss,
+    TotalLoss,
+)
 from graph_pes.training.opt import LRScheduler, Optimizer
 from graph_pes.training.util import VALIDATION_LOSS_KEY
 from graph_pes.utils.logger import logger
@@ -31,9 +38,14 @@ class PESLearningTask(pl.LightningModule):
         self.optimizer_factory = optimizer
         self.scheduler_factory = scheduler
         self.total_loss = loss
-        self.train_properties: list[PropertyKey] = [
-            component.property for component in self.total_loss.losses
-        ]
+        self.train_properties: list[PropertyKey] = list(
+            set.union(
+                *[
+                    set(loss.required_properties)
+                    for loss in self.total_loss.losses
+                ]
+            )
+        )
 
     def forward(self, graphs: AtomicGraph) -> torch.Tensor:
         """Get the energy"""
@@ -75,7 +87,7 @@ class PESLearningTask(pl.LightningModule):
         predictions = self.model.predict(graph, properties=desired_properties)
 
         # compute the loss and its sub-components
-        total_loss_result = self.total_loss(predictions, graph)
+        total_loss_result = self.total_loss(self.model, graph, predictions)
 
         # log
         log("loss/total", total_loss_result.loss_value)
@@ -88,19 +100,23 @@ class PESLearningTask(pl.LightningModule):
             val_metrics: list[Loss] = []
             if "energy" in graph.properties:
                 val_metrics.append(PerAtomEnergyLoss())
-                val_metrics.append(Loss("energy", RMSE()))
+                val_metrics.append(PropertyLoss("energy", RMSE()))
+                val_metrics.append(PropertyLoss("energy", MAE()))
             if "forces" in graph.properties:
-                val_metrics.append(Loss("forces", RMSE()))
+                # Force MAE is not invariant wrt. rotations, so we don't log it
+                # see "How to validate machine-learned interatomic potentials"
+                #      -> https://doi.org/10.1063/5.0139611
+                val_metrics.append(PropertyLoss("forces", RMSE()))
             if "stress" in graph.properties:
-                val_metrics.append(Loss("stress", RMSE()))
+                val_metrics.append(PropertyLoss("stress", RMSE()))
             if "virial" in graph.properties:
-                val_metrics.append(Loss("virial", RMSE()))
+                val_metrics.append(PropertyLoss("virial", RMSE()))
 
             for metric in val_metrics:
                 if metric.name in total_loss_result.components:
                     # don't double log
                     continue
-                value = metric(predictions, graph)
+                value = metric(self.model, graph, predictions)
                 log(f"metrics/{metric.name}", value)
 
         return total_loss_result.loss_value

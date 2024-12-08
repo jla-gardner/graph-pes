@@ -30,15 +30,11 @@ loss:
     - +PerAtomEnergyLoss()
     - +WeightedLoss:
           component:
-              +Loss:
-                  property: forces
-                  metric: RMSE
+              +PropertyLoss: { property: forces, metric: RMSE }
           weight: 3.0
     - +WeightedLoss:
           component:
-              +Loss:
-                  property: stress
-                  metric: RMSE
+              +PropertyLoss: { property: stress, metric: RMSE }
           weight: 10.0
 
 fitting:

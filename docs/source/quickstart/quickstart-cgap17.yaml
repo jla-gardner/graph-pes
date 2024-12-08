@@ -35,9 +35,7 @@ data:
 # ... on both energy and forces (weighted 1:1) ...
 loss:
     - +PerAtomEnergyLoss()
-    - +Loss:
-          property: forces
-          metric: RMSE
+    - +PropertyLoss: { property: forces, metric: RMSE }
 
 # ... with the following settings ...
 fitting:
