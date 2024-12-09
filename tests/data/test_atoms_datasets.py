@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from graph_pes.atomic_graph import number_of_atoms
 from graph_pes.data import load_atoms_dataset
+from graph_pes.data.datasets import file_dataset
 
 from .. import helpers
 
@@ -69,3 +70,26 @@ def test_property_map():
             n_valid=2,
             property_map={"UNKNOWN KEY": "energy"},
         )
+
+
+def test_file_dataset():
+    dataset = file_dataset(
+        helpers.CU_STRUCTURES_FILE,
+        cutoff=2.5,
+        n=5,
+        shuffle=False,
+        seed=42,
+    )
+
+    assert len(dataset) == 5
+
+    shuffled = file_dataset(
+        helpers.CU_STRUCTURES_FILE,
+        cutoff=2.5,
+        n=5,
+        shuffle=True,
+        seed=42,
+    )
+
+    assert len(shuffled) == 5
+    assert shuffled[0].R.shape != dataset[0].R.shape
