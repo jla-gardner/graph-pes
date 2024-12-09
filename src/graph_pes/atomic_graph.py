@@ -18,6 +18,7 @@ import numpy as np
 import torch
 from ase.neighborlist import neighbor_list
 from ase.stress import voigt_6_to_full_3x3_stress
+from load_atoms.utils import remove_calculator
 from typing_extensions import TypeAlias
 
 from graph_pes.utils.misc import (
@@ -338,6 +339,17 @@ class AtomicGraph(NamedTuple):
                 other=['unique_id']
             )
         """
+
+        # account for strange behaviour in ase 3.23.0+ whereby
+        # properties are sometimes removed from the atoms.info/arrays dicts
+        # to ensure we don't change the atoms object that the user passes in
+        # we first make a copy, ensuring that the calculator is also copied over
+        calc = structure.calc
+        structure = structure.copy()
+        structure.calc = calc
+        # then we remove the calculator and copy over the properties to the
+        # relevant info/arrays dicts (with help from load_atoms.utils)
+        remove_calculator(structure)
 
         dtype = torch.get_default_dtype()
 
