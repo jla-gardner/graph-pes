@@ -1,26 +1,26 @@
 name: publish
 on:
-    push:
-        tags:
-            - "*.*.*"
+  push:
+    tags:
+      - "*.*.*"
 
-jobs: 
-    publish:
-        name: Upload release to PyPI
-        runs-on: ubuntu-latest
-        permissions:
-            id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
+jobs:
+  publish:
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
 
-        steps:
-            - uses: actions/checkout@v3
-            - uses: actions/setup-python@v4
-              with:
-                  python-version: 3.8
-            - name: Install graph-pes with publish dependencies
-              run: pip install ".[publish]"
-            - name: Build
-              run: python -m build
-            - name: Check
-              run: twine check dist/*
-            - name: Publish to PyPI
-              uses: pypa/gh-action-pypi-publish@release/v1
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+      - name: Install graph-pes with publish dependencies
+        run: pip install ".[publish]"
+      - name: Build
+        run: python -m build
+      - name: Check
+        run: twine check dist/*
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
