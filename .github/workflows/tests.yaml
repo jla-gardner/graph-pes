@@ -33,9 +33,11 @@ jobs:
     steps:
       ### SETUP ###
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Cache dependencies
         # Caching the python environment. This is different to just caching the
         # pip wheels, as we save on the installation time of large packages such
@@ -45,18 +47,20 @@ jobs:
         with:
           path: ${{ env.pythonLocation }}
           key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
+
       - name: Install graph-pes and required dependencies
         # Install graph-pes and update any dependencies that are not up to date in
         # the cached environment. We use the --upgrade-strategy eager flag to get
         # the latest version of the dependencies.
         run: pip install --upgrade --upgrade-strategy eager ".[test,docs]"
+
       - name: Useful info
         run: pip freeze
+
       ### CODE TESTS ###
-      # - name: Run pyright
-      # run: pyright
       - name: Run tests
         run: PYTHONPATH=. pytest --cov --cov-report xml
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         # only upload coverage reports for the first python version
@@ -64,16 +68,27 @@ jobs:
         with:
           token: ${{secrets.CODECOV_TOKEN}}
 
+      - name: Run a very small training run
+        run: |
+          graph-pes-train graph-pes/configs/minimal.yaml \
+              data/+load_atoms_dataset/n_train=10 \
+              data/+load_atoms_dataset/n_valid=10 \
+              fitting/trainer_kwargs/max_epochs=5 \
+              wandb=null
+
   docs:
     runs-on: ubuntu-latest
     steps:
       ### SETUP ###
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: 3.9
+
       - name: Install pandoc
         run: sudo apt-get install -y --no-install-recommends pandoc
+
       - name: Cache dependencies
         # Caching the python environment. This is different to just caching the
         # pip wheels, as we save on the installation time of large packages such
@@ -83,14 +98,17 @@ jobs:
         with:
           path: ${{ env.pythonLocation }}
           key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
+
       - name: Install graph-pes and required dependencies
         # -e flag to install in place, allowing for correct links
         run: pip install -e".[docs]"
+
       ### DOCS ###
       - name: Build docs
         # -n: nitpick:
         # -W: turn warnings into errors
         run: sphinx-build -nW docs/source docs/build --keep-going
+
       - name: Publich docs
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
         uses: peaceiris/actions-gh-pages@v3
