@@ -3,13 +3,13 @@ model:
     +SchNet:
         layers: 3
         channels: 64
-        cutoff: "!~/misc/CUTOFF"
+        cutoff: =/misc/CUTOFF
 
 # ...using some of the QM7 structures...
 data:
     +load_atoms_dataset:
         id: QM7
-        cutoff: "!~/misc/CUTOFF"
+        cutoff: =/misc/CUTOFF
         n_train: 5_000
         n_valid: 100
 

@@ -27,7 +27,7 @@ dependencies = [
     "locache",
     "load-atoms>=0.3.6",
     "wandb",
-    "data2objects",
+    "data2objects>=0.1.0",
 ]
 requires-python = ">=3.9"
 

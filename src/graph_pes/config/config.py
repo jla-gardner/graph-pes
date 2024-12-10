@@ -91,7 +91,7 @@ class SWAConfig:
     to zero.
     """
 
-    strategy: Literal["linear", "cosine"] = "linear"
+    strategy: Literal["linear", "cos"] = "linear"
     """The strategy to use for annealing the learning rate."""
 
     def instantiate_lightning_callback(self):
@@ -447,11 +447,11 @@ class Config:
 
         model:
             +my_module.create_model:
-                cutoff: '!~/misc/CUTOFF'
+                cutoff: =/misc/CUTOFF        
     
         data:
             +my_module.create_data:
-                cutoff: '!~/misc/CUTOFF'
+                cutoff: =/misc/CUTOFF
     """
 
     ### Methods ###

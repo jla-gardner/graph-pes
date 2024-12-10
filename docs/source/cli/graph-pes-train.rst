@@ -88,14 +88,14 @@ For a full list of available options in these config files, see :ref:`the below 
     
     Under-the-hood, ``graph-pes-train`` turns the final nested config dictionary into a :class:`~graph_pes.config.Config` object via a 3 step process:
 
-    1. all reference strings (of the form ``!~/absolute/path/to/object`` or ``!../relative/path/to/object``) are replaced with the corresponding value.
+    1. all reference strings (of the form ``=/absolute/path/to/object`` or ``=../relative/path/to/object``) are replaced with the corresponding value.
        For example:
 
        .. code-block:: yaml
 
-           a: {b: "!~/c"}  # absolute reference
+           a: {b: "=/c"}  # absolute reference
            c: 2
-           d: {e: "!../c"}  # relative reference
+           d: {e: "=../c"}  # relative reference
 
        will be transformed into:
 
