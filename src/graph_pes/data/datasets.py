@@ -447,7 +447,8 @@ def file_dataset(
     ... )
     """
 
-    structures = load_dataset(path)
+    structures = ase.io.read(path, index=":")
+    assert isinstance(structures, list)
 
     if shuffle:
         idxs = np.random.default_rng(seed).permutation(len(structures))
