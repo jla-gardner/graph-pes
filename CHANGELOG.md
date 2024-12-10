@@ -13,6 +13,8 @@ Updated the minimum Python version to 3.9.
 
 Un-pinned the `ase==3.22` dependency.
 
+Migrate to using `data2objects>=0.1`
+
 ## [0.0.11] - 2024-12-08
 
 ### Added
