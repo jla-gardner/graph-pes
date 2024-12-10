@@ -70,7 +70,7 @@ jobs:
 
       - name: Run a very small training run
         run: |
-          graph-pes-train graph-pes/configs/minimal.yaml \
+          graph-pes-train configs/minimal.yaml \
               data/+load_atoms_dataset/n_train=10 \
               data/+load_atoms_dataset/n_valid=10 \
               fitting/trainer_kwargs/max_epochs=5 \
