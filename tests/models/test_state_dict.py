@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 import torch
+
 from graph_pes import GraphPESModel
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey
 from graph_pes.models import LennardJones

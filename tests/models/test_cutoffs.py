@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import pytest
+from torch import Tensor
+
 from graph_pes import GraphPESModel
 from graph_pes.atomic_graph import (
     AtomicGraph,
@@ -12,7 +14,6 @@ from graph_pes.atomic_graph import (
     trim_edges,
 )
 from graph_pes.models import AdditionModel, FixedOffset, SchNet
-from torch import Tensor
 
 from ..helpers import graph_from_molecule
 

@@ -1,6 +1,7 @@
 import pytest
 import torch
 from ase.build import molecule
+
 from graph_pes import AtomicGraph
 from graph_pes.atomic_graph import PropertyKey
 from graph_pes.models import LennardJones

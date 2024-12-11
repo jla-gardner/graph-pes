@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytorch_lightning as pl
+
 from graph_pes import AtomicGraph, GraphPESModel
 from graph_pes.atomic_graph import to_batch
 from graph_pes.config import FittingOptions

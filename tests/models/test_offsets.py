@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import torch
 from ase import Atoms
+
 from graph_pes import AtomicGraph
 from graph_pes.atomic_graph import number_of_atoms, to_batch
 from graph_pes.models.offsets import EnergyOffset, FixedOffset, LearnableOffset

@@ -9,6 +9,8 @@ import e3nn.nn
 import e3nn.util.jit
 import torch
 from e3nn import o3
+from torch import Tensor
+
 from graph_pes.atomic_graph import (
     DEFAULT_CUTOFF,
     AtomicGraph,
@@ -37,7 +39,6 @@ from graph_pes.utils.nn import (
     PerElementEmbedding,
     UniformModuleList,
 )
-from torch import Tensor
 
 warnings.filterwarnings(
     "ignore",

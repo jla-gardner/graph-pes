@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ase
 import torch
+
 from graph_pes import AtomicGraph
 from graph_pes.models import (
     FixedOffset,

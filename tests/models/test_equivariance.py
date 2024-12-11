@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 import torch
 from ase.build import molecule
+
 from graph_pes import AtomicGraph, GraphPESModel
 from graph_pes.models import PaiNN
 

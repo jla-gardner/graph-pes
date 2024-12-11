@@ -1,4 +1,5 @@
 from ase.build import molecule
+
 from graph_pes.atomic_graph import AtomicGraph
 from graph_pes.models import LennardJones
 from graph_pes.utils.analysis import dimer_curve, parity_plot

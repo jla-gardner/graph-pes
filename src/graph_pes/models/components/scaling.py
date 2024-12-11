@@ -3,10 +3,11 @@ from __future__ import annotations
 import warnings
 
 import torch
+from torch import nn
+
 from graph_pes.atomic_graph import AtomicGraph
 from graph_pes.utils.nn import PerElementParameter
 from graph_pes.utils.shift_and_scale import guess_per_element_mean_and_var
-from torch import nn
 
 
 class LocalEnergiesScaler(nn.Module):

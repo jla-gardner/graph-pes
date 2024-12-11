@@ -9,6 +9,7 @@ import pytorch_lightning
 import torch
 from ase import Atoms
 from ase.io import read
+
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models import (

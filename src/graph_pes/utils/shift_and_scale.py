@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import torch
+from sklearn.linear_model import Ridge
+
 from graph_pes.atomic_graph import (
     AtomicGraph,
     number_of_structures,
     sum_per_structure,
 )
-from sklearn.linear_model import Ridge
 
 from .logger import logger
 

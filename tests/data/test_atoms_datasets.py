@@ -2,6 +2,7 @@ from typing import Literal
 
 import numpy as np
 import pytest
+
 from graph_pes.atomic_graph import number_of_atoms
 from graph_pes.data import load_atoms_dataset
 from graph_pes.data.datasets import file_dataset

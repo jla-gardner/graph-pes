@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 import torch
+
 from graph_pes.utils.misc import MAX_Z, left_aligned_div, left_aligned_mul
 from graph_pes.utils.nn import (
     MLP,

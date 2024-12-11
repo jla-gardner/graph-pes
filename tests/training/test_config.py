@@ -1,6 +1,7 @@
 import pytest
 import torch
 import yaml
+
 from graph_pes.config import Config, get_default_config_values
 from graph_pes.models import SchNet
 from graph_pes.models.addition import AdditionModel

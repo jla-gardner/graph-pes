@@ -4,6 +4,10 @@ import time
 from typing import Any, Literal
 
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks import ProgressBar, StochasticWeightAveraging
+from pytorch_lightning.loggers import Logger as PTLLogger
+from typing_extensions import override
+
 from graph_pes.atomic_graph import (
     AtomicGraph,
     number_of_atoms,
@@ -13,9 +17,6 @@ from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.addition import AdditionModel
 from graph_pes.utils.logger import logger
 from graph_pes.utils.nn import learnable_parameters
-from pytorch_lightning.callbacks import ProgressBar, StochasticWeightAveraging
-from pytorch_lightning.loggers import Logger as PTLLogger
-from typing_extensions import override
 
 
 def log_model_info(

@@ -8,6 +8,7 @@ import numpy
 import torch
 from ase.calculators.calculator import Calculator, all_changes
 from ase.stress import full_3x3_to_voigt_6_stress
+
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey, has_cell, to_batch
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.utils.misc import groups_of, pairs

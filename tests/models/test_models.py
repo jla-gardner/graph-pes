@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import graph_pes
 import pytest
 import torch
 from ase import Atoms
+
+import graph_pes
 from graph_pes import AtomicGraph, GraphPESModel
 from graph_pes.atomic_graph import (
     has_cell,

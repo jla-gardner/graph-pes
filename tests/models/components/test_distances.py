@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 import torch
+
 from graph_pes.models.components.distances import (
     Bessel,
     CosineEnvelope,

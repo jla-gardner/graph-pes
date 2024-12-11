@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import torch
 from ase import Atoms
+
 from graph_pes import AtomicGraph
 from graph_pes.atomic_graph import get_cell_volume, number_of_edges, to_batch
 from graph_pes.models.pairwise import LennardJones

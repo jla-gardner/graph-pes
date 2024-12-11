@@ -9,10 +9,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from cycler import cycler
-from graph_pes.utils.calculator import GraphPESCalculator, merge_predictions
-from graph_pes.utils.misc import voigt_6_to_full_3x3
 from matplotlib.ticker import MaxNLocator
 from torch import Tensor
+
+from graph_pes.utils.calculator import GraphPESCalculator, merge_predictions
+from graph_pes.utils.misc import voigt_6_to_full_3x3
 
 from ..atomic_graph import AtomicGraph, PropertyKey, to_batch
 from ..graph_pes_model import GraphPESModel

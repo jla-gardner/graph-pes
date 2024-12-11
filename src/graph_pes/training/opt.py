@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import torch
+
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.offsets import LearnableOffset
 from graph_pes.utils.misc import contains_tensor, uniform_repr

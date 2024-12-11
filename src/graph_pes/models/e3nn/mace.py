@@ -6,6 +6,7 @@ from typing import Callable, Final, cast
 import torch
 import torch.fx
 from e3nn import o3
+
 from graph_pes.atomic_graph import (
     DEFAULT_CUTOFF,
     AtomicGraph,

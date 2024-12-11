@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 import torch
 from ase.build import molecule
+
 from graph_pes import AtomicGraph, GraphPESModel
 from graph_pes.atomic_graph import (
     number_of_structures,

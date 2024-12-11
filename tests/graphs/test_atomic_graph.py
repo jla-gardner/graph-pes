@@ -7,6 +7,7 @@ import pytest
 import torch
 from ase import Atoms
 from ase.build import molecule
+
 from graph_pes.atomic_graph import (
     AtomicGraph,
     neighbour_distances,

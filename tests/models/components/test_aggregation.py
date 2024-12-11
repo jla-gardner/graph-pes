@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 import torch
 from ase import Atoms
+
 from graph_pes.atomic_graph import (
     AtomicGraph,
     number_of_atoms,

@@ -1,5 +1,6 @@
 import pytest
 import torch
+
 from graph_pes.models import LearnableOffset, LennardJones, SchNet
 from graph_pes.models.addition import AdditionModel
 from graph_pes.training.opt import LRScheduler, Optimizer

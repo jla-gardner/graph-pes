@@ -1,5 +1,6 @@
 import numpy
 from ase.build import bulk, molecule
+
 from graph_pes.atomic_graph import PropertyKey
 from graph_pes.models import LennardJones
 from graph_pes.utils.calculator import GraphPESCalculator, merge_predictions

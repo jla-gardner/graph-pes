@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Literal
 
 import torch
+
 from graph_pes.atomic_graph import (
     AtomicGraph,
     number_of_atoms,

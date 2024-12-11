@@ -5,6 +5,8 @@ from typing import Literal
 
 import pytorch_lightning as pl
 import torch
+from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
+
 from graph_pes.atomic_graph import (
     AtomicGraph,
     PropertyKey,
@@ -22,7 +24,6 @@ from graph_pes.training.loss import (
 from graph_pes.training.opt import LRScheduler, Optimizer
 from graph_pes.training.util import VALIDATION_LOSS_KEY
 from graph_pes.utils.logger import logger
-from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
 
 
 class PESLearningTask(pl.LightningModule):
