@@ -6,6 +6,7 @@ from graph_pes import AtomicGraph, GraphPESModel
 from graph_pes.atomic_graph import to_batch
 from graph_pes.config import FittingOptions
 from graph_pes.data.datasets import FittingData, SequenceDataset
+from graph_pes.training.callbacks import EarlyStoppingWithLogging
 from graph_pes.training.loss import PerAtomEnergyLoss, TotalLoss
 from graph_pes.training.opt import Optimizer
 from graph_pes.training.trainer import train_with_lightning
@@ -50,7 +51,7 @@ def test_integration(model: GraphPESModel):
         trainer=pl.Trainer(
             max_epochs=10,
             accelerator="cpu",
-            callbacks=[LoggedProgressBar()],
+            callbacks=[LoggedProgressBar(), EarlyStoppingWithLogging()],
         ),
         model=model,
         data=FittingData(
