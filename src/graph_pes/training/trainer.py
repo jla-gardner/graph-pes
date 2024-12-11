@@ -4,12 +4,24 @@ from pathlib import Path
 from typing import Literal
 
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks import (
+    LearningRateMonitor,
+    ModelCheckpoint,
+    ProgressBar,
+    RichProgressBar,
+)
+from pytorch_lightning.loggers import Logger
+
 from graph_pes.atomic_graph import to_batch
 from graph_pes.config import FittingOptions
 from graph_pes.data.datasets import FittingData
 from graph_pes.data.loader import GraphDataLoader
 from graph_pes.graph_pes_model import GraphPESModel
-from graph_pes.training.callbacks import OffsetLogger, SaveBestModel
+from graph_pes.training.callbacks import (
+    EarlyStoppingWithLogging,
+    OffsetLogger,
+    SaveBestModel,
+)
 from graph_pes.training.loss import TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
 from graph_pes.training.task import PESLearningTask
@@ -21,14 +33,6 @@ from graph_pes.training.util import (
     sanity_check,
 )
 from graph_pes.utils.logger import logger
-from pytorch_lightning.callbacks import (
-    EarlyStopping,
-    LearningRateMonitor,
-    ModelCheckpoint,
-    ProgressBar,
-    RichProgressBar,
-)
-from pytorch_lightning.loggers import Logger
 
 
 def train_with_lightning(
@@ -150,7 +154,7 @@ def create_trainer(
                 "Early stopping requires validation data to be available"
             )
         callbacks.append(
-            EarlyStopping(
+            EarlyStoppingWithLogging(
                 monitor=VALIDATION_LOSS_KEY,
                 patience=early_stopping_patience,
                 mode="min",

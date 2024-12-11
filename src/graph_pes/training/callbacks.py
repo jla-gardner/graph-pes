@@ -7,6 +7,10 @@ from typing import cast
 
 import torch
 from ase.data import chemical_symbols
+from pytorch_lightning import Callback, LightningModule, Trainer
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.loggers import Logger
+
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.addition import AdditionModel
 from graph_pes.models.components.scaling import LocalEnergiesScaler
@@ -14,8 +18,6 @@ from graph_pes.models.offsets import LearnableOffset
 from graph_pes.training.util import VALIDATION_LOSS_KEY
 from graph_pes.utils.lammps import deploy_model
 from graph_pes.utils.logger import logger
-from pytorch_lightning import Callback, LightningModule, Trainer
-from pytorch_lightning.loggers import Logger
 
 
 class GraphPESCallback(Callback, ABC):
@@ -147,6 +149,50 @@ class ScalesLogger(GraphPESCallback):
             return
 
         log_scales(self.get_model(pl_module), trainer.logger)
+
+
+class EarlyStoppingWithLogging(EarlyStopping, GraphPESCallback):
+    """
+    Log various information relating to the early stopping process:
+
+    * number of validation checks since the best validation loss was observed
+    * "distances above" the best validation loss
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.best_val_loss = float("inf")
+        self.best_val_loss_check = 0
+        self.total_checks = 0
+
+    def on_validation_epoch_end(
+        self, trainer: Trainer, pl_module: LightningModule
+    ):
+        super().on_validation_epoch_end(trainer, pl_module)
+
+        if not trainer.is_global_zero or not trainer.logger:
+            return
+
+        self.total_checks += 1
+        current_loss = trainer.callback_metrics.get(VALIDATION_LOSS_KEY, None)
+        if current_loss is None:
+            return
+        current_loss = current_loss.item()
+
+        if current_loss < self.best_val_loss:
+            self.best_val_loss = current_loss
+            self.best_val_loss_check = self.total_checks
+
+        checks_since_best = self.total_checks - self.best_val_loss_check
+        distance_above_best = current_loss - self.best_val_loss
+
+        trainer.logger.log_metrics(
+            {
+                "early_stopping/checks_since_best": checks_since_best,
+                "early_stopping/best_valid_loss": self.best_val_loss,
+                "early_stopping/distance_above_best": distance_above_best,
+            }
+        )
 
 
 class SaveBestModel(GraphPESCallback):

@@ -12,9 +12,16 @@ from pathlib import Path
 import numpy as np
 import torch
 import yaml
+from pytorch_lightning.loggers import CSVLogger
+from pytorch_lightning.loggers import WandbLogger as PTLWandbLogger
+
 from graph_pes.config import Config, get_default_config_values
 from graph_pes.scripts.generation import config_auto_generation
-from graph_pes.training.callbacks import GraphPESCallback
+from graph_pes.training.callbacks import (
+    GraphPESCallback,
+    OffsetLogger,
+    ScalesLogger,
+)
 from graph_pes.training.trainer import create_trainer, train_with_lightning
 from graph_pes.utils.logger import log_to_file, logger, set_level
 from graph_pes.utils.misc import (
@@ -23,8 +30,6 @@ from graph_pes.utils.misc import (
     random_dir,
     uniform_repr,
 )
-from pytorch_lightning.loggers import CSVLogger
-from pytorch_lightning.loggers import WandbLogger as PTLWandbLogger
 
 
 def set_global_seed(seed: int):
@@ -293,9 +298,14 @@ Output for this training run can be found at:
     # extract the callbacks from trainer_kwargs, since we
     # handle them specially below
     callbacks = trainer_kwargs.pop("callbacks", [])
+    callbacks.extend(config.fitting.callbacks)
+
+    default_callbacks = [OffsetLogger, ScalesLogger]
+    for klass in default_callbacks:
+        if not any(isinstance(cb, klass) for cb in callbacks):
+            callbacks.append(klass())
     if config.fitting.swa is not None:
         callbacks.append(config.fitting.swa.instantiate_lightning_callback())
-    callbacks.extend(config.fitting.callbacks)
 
     debug("Creating trainer...")
     trainer = create_trainer(
