@@ -22,7 +22,7 @@ Then install the pre-commit hooks:
 pre-commit install
 ```
 
-These hooks use ruff to format and lint the code, and pyright to typecheck it.
+These hooks use ruff to format and lint the code.
 
 ---
 

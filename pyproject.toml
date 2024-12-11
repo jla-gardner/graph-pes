@@ -32,8 +32,8 @@ dependencies = [
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov", "pyright"]
-dev = ["ruff", "pyright", "sphinx-autobuild", "pre-commit"]
+test = ["pytest", "pytest-cov"]
+dev = ["ruff", "sphinx-autobuild", "pre-commit"]
 docs = [
     "sphinx",
     "furo",
@@ -124,8 +124,3 @@ filterwarnings = [
     "ignore:.*The TorchScript type system doesn't support instance-level annotations on empty non-base types.*",
 ]
 norecursedirs = "tests/helpers"
-
-[tool.pyright]
-include = ["."]
-reportUnnecessaryTypeIgnoreComment = "error"
-reportPrivateImportUsage = "none"
