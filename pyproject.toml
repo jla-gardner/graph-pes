@@ -33,7 +33,7 @@ requires-python = ">=3.9"
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-cov", "pyright"]
-dev = ["notebook", "ruff", "bumpver", "pyright", "sphinx-autobuild"]
+dev = ["ruff", "pyright", "sphinx-autobuild", "pre-commit"]
 docs = [
     "sphinx",
     "furo",

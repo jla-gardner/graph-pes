@@ -7,27 +7,6 @@ permissions:
   contents: write
 
 jobs:
-  style:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.9
-
-      - name: Install ruff
-        run: pip install ruff==0.5.5
-
-      - name: Install graph-pes
-        # this is to ensure that ruff realises graph-pes is
-        # the current package for import sorting
-        # we therefore don't need to install any dependencies
-        run: pip install --no-deps -e .
-
-      - name: Run ruff
-        run: ruff check
-
   tests:
     runs-on: ubuntu-latest
     strategy:
