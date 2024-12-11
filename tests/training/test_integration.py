@@ -10,7 +10,7 @@ from graph_pes.training.callbacks import EarlyStoppingWithLogging
 from graph_pes.training.loss import PerAtomEnergyLoss, TotalLoss
 from graph_pes.training.opt import Optimizer
 from graph_pes.training.trainer import train_with_lightning
-from graph_pes.training.util import LoggedProgressBar
+from graph_pes.training.util import VALIDATION_LOSS_KEY, LoggedProgressBar
 
 from .. import helpers
 
@@ -51,7 +51,12 @@ def test_integration(model: GraphPESModel):
         trainer=pl.Trainer(
             max_epochs=10,
             accelerator="cpu",
-            callbacks=[LoggedProgressBar(), EarlyStoppingWithLogging()],
+            callbacks=[
+                LoggedProgressBar(),
+                EarlyStoppingWithLogging(
+                    monitor=VALIDATION_LOSS_KEY, patience=10
+                ),
+            ],
         ),
         model=model,
         data=FittingData(
