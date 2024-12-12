@@ -12,6 +12,7 @@ from graph_pes.scripts.train import (
     parse_args,
     train_from_config,
 )
+from graph_pes.training.trainer import WandbLogger
 from graph_pes.utils.misc import nested_merge
 
 from .. import helpers
@@ -109,3 +110,15 @@ fitting:
         get_default_config_values(),
         yaml.safe_load(config_str),
     )
+
+
+def test_wandb_logging(tmp_path: Path, caplog):
+    import wandb
+
+    # configure wandb to not actually log anything
+    wandb.init = lambda *args, **kwargs: None
+
+    logger = WandbLogger(tmp_path / "logging-name", project="test-project")
+    assert logger._id == "logging-name"
+    assert logger.save_dir == str(tmp_path)
+    assert logger._project == "test-project"

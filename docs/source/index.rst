@@ -11,6 +11,7 @@
     :caption: CLI Reference
 
     cli/graph-pes-train
+    cli/graph-pes-resume
     cli/graph-pes-id
 
 .. toctree::
