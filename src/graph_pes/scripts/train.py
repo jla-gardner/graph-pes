@@ -8,53 +8,24 @@ import shutil
 from datetime import datetime
 from hashlib import sha256
 from pathlib import Path
+from typing import Callable
 
 import numpy as np
 import torch
 import yaml
-from pytorch_lightning.loggers import CSVLogger
-from pytorch_lightning.loggers import WandbLogger as PTLWandbLogger
 
 from graph_pes.config import Config, get_default_config_values
 from graph_pes.scripts.generation import config_auto_generation
-from graph_pes.training.callbacks import (
-    GraphPESCallback,
-    OffsetLogger,
-    ScalesLogger,
+from graph_pes.training.trainer import (
+    train_with_lightning,
+    trainer_from_config,
 )
-from graph_pes.training.trainer import create_trainer, train_with_lightning
-from graph_pes.utils.logger import log_to_file, logger, set_level
+from graph_pes.utils.logger import logger, set_level
 from graph_pes.utils.misc import (
     build_single_nested_dict,
     nested_merge_all,
     random_dir,
-    uniform_repr,
 )
-
-
-def set_global_seed(seed: int):
-    # a non-verbose version of pl.seed_everything
-    os.environ["PL_GLOBAL_SEED"] = str(seed)
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    os.environ["PL_SEED_WORKERS"] = "0"
-
-
-class WandbLogger(PTLWandbLogger):
-    """A subclass of WandbLogger that automatically sets the id and save_dir."""
-
-    def __init__(self, output_dir: Path, **kwargs):
-        if "id" not in kwargs:
-            kwargs["id"] = output_dir.name
-        if "save_dir" not in kwargs:
-            kwargs["save_dir"] = str(output_dir.parent)
-        super().__init__(**kwargs)
-        self._kwargs = kwargs
-
-    def __repr__(self):
-        return uniform_repr(self.__class__.__name__, **self._kwargs)
-
 
 OUTPUT_DIR = "graph-pes-output-dir"
 
@@ -213,27 +184,7 @@ def train_from_config(config_data: dict):
     info("Successfully parsed config.")
 
     # torch things
-    prec = config.general.torch.float32_matmul_precision
-    torch.set_float32_matmul_precision(prec)
-    debug(f"Using {prec} precision for float32 matrix multiplications.")
-
-    ftype = config.general.torch.dtype
-    debug(f"Using {ftype} as default dtype.")
-    torch.set_default_dtype(
-        {
-            "float16": torch.float16,
-            "float32": torch.float32,
-            "float64": torch.float64,
-        }[ftype]
-    )
-    # a nice setting for e3nn components that get scripted upon instantiation
-    # - DYNAMIC refers to the fact that they will expect different input sizes
-    #   at every iteration (graphs are not all the same size)
-    # - 4 is the number of times we attempt to recompile before giving up
-    torch.jit.set_fusion_strategy([("DYNAMIC", 4)])
-
-    # general things:
-    set_global_seed(config.general.seed)
+    configure_general_options(debug, config)
 
     # generate / look up the output directory for this training run
     # and handle the case where there is an ID collision by incrementing
@@ -284,50 +235,7 @@ Output for this training run can be found at:
       └─ train-config.yaml  # the complete config used for this run\
 """)
 
-    # set up a logger on every rank - PTL handles this gracefully so that
-    # e.g. we don't spin up >1 wandb experiment
-    if config.wandb is not None:
-        lightning_logger = WandbLogger(output_dir, **config.wandb)
-    else:
-        lightning_logger = CSVLogger(save_dir=output_dir, name="")
-    debug(f"Logging using {lightning_logger}")
-
-    # create the trainer
-    trainer_kwargs = {**config.fitting.trainer_kwargs}
-
-    # extract the callbacks from trainer_kwargs, since we
-    # handle them specially below
-    callbacks = trainer_kwargs.pop("callbacks", [])
-    callbacks.extend(config.fitting.callbacks)
-
-    default_callbacks = [OffsetLogger, ScalesLogger]
-    for klass in default_callbacks:
-        if not any(isinstance(cb, klass) for cb in callbacks):
-            callbacks.append(klass())
-    if config.fitting.swa is not None:
-        callbacks.append(config.fitting.swa.instantiate_lightning_callback())
-
-    debug("Creating trainer...")
-    trainer = create_trainer(
-        early_stopping_patience=config.fitting.early_stopping_patience,
-        logger=lightning_logger,
-        valid_available=True,
-        kwarg_overloads=trainer_kwargs,
-        output_dir=output_dir,
-        progress=config.general.progress,
-        callbacks=callbacks,
-    )
-
-    # route logs to a unique file for each rank: PTL now knows the global rank!
-    log_to_file(file=output_dir / "logs" / f"rank-{trainer.global_rank}.log")
-
-    # special handling for GraphPESCallback: we need to register the
-    # output directory with it so that it knows where to save the model etc.
-    actual_callbacks: list[pl.Callback] = trainer.callbacks  # type: ignore
-    for cb in actual_callbacks:
-        if isinstance(cb, GraphPESCallback):
-            cb._register_root(output_dir)
-    debug(f"Callbacks: {actual_callbacks}")
+    trainer = trainer_from_config(config, output_dir, debug)
 
     assert trainer.logger is not None
     trainer.logger.log_hyperparams(config_data)
@@ -367,6 +275,38 @@ Output for this training run can be found at:
 
     info("Training complete. Awaiting final Lightning and W&B shutdown...")
     cleanup()
+
+
+def configure_general_options(logging_function: Callable, config: Config):
+    prec = config.general.torch.float32_matmul_precision
+    torch.set_float32_matmul_precision(prec)
+    logging_function(
+        f"Using {prec} precision for float32 matrix multiplications."
+    )
+
+    ftype = config.general.torch.dtype
+    logging_function(f"Using {ftype} as default dtype.")
+    torch.set_default_dtype(
+        {
+            "float16": torch.float16,
+            "float32": torch.float32,
+            "float64": torch.float64,
+        }[ftype]
+    )
+    # a nice setting for e3nn components that get scripted upon instantiation
+    # - DYNAMIC refers to the fact that they will expect different input sizes
+    #   at every iteration (graphs are not all the same size)
+    # - 4 is the number of times we attempt to recompile before giving up
+    torch.jit.set_fusion_strategy([("DYNAMIC", 4)])
+
+    # a non-verbose version of pl.seed_everything
+    seed = config.general.seed
+    logging_function(f"Using seed {seed} for reproducibility.")
+    os.environ["PL_GLOBAL_SEED"] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    os.environ["PL_SEED_WORKERS"] = "0"
 
 
 def main():

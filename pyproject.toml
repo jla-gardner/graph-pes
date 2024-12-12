@@ -46,6 +46,7 @@ publish = ["build", "twine"]
 
 [project.scripts]
 graph-pes-train = "graph_pes.scripts.train:main"
+graph-pes-resume = "graph_pes.scripts.resume:main"
 graph-pes-id = "graph_pes.scripts.id:main"
 
 [project.urls]

@@ -161,9 +161,11 @@ class EarlyStoppingWithLogging(EarlyStopping, GraphPESCallback):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.best_val_loss = float("inf")
-        self.best_val_loss_check = 0
-        self.total_checks = 0
+        self.state = {
+            "best_val_loss": float("inf"),
+            "best_val_loss_check": 0,
+            "total_checks": 0,
+        }
 
     def on_validation_epoch_end(
         self, trainer: Trainer, pl_module: LightningModule
@@ -173,26 +175,34 @@ class EarlyStoppingWithLogging(EarlyStopping, GraphPESCallback):
         if not trainer.is_global_zero or not trainer.logger:
             return
 
-        self.total_checks += 1
+        self.state["total_checks"] += 1
         current_loss = trainer.callback_metrics.get(VALIDATION_LOSS_KEY, None)
         if current_loss is None:
             return
         current_loss = current_loss.item()
 
-        if current_loss < self.best_val_loss:
-            self.best_val_loss = current_loss
-            self.best_val_loss_check = self.total_checks
+        if current_loss < self.state["best_val_loss"]:
+            self.state["best_val_loss"] = current_loss
+            self.state["best_val_loss_check"] = self.state["total_checks"]
 
-        checks_since_best = self.total_checks - self.best_val_loss_check
-        distance_above_best = current_loss - self.best_val_loss
+        checks_since_best = (
+            self.state["total_checks"] - self.state["best_val_loss_check"]
+        )
+        distance_above_best = current_loss - self.state["best_val_loss"]
 
         trainer.logger.log_metrics(
             {
                 "early_stopping/checks_since_best": checks_since_best,
-                "early_stopping/best_valid_loss": self.best_val_loss,
+                "early_stopping/best_valid_loss": self.state["best_val_loss"],
                 "early_stopping/distance_above_best": distance_above_best,
             }
         )
+
+    def load_state_dict(self, state_dict: dict):
+        self.state.update(state_dict)
+
+    def state_dict(self) -> dict:
+        return self.state
 
 
 class SaveBestModel(GraphPESCallback):
