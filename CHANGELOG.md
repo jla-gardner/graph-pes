@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+Use explicit `.cutoff`, `.batch` and `.ptr` properties on `AtomicGraph` objects
+
 ## [0.0.13] - 2024-12-11
 
 ### Added
