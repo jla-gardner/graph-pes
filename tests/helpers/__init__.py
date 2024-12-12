@@ -9,8 +9,10 @@ import pytorch_lightning
 import torch
 from ase import Atoms
 from ase.io import read
+from locache import reset
 
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey
+from graph_pes.data.datasets import pre_transform_structures
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models import (
     ALL_MODELS,
@@ -25,6 +27,9 @@ from graph_pes.models import (
     ZEmbeddingNequIP,
 )
 from graph_pes.models.components.scaling import LocalEnergiesScaler
+
+# remove cache so that any changes are actually tested
+reset(pre_transform_structures)
 
 
 def all_model_factories(

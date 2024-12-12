@@ -11,6 +11,7 @@ from graph_pes.atomic_graph import (
     PropertyKey,
     neighbour_distances,
     number_of_edges,
+    to_batch,
     trim_edges,
 )
 from graph_pes.models import AdditionModel, FixedOffset, SchNet
@@ -103,3 +104,14 @@ def test_cutoff_trimming():
     doubly_trimmed_graph = trim_edges(trimmed_graph, cutoff=2.0)
     assert doubly_trimmed_graph is not trimmed_graph
     assert doubly_trimmed_graph.cutoff == 2.0
+
+
+def test_cutoff_batching():
+    graph = graph_from_molecule("CH4", cutoff=5.0)
+    graph2 = graph._replace(cutoff=3.0)
+
+    with pytest.warns(
+        UserWarning, match="Attempting to batch graphs with different cutoffs"
+    ):
+        batch = to_batch([graph, graph2])
+    assert batch.cutoff == 5.0
