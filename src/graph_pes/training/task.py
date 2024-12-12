@@ -100,7 +100,8 @@ class PESLearningTask(pl.LightningModule):
         if prefix == "valid":
             val_metrics: list[Loss] = []
             if "energy" in graph.properties:
-                val_metrics.append(PerAtomEnergyLoss())
+                val_metrics.append(PerAtomEnergyLoss(metric=RMSE()))
+                val_metrics.append(PerAtomEnergyLoss(metric=MAE()))
                 val_metrics.append(PropertyLoss("energy", RMSE()))
                 val_metrics.append(PropertyLoss("energy", MAE()))
             if "forces" in graph.properties:

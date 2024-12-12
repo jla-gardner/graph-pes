@@ -108,8 +108,8 @@ class Optimizer:
         parameter groups for the model.
         """
 
-        all_params = list(model.parameters())
-        non_decayable_params = model.non_decayable_parameters()
+        all_params = list(set(model.parameters()))
+        non_decayable_params = list(set(model.non_decayable_parameters()))
 
         param_groups = [
             {
