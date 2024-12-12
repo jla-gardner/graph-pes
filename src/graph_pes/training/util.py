@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import warnings
 from typing import Any, Literal
 
 import pytorch_lightning as pl
@@ -82,6 +83,15 @@ def sanity_check(model: GraphPESModel, batch: AtomicGraph) -> None:
                 f"{key}: {value} != {expected}"
                 for key, value, expected in incorrect
             )
+        )
+
+    if batch.cutoff < model.cutoff:
+        warnings.warn(
+            "Sanity check failed: you appear to be training on data "
+            "composed of graphs with a cutoff that is smaller than the "
+            "cutoff used in the model. This is almost certainly not what "
+            "you want to do?",
+            stacklevel=2,
         )
 
 
