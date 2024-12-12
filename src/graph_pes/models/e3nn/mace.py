@@ -434,6 +434,10 @@ class MACE(_BaseMACE):
     ``TensorProduct`` update in the residual connection of the message passing
     layers, as well as the contractions in the message passing layers.
 
+    Following the notation used in `ACEsuite/mace <https://github.com/ACEsuit/mace>`__,
+    the first layer in this model is a ``RealAgnosticInteractionBlock``. Subsequent
+    layers are then ``RealAgnosticResidualInteractionBlock``\ s
+
     Please cite the following if you use this model in your research:
 
     .. code-block:: bibtex
@@ -485,8 +489,8 @@ class MACE(_BaseMACE):
     self_connection
         whether to use self-connections in the message passing layers
     readout_width
-        the width of the MLP used to read out the per-atom energies in the final
-        layer
+        the width of the MLP used to read out the per-atom energies after the
+        final message passing layer
 
     Examples
     --------
@@ -510,11 +514,12 @@ class MACE(_BaseMACE):
             graph_pes.models.MACE:
                 elements: [H, C, N, O]
                 cutoff: 5.0
-                radial_expansion: GaussianSmearing
-                # the default MLP config:
+                radial_expansion: Bessel
+
+                # change from the default MLP config:
                 weights_mlp:
-                    hidden_depth: 3
-                    hidden_features: 64
+                    hidden_depth: 2
+                    hidden_features: 16
                     activation: SiLU
 
     """  # noqa: E501

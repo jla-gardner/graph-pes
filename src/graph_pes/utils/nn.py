@@ -97,9 +97,27 @@ class UniformModuleList(torch.nn.ModuleList, Sequence[V]):
 
 
 class MLPConfig(TypedDict):
+    """
+    A TypedDict helper class for configuring an :class:`MLP`.
+
+    Examples
+    --------
+    Specify this in a config file:
+
+    .. code-block:: yaml
+
+        mlp:
+            hidden_depth: 3
+            hidden_features: 64
+            activation: SiLU
+    """
+
     hidden_depth: int
+    """The number of hidden layers in the MLP."""
     hidden_features: int
+    """The number of features in the hidden layers."""
     activation: str
+    """The activation function to use."""
 
 
 class MLP(torch.nn.Module):
@@ -204,6 +222,9 @@ class MLP(torch.nn.Module):
         output_features: int,
         bias: bool = True,
     ) -> MLP:
+        """
+        Create an :class:`MLP` from a configuration.
+        """
         return cls(
             layers=[input_features]
             + [config["hidden_features"]] * config["hidden_depth"]

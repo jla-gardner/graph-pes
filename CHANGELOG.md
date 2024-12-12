@@ -15,6 +15,8 @@ Added the `graph-pes-resume` script.
 
 Use explicit `.cutoff`, `.batch` and `.ptr` properties on `AtomicGraph` objects
 
+Aligned the `graph-pes` implementation of MACE with that of `ACEsuite/mace`.
+
 ## [0.0.13] - 2024-12-11
 
 ### Added
