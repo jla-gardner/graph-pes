@@ -47,12 +47,11 @@ ALL_PROPERTY_KEYS: Final[List[PropertyKey]] = [
 if not TYPE_CHECKING and not is_being_documented():
     # torchscript doesn't handle TypedDicts or Literal types:
     # at run-time, we just use less specific, but still correct, types
-    Properties: TypeAlias = Dict[str, torch.Tensor]  # noqa: UP006 <- torchscript issue
+    Properties: TypeAlias = Dict[str, torch.Tensor]
     PropertyKey: TypeAlias = str
 
 
 class AtomicGraph(NamedTuple):
-    # special members of other: cutoff, batch, ptr
     r"""
     An :class:`AtomicGraph` represents an atomic structure.
     Each node corresponds to an atom, and each directed edge links a central
@@ -267,13 +266,28 @@ class AtomicGraph(NamedTuple):
           - virial stress tensor (see :doc:`../theory`)
     """
 
-    other: Dict[str, torch.Tensor]  # noqa: UP006 <- torchscript issue
+    cutoff: float
+    """
+    The cutoff distance used to create the neighbour list for this graph.
+    """
+
+    other: Dict[str, torch.Tensor]
     """
     A dictionary containing any other additional information about the graph.
-    Feel free to populate this as you wish. Internally, we use this to store
-    the cutoff distance if the neighbour list was created using a uniform
-    cutoff, as well as the ``"batch"`` and ``"ptr"`` arrays used to indicate
-    that this graph represents a batch of sub-graphs.
+    Feel free to populate this as you wish.
+    """
+
+    batch: Union[torch.Tensor, None] = None
+    """
+    A tensor of shape ``(N,)`` indicating the index ``i`` of the structure
+    within the batch that each atom belongs to. Not present for a single
+    structure.
+    """
+
+    ptr: Union[torch.Tensor, None] = None
+    """
+    A tensor of shape ``(S + 1,)`` indicating the index ``i`` of the first
+    atom in each structure within the batch. Not present for a single structure.
     """
 
     @classmethod
@@ -365,7 +379,7 @@ class AtomicGraph(NamedTuple):
 
         # properties
         properties: dict[PropertyKey, torch.Tensor] = {}
-        other: dict[str, torch.Tensor] = {"cutoff": torch.tensor(cutoff)}
+        other: dict[str, torch.Tensor] = {}
 
         if property_mapping is None:
             all_keys = set(structure.info) | set(structure.arrays)
@@ -408,6 +422,7 @@ class AtomicGraph(NamedTuple):
             neighbour_cell_offsets=neighbour_cell_offsets,
             properties=properties,
             other=other,
+            cutoff=cutoff,
         )
 
     @classmethod
@@ -420,6 +435,7 @@ class AtomicGraph(NamedTuple):
         neighbour_cell_offsets: Union[torch.Tensor, None] = None,
         properties: Union[Dict[PropertyKey, torch.Tensor], None] = None,
         other: Union[Dict[str, torch.Tensor], None] = None,
+        cutoff: float = 0.0,
     ) -> "AtomicGraph":
         """
         Create an :class:`AtomicGraph`, populating missing values with defaults.
@@ -460,6 +476,7 @@ class AtomicGraph(NamedTuple):
             neighbour_cell_offsets=neighbour_cell_offsets,
             properties=properties,
             other=other,
+            cutoff=cutoff,
         )
 
     def to(self, device: Union[torch.device, str]) -> "AtomicGraph":
@@ -476,33 +493,28 @@ class AtomicGraph(NamedTuple):
             neighbour_cell_offsets=self.neighbour_cell_offsets.to(device),
             properties=properties,
             other={k: v.to(device) for k, v in self.other.items()},
+            cutoff=self.cutoff,
+            batch=self.batch.to(device) if self.batch is not None else None,
+            ptr=self.ptr.to(device) if self.ptr is not None else None,
         )
 
     def __repr__(self):
         info = {}
 
-        if is_batch(self):
+        if self.batch is not None:
             name = "AtomicGraphBatch"
-            info["structures"] = self.other["batch"].max().item() + 1
+            info["structures"] = self.batch.max().item() + 1
         else:
             name = "AtomicGraph"
 
         info["atoms"] = number_of_atoms(self)
         info["edges"] = number_of_edges(self)
         info["has_cell"] = has_cell(self)
-        if "cutoff" in self.other:
-            info["cutoff"] = to_significant_figures(
-                self.other["cutoff"].item(), 3
-            )
+        info["cutoff"] = to_significant_figures(self.cutoff, 3)
         if self.properties:
             info["properties"] = available_properties(self)
-        actual_other = {
-            k: v
-            for k, v in self.other.items()
-            if k not in {"cutoff", "batch", "ptr"}
-        }
-        if actual_other:
-            info["other"] = list(actual_other.keys())
+        if self.other:
+            info["other"] = list(self.other.keys())
 
         return uniform_repr(name, **info, indent_width=4)
 
@@ -542,9 +554,9 @@ def to_batch(
     ...     AtomicGraph.from_ase(molecule("CH4")),
     ... ]
     >>> batch = to_batch(graphs)
-    >>> batch.other["batch"]  # H20 has 3 atoms, CH4 has 5
+    >>> batch.batch  # H20 has 3 atoms, CH4 has 5
     tensor([0, 0, 0, 1, 1, 1, 1, 1])
-    >>> batch.other["ptr"]  # offset of first atom of each graph
+    >>> batch.ptr  # offset of first atom of each graph
     tensor([0, 3, 8])
     >>> batch.Z.shape
     torch.Size([8])
@@ -581,6 +593,16 @@ def to_batch(
         [g.neighbour_list + ptr[i] for i, g in enumerate(graphs)], dim=1
     )
 
+    # handle cutoff
+    cutoffs = [g.cutoff for g in graphs]
+    if not all_equal(cutoffs):
+        warnings.warn(
+            "Attempting to batch graphs with different cutoffs: "
+            f"{cutoffs}. Setting graph.cutoff to the maximum.",
+            stacklevel=2,
+        )
+    cutoff = max(cutoffs)
+
     properties: dict[PropertyKey, torch.Tensor] = {}
     # - per structure labels are concatenated along a new batch axis (0)
     for key in ["energy", "stress", "virial"]:
@@ -597,24 +619,8 @@ def to_batch(
     # - finally, add in the other stuff: this is a bit tricky
     #   since we need to try and infer whether these are per-atom
     #   or per-structure
-    other = {"batch": batch, "ptr": ptr}
-
+    other: dict[str, torch.Tensor] = {}
     for key in graphs[0].other:
-        if key in ["batch", "ptr"]:
-            continue
-
-        # special handling for cutoff
-        if key == "cutoff":
-            cutoffs = [g.other["cutoff"] for g in graphs]
-            if not all_equal(cutoffs):
-                warnings.warn(
-                    "Attempting to batch graphs with different cutoffs: "
-                    f'{cutoffs}. Setting graph.other["cutoff"] to the maximum.',
-                    stacklevel=2,
-                )
-            other["cutoff"] = torch.tensor(cutoffs).max()
-            continue
-
         # if all of the value tensors have the same number of entries
         # as atoms in the structure, we'll treat them as per-atom
         if all(is_local_property(g.other[key], g) for g in graphs):
@@ -631,6 +637,9 @@ def to_batch(
         neighbour_cell_offsets=neighbour_offsets,
         properties=properties,
         other=other,
+        cutoff=cutoff,
+        batch=batch,
+        ptr=ptr,
     )
 
 
@@ -644,7 +653,7 @@ def is_batch(graph: AtomicGraph) -> bool:
         The graph to check.
     """
 
-    return "batch" in graph.other and "ptr" in graph.other
+    return graph.batch is not None
 
 
 ############################### PROPERTIES ###############################
@@ -691,12 +700,14 @@ def neighbour_vectors(graph: AtomicGraph) -> torch.Tensor:
 
     # to simplify the logic below, we'll expand
     # a single graph into a batch of one
-    if is_batch(graph):
-        batch = graph.other["batch"]
+    batch: torch.Tensor = torch.zeros_like(graph.Z)
+    cell: torch.Tensor = graph.cell.unsqueeze(0)
+
+    # torchscript annoying-ness:
+    graph_batch = graph.batch
+    if graph_batch is not None:
         cell = graph.cell
-    else:
-        batch = torch.zeros_like(graph.Z)
-        cell = graph.cell.unsqueeze(0)
+        batch = graph_batch
 
     # avoid tuple de-structuring to keep torchscript happy
     i, j = graph.neighbour_list[0], graph.neighbour_list[1]  # (E,)
@@ -726,10 +737,11 @@ def number_of_structures(graph: AtomicGraph) -> int:
     """
     Get the number of structures in the ``graph``.
     """
-
-    if not is_batch(graph):
+    # torchscript annoying-ness:
+    graph_ptr = graph.ptr
+    if graph_ptr is None:
         return 1
-    return graph.other["ptr"].shape[0] - 1
+    return graph_ptr.shape[0] - 1
 
 
 def structure_sizes(batch: AtomicGraph) -> torch.Tensor:
@@ -751,11 +763,12 @@ def structure_sizes(batch: AtomicGraph) -> torch.Tensor:
     >>> structure_sizes(to_batch(graphs))
     tensor([3, 4, 5])
     """
-
-    if not is_batch(batch):
+    # torchscript annoying-ness:
+    graph_ptr = batch.ptr
+    if graph_ptr is None:
         return torch.scalar_tensor(number_of_atoms(batch))
 
-    return batch.other["ptr"][1:] - batch.other["ptr"][:-1]
+    return graph_ptr[1:] - graph_ptr[:-1]
 
 
 def number_of_neighbours(
@@ -958,9 +971,7 @@ def trim_edges(graph: AtomicGraph, cutoff: float) -> AtomicGraph:
         The maximum distance between atoms to keep the edge.
     """
 
-    existing_cutoff = graph.other.get(
-        "cutoff", torch.tensor(float("inf"))
-    ).item()
+    existing_cutoff = graph.cutoff
     if existing_cutoff < cutoff:
         warnings.warn(
             f"Graph already has a cutoff of {existing_cutoff} which is "
@@ -976,9 +987,6 @@ def trim_edges(graph: AtomicGraph, cutoff: float) -> AtomicGraph:
     neighbour_list = graph.neighbour_list[:, mask]
     neighbour_cell_offsets = graph.neighbour_cell_offsets[mask, :]
 
-    other = graph.other.copy()
-    other["cutoff"] = torch.tensor(cutoff)
-
     # can't use _replace here due to TorchScript
     return AtomicGraph(
         Z=graph.Z,
@@ -987,7 +995,10 @@ def trim_edges(graph: AtomicGraph, cutoff: float) -> AtomicGraph:
         neighbour_list=neighbour_list,
         neighbour_cell_offsets=neighbour_cell_offsets,
         properties=graph.properties,
-        other=other,
+        other=graph.other,
+        cutoff=cutoff,
+        batch=graph.batch,
+        ptr=graph.ptr,
     )
 
 
@@ -1151,11 +1162,12 @@ def sum_per_structure(x: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:
     torch.Size([2, 3, 4])
     """  # noqa: E501
 
-    if is_batch(graph):
-        batch = graph.other["batch"]
+    # torchscript annoying-ness:
+    graph_batch = graph.batch
+    if graph_batch is not None:
         shape = (number_of_structures(graph),) + x.shape[1:]
         zeros = torch.zeros(shape, dtype=x.dtype, device=x.device)
-        return zeros.scatter_add(0, batch, x)
+        return zeros.scatter_add(0, graph_batch, x)
     else:
         return x.sum(dim=0)
 

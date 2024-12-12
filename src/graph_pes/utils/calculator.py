@@ -241,8 +241,9 @@ def _seperate(
     batch: AtomicGraph,
 ) -> list[dict[PropertyKey, TensorLike]]:
     preds_list = []
+    assert batch.ptr is not None
 
-    for idx, (start, stop) in enumerate(pairs(batch.other["ptr"])):
+    for idx, (start, stop) in enumerate(pairs(batch.ptr)):
         preds = {}
 
         # per-structure properties

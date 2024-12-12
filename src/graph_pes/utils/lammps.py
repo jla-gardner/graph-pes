@@ -31,7 +31,7 @@ class LAMMPSModel(torch.nn.Module):
         super().__init__()
         self.model = model
 
-    @torch.jit.export
+    @torch.jit.export  # type: ignore
     def get_cutoff(self) -> torch.Tensor:
         return self.model.cutoff
 
@@ -59,6 +59,7 @@ class LAMMPSModel(torch.nn.Module):
             neighbour_cell_offsets=graph_data["neighbour_cell_offsets"],
             properties={},
             other={},
+            cutoff=self.model.cutoff.item(),
         )
         preds = self.model.predict(graph, properties=properties)
 

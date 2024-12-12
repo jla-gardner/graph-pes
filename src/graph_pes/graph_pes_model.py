@@ -212,11 +212,13 @@ class GraphPESModel(nn.Module, ABC):
                 torch.eye(3, device=existing_cell.device) + symmetric_change
             )
 
-            if is_batch(graph):
+            # torchscript annoying-ness:
+            graph_batch = graph.batch
+            if graph_batch is not None:
                 scaling_per_atom = torch.index_select(
                     scaling,
                     dim=0,
-                    index=graph.other["batch"],
+                    index=graph_batch,
                 )  # (n_atoms, 3, 3)
 
                 # to go from (N, 3) @ (N, 3, 3) -> (N, 3), we need un/squeeze:
@@ -245,6 +247,9 @@ class GraphPESModel(nn.Module, ABC):
                 neighbour_cell_offsets=graph.neighbour_cell_offsets,
                 properties=graph.properties,
                 other=graph.other,
+                cutoff=graph.cutoff,
+                batch=graph.batch,
+                ptr=graph.ptr,
             )
 
         else:
@@ -326,6 +331,9 @@ class GraphPESModel(nn.Module, ABC):
             neighbour_cell_offsets=graph.neighbour_cell_offsets,
             properties=graph.properties,
             other=graph.other,
+            cutoff=graph.cutoff,
+            batch=graph.batch,
+            ptr=graph.ptr,
         )
 
         # make sure we don't leave auxiliary predictions
@@ -522,7 +530,7 @@ class GraphPESModel(nn.Module, ABC):
 
     @torch.jit.unused
     @final
-    def set_extra_state(self, state: dict[str, Any]) -> None:
+    def set_extra_state(self, state: dict[str, Any]) -> None:  # type: ignore
         """
         Set the extra state of this instance using a dictionary mapping strings
         to values returned by the :meth:`~graph_pes.GraphPESModel.extra_state`

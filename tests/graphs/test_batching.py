@@ -27,11 +27,13 @@ GRAPHS = [AtomicGraph.from_ase(s, cutoff=1.5) for s in STRUCTURES]
 
 def test_batching():
     batch = to_batch(GRAPHS)
+    assert batch.batch is not None
+    assert batch.ptr is not None
 
     assert number_of_atoms(batch) == 5
     assert number_of_structures(batch) == 2
-    assert list(batch.other["ptr"]) == [0, 2, 5]
-    assert list(batch.other["batch"]) == [0, 0, 1, 1, 1]
+    assert list(batch.ptr) == [0, 2, 5]
+    assert list(batch.batch) == [0, 0, 1, 1, 1]
 
     assert number_of_edges(batch) == sum(number_of_edges(g) for g in GRAPHS)
     assert structure_sizes(batch).tolist() == [2, 3]

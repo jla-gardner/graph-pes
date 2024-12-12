@@ -21,13 +21,7 @@ Batching
 A batch of :class:`~graph_pes.AtomicGraph` instances is itself represented by a single
 :class:`~graph_pes.AtomicGraph` instance, containing multiple disjoint subgraphs.
 
-:class:`~graph_pes.AtomicGraph` batches are created using :func:`~graph_pes.atomic_graph.to_batch`, and have
-the following special members of ``graph.other``:
-
-* ``graph.other["batch"]`` : a 0-indexed ``(N,)``-shaped integer :class:`torch.Tensor` indicating which sub-graph each atom belongs to.
-
-* ``graph.other["ptr"]`` : a 0-indexed ``(S + 1,)``-shaped integer :class:`torch.Tensor` indicating the
-  offset of the first atom of each sub-graph in the batch.
+:class:`~graph_pes.AtomicGraph` batches are created using :func:`~graph_pes.atomic_graph.to_batch`:
 
 .. autofunction:: graph_pes.atomic_graph.to_batch
 .. autofunction:: graph_pes.atomic_graph.is_batch
