@@ -45,6 +45,7 @@ from graph_pes.utils.nn import (
     MLP,
     AtomicOneHot,
     HaddamardProduct,
+    MLPConfig,
     PerElementEmbedding,
     UniformModuleList,
 )
@@ -62,19 +63,20 @@ class MACEInteraction(torch.nn.Module):
         self,
         # input nodes
         irreps_in: list[o3.Irrep],
-        channels: int,
+        nodes: NodeDescription,
         # input edges
         sph_harmonics: o3.Irreps,
         radial_basis_features: int,
-        mlp_layers: list[int],
+        mlp: MLPConfig,
         # other
         aggregation: NeighbourAggregationMode,
+        mix_attributes: bool,
     ):
         super().__init__()
 
         irreps_out = [ir for _, ir in sph_harmonics]
 
-        features_in = as_irreps([(channels, ir) for ir in irreps_in])
+        features_in = as_irreps([(nodes.channels, ir) for ir in irreps_in])
         self.pre_linear = o3.Linear(
             features_in,
             features_in,
@@ -90,13 +92,16 @@ class MACEInteraction(torch.nn.Module):
         mid_features = self.tp.irreps_out.simplify()
         assert all(ir in mid_features for ir in irreps_out)
 
-        self.weight_generator = MLP(
-            [radial_basis_features] + mlp_layers + [self.tp.weight_numel],
-            "SiLU",
+        self.weight_generator = MLP.from_config(
+            mlp,
+            input_features=radial_basis_features,
+            output_features=self.tp.weight_numel,
             bias=False,
         )
 
-        features_out = as_irreps([(channels, ir) for (_, ir) in sph_harmonics])
+        features_out = as_irreps(
+            [(nodes.channels, ir) for (_, ir) in sph_harmonics]
+        )
         self.post_linear = o3.Linear(
             mid_features,
             features_out,
@@ -106,7 +111,16 @@ class MACEInteraction(torch.nn.Module):
 
         self.aggregator = NeighbourAggregation.parse(aggregation)
 
-        self.reshape = UnflattenIrreps(irreps_out, channels)
+        if mix_attributes:
+            self.attribute_mixer = o3.FullyConnectedTensorProduct(
+                irreps_in1=features_out,
+                irreps_in2=o3.Irreps(f"{nodes.attributes}x0e"),
+                irreps_out=features_out,
+            )
+        else:
+            self.attribute_mixer = None
+
+        self.reshape = UnflattenIrreps(irreps_out, nodes.channels)
 
         # book-keeping
         self.irreps_in = features_in
@@ -115,6 +129,7 @@ class MACEInteraction(torch.nn.Module):
     def forward(
         self,
         node_features: torch.Tensor,
+        node_attributes: torch.Tensor,
         sph_harmonics: torch.Tensor,
         radial_basis: torch.Tensor,
         graph: AtomicGraph,
@@ -139,7 +154,27 @@ class MACEInteraction(torch.nn.Module):
         # post-linear
         node_features = self.post_linear(total_message)  # (N, d)
 
+        if self.attribute_mixer is not None:
+            node_features = self.attribute_mixer(node_features, node_attributes)
+
         return self.reshape(node_features)  # (N, channels, d')
+
+    # type hints for mypy
+    def __call__(
+        self,
+        node_features: torch.Tensor,
+        node_attributes: torch.Tensor,
+        sph_harmonics: torch.Tensor,
+        radial_basis: torch.Tensor,
+        graph: AtomicGraph,
+    ) -> torch.Tensor:
+        return super().__call__(
+            node_features,
+            node_attributes,
+            sph_harmonics,
+            radial_basis,
+            graph,
+        )
 
 
 @dataclass
@@ -160,22 +195,32 @@ class MACELayer(torch.nn.Module):
         correlation: int,
         sph_harmonics: o3.Irreps,
         radial_basis_features: int,
-        mlp_layers: list[int],
+        mlp: MLPConfig,
         use_sc: bool,
         aggregation: NeighbourAggregationMode,
+        residual: bool,
+        final_layer: bool,
     ):
         super().__init__()
 
         self.interaction = MACEInteraction(
             irreps_in=irreps_in,
-            channels=nodes.channels,
+            nodes=nodes,
             sph_harmonics=sph_harmonics,
             radial_basis_features=radial_basis_features,
-            mlp_layers=mlp_layers,
+            mlp=mlp,
             aggregation=aggregation,
+            # only mix attributes in the interaction block
+            # if we **aren't** using a residual connection
+            mix_attributes=not residual,
         )
         actual_mid_features = [ir for _, ir in self.interaction.irreps_out]
 
+        output_features = o3.Irreps(
+            nodes.hidden_irreps()
+            if not final_layer
+            else o3.Irreps(f"{nodes.channels}x0e")
+        )
         self.contractions = UniformModuleList(
             [
                 Contraction(
@@ -187,29 +232,32 @@ class MACELayer(torch.nn.Module):
                     ),
                     correlation=correlation,
                 )
-                for target_irrep in nodes.hidden_features
+                for target_irrep in [o.ir for o in output_features]
             ]
         )
 
-        if use_sc:
+        if use_sc and residual:
+            # links input features to output features via a tensor product
             self.residual_update = o3.FullyConnectedTensorProduct(
                 irreps_in1=[(nodes.channels, ir) for ir in irreps_in],
                 irreps_in2=o3.Irreps(f"{nodes.attributes}x0e"),
-                irreps_out=nodes.hidden_irreps(),
+                irreps_out=output_features,
             )
         else:
             self.residual_update = None
 
+        # update the hidden features from the interaction block
+        # and target the output features
         self.post_linear = o3.Linear(
-            nodes.hidden_irreps(),
-            nodes.hidden_irreps(),
+            output_features,
+            output_features,
             internal_weights=True,
             shared_weights=True,
         )
 
         # book-keeping
         self.irreps_in = irreps_in
-        self.irreps_out = nodes.hidden_irreps()
+        self.irreps_out: o3.Irreps = output_features  # type: ignore
 
     def forward(
         self,
@@ -227,6 +275,7 @@ class MACELayer(torch.nn.Module):
         # interact
         internal_node_features = self.interaction(
             node_features,
+            node_attributes,
             sph_harmonics,
             radial_basis,
             graph,
@@ -261,8 +310,8 @@ class _BaseMACE(GraphPESModel):
         # radial things
         cutoff: float,
         n_radial: int,
-        radial_expansion_type: type[DistanceExpansion] | str,
-        mlp_layers: list[int],
+        radial_expansion: type[DistanceExpansion] | str,
+        weights_mlp: MLPConfig,
         # node things
         nodes: NodeDescription,
         node_attribute_generator: Callable[[torch.Tensor], torch.Tensor],
@@ -272,6 +321,8 @@ class _BaseMACE(GraphPESModel):
         correlation: int,
         neighbour_aggregation: NeighbourAggregationMode,
         use_self_connection: bool,
+        # readout
+        readout_width: int,
     ):
         super().__init__(
             cutoff=cutoff,
@@ -288,12 +339,10 @@ class _BaseMACE(GraphPESModel):
             normalize=True,
             normalization="component",
         )
-        if isinstance(radial_expansion_type, str):
-            radial_expansion_type = get_distance_expansion(
-                radial_expansion_type
-            )
+        if isinstance(radial_expansion, str):
+            radial_expansion = get_distance_expansion(radial_expansion)
         self.radial_expansion = HaddamardProduct(
-            radial_expansion_type(
+            radial_expansion(
                 n_features=n_radial, cutoff=cutoff, trainable=True
             ),
             PolynomialEnvelope(cutoff=cutoff, p=5),
@@ -307,23 +356,32 @@ class _BaseMACE(GraphPESModel):
         current_node_irreps = [o3.Irrep("0e")]
         self.layers: UniformModuleList[MACELayer] = UniformModuleList([])
 
-        for _ in range(layers):
+        for i in range(layers):
+            # only use residual skip after the first layer
+            use_residual = i != 0
+            final_layer = i == layers - 1
             layer = MACELayer(
                 irreps_in=current_node_irreps,
                 nodes=nodes,
                 correlation=correlation,
                 sph_harmonics=sph_harmonics,
                 radial_basis_features=n_radial,
-                mlp_layers=mlp_layers,
+                mlp=weights_mlp,
                 use_sc=use_self_connection,
                 aggregation=neighbour_aggregation,
+                residual=use_residual,
+                final_layer=final_layer,
             )
             self.layers.append(layer)
             current_node_irreps = [ir for _, ir in layer.irreps_out]
 
         self.readouts: UniformModuleList[ReadOut] = UniformModuleList(
             [LinearReadOut(nodes.hidden_irreps()) for _ in range(layers - 1)]
-            + [NonLinearReadOut(nodes.hidden_irreps())]
+            + [
+                NonLinearReadOut(
+                    self.layers[-1].irreps_out, hidden_dim=readout_width
+                )
+            ],
         )
 
         self.scaler = LocalEnergiesScaler()
@@ -361,7 +419,11 @@ class _BaseMACE(GraphPESModel):
         return {"local_energies": self.scaler(local_energies, graph)}
 
 
-DEFAULT_MLP_LAYERS: Final[list[int]] = [16, 16]
+DEFAULT_MLP_CONFIG: Final[MLPConfig] = {
+    "hidden_depth": 3,
+    "hidden_features": 64,
+    "activation": "SiLU",
+}
 
 
 class MACE(_BaseMACE):
@@ -397,11 +459,11 @@ class MACE(_BaseMACE):
         radial cutoff (in Å) for the radial expansion (and message passing)
     n_radial
         number of bases to expand the radial distances into
-    radial_expansion_type
+    radial_expansion
         type of radial expansion to use. See :class:`~graph_pes.models.components.distances.DistanceExpansion`
         for available options
-    mlp_layers
-        the widths of layers in the MLPs that map the radial basis functions
+    weights_mlp
+        configuration for the MLPs that map the radial basis functions
         to the weights of the interactions' tensor products
     channels
         the multiplicity of the node features corresponding to each irrep
@@ -413,15 +475,18 @@ class MACE(_BaseMACE):
         the highest order to consider in:
         * the spherical harmonics expansion of the neighbour vectors
         * the irreps of node features used within each message passing layer
-    correlation
-        maximum correlation (body-order) of the messages
     layers
         number of message passing layers
+    correlation
+        maximum correlation (body-order) of the messages
     aggregation
         the type of aggregation to use when creating total messages from
         neigbour messages :math:`m_{j \rightarrow i}`
     self_connection
         whether to use self-connections in the message passing layers
+    readout_width
+        the width of the MLP used to read out the per-atom energies in the final
+        layer
 
     Examples
     --------
@@ -434,7 +499,7 @@ class MACE(_BaseMACE):
         ...     elements=["H", "C", "N", "O"],
         ...     cutoff=5.0,
         ...     channels=16,
-        ...     radial_expansion_type="Bessel",
+        ...     radial_expansion="Bessel",
         ... )
 
     Specification in a YAML file:
@@ -445,8 +510,12 @@ class MACE(_BaseMACE):
             graph_pes.models.MACE:
                 elements: [H, C, N, O]
                 cutoff: 5.0
-                radial_expansion_type: GaussianSmearing
-                mlp_layers: [16, 16]
+                radial_expansion: GaussianSmearing
+                # the default MLP config:
+                weights_mlp:
+                    hidden_depth: 3
+                    hidden_features: 64
+                    activation: SiLU
 
     """  # noqa: E501
 
@@ -456,8 +525,8 @@ class MACE(_BaseMACE):
         # radial things
         cutoff: float = DEFAULT_CUTOFF,
         n_radial: int = 8,
-        radial_expansion_type: type[DistanceExpansion] | str = "Bessel",
-        mlp_layers: list[int] = DEFAULT_MLP_LAYERS,
+        radial_expansion: type[DistanceExpansion] | str = "Bessel",
+        weights_mlp: MLPConfig = DEFAULT_MLP_CONFIG,
         # node things
         channels: int = 128,
         hidden_irreps: str | list[str] = "0e + 1o",
@@ -467,6 +536,8 @@ class MACE(_BaseMACE):
         correlation: int = 3,
         aggregation: NeighbourAggregationMode = "constant_fixed",
         self_connection: bool = True,
+        # readout
+        readout_width: int = 16,
     ):
         Z_embedding = AtomicOneHot(elements)
         Z_dim = len(elements)
@@ -480,8 +551,8 @@ class MACE(_BaseMACE):
         super().__init__(
             cutoff=cutoff,
             n_radial=n_radial,
-            radial_expansion_type=radial_expansion_type,
-            mlp_layers=mlp_layers,
+            radial_expansion=radial_expansion,
+            weights_mlp={**DEFAULT_MLP_CONFIG, **weights_mlp},
             nodes=nodes,
             node_attribute_generator=Z_embedding,
             l_max=l_max,
@@ -489,6 +560,7 @@ class MACE(_BaseMACE):
             correlation=correlation,
             neighbour_aggregation=aggregation,
             use_self_connection=self_connection,
+            readout_width=readout_width,
         )
 
 
@@ -528,8 +600,8 @@ class ZEmbeddingMACE(_BaseMACE):
         # radial things
         cutoff: float = DEFAULT_CUTOFF,
         n_radial: int = 8,
-        radial_expansion_type: type[DistanceExpansion] | str = "Bessel",
-        mlp_layers: list[int] = DEFAULT_MLP_LAYERS,
+        radial_expansion: type[DistanceExpansion] | str = "Bessel",
+        weights_mlp: MLPConfig = DEFAULT_MLP_CONFIG,
         # node things
         channels: int = 128,
         hidden_irreps: str | list[str] = "0e + 1o",
@@ -539,6 +611,8 @@ class ZEmbeddingMACE(_BaseMACE):
         correlation: int = 3,
         aggregation: NeighbourAggregationMode = "constant_fixed",
         self_connection: bool = True,
+        # readout
+        readout_width: int = 16,
     ):
         Z_embedding = PerElementEmbedding(z_embed_dim)
         hidden_irrep_s = parse_irreps(hidden_irreps)
@@ -551,8 +625,8 @@ class ZEmbeddingMACE(_BaseMACE):
         super().__init__(
             cutoff=cutoff,
             n_radial=n_radial,
-            radial_expansion_type=radial_expansion_type,
-            mlp_layers=mlp_layers,
+            radial_expansion=radial_expansion,
+            weights_mlp={**DEFAULT_MLP_CONFIG, **weights_mlp},
             nodes=nodes,
             node_attribute_generator=Z_embedding,
             l_max=l_max,
@@ -560,4 +634,5 @@ class ZEmbeddingMACE(_BaseMACE):
             correlation=correlation,
             neighbour_aggregation=aggregation,
             use_self_connection=self_connection,
+            readout_width=readout_width,
         )

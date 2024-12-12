@@ -38,7 +38,7 @@ def all_model_factories(
     pytorch_lightning.seed_everything(42)
     # make these models as small as possible to speed up tests
     _small_nequip = {
-        "layers": 1,
+        "layers": 2,
         "features": dict(
             channels=16,
             l_max=1,
@@ -50,24 +50,24 @@ def all_model_factories(
         ZEmbeddingNequIP: {**_small_nequip},
         MACE: {
             "elements": expected_elements,
-            "layers": 1,
-            "l_max": 1,
-            "correlation": 1,
+            "layers": 3,
+            "l_max": 2,
+            "correlation": 3,
             "channels": 4,
         },
         ZEmbeddingMACE: {
-            "layers": 1,
-            "l_max": 1,
-            "correlation": 1,
+            "layers": 3,
+            "l_max": 2,
+            "correlation": 3,
             "channels": 4,
             "z_embed_dim": 4,
         },
         PaiNN: {
-            "layers": 1,
+            "layers": 2,
             "channels": 16,
         },
         TensorNet: {
-            "layers": 1,
+            "layers": 2,
             "radial_features": 8,
             "channels": 8,
         },

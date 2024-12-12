@@ -7,6 +7,7 @@ from typing import (
     Iterable,
     Iterator,
     Sequence,
+    TypedDict,
     TypeVar,
 )
 
@@ -93,6 +94,12 @@ class UniformModuleList(torch.nn.ModuleList, Sequence[V]):
 
     def __iter__(self) -> Iterator[V]:
         return super().__iter__()  # type: ignore
+
+
+class MLPConfig(TypedDict):
+    hidden_depth: int
+    hidden_features: int
+    activation: str
 
 
 class MLP(torch.nn.Module):
@@ -189,6 +196,22 @@ class MLP(torch.nn.Module):
             stringify=False,
         )
 
+    @classmethod
+    def from_config(
+        cls,
+        config: MLPConfig,
+        input_features: int,
+        output_features: int,
+        bias: bool = True,
+    ) -> MLP:
+        return cls(
+            layers=[input_features]
+            + [config["hidden_features"]] * config["hidden_depth"]
+            + [output_features],
+            activation=config["activation"],
+            bias=bias,
+        )
+
 
 class ShiftedSoftplus(torch.nn.Module):
     def __init__(self):
@@ -267,7 +290,7 @@ class PerElementParameter(torch.nn.Parameter):
     ) -> PerElementParameter:
         pep = super().__new__(cls, data, requires_grad=requires_grad)
         pep._is_per_element_param = True  # type: ignore
-        return pep
+        return pep  # type: ignore
 
     def __init__(self, data: Tensor, requires_grad: bool = True):
         super().__init__()

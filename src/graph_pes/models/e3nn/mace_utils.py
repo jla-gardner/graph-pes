@@ -10,6 +10,7 @@ import torch.fx
 from e3nn import o3
 from e3nn.util.codegen import CodeGenMixin
 
+from graph_pes.models.e3nn.utils import to_full_irreps
 from graph_pes.utils.nn import UniformModuleList
 
 BATCH_DIM_EG = 20
@@ -33,6 +34,11 @@ class ContractionConfig:
     irrep_s_in: list[o3.Irrep]
     irrep_out: o3.Irrep
     n_node_attributes: int
+
+    def __repr__(self) -> str:
+        _in = to_full_irreps(self.num_features, self.irrep_s_in)
+        _out = to_full_irreps(self.num_features, [self.irrep_out])
+        return f"{_in} + {self.n_node_attributes}x0e -> {_out}"
 
 
 class InitialContraction(CodeGenMixin, torch.nn.Module):
@@ -167,6 +173,8 @@ class Contraction(CodeGenMixin, torch.nn.Module):
     def __init__(self, config: ContractionConfig, correlation: int):
         super().__init__()
 
+        self.config = config
+        self.correlation = correlation
         self.initial_contraction = InitialContraction(config, correlation)
 
         self.weight_contractions = UniformModuleList(
@@ -201,6 +209,13 @@ class Contraction(CodeGenMixin, torch.nn.Module):
         node_attributes: torch.Tensor,
     ) -> torch.Tensor:
         return super().__call__(node_embeddings, node_attributes)
+
+    def __repr__(self) -> str:
+        weights = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        return (
+            f"{self.__class__.__name__}({self.config}, "
+            f"correlation={self.correlation}, weights={weights})"
+        )
 
 
 _U_cache_sparse: dict[tuple[str, str, int], torch.Tensor] = torch.load(
