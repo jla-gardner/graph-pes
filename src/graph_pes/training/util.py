@@ -231,17 +231,22 @@ class LoggedProgressBar(ProgressBar):
                 "".join(
                     f"{part:>{self._widths[header]}}"
                     for part, header in zip(first_row, headers)
-                )
+                ),
+                flush=True,
             )
             print(
                 "".join(
                     f"{part:>{self._widths[header]}}"
                     for part, header in zip(second_row, headers)
-                )
+                ),
+                flush=True,
             )
 
         # print the values for this epoch
-        print("".join(f"{v:>{self._widths[k]}}" for k, v in metrics.items()))
+        print(
+            "".join(f"{v:>{self._widths[k]}}" for k, v in metrics.items()),
+            flush=True,
+        )
 
     @override
     def get_metrics(  # type: ignore
