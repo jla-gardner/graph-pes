@@ -11,11 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Added the `graph-pes-resume` script.
 
+Flushed logging for the `LoggedProgressBar` callback.
+
 ### Changed
 
 Use explicit `.cutoff`, `.batch` and `.ptr` properties on `AtomicGraph` objects
 
 Aligned the `graph-pes` implementation of MACE with that of `ACEsuite/mace`.
+
+### Fixed
+
+Fixed a bug whereby some parameters were being duplicated within a single parameter group.
 
 ## [0.0.13] - 2024-12-11
 
