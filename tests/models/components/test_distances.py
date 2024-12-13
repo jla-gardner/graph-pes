@@ -14,6 +14,7 @@ from graph_pes.models.components.distances import (
     GaussianSmearing,
     PolynomialEnvelope,
     SinExpansion,
+    get_distance_expansion,
 )
 
 _expansions = [Bessel, GaussianSmearing, SinExpansion, ExponentialRBF]
@@ -76,3 +77,17 @@ def test_envelopes(envelope: type[Envelope]):
     assert a > 0, "The envelope should be positive"
     assert b == 0, "The envelope should be zero at the cutoff"
     assert c == 0, "The envelope should be zero beyond the cutoff"
+
+
+def test_get_expansion():
+    assert (
+        get_distance_expansion("Bessel")
+        == get_distance_expansion(Bessel)
+        == Bessel
+    )
+
+    with pytest.raises(ValueError, match="Unknown distance expansion"):
+        get_distance_expansion("Unknown")
+
+    with pytest.raises(ValueError, match="is not a DistanceExpansion"):
+        get_distance_expansion("PolynomialEnvelope")
