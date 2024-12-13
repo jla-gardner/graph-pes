@@ -267,8 +267,8 @@ def load_atoms_dataset(
     val = structures[n_train : n_train + n_valid]
 
     return FittingData(
-        ASEToGraphDataset(train, cutoff, pre_transform, property_map),
-        ASEToGraphDataset(val, cutoff, pre_transform, property_map),
+        train=ASEToGraphDataset(train, cutoff, pre_transform, property_map),
+        valid=ASEToGraphDataset(val, cutoff, pre_transform, property_map),
     )
 
 

@@ -12,7 +12,7 @@ import data2objects
 import yaml
 from pytorch_lightning import Callback
 
-from graph_pes.data.datasets import FittingData, GraphDataset
+from graph_pes.data.datasets import FittingData
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.addition import AdditionModel
 from graph_pes.training.loss import Loss, TotalLoss, WeightedLoss
@@ -311,16 +311,17 @@ class Config:
         for dealing with arbitrary offset energies.
     """
 
-    data: Union[FittingData, Dict[Literal["train", "valid"], GraphDataset]]
+    data: FittingData
     """
     The data to train on.
 
     .. dropdown:: ``data`` options
     
-        Point to something that can create a 
-        :class:`~graph_pes.data.FittingData` instance, or a dictionary mapping 
-        ``"train"`` and ``"valid"`` keys to 
-        :class:`~graph_pes.data.GraphDataset` instances:
+        Point to a dictionary mapping ``"train"`` and ``"valid"`` keys to 
+        :class:`~graph_pes.data.GraphDataset` instances, or to something that,
+        when called, returns such a dictionary or
+        :class:`~graph_pes.data.FittingData` instance.
+
 
         Load custom data from a function with no arguments:
 
@@ -359,6 +360,10 @@ class Config:
                     +file_dataset:
                         path: validation_data.xyz
                         cutoff: 5.0
+        
+        .. autoclass:: graph_pes.data.FittingData()
+            :show-inheritance:
+            :members:
     """
 
     loss: Union[Loss, WeightedLoss, TotalLoss, List[Union[WeightedLoss, Loss]]]

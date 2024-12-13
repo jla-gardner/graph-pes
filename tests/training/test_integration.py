@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 from graph_pes import AtomicGraph, GraphPESModel
 from graph_pes.atomic_graph import to_batch
 from graph_pes.config import FittingOptions
-from graph_pes.data.datasets import DatasetCollection, GraphDataset
+from graph_pes.data.datasets import FittingData, GraphDataset
 from graph_pes.training.callbacks import EarlyStoppingWithLogging
 from graph_pes.training.loss import PerAtomEnergyLoss, TotalLoss
 from graph_pes.training.opt import Optimizer
@@ -59,7 +59,7 @@ def test_integration(model: GraphPESModel):
             ],
         ),
         model=model,
-        data=DatasetCollection(
+        data=FittingData(
             train=GraphDataset(train_graphs),
             valid=GraphDataset(val_graphs),
         ),
