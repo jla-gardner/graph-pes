@@ -124,7 +124,10 @@ class TensorNet(GraphPESModel):
         X = self.embedding(graph)  # (N, C, 3, 3)
 
         for interaction in self.interactions:
-            X = interaction(X, graph)  # (N, C, 3, 3)
+            # normalise -> interaction -> residual connection
+            X = X / (frobenius_norm(X)[..., None, None] + 1)
+            dX = interaction(X, graph)
+            X = X + dX
 
         local_energies = self.energy_read_out(X).squeeze()
         local_energies = self.scaler(local_energies, graph)
@@ -329,8 +332,7 @@ class Interaction(nn.Module):
         )
 
     def forward(self, X: Tensor, graph: AtomicGraph) -> Tensor:
-        # normalise and decompose matrix representations
-        X = X / (frobenius_norm(X)[..., None, None] + 1)  # (N, C, 3, 3)
+        # decompose matrix representations
         I, A, S = decompose_matrix(X)  # (N, C, 3, 3)
 
         # update I, A, S
@@ -358,10 +360,7 @@ class Interaction(nn.Module):
 
         # mix features again
         Y = self.W_I_post(I) + self.W_A_post(A) + self.W_S_post(S)
-        dX = Y + torch.matrix_power(Y, 2)  # (N, C, 3, 3)
-
-        # residual connection: add dX to the normalised X
-        return X + dX
+        return Y + torch.matrix_power(Y, 2)  # (N, C, 3, 3)
 
 
 class ScalarOutput(nn.Module):
