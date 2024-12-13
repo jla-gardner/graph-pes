@@ -32,7 +32,7 @@ graphs = [
 
 
 def test_model():
-    model = LennardJones()
+    model = LennardJones(cutoff=3.0)
     model.pre_fit_all_components(graphs[:2])
 
     assert sum(p.numel() for p in model.parameters()) == 2
@@ -50,12 +50,12 @@ def test_isolated_atom():
     graph = AtomicGraph.from_ase(atom, cutoff=3)
     assert number_of_atoms(graph) == 1 and number_of_edges(graph) == 0
 
-    model = LennardJones()
+    model = LennardJones(cutoff=3.0)
     assert model.predict_energy(graph) == 0
 
 
 def test_pre_fit(caplog):
-    model = LennardJones()
+    model = LennardJones(cutoff=3.0)
     model.pre_fit_all_components(graphs)
 
     model.pre_fit_all_components(graphs)
@@ -66,7 +66,7 @@ def test_pre_fit(caplog):
     )
 
 
-@helpers.parameterise_model_classes(expected_elements=["Cu"])
+@helpers.parameterise_model_classes(expected_elements=["Cu"], cutoff=3.0)
 def test_model_serialisation(model_class: type[GraphPESModel], tmp_path):
     # 1. instantiate the model
     m1 = model_class()  # type: ignore
@@ -96,8 +96,8 @@ def test_cutoff_save_and_load():
 
 
 def test_addition():
-    lj = LennardJones()
-    m = Morse()
+    lj = LennardJones(cutoff=3.0)
+    m = Morse(cutoff=3.0)
 
     # test addition of two models
     addition_model = AdditionModel(lj=lj, morse=m)
@@ -117,7 +117,7 @@ def test_addition():
     )
 
 
-@helpers.parameterise_all_models(expected_elements=["Cu"])
+@helpers.parameterise_all_models(expected_elements=["Cu"], cutoff=3.0)
 def test_model_outputs(model: GraphPESModel):
     graph = graphs[0]
     assert has_cell(graph)

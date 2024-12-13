@@ -91,7 +91,8 @@ general:
     run_id: null
 wandb: null
 loss: +graph_pes.training.loss.PerAtomEnergyLoss()
-model: +LennardJones()    
+model: 
+    +LennardJones: {{cutoff: 3.0}}
 data:
     +graph_pes.data.load_atoms_dataset:
         id: {helpers.CU_STRUCTURES_FILE}

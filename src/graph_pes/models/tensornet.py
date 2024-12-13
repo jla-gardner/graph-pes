@@ -388,7 +388,7 @@ class ScalarOutput(nn.Module):
         norm_S = frobenius_norm(S)
 
         X = torch.cat((norm_I, norm_A, norm_S), dim=-1)  # (N, 3C)
-        # X = self.layer_norm(X)
+        X = self.layer_norm(X)
         return self.mlp(X)  # (N, 1)
 
 

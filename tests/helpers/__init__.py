@@ -34,6 +34,7 @@ reset(pre_transform_structures)
 
 def all_model_factories(
     expected_elements: list[str],
+    cutoff: float,
 ) -> tuple[list[str], list[Callable[[], GraphPESModel]]]:
     pytorch_lightning.seed_everything(42)
     # make these models as small as possible to speed up tests
@@ -68,7 +69,7 @@ def all_model_factories(
         },
         TensorNet: {
             "layers": 2,
-            "radial_features": 8,
+            "radial_features": 24,
             "channels": 8,
         },
     }
@@ -76,29 +77,32 @@ def all_model_factories(
     def _model_factory(
         model_klass: type[GraphPESModel],
     ) -> Callable[[], GraphPESModel]:
-        return lambda: model_klass(**required_kwargs.get(model_klass, {}))
+        return lambda: model_klass(
+            **required_kwargs.get(model_klass, {}), cutoff=cutoff
+        )
 
     names = [model.__name__ for model in ALL_MODELS]
     factories = [_model_factory(model) for model in ALL_MODELS]
     names.append("AdditionModel")
     factories.append(
-        lambda: AdditionModel(lj=LennardJones(), offset=FixedOffset())
+        lambda: AdditionModel(
+            lj=LennardJones(cutoff=cutoff), offset=FixedOffset()
+        )
     )
     return names, factories
 
 
 def all_models(
     expected_elements: list[str],
+    cutoff: float,
 ) -> tuple[list[str], list[GraphPESModel]]:
-    names, factories = all_model_factories(expected_elements)
+    names, factories = all_model_factories(expected_elements, cutoff)
     return names, [factory() for factory in factories]
 
 
-def parameterise_all_models(
-    expected_elements: list[str],
-):
+def parameterise_all_models(expected_elements: list[str], cutoff: float = 5.0):
     def decorator(func):
-        names, models = all_models(expected_elements)
+        names, models = all_models(expected_elements, cutoff)
         return pytest.mark.parametrize("model", models, ids=names)(func)
 
     return decorator
@@ -106,9 +110,10 @@ def parameterise_all_models(
 
 def parameterise_model_classes(
     expected_elements: list[str],
+    cutoff: float = 5.0,
 ):
     def decorator(func):
-        names, factories = all_model_factories(expected_elements)
+        names, factories = all_model_factories(expected_elements, cutoff)
         return pytest.mark.parametrize("model_class", factories, ids=names)(
             func
         )

@@ -11,7 +11,7 @@ from .. import helpers
 CUTOFF = 1.2  # bond length of methane is ~1.09 Å
 
 
-@helpers.parameterise_all_models(expected_elements=["H", "C"])
+@helpers.parameterise_all_models(expected_elements=["H", "C"], cutoff=CUTOFF)
 def test_equivariance(model: GraphPESModel):
     if isinstance(model, (PaiNN,)):
         pytest.skip(f"TODO: fix {model.__class__.__name__} equivariance")
@@ -25,10 +25,16 @@ def test_equivariance(model: GraphPESModel):
 
     # rotate the molecule
     new_methane = methane.copy()
-    shift = new_methane.positions.mean(axis=0)
+    shift = new_methane.positions[0]
     new_methane.positions = (new_methane.positions - shift).dot(R) + shift
     new_graph = AtomicGraph.from_ase(new_methane, cutoff=CUTOFF)
     new_predictions = model.get_all_PES_predictions(new_graph)
+
+    # pre-checks:
+    np.testing.assert_allclose(
+        np.linalg.norm(new_methane.positions - shift, axis=1),
+        np.linalg.norm(methane.positions - shift, axis=1),
+    )
 
     # now check:
     # 1. invariance of energy prediction
@@ -55,7 +61,7 @@ def test_equivariance(model: GraphPESModel):
         # auto-grad is not perfect, and we lose
         # precision, particularly with larger models
         # and default float32 dtype
-        atol=3e-2,
+        atol=3e-3,
         # some of the og predictions are 0: a large
         # relative error is not a problem here
         rtol=10,

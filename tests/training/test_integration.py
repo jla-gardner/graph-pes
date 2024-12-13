@@ -15,7 +15,7 @@ from graph_pes.training.util import VALIDATION_LOSS_KEY, LoggedProgressBar
 from .. import helpers
 
 
-@helpers.parameterise_all_models(expected_elements=["Cu"])
+@helpers.parameterise_all_models(expected_elements=["Cu"], cutoff=3)
 def test_integration(model: GraphPESModel):
     if len(list(model.parameters())) == 0:
         # nothing to train

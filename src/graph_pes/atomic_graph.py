@@ -972,7 +972,7 @@ def trim_edges(graph: AtomicGraph, cutoff: float) -> AtomicGraph:
     """
 
     existing_cutoff = graph.cutoff
-    if existing_cutoff < cutoff:
+    if existing_cutoff + 1e-5 < cutoff:
         warnings.warn(
             f"Graph already has a cutoff of {existing_cutoff} which is "
             f"less than the requested cutoff of {cutoff}.",

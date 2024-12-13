@@ -29,7 +29,7 @@ def test_predictions():
         "local_energies": (2,),
     }
 
-    model = LennardJones()
+    model = LennardJones(cutoff=1.5)
 
     # no stress should be predicted for non-periodic systems
     predictions = model.get_all_PES_predictions(no_pbc)
@@ -66,7 +66,7 @@ def test_batched_prediction():
         "virial": (2, 3, 3),  # two structures
     }
 
-    predictions = LennardJones().get_all_PES_predictions(batch)
+    predictions = LennardJones(cutoff=1.5).get_all_PES_predictions(batch)
 
     for key in "energy", "forces", "stress", "virial":
         assert predictions[key].shape == expected_shapes[key]
@@ -77,7 +77,7 @@ def test_isolated_atom():
     graph = AtomicGraph.from_ase(atom, cutoff=1.5)
     assert number_of_edges(graph) == 0
 
-    predictions = LennardJones().get_all_PES_predictions(graph)
+    predictions = LennardJones(cutoff=1.5).get_all_PES_predictions(graph)
     assert torch.allclose(predictions["forces"], torch.zeros(1, 3))
 
 
