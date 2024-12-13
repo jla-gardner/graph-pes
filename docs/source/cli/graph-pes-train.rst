@@ -63,6 +63,22 @@ By default, ``graph-pes-train`` will attempt to use all available GPUs. You can 
     $ export CUDA_VISIBLE_DEVICES=0,1
     $ graph-pes-train config.yaml
 
+Weights and Biases
++++++++++++++++++++
+
+By default, ``graph-pes-train`` will try to use `Weights and Biases <https://wandb.ai/site>`__ for logging (see the ``wandb`` section of the config below).
+
+When you run ``graph-pes-train`` interactively, you will be prompted to log in to your W&B account before training begins.
+To avoid this interactive step, you can do one of the following:
+
+1. set the ``wandb: null`` flag in your config file to all disable logging.
+2. run ``wandb login`` before running ``graph-pes-train`` to log in to your W&B account permanently on your machine.
+3. set the ``WANDB_API_KEY`` environment variable to your W&B API key in your shell and directly before running ``graph-pes-train``.
+
+.. warning::
+    
+    If you submit a job to some job scheduler (e.g. SLURM, PBS, etc.), without taking one of the 3 steps above, your job will hang forever while ``graph-pes-train`` waits for you to log in to your W&B account.
+
 Config files
 ------------
 
