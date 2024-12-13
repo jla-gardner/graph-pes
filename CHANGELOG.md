@@ -15,6 +15,10 @@ Changed the implementation of `TensorNet` to exactly match that in `TorchMD`.
 
 Fixed test warnings.
 
+Upgraded `locache` to `4.0.2` to fix some dataset caching issues.
+
+Removed coloured logging for cleaner SLURM etc. output.
+
 ## [0.0.14] - 2024-12-12
 
 ### Added
