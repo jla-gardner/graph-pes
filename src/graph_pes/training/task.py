@@ -60,30 +60,61 @@ class PESLearningTask(pl.LightningModule):
         super().on_validation_start()
         self.model.eval()
 
-    def _step(self, graph: AtomicGraph, prefix: Literal["train", "valid"]):
-        """Get (and log) the losses for a training/validation step."""
+    def on_validation_end(self) -> None:
+        super().on_validation_end()
+        self.model.train()
+
+    def on_test_start(self):
+        super().on_test_start()
+        self.model.eval()
+
+    def on_test_end(self) -> None:
+        super().on_test_end()
+        self.model.train()
+
+    def _step(
+        self,
+        graph: AtomicGraph,
+        prefix: Literal["train", "valid", "test"],
+    ) -> torch.Tensor:
+        """
+        Get (and log) the losses and metrics for a step.
+
+        Parameters
+        ----------
+        graph: AtomicGraph
+            The atomic graph to compute the losses and metrics for.
+        prefix: Literal["train", "valid", "test"]
+            The prefix of the step, either "train", "valid", or "test".
+
+        Returns
+        -------
+        torch.Tensor
+            The total loss for the step.
+        """
 
         def log(name: str, value: torch.Tensor | float):
             if isinstance(value, torch.Tensor):
                 value = value.item()
 
-            is_valid = prefix == "valid"
+            validating = prefix == "valid"
+            training = prefix == "train"
 
             return self.log(
                 f"{prefix}/{name}",
                 value,
-                prog_bar=is_valid and "metric" in name,
-                on_step=not is_valid,
-                on_epoch=is_valid,
-                sync_dist=is_valid,
+                prog_bar=validating and "metric" in name,
+                on_step=training,
+                on_epoch=not training,
+                sync_dist=not training,
                 batch_size=number_of_structures(graph),
             )
 
         # generate prediction:
-        if prefix == "valid":
-            desired_properties = list(graph.properties.keys())
-        else:
+        if prefix == "train":
             desired_properties = self.train_properties
+        else:
+            desired_properties = list(graph.properties.keys())
 
         predictions = self.model.predict(graph, properties=desired_properties)
 
@@ -97,24 +128,24 @@ class PESLearningTask(pl.LightningModule):
             log(f"loss/{name}_weighted", loss_pair.weighted_loss_value)
 
         # log additional values during validation
-        if prefix == "valid":
-            val_metrics: list[Loss] = []
+        if prefix != "train":
+            extra_metrics: list[Loss] = []
             if "energy" in graph.properties:
-                val_metrics.append(PerAtomEnergyLoss(metric=RMSE()))
-                val_metrics.append(PerAtomEnergyLoss(metric=MAE()))
-                val_metrics.append(PropertyLoss("energy", RMSE()))
-                val_metrics.append(PropertyLoss("energy", MAE()))
+                extra_metrics.append(PerAtomEnergyLoss(metric=RMSE()))
+                extra_metrics.append(PerAtomEnergyLoss(metric=MAE()))
+                extra_metrics.append(PropertyLoss("energy", RMSE()))
+                extra_metrics.append(PropertyLoss("energy", MAE()))
             if "forces" in graph.properties:
                 # Force MAE is not invariant wrt. rotations, so we don't log it
                 # see "How to validate machine-learned interatomic potentials"
                 #      -> https://doi.org/10.1063/5.0139611
-                val_metrics.append(PropertyLoss("forces", RMSE()))
+                extra_metrics.append(PropertyLoss("forces", RMSE()))
             if "stress" in graph.properties:
-                val_metrics.append(PropertyLoss("stress", RMSE()))
+                extra_metrics.append(PropertyLoss("stress", RMSE()))
             if "virial" in graph.properties:
-                val_metrics.append(PropertyLoss("virial", RMSE()))
+                extra_metrics.append(PropertyLoss("virial", RMSE()))
 
-            for metric in val_metrics:
+            for metric in extra_metrics:
                 if metric.name in total_loss_result.components:
                     # don't double log
                     continue
@@ -128,6 +159,9 @@ class PESLearningTask(pl.LightningModule):
 
     def validation_step(self, structure: AtomicGraph, _):
         return self._step(structure, "valid")
+
+    def test_step(self, structure: AtomicGraph, _):
+        return self._step(structure, "test")
 
     def configure_optimizers(
         self,
@@ -180,10 +214,14 @@ class PESLearningTask(pl.LightningModule):
         config["scheduler"] = scheduler
         return {"optimizer": opt, "lr_scheduler": config}  # type: ignore
 
+    # we override the defaults to turn on gradient tracking for the
+    # validation/test steps since we (might) compute the forces using autograd
     def on_validation_model_eval(self, *args, **kwargs):
         super().on_validation_model_eval(*args, **kwargs)
-        # we override the defaults to turn on gradient tracking for the
-        # validation step since we (might) compute the forces using autograd
+        torch.set_grad_enabled(True)
+
+    def on_test_model_eval(self, *args, **kwargs):
+        super().on_test_model_eval(*args, **kwargs)
         torch.set_grad_enabled(True)
 
     @classmethod

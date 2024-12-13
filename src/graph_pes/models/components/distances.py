@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 
 import torch
 
+from graph_pes.utils.misc import to_significant_figures
+
 
 class DistanceExpansion(torch.nn.Module, ABC):
     r"""
@@ -66,7 +68,8 @@ class DistanceExpansion(torch.nn.Module, ABC):
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(n_features={self.n_features}, "
-            f"cutoff={self.cutoff.item()}, trainable={self.trainable})"
+            f"cutoff={to_significant_figures(self.cutoff.item(), 3)}, "
+            f"trainable={self.trainable})"
         )
 
 
