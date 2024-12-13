@@ -24,6 +24,7 @@ from graph_pes.utils.nn import (
 
 from .components.distances import (
     CosineEnvelope,
+    DistanceExpansion,
     ExponentialRBF,
     get_distance_expansion,
 )
@@ -63,7 +64,7 @@ class TensorNet(GraphPESModel):
         The number of interaction layers to use for the model.
     direct_force_predictions
         Whether to predict forces directly. If ``True``, the model will
-        the model will generate force predictions by passing the final
+        generate force predictions by passing the final
         layer's node embeddings through a
         :class:`~graph_pes.models.tensornet.VectorOutput` read out.
         Otherwise, ``graph-pes`` automatically infers the forces as the
@@ -88,7 +89,7 @@ class TensorNet(GraphPESModel):
         self,
         cutoff: float = DEFAULT_CUTOFF,
         radial_features: int = 32,
-        radial_expansion: str = "ExponentialRBF",
+        radial_expansion: str | type[DistanceExpansion] = ExponentialRBF,
         channels: int = 32,
         layers: int = 2,
         direct_force_predictions: bool = False,
@@ -123,8 +124,7 @@ class TensorNet(GraphPESModel):
         X = self.embedding(graph)  # (N, C, 3, 3)
 
         for interaction in self.interactions:
-            dX = interaction(X, graph)  # (N, C, 3, 3)
-            X = X + dX  # residual connection
+            X = interaction(X, graph)  # (N, C, 3, 3)
 
         local_energies = self.energy_read_out(X).squeeze()
         local_energies = self.scaler(local_energies, graph)
@@ -187,7 +187,7 @@ class EdgeEmbedding(nn.Module):
     def __init__(
         self,
         radial_features: int,
-        radial_expansion: str,
+        radial_expansion: str | type[DistanceExpansion],
         channels: int,
         cutoff: float,
     ):
@@ -251,7 +251,7 @@ class Embedding(nn.Module):
     def __init__(
         self,
         radial_features: int,
-        radial_expansion: str,
+        radial_expansion: str | type[DistanceExpansion],
         channels: int,
         cutoff: float,
     ):
@@ -358,7 +358,10 @@ class Interaction(nn.Module):
 
         # mix features again
         Y = self.W_I_post(I) + self.W_A_post(A) + self.W_S_post(S)
-        return Y + torch.matrix_power(Y, 2)  # (N, C, 3, 3)
+        dX = Y + torch.matrix_power(Y, 2)  # (N, C, 3, 3)
+
+        # residual connection: add dX to the normalised X
+        return X + dX
 
 
 class ScalarOutput(nn.Module):
@@ -372,6 +375,7 @@ class ScalarOutput(nn.Module):
 
     def __init__(self, channels: int):
         super().__init__()
+        self.layer_norm = nn.LayerNorm(3 * channels)
         self.mlp = MLP(
             layers=[3 * channels, 2 * channels, 1],
             activation=nn.SiLU(),
@@ -385,6 +389,7 @@ class ScalarOutput(nn.Module):
         norm_S = frobenius_norm(S)
 
         X = torch.cat((norm_I, norm_A, norm_S), dim=-1)  # (N, 3C)
+        X = self.layer_norm(X)
         return self.mlp(X)  # (N, 1)
 
 

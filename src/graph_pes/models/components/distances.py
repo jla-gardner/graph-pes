@@ -70,7 +70,9 @@ class DistanceExpansion(torch.nn.Module, ABC):
         )
 
 
-def get_distance_expansion(name: str) -> type[DistanceExpansion]:
+def get_distance_expansion(
+    thing: str | type[DistanceExpansion],
+) -> type[DistanceExpansion]:
     """
     Get a distance expansion class by it's name.
 
@@ -84,13 +86,16 @@ def get_distance_expansion(name: str) -> type[DistanceExpansion]:
     >>> get_distance_expansion("Bessel")
     <class 'graph_pes.models.components.distances.Bessel'>
     """
+    if isinstance(thing, type) and issubclass(thing, DistanceExpansion):
+        return thing
+
     try:
-        klass = getattr(sys.modules[__name__], name)
+        klass = getattr(sys.modules[__name__], thing)
     except AttributeError:
-        raise ValueError(f"Unknown distance expansion type: {name}") from None
+        raise ValueError(f"Unknown distance expansion type: {thing}") from None
 
     if not isinstance(klass, type) or not issubclass(klass, DistanceExpansion):
-        raise ValueError(f"{name} is not a DistanceExpansion") from None
+        raise ValueError(f"{thing} is not a DistanceExpansion") from None
 
     return klass
 
@@ -356,7 +361,7 @@ class ExponentialRBF(DistanceExpansion):
         return torch.exp(-self.beta * offsets**2)
 
 
-class Envelope(torch.torch.nn.Module):
+class Envelope(torch.nn.Module):
     """
     Any envelope function, :math:`E(r)`, for smoothing potentials
     must implement a forward method that takes in a tensor of distances
