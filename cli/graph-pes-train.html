@@ -1,0 +1,1299 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="graph-pes-resume" href="graph-pes-resume.html" /><link rel="prev" title="Custom training loops" href="../quickstart/custom-training-loop.html" />
+
+    <!-- Generated with Sphinx 7.4.7 and Furo 2024.08.06 -->
+        <title>graph-pes-train - graph-pes</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=649a27d8" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=05238f3f" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f0f0f0;
+  --color-code-foreground: black;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">graph-pes</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/logo-square.svg" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../quickstart/root.html">Quickstart</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Quickstart</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/quickstart.html">Train a model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/quickstart.html#Model-analysis">Model analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/quickstart.html#Fine-tuning">Fine-tuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/implement-a-model.html">Implement a model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/custom-training-loop.html">Custom training loops</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CLI Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="graph-pes-resume.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-resume</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="graph-pes-id.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-id</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../data/root.html">Data</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Data</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../data/atomic_graph.html">Atomic Graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/datasets.html">Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/loader.html">Loader</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../models/root.html">Models</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Models</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../models/addition.html">Addition Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../models/offsets.html">Energy Offset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../models/pairwise.html">Pair Potentials</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../models/many-body/root.html">Many Body Models</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of Many Body Models</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/schnet.html">SchNet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/painn.html">PaiNN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/nequip.html">NequIP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/mace.html">MACE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/tensornet.html">TensorNet</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../fitting/root.html">Fitting</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of Fitting</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../fitting/losses.html">Losses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fitting/optimizers.html">Optimizers</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../building-blocks/root.html">Building blocks</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of Building blocks</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../building-blocks/distances.html">Distance Expansions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../building-blocks/envelopes.html">Envelopes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../building-blocks/aggregation.html">Aggregation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../building-blocks/scaling.html">Scaling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../building-blocks/nn.html">PyTorch Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../building-blocks/e3nn.html"><code class="docutils literal notranslate"><span class="pre">e3nn</span></code> Helpers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/ase.html">ASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/lammps.html">LAMMPS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/analysis.html">Analysis</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../theory.html">Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development.html">Development</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/cli/graph-pes-train.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="graph-pes-train">
+<span id="cli-reference"></span><h1><code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code><a class="headerlink" href="#graph-pes-train" title="Link to this heading">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> is a command line tool for training graph-based potential energy surface models using <a class="reference external" href="https://lightning.ai/docs/pytorch/stable/index.html">PyTorch Lightning</a>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>graph-pes-train<span class="w"> </span>-h
+<span class="go">usage: graph-pes-train [-h] [args [args ...]]</span>
+
+<span class="go">Train a GraphPES model using PyTorch Lightning.</span>
+
+<span class="go">positional arguments:</span>
+<span class="go">args        Config files and command line specifications.</span>
+<span class="go">            Config files should be YAML (.yaml/.yml) files.</span>
+<span class="go">            Command line specifications should be in the form</span>
+<span class="go">            nested/key=value. Final config is built up from</span>
+<span class="go">            these items in a left to right manner, with later</span>
+<span class="go">            items taking precedence over earlier ones in the</span>
+<span class="go">            case of conflicts. The data2objects package is used</span>
+<span class="go">            to resolve references and create objects directly</span>
+<span class="go">            from the config dictionary.</span>
+
+<span class="go">optional arguments:</span>
+<span class="go">-h, --help  show this help message and exit</span>
+
+<span class="go">Copyright 2023-24, John Gardner</span>
+</pre></div>
+</div>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h2>
+<p>Train from a config file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>graph-pes-train<span class="w"> </span>config.yaml
+</pre></div>
+</div>
+<p>Train from a config file, overriding a specific option:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>graph-pes-train<span class="w"> </span>config.yaml<span class="w"> </span>fitting/trainer_kwargs/max_epochs<span class="o">=</span><span class="m">10</span>
+</pre></div>
+</div>
+<p>Train from multiple config files:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>graph-pes-train<span class="w"> </span>config-1.yaml<span class="w"> </span>config-2.yaml
+</pre></div>
+</div>
+<section id="multi-gpu-training">
+<span id="id1"></span><h3>Multi-GPU training:<a class="headerlink" href="#multi-gpu-training" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> command supports multi-GPU out of the box, relying on PyTorch Lightning’s native support for distributed training.
+By default, <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> will attempt to use all available GPUs. You can override this by exporting the <code class="docutils literal notranslate"><span class="pre">CUDA_VISIBLE_DEVICES</span></code> environment variable:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">CUDA_VISIBLE_DEVICES</span><span class="o">=</span><span class="m">0</span>,1
+$<span class="w"> </span>graph-pes-train<span class="w"> </span>config.yaml
+</pre></div>
+</div>
+</section>
+<section id="weights-and-biases">
+<h3>Weights and Biases<a class="headerlink" href="#weights-and-biases" title="Link to this heading">¶</a></h3>
+<p>By default, <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> will try to use <a class="reference external" href="https://wandb.ai/site">Weights and Biases</a> for logging (see the <code class="docutils literal notranslate"><span class="pre">wandb</span></code> section of the config below).</p>
+<p>When you run <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> interactively, you will be prompted to log in to your W&amp;B account before training begins.
+To avoid this interactive step, you can do one of the following:</p>
+<ol class="arabic simple">
+<li><p>set the <code class="docutils literal notranslate"><span class="pre">wandb:</span> <span class="pre">null</span></code> flag in your config file to all disable logging.</p></li>
+<li><p>run <code class="docutils literal notranslate"><span class="pre">wandb</span> <span class="pre">login</span></code> before running <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> to log in to your W&amp;B account permanently on your machine.</p></li>
+<li><p>set the <code class="docutils literal notranslate"><span class="pre">WANDB_API_KEY</span></code> environment variable to your W&amp;B API key in your shell and directly before running <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code>.</p></li>
+</ol>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If you submit a job to some job scheduler (e.g. SLURM, PBS, etc.), without taking one of the 3 steps above, your job will hang forever while <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> waits for you to log in to your W&amp;B account.</p>
+</div>
+</section>
+</section>
+<section id="config-files">
+<h2>Config files<a class="headerlink" href="#config-files" title="Link to this heading">¶</a></h2>
+<p>Configuration for the <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> command line tool is represented as a nested dictionary. The values of this dictionary are sourced from three places:</p>
+<ol class="arabic simple">
+<li><p>the default values defined in <a class="reference external" href="https://github.com/jla-gardner/graph-pes/blob/main/src/graph_pes/config/defaults.yaml">defaults.yaml</a></p></li>
+<li><p>values you define in the config file/s you pass to <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code>:  <code class="docutils literal notranslate"><span class="pre">&lt;config-1.yaml&gt;</span> <span class="pre">&lt;config-2.yaml&gt;</span> <span class="pre">...</span></code></p></li>
+<li><p>additional command line arguments you pass to <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code>: <code class="docutils literal notranslate"><span class="pre">&lt;nested/key=value&gt;</span> <span class="pre">&lt;nested/key=value&gt;</span> <span class="pre">...</span></code></p></li>
+</ol>
+<p>The final nested configuration dictionary is built up from these values in a left to right manner, with later items taking precedence over earlier ones in the case of conflicts.</p>
+<p>The structure of config files used by <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> is that of a <code class="docutils literal notranslate"><span class="pre">.yaml</span></code> file containing a nested dictionary of items:</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<span id="minimal-config"></span><div class="code-block-caption"><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">minimal.yaml</span></code></span><a class="headerlink" href="#id3" title="Link to this code">¶</a></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># train a SchNet model...</span>
+<span class="nt">model</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+SchNet</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">layers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">        </span><span class="nt">channels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64</span>
+<span class="w">        </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">=/misc/CUTOFF</span>
+
+<span class="c1"># ...using some of the QM7 structures...</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+load_atoms_dataset</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">QM7</span>
+<span class="w">        </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">=/misc/CUTOFF</span>
+<span class="w">        </span><span class="nt">n_train</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5_000</span>
+<span class="w">        </span><span class="nt">n_valid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+
+<span class="c1"># ...training on energy labels</span>
+<span class="nt">loss</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+PerAtomEnergyLoss()</span>
+
+<span class="nt">misc</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">CUTOFF</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
+</pre></div>
+</div>
+</div>
+<p>For a full list of available options in these config files, see <a class="reference internal" href="#complete-config-api"><span class="std std-ref">the below API reference</span></a> and <a class="reference internal" href="#kitchen-sink-config"><span class="std std-ref">the kitchen sink config example</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Under-the-hood, <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> turns the final nested config dictionary into a <a class="reference internal" href="#graph_pes.config.Config" title="graph_pes.config.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">Config</span></code></a> object via a 3 step process:</p>
+<ol class="arabic">
+<li><p>all reference strings (of the form <code class="docutils literal notranslate"><span class="pre">=/absolute/path/to/object</span></code> or <code class="docutils literal notranslate"><span class="pre">=../relative/path/to/object</span></code>) are replaced with the corresponding value.
+For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">a</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">b</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;=/c&quot;</span><span class="p p-Indicator">}</span><span class="w">  </span><span class="c1"># absolute reference</span>
+<span class="nt">c</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="nt">d</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">e</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;=../c&quot;</span><span class="p p-Indicator">}</span><span class="w">  </span><span class="c1"># relative reference</span>
+</pre></div>
+</div>
+<p>will be transformed into:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">a</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">b</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">}</span>
+<span class="nt">c</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="nt">d</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">e</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>all “special” keys starting with a <code class="docutils literal notranslate"><span class="pre">+</span></code> are interpreted as references to Python objects. These are imported and replaced with the actual
+object they point to using the <a class="reference external" href="https://github.com/jla-gardner/data2objects">data2objects</a> package - see there for more details.
+You can use this format to point to any Python object, defined in <code class="docutils literal notranslate"><span class="pre">graph-pes</span></code> or otherwise! To point to your own custom classes/objects/functions,
+use the fully-qualified name, e.g. <code class="docutils literal notranslate"><span class="pre">+my_module.MyModelClass</span></code>. By default, <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> will look for objects within the following modules:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">graph_pes</span>
+<span class="n">graph_pes</span><span class="o">.</span><span class="n">models</span>
+<span class="n">graph_pes</span><span class="o">.</span><span class="n">training</span>
+<span class="n">graph_pes</span><span class="o">.</span><span class="n">training</span><span class="o">.</span><span class="n">opt</span>
+<span class="n">graph_pes</span><span class="o">.</span><span class="n">training</span><span class="o">.</span><span class="n">loss</span>
+<span class="n">graph_pes</span><span class="o">.</span><span class="n">data</span>
+</pre></div>
+</div>
+<p>and hence <code class="docutils literal notranslate"><span class="pre">+NequIP</span></code> is shorthand for <code class="docutils literal notranslate"><span class="pre">+graph_pes.models.NequIP</span></code>.
+Ending the name with <code class="docutils literal notranslate"><span class="pre">()</span></code> will call the function/class constructor with no arguments. Pointing the key to a nested dictionary will pass those values as keyword arguments to the constructor. Hence, above, <code class="docutils literal notranslate"><span class="pre">+PerAtomEnergyLoss()</span></code> will resolve to a <code class="docutils literal notranslate"><span class="pre">~graph_pes.training.loss.PerAtomEnergyLoss</span></code> object, while the <a class="reference internal" href="../models/many-body/schnet.html#graph_pes.models.SchNet" title="graph_pes.models.SchNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchNet</span></code></a> model will be constructed with the keyword arguments specified in the config.</p>
+</li>
+<li><p>the resulting dictionary of python objects is then converted, using <a class="reference external" href="https://github.com/konradhalas/dacite/tree/master/">dacite</a>, into a final nested <a class="reference internal" href="#graph_pes.config.Config" title="graph_pes.config.Config"><code class="xref py py-class docutils literal notranslate"><span class="pre">Config</span></code></a> object.</p></li>
+</ol>
+</div>
+<section id="example-configs">
+<h3>Example configs<a class="headerlink" href="#example-configs" title="Link to this heading">¶</a></h3>
+<p>The minimal config required to use <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> provides a model, some data and a loss function, as can be seen <a class="reference internal" href="#minimal-config"><span class="std std-ref">above</span></a>.
+This config can be so small because <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> loads in
+default values from <code class="docutils literal notranslate"><span class="pre">defaults.yaml</span></code> and overwrites them with any
+values you specify in the config file (see below):</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text"><code class="docutils literal notranslate"><span class="pre">defaults.yaml</span></code></span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">general</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">42</span>
+<span class="w">    </span><span class="nt">root_dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;graph-pes-results&quot;</span>
+<span class="w">    </span><span class="nt">run_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+<span class="w">    </span><span class="nt">log_level</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;INFO&quot;</span>
+<span class="w">    </span><span class="nt">progress</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rich</span>
+<span class="w">    </span><span class="nt">torch</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float32</span>
+<span class="w">        </span><span class="nt">float32_matmul_precision</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
+
+<span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">pre_fit_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">max_n_pre_fit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5_000</span>
+
+<span class="w">    </span><span class="nt">optimizer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span><span class="w"> </span><span class="c1"># intentional : defaults to AdamW(lr=1e-3)</span>
+
+<span class="w">    </span><span class="c1"># train for 100 epochs on the best device available</span>
+<span class="w">    </span><span class="nt">trainer_kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">max_epochs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">        </span><span class="nt">accelerator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auto</span>
+<span class="w">        </span><span class="nt">enable_model_summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="w">    </span><span class="nt">loader_kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">num_workers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">        </span><span class="nt">persistent_workers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">        </span><span class="nt">pin_memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="w">    </span><span class="c1"># &quot;fancy&quot;/optional training options disabled</span>
+<span class="w">    </span><span class="nt">callbacks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="w">    </span><span class="nt">early_stopping_patience</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+<span class="w">    </span><span class="nt">scheduler</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+<span class="w">    </span><span class="nt">swa</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+
+<span class="nt">wandb</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="nt">misc</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+</pre></div>
+</div>
+</div>
+</details><p>Note the use of the <a class="reference internal" href="#graph_pes.config.Config.misc" title="graph_pes.config.Config.misc"><code class="xref py py-attr docutils literal notranslate"><span class="pre">misc</span></code></a> section of the config to store constants, which can then be referenced multiple times elsewhere in the config - this allows you to easily scan over these constants in an elegant manner:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="k">for</span><span class="w"> </span>cutoff<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">3</span>.5<span class="w"> </span><span class="m">4</span>.5<span class="w"> </span><span class="m">5</span>.5<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+&gt;<span class="w">     </span>graph-pes-train<span class="w"> </span>realistic.yaml<span class="w"> </span>misc/CUTOFF<span class="o">=</span><span class="nv">$cutoff</span>
+&gt;<span class="w"> </span><span class="k">done</span>
+</pre></div>
+</div>
+<p>A more realistic configuration might look like this:</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text"><code class="docutils literal notranslate"><span class="pre">realistic.yaml</span></code></span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">We train a <a class="reference internal" href="../models/many-body/mace.html#graph_pes.models.MACE" title="graph_pes.models.MACE"><code class="xref py py-class docutils literal notranslate"><span class="pre">MACE</span></code></a> model (accounting for core repulsions and arbitraty energy offsets) on the <a class="reference external" href="https://jla-gardner.github.io/load-atoms/datasets/C-GAP-20U.html">C-GAP-20U dataset</a>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">general</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">42</span>
+<span class="w">    </span><span class="nt">run_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mace-c-gap-20u</span>
+
+<span class="nt">misc</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">CUTOFF</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.7</span>
+
+<span class="nt">model</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">offset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+LearnableOffset()</span>
+<span class="w">    </span><span class="nt">core-repulsion</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+ZBLCoreRepulsion</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">trainable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">            </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">=/misc/CUTOFF</span>
+<span class="w">    </span><span class="nt">many-body</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+MACE</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">elements</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">C</span><span class="p p-Indicator">]</span>
+<span class="w">            </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">=/misc/CUTOFF</span>
+<span class="w">            </span><span class="nt">channels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">128</span>
+<span class="w">            </span><span class="nt">hidden_irreps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0e + 1o</span>
+<span class="w">            </span><span class="nt">self_connection</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+load_atoms_dataset</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">C-GAP-20U</span>
+<span class="w">        </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">=/misc/CUTOFF</span>
+<span class="w">        </span><span class="nt">n_train</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
+<span class="w">        </span><span class="nt">n_valid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-1</span>
+<span class="w">        </span><span class="nt">split</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">random</span>
+
+<span class="nt">loss</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+PerAtomEnergyLoss()</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">+WeightedLoss</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">component</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">+PropertyLoss</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> property</span><span class="p">:</span><span class="w"> </span><span class="nv">forces</span><span class="p p-Indicator">,</span><span class="nt"> metric</span><span class="p">:</span><span class="w"> </span><span class="nv">RMSE</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">          </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.0</span>
+
+<span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">trainer_kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">max_epochs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">        </span><span class="nt">accelerator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu</span>
+
+<span class="w">    </span><span class="nt">callbacks</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">+graph_pes.training.callbacks.DumpModel</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">every_n_val_checks</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+
+<span class="w">    </span><span class="nt">early_stopping_patience</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="w">    </span><span class="nt">optimizer</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+Optimizer</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AdamW</span>
+<span class="w">            </span><span class="nt">lr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.003</span>
+
+<span class="w">    </span><span class="nt">scheduler</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+LRScheduler</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ReduceLROnPlateau</span>
+<span class="w">            </span><span class="nt">patience</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">            </span><span class="nt">factor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.8</span>
+
+<span class="w">    </span><span class="nt">loader_kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<span class="w">        </span><span class="nt">num_workers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+</pre></div>
+</div>
+</div>
+</details><p>Finally, here is a <cite>“kitchen sink”</cite> config that attempts to specify every possible option:</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3" id="kitchen-sink-config">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text"><code class="docutils literal notranslate"><span class="pre">kitchen-sink.yaml</span></code></span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">offset</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+FixedOffset</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> H</span><span class="p">:</span><span class="w"> </span><span class="nv">-123.4</span><span class="p p-Indicator">,</span><span class="nt"> C</span><span class="p">:</span><span class="w"> </span><span class="nv">-456.7</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">core-repulsion</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+ZBLCoreRepulsion</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">trainable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">            </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
+<span class="w">    </span><span class="nt">many-body</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+NequIP</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">elements</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">C</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">H</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">O</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">N</span><span class="p p-Indicator">]</span>
+<span class="w">            </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.7</span>
+<span class="w">            </span><span class="nt">channels</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">128</span>
+<span class="w">            </span><span class="nt">hidden_irreps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0e + 1o</span>
+<span class="w">            </span><span class="nt">self_connection</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+file_dataset</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">training_data.xyz</span>
+<span class="w">            </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.7</span>
+<span class="w">            </span><span class="nt">n</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">            </span><span class="nt">shuffle</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">            </span><span class="nt">seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">42</span>
+<span class="w">    </span><span class="nt">valid</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+file_dataset</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validation_data.xyz</span>
+<span class="w">            </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.7</span>
+
+<span class="nt">loss</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+PerAtomEnergyLoss()</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">+WeightedLoss</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">component</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">+PropertyLoss</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> property</span><span class="p">:</span><span class="w"> </span><span class="nv">forces</span><span class="p p-Indicator">,</span><span class="nt"> metric</span><span class="p">:</span><span class="w"> </span><span class="nv">RMSE</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">          </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.0</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">+WeightedLoss</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">component</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">+PropertyLoss</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> property</span><span class="p">:</span><span class="w"> </span><span class="nv">stress</span><span class="p p-Indicator">,</span><span class="nt"> metric</span><span class="p">:</span><span class="w"> </span><span class="nv">RMSE</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">          </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0</span>
+
+<span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">pre_fit_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">max_n_pre_fit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">    </span><span class="nt">early_stopping_patience</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+
+<span class="w">    </span><span class="nt">trainer_kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">max_epochs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">        </span><span class="nt">accelerator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu</span>
+<span class="w">        </span><span class="nt">accumulate_grad_batches</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">        </span><span class="nt">val_check_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25</span>
+
+<span class="w">    </span><span class="nt">optimizer</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+Optimizer</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AdamW</span>
+<span class="w">            </span><span class="nt">lr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.003</span>
+<span class="w">            </span><span class="nt">weight_decay</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.01</span>
+<span class="w">            </span><span class="nt">amsgrad</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">    </span><span class="nt">scheduler</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+LRScheduler</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ReduceLROnPlateau</span>
+<span class="w">            </span><span class="nt">patience</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">            </span><span class="nt">factor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.8</span>
+
+<span class="w">    </span><span class="nt">swa</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">lr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.001</span>
+<span class="w">        </span><span class="nt">start</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.8</span>
+<span class="w">        </span><span class="nt">anneal_epochs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">        </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linear</span>
+
+<span class="w">    </span><span class="nt">loader_kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<span class="w">        </span><span class="nt">num_workers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">        </span><span class="nt">shuffle</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">persistent_workers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="nt">general</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">42</span>
+<span class="w">    </span><span class="nt">root_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/root</span>
+<span class="w">    </span><span class="nt">run_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kitchen-sink-run</span>
+<span class="w">    </span><span class="nt">log_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">INFO</span>
+<span class="w">    </span><span class="nt">progress</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rich</span>
+
+<span class="nt">wandb</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">project</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_project</span>
+<span class="w">    </span><span class="nt">entity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_entity</span>
+<span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">kitchen-sink</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">test</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kitchen-sink-run</span>
+</pre></div>
+</div>
+</div>
+</details><p>For more information as to the structure of these config files, and the various options available, read on:</p>
+</section>
+</section>
+<section id="complete-config-api">
+<span id="id2"></span><h2>Complete <code class="docutils literal notranslate"><span class="pre">config</span></code> API<a class="headerlink" href="#complete-config-api" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.config.Config">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.config.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><a class="reference internal" href="../_modules/graph_pes/config/config.html#Config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.config.Config" title="Link to this definition">¶</a></dt>
+<dd><p>A schema for a configuration file to train a
+<a class="reference internal" href="../models/root.html#graph_pes.GraphPESModel" title="graph_pes.GraphPESModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">GraphPESModel</span></code></a>.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.Config.model">
+<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../models/root.html#graph_pes.GraphPESModel" title="graph_pes.graph_pes_model.GraphPESModel"><span class="pre">GraphPESModel</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="../models/root.html#graph_pes.GraphPESModel" title="graph_pes.graph_pes_model.GraphPESModel"><span class="pre">GraphPESModel</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#graph_pes.config.Config.model" title="Link to this definition">¶</a></dt>
+<dd><p>The model to train.</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text"><code class="docutils literal notranslate"><span class="pre">model</span></code> options</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">Either point to something that instantiates a
+<a class="reference internal" href="../models/root.html#graph_pes.GraphPESModel" title="graph_pes.GraphPESModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">GraphPESModel</span></code></a> object…:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># basic Lennard-Jones model</span>
+<span class="nt">model</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+LennardJones</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">sigma</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span>
+<span class="w">        </span><span class="nt">epsilon</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+<span class="c1"># or some custom model</span>
+<span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+my_model.SpecialModel()</span>
+</pre></div>
+</div>
+<p class="sd-card-text">…or pass a dictionary mapping custom names to
+<a class="reference internal" href="../models/root.html#graph_pes.GraphPESModel" title="graph_pes.GraphPESModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">GraphPESModel</span></code></a> objects:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">offset</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+FixedOffset</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">H</span><span class="p">:</span><span class="w"> </span><span class="nv">-123.4</span><span class="p p-Indicator">,</span><span class="nt"> C</span><span class="p">:</span><span class="w"> </span><span class="nv">-456.7</span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">many-body</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+SchNet()</span>
+</pre></div>
+</div>
+<p class="sd-card-text">The latter will instantiate an <a class="reference internal" href="../models/addition.html#graph_pes.models.AdditionModel" title="graph_pes.models.AdditionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdditionModel</span></code></a>
+with <a class="reference internal" href="../models/offsets.html#graph_pes.models.FixedOffset" title="graph_pes.models.FixedOffset"><code class="xref py py-class docutils literal notranslate"><span class="pre">FixedOffset</span></code></a> and
+<a class="reference internal" href="../models/many-body/schnet.html#graph_pes.models.SchNet" title="graph_pes.models.SchNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchNet</span></code></a> components. This is a useful approach
+for dealing with arbitrary offset energies.</p>
+</div>
+</details></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.Config.data">
+<span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../data/datasets.html#graph_pes.data.FittingData" title="graph_pes.data.datasets.FittingData"><span class="pre">FittingData</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.13)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'train'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'valid'</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="../data/datasets.html#graph_pes.data.GraphDataset" title="graph_pes.data.datasets.GraphDataset"><span class="pre">GraphDataset</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#graph_pes.config.Config.data" title="Link to this definition">¶</a></dt>
+<dd><p>The data to train on.</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text"><code class="docutils literal notranslate"><span class="pre">data</span></code> options</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">Point to something that can create a
+<a class="reference internal" href="../data/datasets.html#graph_pes.data.FittingData" title="graph_pes.data.FittingData"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittingData</span></code></a> instance, or a dictionary mapping
+<code class="docutils literal notranslate"><span class="pre">&quot;train&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;valid&quot;</span></code> keys to
+<a class="reference internal" href="../data/datasets.html#graph_pes.data.GraphDataset" title="graph_pes.data.GraphDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">GraphDataset</span></code></a> instances:</p>
+<p class="sd-card-text">Load custom data from a function with no arguments:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_module.my_fitting_data()</span>
+</pre></div>
+</div>
+<p class="sd-card-text">Point to <a class="reference internal" href="../data/datasets.html#graph_pes.data.load_atoms_dataset" title="graph_pes.data.load_atoms_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">graph_pes.data.load_atoms_dataset()</span></code></a> with arguments:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+load_atoms_dataset</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">QM9</span>
+<span class="w">        </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
+<span class="w">        </span><span class="nt">n_train</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000</span>
+<span class="w">        </span><span class="nt">n_val</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">        </span><span class="nt">property_map</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">energy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">U0</span>
+</pre></div>
+</div>
+<p class="sd-card-text">Point to separate train and validation datasets, taking a random
+1,000 structures from the training file to train from, and all
+structures from the validation file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+file_dataset</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">training_data.xyz</span>
+<span class="w">            </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
+<span class="w">            </span><span class="nt">n</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">            </span><span class="nt">shuffle</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">            </span><span class="nt">seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">42</span>
+<span class="w">    </span><span class="nt">valid</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+file_dataset</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">validation_data.xyz</span>
+<span class="w">            </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
+</pre></div>
+</div>
+</div>
+</details></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.Config.loss">
+<span class="sig-name descname"><span class="pre">loss</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../fitting/losses.html#graph_pes.training.loss.Loss" title="graph_pes.training.loss.Loss"><span class="pre">Loss</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../fitting/losses.html#graph_pes.training.loss.WeightedLoss" title="graph_pes.training.loss.WeightedLoss"><span class="pre">WeightedLoss</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../fitting/losses.html#graph_pes.training.loss.TotalLoss" title="graph_pes.training.loss.TotalLoss"><span class="pre">TotalLoss</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../fitting/losses.html#graph_pes.training.loss.WeightedLoss" title="graph_pes.training.loss.WeightedLoss"><span class="pre">WeightedLoss</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../fitting/losses.html#graph_pes.training.loss.Loss" title="graph_pes.training.loss.Loss"><span class="pre">Loss</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#graph_pes.config.Config.loss" title="Link to this definition">¶</a></dt>
+<dd><p>The loss function to use.</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text"><code class="docutils literal notranslate"><span class="pre">loss</span></code> options</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">This config should either point to something that instantiates a
+<a class="reference internal" href="../fitting/losses.html#graph_pes.training.loss.Loss" title="graph_pes.training.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">graph_pes.training.loss.Loss</span></code></a> object…</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># basic per-atom energy loss</span>
+<span class="nt">loss</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+PerAtomEnergyLoss()</span>
+
+<span class="c1"># or more fine-grained control</span>
+<span class="nt">loss</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+PropertyLoss</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">property</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">energy</span>
+<span class="w">        </span><span class="nt">metric</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MAE</span><span class="w">  </span><span class="c1"># defaults to RMSE if not specified</span>
+</pre></div>
+</div>
+<p class="sd-card-text">…or specify a list of <a class="reference internal" href="../fitting/losses.html#graph_pes.training.loss.WeightedLoss" title="graph_pes.training.loss.WeightedLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">WeightedLoss</span></code></a>
+and/or <a class="reference internal" href="../fitting/losses.html#graph_pes.training.loss.Loss" title="graph_pes.training.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">Loss</span></code></a> instances:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">loss</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># specify a loss with several sub-losses:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+PerAtomEnergyLoss()</span><span class="w">  </span><span class="c1"># defaults to weight 1.0</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">+WeightedLoss</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">component: +PropertyLoss</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> property</span><span class="p">:</span><span class="w"> </span><span class="nv">forces</span><span class="p p-Indicator">,</span><span class="nt"> metric</span><span class="p">:</span><span class="w"> </span><span class="nv">MSE</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0</span>
+</pre></div>
+</div>
+<p class="sd-card-text">…or point to your own custom loss implementation, either in isolation:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">loss</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+my.module.CustomLoss</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> alpha</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</pre></div>
+</div>
+<p class="sd-card-text">…or as just another component of a
+<a class="reference internal" href="../fitting/losses.html#graph_pes.training.loss.TotalLoss" title="graph_pes.training.loss.TotalLoss"><code class="xref py py-class docutils literal notranslate"><span class="pre">TotalLoss</span></code></a>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">loss</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+PerAtomEnergyLoss()</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">+my.module.CustomLoss</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> alpha</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</pre></div>
+</div>
+</div>
+</details></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.Config.fitting">
+<span class="sig-name descname"><span class="pre">fitting</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">FittingConfig</span></em><a class="headerlink" href="#graph_pes.config.Config.fitting" title="Link to this definition">¶</a></dt>
+<dd><p>Extended configuration for the fitting process.</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text"><code class="docutils literal notranslate"><span class="pre">fitting</span></code> options</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.FittingConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FittingConfig</span></span><a class="headerlink" href="#graph_pes.config.config.Config.FittingConfig" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">Configuration for the fitting process.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.FittingConfig.FittingConfig.optimizer">
+<span class="sig-prename descclassname"><span class="pre">FittingConfig.</span></span><span class="sig-name descname"><span class="pre">optimizer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../fitting/optimizers.html#graph_pes.training.opt.Optimizer" title="graph_pes.training.opt.Optimizer"><span class="pre">Optimizer</span></a></em><a class="headerlink" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.optimizer" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">Specification for the optimizer. Point to something that instantiates a
+<a class="reference internal" href="../fitting/optimizers.html#graph_pes.training.opt.Optimizer" title="graph_pes.training.opt.Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code></a>.</p>
+<p class="rubric">Examples</p>
+<p class="sd-card-text">The default (see <a class="reference internal" href="../fitting/optimizers.html#graph_pes.training.opt.Optimizer" title="graph_pes.training.opt.Optimizer"><code class="xref py py-func docutils literal notranslate"><span class="pre">Optimizer()</span></code></a> for details):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">optimizer</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+Optimizer</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Adam</span>
+<span class="w">            </span><span class="nt">lr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3e-3</span>
+<span class="w">            </span><span class="nt">weight_decay</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<span class="w">            </span><span class="nt">amsgrad</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+<p class="sd-card-text">Or a custom one:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">optimizer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+my.module.MagicOptimizer()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.FittingConfig.FittingConfig.scheduler">
+<span class="sig-prename descclassname"><span class="pre">FittingConfig.</span></span><span class="sig-name descname"><span class="pre">scheduler</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../fitting/optimizers.html#graph_pes.training.opt.LRScheduler" title="graph_pes.training.opt.LRScheduler"><span class="pre">LRScheduler</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em><a class="headerlink" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.scheduler" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text" id="learning-rate-scheduler">Specification for the learning rate scheduler. Optional.
+Default is to have no learning rate schedule (<code class="docutils literal notranslate"><span class="pre">None</span></code>).</p>
+<p class="rubric">Examples</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">scheduler</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+LRScheduler</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ReduceLROnPlateau</span>
+<span class="w">            </span><span class="nt">factor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
+<span class="w">            </span><span class="nt">patience</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.FittingConfig.FittingConfig.swa">
+<span class="sig-prename descclassname"><span class="pre">FittingConfig.</span></span><span class="sig-name descname"><span class="pre">swa</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">SWAConfig</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em><a class="headerlink" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.swa" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">Optional, defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text"><code class="docutils literal notranslate"><span class="pre">swa</span></code> options</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<dl class="py class" id="stochastic-weight-averaging">
+<dt class="sig sig-object py" id="graph_pes.config.config.FittingConfig.SWAConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SWAConfig</span></span><a class="headerlink" href="#graph_pes.config.config.FittingConfig.SWAConfig" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">Configuration for Stochastic Weight Averaging.</p>
+<p class="sd-card-text">Internally, this is handled by <a class="reference external" href="https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.StochasticWeightAveraging.html">this PyTorch Lightning callback</a>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.FittingConfig.SWAConfig.SWAConfig.lr">
+<span class="sig-prename descclassname"><span class="pre">SWAConfig.</span></span><span class="sig-name descname"><span class="pre">lr</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></em><a class="headerlink" href="#graph_pes.config.config.FittingConfig.SWAConfig.SWAConfig.lr" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">The learning rate to use during the SWA phase. If not specified,
+the learning rate from the end of the training phase will be used.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.FittingConfig.SWAConfig.SWAConfig.start">
+<span class="sig-prename descclassname"><span class="pre">SWAConfig.</span></span><span class="sig-name descname"><span class="pre">start</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.8</span></em><a class="headerlink" href="#graph_pes.config.config.FittingConfig.SWAConfig.SWAConfig.start" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">The epoch at which to start SWA. If a float, it will be interpreted
+as a fraction of the total number of epochs.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.FittingConfig.SWAConfig.SWAConfig.anneal_epochs">
+<span class="sig-prename descclassname"><span class="pre">SWAConfig.</span></span><span class="sig-name descname"><span class="pre">anneal_epochs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10</span></em><a class="headerlink" href="#graph_pes.config.config.FittingConfig.SWAConfig.SWAConfig.anneal_epochs" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">The number of epochs over which to linearly anneal the learning rate
+to zero.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.FittingConfig.SWAConfig.SWAConfig.strategy">
+<span class="sig-prename descclassname"><span class="pre">SWAConfig.</span></span><span class="sig-name descname"><span class="pre">strategy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.13)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'linear'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'cos'</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'linear'</span></em><a class="headerlink" href="#graph_pes.config.config.FittingConfig.SWAConfig.SWAConfig.strategy" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">The strategy to use for annealing the learning rate.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</details></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.FittingConfig.FittingConfig.trainer_kwargs">
+<span class="sig-prename descclassname"><span class="pre">FittingConfig.</span></span><span class="sig-name descname"><span class="pre">trainer_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.trainer_kwargs" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">Key-word arguments to pass to the <a class="reference external" href="https://lightning.ai/docs/pytorch/stable/common/trainer.html">PyTorch Lightning Trainer</a> .</p>
+<p class="rubric">Example</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">trainer_kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">max_epochs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000</span>
+<span class="w">        </span><span class="nt">accelerator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu</span>
+<span class="w">        </span><span class="nt">accumulate_grad_batches</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+</pre></div>
+</div>
+<p class="sd-card-text">Configure gradient clipping (see <a class="reference external" href="https://lightning.ai/docs/pytorch/stable/advanced/training_tricks.html#gradient-clipping">PyTorch Lightning documentation</a>
+for details):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">trainer_kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">gradient_clip_val</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">        </span><span class="nt">gradient_clip_algorithm</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;norm&quot;</span>
+</pre></div>
+</div>
+<p class="sd-card-text">Validate several times per epoch for large training datasets:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">trainer_kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># validate when we are 10%, 20%, 30% etc.</span>
+<span class="w">        </span><span class="c1"># through the training dataset</span>
+<span class="w">        </span><span class="nt">val_check_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.FittingConfig.FittingConfig.callbacks">
+<span class="sig-prename descclassname"><span class="pre">FittingConfig.</span></span><span class="sig-name descname"><span class="pre">callbacks</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.13)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Callback</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.callbacks" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">List of PyTorch Lightning <code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code> or
+<a class="reference internal" href="#graph_pes.training.callbacks.GraphPESCallback" title="graph_pes.training.callbacks.GraphPESCallback"><code class="xref py py-class docutils literal notranslate"><span class="pre">GraphPESCallback</span></code></a> instances.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.FittingConfig.FittingConfig.pre_fit_model">
+<span class="sig-prename descclassname"><span class="pre">FittingConfig.</span></span><span class="sig-name descname"><span class="pre">pre_fit_model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></em><a class="headerlink" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.pre_fit_model" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">Whether to pre-fit the model before training. See
+<a class="reference internal" href="../models/root.html#graph_pes.GraphPESModel.pre_fit_all_components" title="graph_pes.GraphPESModel.pre_fit_all_components"><code class="xref py py-meth docutils literal notranslate"><span class="pre">graph_pes.GraphPESModel.pre_fit_all_components()</span></code></a> for details.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.FittingConfig.FittingConfig.max_n_pre_fit">
+<span class="sig-prename descclassname"><span class="pre">FittingConfig.</span></span><span class="sig-name descname"><span class="pre">max_n_pre_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em><a class="headerlink" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.max_n_pre_fit" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">The maximum number of graphs to use for pre-fitting.
+Set to <code class="docutils literal notranslate"><span class="pre">None</span></code> to use all the available training data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.FittingConfig.FittingConfig.early_stopping_patience">
+<span class="sig-prename descclassname"><span class="pre">FittingConfig.</span></span><span class="sig-name descname"><span class="pre">early_stopping_patience</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em><a class="headerlink" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.early_stopping_patience" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">The number of epochs to wait for improvement in the total validation loss
+before stopping training. Set to <code class="docutils literal notranslate"><span class="pre">None</span></code> to disable early stopping.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.FittingConfig.FittingConfig.loader_kwargs">
+<span class="sig-prename descclassname"><span class="pre">FittingConfig.</span></span><span class="sig-name descname"><span class="pre">loader_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.loader_kwargs" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">Key-word arguments to pass to the underlying
+<a class="reference external" href="https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader" title="(in PyTorch v2.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.data.DataLoader</span></code></a>.</p>
+<p class="sd-card-text">See the <a class="reference external" href="https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader">PyTorch documentation</a> for details.</p>
+<p class="rubric">Example</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">loader_kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">shuffle</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">42</span>
+<span class="w">        </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<span class="w">        </span><span class="nt">persistent_workers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">num_workers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</details></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.Config.general">
+<span class="sig-name descname"><span class="pre">general</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">GeneralConfig</span></em><a class="headerlink" href="#graph_pes.config.Config.general" title="Link to this definition">¶</a></dt>
+<dd><p>General configuration for a training run.</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text"><code class="docutils literal notranslate"><span class="pre">general</span></code> options</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.GeneralConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GeneralConfig</span></span><a class="headerlink" href="#graph_pes.config.config.Config.GeneralConfig" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">General configuration for a training run.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.GeneralConfig.GeneralConfig.seed">
+<span class="sig-prename descclassname"><span class="pre">GeneralConfig.</span></span><span class="sig-name descname"><span class="pre">seed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#graph_pes.config.config.Config.GeneralConfig.GeneralConfig.seed" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">The global random seed for reproducibility.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.GeneralConfig.GeneralConfig.root_dir">
+<span class="sig-prename descclassname"><span class="pre">GeneralConfig.</span></span><span class="sig-name descname"><span class="pre">root_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#graph_pes.config.config.Config.GeneralConfig.GeneralConfig.root_dir" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">The root directory for this run.</p>
+<p class="sd-card-text">Results will be stored in <code class="docutils literal notranslate"><span class="pre">&lt;root_dir&gt;/&lt;run_id&gt;</span></code>, where <code class="docutils literal notranslate"><span class="pre">run_id</span></code>
+is one of:</p>
+<ul class="simple">
+<li><p class="sd-card-text">the user-specified <code class="docutils literal notranslate"><span class="pre">run_id</span></code> string</p></li>
+<li><p class="sd-card-text">a random string generated by <code class="docutils literal notranslate"><span class="pre">graph-pes</span></code></p></li>
+</ul>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.GeneralConfig.GeneralConfig.run_id">
+<span class="sig-prename descclassname"><span class="pre">GeneralConfig.</span></span><span class="sig-name descname"><span class="pre">run_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em><a class="headerlink" href="#graph_pes.config.config.Config.GeneralConfig.GeneralConfig.run_id" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">A unique identifier for this run.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.GeneralConfig.GeneralConfig.log_level">
+<span class="sig-prename descclassname"><span class="pre">GeneralConfig.</span></span><span class="sig-name descname"><span class="pre">log_level</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.13)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'DEBUG'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'INFO'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'WARNING'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'ERROR'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'CRITICAL'</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#graph_pes.config.config.Config.GeneralConfig.GeneralConfig.log_level" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">The logging level for the logger.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.GeneralConfig.GeneralConfig.progress">
+<span class="sig-prename descclassname"><span class="pre">GeneralConfig.</span></span><span class="sig-name descname"><span class="pre">progress</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.13)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'rich'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'logged'</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#graph_pes.config.config.Config.GeneralConfig.GeneralConfig.progress" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">The progress bar style to use.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.Config.GeneralConfig.GeneralConfig.torch">
+<span class="sig-prename descclassname"><span class="pre">GeneralConfig.</span></span><span class="sig-name descname"><span class="pre">torch</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">TorchConfig</span></em><a class="headerlink" href="#graph_pes.config.config.Config.GeneralConfig.GeneralConfig.torch" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">Configuration for PyTorch.</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text"><code class="docutils literal notranslate"><span class="pre">torch</span></code> options</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.config.config.GeneralConfig.TorchConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TorchConfig</span></span><a class="headerlink" href="#graph_pes.config.config.GeneralConfig.TorchConfig" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">Configuration for PyTorch.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.GeneralConfig.TorchConfig.TorchConfig.dtype">
+<span class="sig-prename descclassname"><span class="pre">TorchConfig.</span></span><span class="sig-name descname"><span class="pre">dtype</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.13)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'float16'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'float32'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'float64'</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#graph_pes.config.config.GeneralConfig.TorchConfig.TorchConfig.dtype" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">The dtype to use for all model parameters and graph properties.
+Defaults is <code class="docutils literal notranslate"><span class="pre">&quot;float32&quot;</span></code>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.config.GeneralConfig.TorchConfig.TorchConfig.float32_matmul_precision">
+<span class="sig-prename descclassname"><span class="pre">TorchConfig.</span></span><span class="sig-name descname"><span class="pre">float32_matmul_precision</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.13)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'highest'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'high'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'medium'</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#graph_pes.config.config.GeneralConfig.TorchConfig.TorchConfig.float32_matmul_precision" title="Link to this definition">¶</a></dt>
+<dd><p class="sd-card-text">The precision to use internally for float32 matrix multiplications. Refer to the
+<a class="reference external" href="https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html">PyTorch documentation</a>
+for details.</p>
+<p class="sd-card-text">Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;high&quot;</span></code> to favour accelerated learning over numerical
+exactness for matmuls.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</details></dd></dl>
+
+</dd></dl>
+
+</div>
+</details></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.Config.wandb">
+<span class="sig-name descname"><span class="pre">wandb</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em><a class="headerlink" href="#graph_pes.config.Config.wandb" title="Link to this definition">¶</a></dt>
+<dd><p>Configure Weights and Biases logging.</p>
+<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
+<summary class="sd-summary-title sd-card-header">
+<span class="sd-summary-text"><code class="docutils literal notranslate"><span class="pre">wandb</span></code> options</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
+<p class="sd-card-text">Disable weights &amp; biases logging:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">wandb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+</pre></div>
+</div>
+<p class="sd-card-text">Otherwise, provide a dictionary of
+overrides to pass to lightning’s <a class="reference external" href="https://lightning.ai/docs/pytorch/stable/extensions/generated/lightning.pytorch.loggers.WandbLogger.html">WandbLogger</a></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">wandb</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">project</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_project</span>
+<span class="w">    </span><span class="nt">entity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_entity</span>
+<span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">my_tag</span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+</div>
+</details></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.Config.misc">
+<span class="sig-name descname"><span class="pre">misc</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.13)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#graph_pes.config.Config.misc" title="Link to this definition">¶</a></dt>
+<dd><p>Miscellaneous configuration - unused by <code class="docutils literal notranslate"><span class="pre">graph-pes</span></code>, but useful for
+passing through configuration for external tools, or for defining
+constants used in several places in the config:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">misc</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">CUTOFF</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
+
+<span class="nt">model</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+my_module.create_model</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">=/misc/CUTOFF</span>
+
+<span class="nt">data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+my_module.create_data</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">=/misc/CUTOFF</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="callbacks">
+<h2>Callbacks<a class="headerlink" href="#callbacks" title="Link to this heading">¶</a></h2>
+<p>Callbacks can be added to the trainer by specifying them in the <code class="docutils literal notranslate"><span class="pre">callbacks</span></code> section of the config file.
+You can point to any class that inherits from the PyTorch Lightning <code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code> class. We have implemented a few useful ones:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.training.callbacks.OffsetLogger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.training.callbacks.</span></span><span class="sig-name descname"><span class="pre">OffsetLogger</span></span><a class="reference internal" href="../_modules/graph_pes/training/callbacks.html#OffsetLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.training.callbacks.OffsetLogger" title="Link to this definition">¶</a></dt>
+<dd><p>Log any learned, per-element offsets of the model at the
+end of each validation epoch.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.training.callbacks.ScalesLogger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.training.callbacks.</span></span><span class="sig-name descname"><span class="pre">ScalesLogger</span></span><a class="reference internal" href="../_modules/graph_pes/training/callbacks.html#ScalesLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.training.callbacks.ScalesLogger" title="Link to this definition">¶</a></dt>
+<dd><p>Log any learned, per-element scaling factors of the model at the
+end of each validation epoch.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.training.callbacks.DumpModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.training.callbacks.</span></span><span class="sig-name descname"><span class="pre">DumpModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">every_n_val_checks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/training/callbacks.html#DumpModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.training.callbacks.DumpModel" title="Link to this definition">¶</a></dt>
+<dd><p>Dump the model to <code class="docutils literal notranslate"><span class="pre">&lt;output_dir&gt;/dumps/model_{epoch}.pt</span></code>
+at regular intervals.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>every_n_val_checks</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – The number of validation epochs between dumps.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.training.callbacks.GraphPESCallback">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.training.callbacks.</span></span><span class="sig-name descname"><span class="pre">GraphPESCallback</span></span><a class="reference internal" href="../_modules/graph_pes/training/callbacks.html#GraphPESCallback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.training.callbacks.GraphPESCallback" title="Link to this definition">¶</a></dt>
+<dd><p>A base class for all callbacks that require access to useful
+information generated by the <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> command.</p>
+</dd></dl>
+
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="graph-pes-resume.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title"><code class="docutils literal notranslate"><span class="pre">graph-pes-resume</span></code></div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../quickstart/custom-training-loop.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Custom training loops</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023-2024, John Gardner
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code></a><ul>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#multi-gpu-training">Multi-GPU training:</a></li>
+<li><a class="reference internal" href="#weights-and-biases">Weights and Biases</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#config-files">Config files</a><ul>
+<li><a class="reference internal" href="#example-configs">Example configs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#complete-config-api">Complete <code class="docutils literal notranslate"><span class="pre">config</span></code> API</a><ul>
+<li><a class="reference internal" href="#graph_pes.config.Config"><code class="docutils literal notranslate"><span class="pre">Config</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.config.Config.model"><code class="docutils literal notranslate"><span class="pre">Config.model</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.Config.data"><code class="docutils literal notranslate"><span class="pre">Config.data</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.Config.loss"><code class="docutils literal notranslate"><span class="pre">Config.loss</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.Config.fitting"><code class="docutils literal notranslate"><span class="pre">Config.fitting</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.FittingConfig"><code class="docutils literal notranslate"><span class="pre">Config.FittingConfig</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.optimizer"><code class="docutils literal notranslate"><span class="pre">Config.FittingConfig.FittingConfig.optimizer</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.scheduler"><code class="docutils literal notranslate"><span class="pre">Config.FittingConfig.FittingConfig.scheduler</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.swa"><code class="docutils literal notranslate"><span class="pre">Config.FittingConfig.FittingConfig.swa</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.config.config.FittingConfig.SWAConfig"><code class="docutils literal notranslate"><span class="pre">FittingConfig.SWAConfig</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.config.config.FittingConfig.SWAConfig.SWAConfig.lr"><code class="docutils literal notranslate"><span class="pre">FittingConfig.SWAConfig.SWAConfig.lr</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.FittingConfig.SWAConfig.SWAConfig.start"><code class="docutils literal notranslate"><span class="pre">FittingConfig.SWAConfig.SWAConfig.start</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.FittingConfig.SWAConfig.SWAConfig.anneal_epochs"><code class="docutils literal notranslate"><span class="pre">FittingConfig.SWAConfig.SWAConfig.anneal_epochs</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.FittingConfig.SWAConfig.SWAConfig.strategy"><code class="docutils literal notranslate"><span class="pre">FittingConfig.SWAConfig.SWAConfig.strategy</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.trainer_kwargs"><code class="docutils literal notranslate"><span class="pre">Config.FittingConfig.FittingConfig.trainer_kwargs</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.callbacks"><code class="docutils literal notranslate"><span class="pre">Config.FittingConfig.FittingConfig.callbacks</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.pre_fit_model"><code class="docutils literal notranslate"><span class="pre">Config.FittingConfig.FittingConfig.pre_fit_model</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.max_n_pre_fit"><code class="docutils literal notranslate"><span class="pre">Config.FittingConfig.FittingConfig.max_n_pre_fit</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.early_stopping_patience"><code class="docutils literal notranslate"><span class="pre">Config.FittingConfig.FittingConfig.early_stopping_patience</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.FittingConfig.FittingConfig.loader_kwargs"><code class="docutils literal notranslate"><span class="pre">Config.FittingConfig.FittingConfig.loader_kwargs</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#graph_pes.config.Config.general"><code class="docutils literal notranslate"><span class="pre">Config.general</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.GeneralConfig"><code class="docutils literal notranslate"><span class="pre">Config.GeneralConfig</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.GeneralConfig.GeneralConfig.seed"><code class="docutils literal notranslate"><span class="pre">Config.GeneralConfig.GeneralConfig.seed</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.GeneralConfig.GeneralConfig.root_dir"><code class="docutils literal notranslate"><span class="pre">Config.GeneralConfig.GeneralConfig.root_dir</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.GeneralConfig.GeneralConfig.run_id"><code class="docutils literal notranslate"><span class="pre">Config.GeneralConfig.GeneralConfig.run_id</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.GeneralConfig.GeneralConfig.log_level"><code class="docutils literal notranslate"><span class="pre">Config.GeneralConfig.GeneralConfig.log_level</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.GeneralConfig.GeneralConfig.progress"><code class="docutils literal notranslate"><span class="pre">Config.GeneralConfig.GeneralConfig.progress</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.Config.GeneralConfig.GeneralConfig.torch"><code class="docutils literal notranslate"><span class="pre">Config.GeneralConfig.GeneralConfig.torch</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.config.config.GeneralConfig.TorchConfig"><code class="docutils literal notranslate"><span class="pre">GeneralConfig.TorchConfig</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.config.config.GeneralConfig.TorchConfig.TorchConfig.dtype"><code class="docutils literal notranslate"><span class="pre">GeneralConfig.TorchConfig.TorchConfig.dtype</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.config.GeneralConfig.TorchConfig.TorchConfig.float32_matmul_precision"><code class="docutils literal notranslate"><span class="pre">GeneralConfig.TorchConfig.TorchConfig.float32_matmul_precision</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#graph_pes.config.Config.wandb"><code class="docutils literal notranslate"><span class="pre">Config.wandb</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.Config.misc"><code class="docutils literal notranslate"><span class="pre">Config.misc</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#callbacks">Callbacks</a><ul>
+<li><a class="reference internal" href="#graph_pes.training.callbacks.OffsetLogger"><code class="docutils literal notranslate"><span class="pre">OffsetLogger</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.training.callbacks.ScalesLogger"><code class="docutils literal notranslate"><span class="pre">ScalesLogger</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.training.callbacks.DumpModel"><code class="docutils literal notranslate"><span class="pre">DumpModel</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.training.callbacks.GraphPESCallback"><code class="docutils literal notranslate"><span class="pre">GraphPESCallback</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=c7cdf6fe"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=35fd3fb5"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    </body>
+</html>
