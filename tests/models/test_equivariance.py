@@ -65,7 +65,7 @@ def test_equivariance(model: GraphPESModel):
     #    and of equal magnitude on the H atoms
     force_norms = new_predictions["forces"].norm(dim=-1)
     c_force = force_norms[new_graph.Z == 6]
-    assert c_force.item() == pytest.approx(0.0, abs=3e-3)
+    assert c_force.item() == pytest.approx(0.0, abs=3e-4)
 
     h_forces = force_norms[new_graph.Z == 1]
     assert h_forces.min().item() == pytest.approx(
