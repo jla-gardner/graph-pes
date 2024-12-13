@@ -312,7 +312,7 @@ def pre_transform_structures(
 ) -> list[AtomicGraph]:
     logger.info(
         f"Caching neighbour lists for {len(structures)} structures "
-        f"with cutoff {cutoff}"
+        f"with cutoff {cutoff} and property mapping {property_mapping}"
     )
     return [
         AtomicGraph.from_ase(s, cutoff, property_mapping) for s in structures
