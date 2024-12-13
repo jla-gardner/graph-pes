@@ -6,23 +6,9 @@ from pathlib import Path
 
 __all__ = ["logger", "log_to_file", "set_level"]
 
-BLACK = "\033[30m"
-ORANGE = "\033[33m"
-RED = "\033[31m"
-RESET = "\033[0m"
-
 
 class MultiLineFormatter(logging.Formatter):
     """Detect multi-line logs and adds newlines with colors."""
-
-    # ANSI escape codes for colors
-    COLOURS = {
-        "DEBUG": BLACK,
-        "INFO": BLACK,
-        "WARNING": ORANGE,
-        "ERROR": RED,
-        "CRITICAL": RED,
-    }
 
     def __init__(self):
         super().__init__("[%(name)s %(levelname)s]: %(message)s")
@@ -32,13 +18,7 @@ class MultiLineFormatter(logging.Formatter):
         # add in new lines
         if "\n" in record.msg:
             record.msg = "\n" + record.msg + "\n"
-        formatted = super().format(record)
-
-        # add in color
-        color = self.COLOURS.get(record.levelname, "")
-        formatted = f"{color}{formatted}{RESET}"
-
-        return formatted
+        return super().format(record)
 
 
 # create the graph-pes logger

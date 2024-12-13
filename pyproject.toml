@@ -24,8 +24,8 @@ dependencies = [
     "dacite",
     "e3nn",
     "scikit-learn",
-    "locache",
-    "load-atoms>=0.3.8",
+    "locache>=4.0.2",
+    "load-atoms>=0.3.9",
     "wandb",
     "data2objects>=0.1.0",
 ]
