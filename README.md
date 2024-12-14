@@ -8,6 +8,7 @@
 Links: [Google Colab Quickstart](https://colab.research.google.com/github/jla-gardner/graph-pes/blob/main/docs/source/quickstart/quickstart.ipynb) - [Documentation](https://jla-gardner.github.io/graph-pes/) - [PyPI](https://pypi.org/project/graph-pes/)
 
 [![PyPI](https://img.shields.io/pypi/v/graph-pes)](https://pypi.org/project/graph-pes/)
+[![Conda-forge](https://img.shields.io/conda/vn/conda-forge/graph-pes.svg)](https://github.com/conda-forge/graph-pes-feedstock)
 [![Tests](https://github.com/jla-gardner/graph-pes/actions/workflows/tests.yaml/badge.svg?branch=main)](https://github.com/jla-gardner/graph-pes/actions/workflows/tests.yaml)
 [![codecov](https://codecov.io/gh/jla-gardner/graph-pes/branch/main/graph/badge.svg)](https://codecov.io/gh/jla-gardner/graph-pes)
 [![GitHub last commit](https://img.shields.io/github/last-commit/jla-gardner/load-atoms)]()
