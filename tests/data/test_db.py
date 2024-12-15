@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from graph_pes.atomic_graph import AtomicGraph
-from graph_pes.data.ase_db import ASE_Database
+from graph_pes.data.ase_db import ASEDatabase
 from graph_pes.data.datasets import file_dataset
 
 DB_FILE = Path(__file__).parent / "schnetpack_data.db"
@@ -36,8 +36,8 @@ DB_FILE = Path(__file__).parent / "schnetpack_data.db"
 #     new_dataset.add_systems(properties, structures)
 
 
-def test_ASE_Database():
-    db = ASE_Database(DB_FILE)
+def test_ASEDatabase():
+    db = ASEDatabase(DB_FILE)
     assert len(db) == 5
     assert isinstance(db[0].info["energy"], float)
     assert isinstance(db[0].arrays["forces"], np.ndarray) and db[0].arrays[
@@ -48,7 +48,7 @@ def test_ASE_Database():
     assert isinstance(db[0:2][0], ase.Atoms)
 
     with pytest.raises(FileNotFoundError):
-        ASE_Database("non_existent_file.db")
+        ASEDatabase("non_existent_file.db")
 
 
 def test_file_dataset_with_db():

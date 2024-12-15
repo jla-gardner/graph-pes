@@ -17,7 +17,7 @@ from graph_pes.atomic_graph import (
     AtomicGraph,
     PropertyKey,
 )
-from graph_pes.data.ase_db import ASE_Database
+from graph_pes.data.ase_db import ASEDatabase
 from graph_pes.utils.logger import logger
 from graph_pes.utils.misc import slice_to_range, uniform_repr
 from graph_pes.utils.sampling import SequenceSampler
@@ -282,7 +282,14 @@ def file_dataset(
     property_map: dict[str, PropertyKey] | None = None,
 ) -> ASEToGraphDataset:
     """
-    Load an ASE dataset from a file.
+    Load an ASE dataset from a file that is either:
+
+    * any plain-text file that can be read by :func:`ase.io.read`, e.g. an
+      ``.xyz`` file
+    * a ``.db`` file containing a SQLite database of :class:`ase.Atoms` objects
+      that is readable as an `ASE database <https://wiki.fysik.dtu.dk/ase/ase/db/db.html>`__.
+      Under the hood, this uses the :class:`~graph_pes.data.ase_db.ASEDatabase`
+      class - see there for more details.
 
     Parameters
     ----------
@@ -324,7 +331,7 @@ def file_dataset(
         path = pathlib.Path(path)
 
     if path.suffix == ".db":
-        structures = ASE_Database(path)
+        structures = ASEDatabase(path)
     else:
         structures = ase.io.read(path, index=":")
         assert isinstance(structures, list)

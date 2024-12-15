@@ -13,7 +13,6 @@ Useful Datasets
 
 .. autofunction:: graph_pes.data.file_dataset
 
-
 Base Classes
 -------------
 
@@ -29,4 +28,9 @@ Base Classes
     :show-inheritance:
 
 
+Utilities
+---------
 
+.. autoclass:: graph_pes.data.ase_db.ASEDatabase
+    :show-inheritance:
+    :members:

@@ -10,7 +10,7 @@ import numpy as np
 from graph_pes.utils.misc import slice_to_range
 
 
-class ASE_Database(Sequence[ase.Atoms]):
+class ASEDatabase(Sequence[ase.Atoms]):
     """
     A class that wraps an ASE database file, allowing for indexing into the
     database to obtain :class:`ase.Atoms` objects.
