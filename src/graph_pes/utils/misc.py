@@ -498,3 +498,27 @@ def voigt_6_to_full_3x3(tensor: torch.Tensor) -> torch.Tensor:
     full_3x3[..., 1, 2] = tensor[..., 5]
     full_3x3[..., 2, 1] = tensor[..., 5]
     return full_3x3.squeeze()
+
+
+def slice_to_range(slice_obj: slice, sequence_length: int) -> range:
+    """
+    Convert a slice object to a range object.
+
+    Parameters
+    ----------
+    slice_obj : slice
+        The slice to convert
+    sequence_length : int
+        The length of the sequence being sliced
+
+    Returns
+    -------
+    range
+        A range object representing the indices that would be selected by the
+        slice.
+    """
+    start = 0 if slice_obj.start is None else slice_obj.start
+    stop = sequence_length if slice_obj.stop is None else slice_obj.stop
+    step = 1 if slice_obj.step is None else slice_obj.step
+
+    return range(start, stop, step)

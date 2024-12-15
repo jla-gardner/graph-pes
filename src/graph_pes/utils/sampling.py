@@ -82,6 +82,6 @@ class SequenceSampler(Sequence[T]):
         """
         Return a sampled collection with at most ``n`` elements.
         """
+        assert n >= 0, "n must be non-negative"
         n = min(n, len(self))
-        shuffled = self.shuffled(seed)
-        return shuffled[:n]
+        return self.shuffled(seed)[:n]

@@ -19,7 +19,7 @@ from graph_pes.atomic_graph import (
 )
 from graph_pes.data.ase_db import ASE_Database
 from graph_pes.utils.logger import logger
-from graph_pes.utils.misc import uniform_repr
+from graph_pes.utils.misc import slice_to_range, uniform_repr
 from graph_pes.utils.sampling import SequenceSampler
 
 
@@ -98,7 +98,8 @@ class ASEToGraphsConverter(Sequence[AtomicGraph]):
         self, index: int | slice
     ) -> AtomicGraph | Sequence[AtomicGraph]:
         if isinstance(index, slice):
-            return [self[i] for i in range(index.start, index.stop, index.step)]
+            indices = slice_to_range(index, len(self))
+            return [self[i] for i in indices]
 
         return AtomicGraph.from_ase(
             self.structures[index],

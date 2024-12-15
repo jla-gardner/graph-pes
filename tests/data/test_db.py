@@ -1,5 +1,7 @@
 from pathlib import Path
+from typing import Sequence
 
+import ase
 import numpy as np
 
 from graph_pes.data.ase_db import ASE_Database
@@ -38,3 +40,6 @@ def test_ASE_Database():
     assert isinstance(db[0].arrays["forces"], np.ndarray) and db[0].arrays[
         "forces"
     ].shape == (3, 3)
+
+    assert isinstance(db[0:2], Sequence)
+    assert isinstance(db[0:2][0], ase.Atoms)

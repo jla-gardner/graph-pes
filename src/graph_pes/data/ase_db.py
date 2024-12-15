@@ -7,6 +7,8 @@ import ase
 import ase.db
 import numpy as np
 
+from graph_pes.utils.misc import slice_to_range
+
 
 class ASE_Database(Sequence[ase.Atoms]):
     """
@@ -53,7 +55,8 @@ class ASE_Database(Sequence[ase.Atoms]):
         self, index: int | slice
     ) -> ase.Atoms | Sequence[ase.Atoms]:
         if isinstance(index, slice):
-            return [self[i] for i in range(index.start, index.stop, index.step)]
+            indices = slice_to_range(index, len(self))
+            return [self[i] for i in indices]
 
         atoms = self.db.get_atoms(index + 1, add_additional_information=True)
         data = atoms.info.pop("data", {})
