@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Add support for ASE `.db` files for backing datasets.
+
 ## [0.0.15] - 2024-12-13
 
 ### Changed

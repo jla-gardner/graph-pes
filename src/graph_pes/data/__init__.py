@@ -6,7 +6,6 @@ from .datasets import (
     load_atoms_dataset,
 )
 from .loader import GraphDataLoader
-from .sampling import SequenceSampler
 
 __all__ = [
     "load_atoms_dataset",
@@ -15,5 +14,4 @@ __all__ = [
     "ASEToGraphDataset",
     "FittingData",
     "GraphDataLoader",
-    "SequenceSampler",
 ]

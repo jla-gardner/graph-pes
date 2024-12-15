@@ -18,9 +18,9 @@ from graph_pes.atomic_graph import (
     PropertyKey,
 )
 from graph_pes.data.ase_db import ASE_Database
-from graph_pes.data.sampling import SequenceSampler
 from graph_pes.utils.logger import logger
 from graph_pes.utils.misc import uniform_repr
+from graph_pes.utils.sampling import SequenceSampler
 
 
 class GraphDataset(torch.utils.data.Dataset, ABC):
@@ -304,7 +304,7 @@ def file_dataset(
 
     Returns
     -------
-    ASEDataset
+    ASEToGraphDataset
         The ASE dataset.
 
     Example

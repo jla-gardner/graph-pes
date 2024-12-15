@@ -11,7 +11,6 @@ from graph_pes.utils.misc import (
     full_3x3_to_voigt_6,
     nested_merge,
     nested_merge_all,
-    random_split,
     voigt_6_to_full_3x3,
 )
 
@@ -88,15 +87,6 @@ def test_nested_merge_all():
         {"a": {"b": {"d": 2}}},
         {"a": {"b": {"c": 2}}},
     ) == {"a": {"b": {"c": 2, "d": 2}}}
-
-
-def test_random_split():
-    indices = list(range(10))
-    split = random_split(indices, lengths=[2, 2], seed=0)
-    assert split == [[2, 8], [4, 9]]
-
-    with pytest.raises(ValueError, match="Not enough things to split"):
-        random_split(indices, lengths=[20, 20], seed=0)
 
 
 def test_stress_conversions():

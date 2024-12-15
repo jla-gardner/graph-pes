@@ -8,9 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Sequence, TypeVar, overload
 
-import numpy
 import torch
-import torch.distributed
 from torch import Tensor
 
 T = TypeVar("T")
@@ -342,47 +340,6 @@ def left_aligned_div(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     x = x.transpose(0, -1)  # shape: (a, ..., n)
     result = x / y  # shape: (a, ..., n)
     return result.transpose(0, -1)  # shape: (n, ..., a)
-
-
-def random_split(
-    sequence: Sequence[T],
-    lengths: Sequence[int],
-    seed: int | None = None,
-) -> list[list[T]]:
-    """
-    Randomly split `sequence` into sub-sequences according to `lengths`.
-
-    Parameters
-    ----------
-    sequence
-        The sequence to split.
-    lengths
-        The lengths of the sub-sequences to create.
-    seed
-        The random seed to use. If `None`, the current random state is
-        used (non-deterministic).
-
-    Returns
-    -------
-    list[list[T]]
-        A list of sub-sequences.
-
-    Examples
-    --------
-    >>> random_split("abcde", [2, 3])
-    [['b', 'c'], ['a', 'd', 'e']]
-    """
-
-    if sum(lengths) > len(sequence):
-        raise ValueError("Not enough things to split")
-
-    shuffle = numpy.random.RandomState(seed=seed).permutation(len(sequence))
-    ptr = [0, *numpy.cumsum(lengths)]
-
-    return [
-        [sequence[i] for i in shuffle[ptr[n] : ptr[n + 1]]]
-        for n in range(len(lengths))
-    ]
 
 
 def all_equal(iterable: Iterable[T]) -> bool:

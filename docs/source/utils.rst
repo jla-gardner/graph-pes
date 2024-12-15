@@ -11,8 +11,9 @@ Shift and Scale
 Sampling
 --------
 
-.. autofunction:: graph_pes.utils.misc.random_split
+.. autoclass:: graph_pes.utils.sampling.T
 
+.. autoclass:: graph_pes.utils.sampling.SequenceSampler
 
 Useful Types and Aliases
 ------------------------

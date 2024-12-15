@@ -18,7 +18,6 @@ from graph_pes.config import FittingOptions
 from graph_pes.config.config import Config
 from graph_pes.data.datasets import FittingData
 from graph_pes.data.loader import GraphDataLoader
-from graph_pes.data.sampling import SequenceSampler
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.training.callbacks import (
     EarlyStoppingWithLogging,
@@ -39,6 +38,7 @@ from graph_pes.training.util import (
 )
 from graph_pes.utils.logger import log_to_file, logger
 from graph_pes.utils.misc import uniform_repr
+from graph_pes.utils.sampling import SequenceSampler
 
 
 def train_with_lightning(

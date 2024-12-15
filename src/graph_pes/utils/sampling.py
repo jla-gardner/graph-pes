@@ -4,12 +4,12 @@ from typing import Iterator, Sequence, TypeVar, overload
 
 import numpy as np
 
-T = TypeVar("T", covariant=True)
+T = TypeVar("T")
 
 
 class SequenceSampler(Sequence[T]):
     """
-    A class that wraps a :class:`~graph_pes.data.Sequence` of ``T`` objects and
+    A class that wraps a :class:`Sequence` of ``T`` objects and
     provides methods for sampling from it without the need to manipulate or
     access the underlying data.
 
