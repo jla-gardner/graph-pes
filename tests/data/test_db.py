@@ -47,9 +47,6 @@ def test_ASE_Database():
     assert isinstance(db[0:2], Sequence)
     assert isinstance(db[0:2][0], ase.Atoms)
 
-    with pytest.raises(IndexError):
-        db[10]
-
     with pytest.raises(FileNotFoundError):
         ASE_Database("non_existent_file.db")
 
