@@ -12,7 +12,7 @@ from ase.io import read
 from locache import reset
 
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey
-from graph_pes.data.datasets import pre_transform_structures
+from graph_pes.data.datasets import get_all_graphs_and_cache_to_disk
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models import (
     ALL_MODELS,
@@ -29,7 +29,7 @@ from graph_pes.models import (
 from graph_pes.models.components.scaling import LocalEnergiesScaler
 
 # remove cache so that any changes are actually tested
-reset(pre_transform_structures)
+reset(get_all_graphs_and_cache_to_disk)
 
 
 def all_model_factories(

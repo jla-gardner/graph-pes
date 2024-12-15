@@ -18,6 +18,7 @@ from graph_pes.config import FittingOptions
 from graph_pes.config.config import Config
 from graph_pes.data.datasets import FittingData
 from graph_pes.data.loader import GraphDataLoader
+from graph_pes.data.sampling import SequenceSampler
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.training.callbacks import (
     EarlyStoppingWithLogging,
@@ -66,19 +67,21 @@ def train_with_lightning(
     loader_kwargs["shuffle"] = False
     valid_loader = GraphDataLoader(data.valid, **loader_kwargs)
 
-    # - maybe do some pre-fitting
-    pre_fit_dataset = data.train
+    # - do some pre-fitting
+    pre_fit_graphs = SequenceSampler(data.train.graphs)
     if fit_config.max_n_pre_fit is not None:
-        pre_fit_dataset = pre_fit_dataset.sample(fit_config.max_n_pre_fit)
+        pre_fit_graphs = pre_fit_graphs.sample_at_most(fit_config.max_n_pre_fit)
+    pre_fit_graphs = list(pre_fit_graphs)
+
+    # optionally pre-fit the model
     if fit_config.pre_fit_model:
-        logger.info(
-            f"Pre-fitting the model on {len(pre_fit_dataset):,} samples"
-        )
-        model.pre_fit_all_components(pre_fit_dataset)
+        logger.info(f"Pre-fitting the model on {len(pre_fit_graphs):,} samples")
+        model.pre_fit_all_components(pre_fit_graphs)
     trainer.strategy.barrier("pre-fit")
 
+    # always pre-fit the losses
     for subloss in loss.losses:
-        subloss.pre_fit(to_batch(list(pre_fit_dataset)))
+        subloss.pre_fit(to_batch(pre_fit_graphs))
 
     # - log the model info
     if trainer.global_rank == 0:

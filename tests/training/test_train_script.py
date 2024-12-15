@@ -106,6 +106,8 @@ fitting:
         callbacks: []
     loader_kwargs:
         batch_size: 2
+        num_workers: 0
+        persistent_workers: false
 """
     return nested_merge(
         get_default_config_values(),

@@ -6,7 +6,7 @@ from typing import Iterator, Sequence
 import torch.utils.data
 
 from ..atomic_graph import AtomicGraph, to_batch
-from .datasets import GraphDataset, SequenceDataset
+from .datasets import GraphDataset
 
 
 class GraphDataLoader(torch.utils.data.DataLoader):
@@ -37,7 +37,7 @@ class GraphDataLoader(torch.utils.data.DataLoader):
         **kwargs,
     ):
         if not isinstance(dataset, GraphDataset):
-            dataset = SequenceDataset(dataset)
+            dataset = GraphDataset(dataset)
 
         if "collate_fn" in kwargs:
             warnings.warn(

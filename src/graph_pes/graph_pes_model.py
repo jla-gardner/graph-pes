@@ -351,7 +351,7 @@ class GraphPESModel(nn.Module, ABC):
     @torch.no_grad()
     def pre_fit_all_components(
         self,
-        graphs: GraphDataset | Sequence[AtomicGraph],
+        graphs: Sequence[AtomicGraph],
     ):
         """
         Pre-fit the model, and all its components, to the training data.
