@@ -36,7 +36,7 @@ from graph_pes.training.util import (
     log_model_info,
     sanity_check,
 )
-from graph_pes.utils.logger import log_to_file, logger
+from graph_pes.utils.logger import logger
 from graph_pes.utils.misc import uniform_repr
 from graph_pes.utils.sampling import SequenceSampler
 
@@ -228,9 +228,6 @@ def trainer_from_config(
         progress=config.general.progress,
         callbacks=callbacks,
     )
-
-    # route logs to a unique file for each rank: PTL now knows the global rank!
-    log_to_file(file=output_dir / "logs" / f"rank-{trainer.global_rank}.log")
 
     # special handling for GraphPESCallback: we need to register the
     # output directory with it so that it knows where to save the model etc.

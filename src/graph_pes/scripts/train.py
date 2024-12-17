@@ -4,9 +4,7 @@ import argparse
 import contextlib
 import os
 import random
-import shutil
 from datetime import datetime
-from hashlib import sha256
 from pathlib import Path
 from typing import Callable
 
@@ -20,14 +18,13 @@ from graph_pes.training.trainer import (
     train_with_lightning,
     trainer_from_config,
 )
-from graph_pes.utils.logger import logger, set_level
+from graph_pes.utils.distributed import DistributedCommunication
+from graph_pes.utils.logger import log_to_file, logger, set_level
 from graph_pes.utils.misc import (
     build_single_nested_dict,
     nested_merge_all,
     random_dir,
 )
-
-OUTPUT_DIR = "graph-pes-output-dir"
 
 
 def parse_args():
@@ -136,41 +133,11 @@ def train_from_config(config_data: dict):
     # 3. (on rank 0) the trainer spins up the DDP backend on this process and
     #    launches the remaining processes
     # 4. (on all non-0 ranks) this script runs again until `trainer.fit` is hit.
-    #    IMPORTANT: before this point the trainer is instantiated, we cannot
-    #    tell from Lightning whether we are rank 0 or not - we therefore use
-    #    our own logic for this.
     # 5. (on all ranks) the trainer sets up the distributed backend and
     #    synchronizes the GPUs: training then proceeds as normal.
-    #
-    # There are certain behaviours that we want to only handle on rank 0:
-    # we can use this^ order of events to determine this. Concretely, we
-    # get an identifier that is:
-    #  (a) unique to the training run (to avoid collisions with any others)
-    #  (b) identical across all ranks
-    # and check if a directory corresponding to this identifier exists:
-    # if it does, we are not rank 0, otherwise we are. We can also communicate
-    # information from rank 0 to other ranks by saving information into files
-    # in this directory.
 
-    # the config will be shared across all ranks, but will be different
-    # between different training runs: hence a sha256 hash of the config
-    # is a good unique identifier for the training run:
-    training_run_id = sha256(str(config_data).encode()).hexdigest()
-    communication_dir = (
-        Path(config_data["general"]["root_dir"]) / ".communication"
-    )
-    training_run_dir = communication_dir / training_run_id
-    is_rank_0 = not training_run_dir.exists()
-    training_run_dir.mkdir(exist_ok=True, parents=True)
-
-    def cleanup():
-        with contextlib.suppress(FileNotFoundError):
-            shutil.rmtree(training_run_dir)
-
-        # also remove communication if empty
-        with contextlib.suppress(FileNotFoundError):
-            if not any(communication_dir.iterdir()):
-                shutil.rmtree(communication_dir)
+    distributed = DistributedCommunication.from_env()
+    is_rank_0 = distributed.global_rank == 0
 
     set_level(config_data["general"]["log_level"])
     info = (lambda *args, **kwargs: None) if not is_rank_0 else logger.info
@@ -182,9 +149,6 @@ def train_from_config(config_data: dict):
     debug("Parsing config...")
     config_data, config = Config.from_raw_config_dicts(config_data)
     info("Successfully parsed config.")
-
-    # torch things
-    configure_general_options(debug, config)
 
     # generate / look up the output directory for this training run
     # and handle the case where there is an ID collision by incrementing
@@ -213,14 +177,18 @@ def train_from_config(config_data: dict):
         with open(output_dir / "train-config.yaml", "w") as f:
             yaml.dump(config_data, f)
 
-        # communicate the output directory by saving it to a file
-        with open(training_run_dir / OUTPUT_DIR, "w") as f:
-            f.write(str(output_dir))
+        # communicate the output directory to other ranks
+        distributed.send("OUTPUT_DIR", str(output_dir))
 
     else:
         # get the output directory from rank 0
-        with open(training_run_dir / OUTPUT_DIR) as f:
-            output_dir = Path(f.read())
+        output_dir = Path(distributed.receive("OUTPUT_DIR"))
+
+    # log
+    log_to_file(file=output_dir / f"logs/rank-{distributed.global_rank}.log")
+
+    # torch things
+    configure_general_options(debug, config)
 
     # update the run id
     config_data["general"]["run_id"] = output_dir.name
@@ -257,24 +225,18 @@ Output for this training run can be found at:
     debug(f"Total loss:\n{total_loss}")
 
     debug(f"Starting training on rank {trainer.global_rank}.")
-    try:
-        train_with_lightning(
-            trainer,
-            model,
-            data,
-            loss=total_loss,
-            fit_config=config.fitting,
-            optimizer=optimizer,
-            scheduler=scheduler,
-        )
 
-    except Exception as e:
-        cleanup()
-        logger.error(f"Training failed: {e}")
-        raise e
+    train_with_lightning(
+        trainer,
+        model,
+        data,
+        loss=total_loss,
+        fit_config=config.fitting,
+        optimizer=optimizer,
+        scheduler=scheduler,
+    )
 
     info("Training complete. Awaiting final Lightning and W&B shutdown...")
-    cleanup()
 
 
 def configure_general_options(logging_function: Callable, config: Config):
