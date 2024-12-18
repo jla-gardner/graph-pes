@@ -1,28 +1,28 @@
 from __future__ import annotations
 
+import logging
 import os
-from dataclasses import dataclass
+from typing import Final
 
 from pytorch_lightning import Trainer
-from typing_extensions import Self
+
+# dirty hack: just get lightning to work this out,
+# and ensure no annoying printing happens
+logger = logging.getLogger("pytorch_lightning.utilities.rank_zero")
+logger.setLevel(logging.ERROR)
+_trainer = Trainer(logger=False)
+logger.setLevel(logging.INFO)
+
+GLOBAL_RANK: Final[int] = _trainer.global_rank
+WORLD_SIZE: Final[int] = _trainer.world_size
+IS_RANK_0: Final[bool] = GLOBAL_RANK == 0
 
 
-@dataclass
-class DistributedCommunication:
-    global_rank: int
-    world_size: int
+def send_to_other_ranks(key: str, value: str) -> None:
+    """Must be called by rank 0 and before `Trainer.fit` is called."""
+    os.environ[key] = value
 
-    @classmethod
-    def from_env(cls) -> Self:
-        # dirty hack: just get lightning to work this out
-        trainer = Trainer(logger=False)
-        return cls(
-            global_rank=trainer.global_rank,
-            world_size=trainer.world_size,
-        )
 
-    def send(self, key: str, value: str) -> None:
-        os.environ[key] = value
-
-    def receive(self, key: str) -> str:
-        return os.environ[key]
+def receive_from_rank_0(key: str) -> str:
+    """Must be called from a non-0 rank."""
+    return os.environ[key]

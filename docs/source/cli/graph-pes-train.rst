@@ -190,7 +190,6 @@ Complete ``config`` API
 
 .. autoclass:: graph_pes.config.Config()
     :members:
-    :exclude-members: from_raw_config_dicts
 
 
 Callbacks

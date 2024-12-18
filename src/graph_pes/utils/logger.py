@@ -4,7 +4,9 @@ import logging
 import sys
 from pathlib import Path
 
-__all__ = ["logger", "log_to_file", "set_level"]
+from . import distributed
+
+__all__ = ["logger", "log_to_file", "set_log_level"]
 
 
 class MultiLineFormatter(logging.Formatter):
@@ -23,21 +25,22 @@ class MultiLineFormatter(logging.Formatter):
 
 # create the graph-pes logger
 logger = logging.getLogger(name="graph-pes")
+std_out_handler = logging.StreamHandler(stream=sys.stdout)
+std_out_handler.setFormatter(MultiLineFormatter())
 
-# log to stdout
-_handler = logging.StreamHandler(stream=sys.stdout)
-_handler.setFormatter(MultiLineFormatter())
-logger.addHandler(_handler)
+# log to stdout if rank 0
+if distributed.IS_RANK_0:
+    logger.addHandler(std_out_handler)
 
-# capture all logs but only show INFO and above in stdout (by default)
-logger.setLevel(logging.DEBUG)
-_handler.setLevel(logging.INFO)
+    # capture all logs but only show INFO and above in stdout (by default)
+    logger.setLevel(logging.DEBUG)
+    std_out_handler.setLevel(logging.INFO)
 
 
-def log_to_file(file: str | Path):
-    """Append logs to a file."""
+def log_to_file(output_dir: str | Path):
+    """Append logs to a `rank-<rank>.log` file in the given output directory."""
 
-    file = Path(file)
+    file = Path(output_dir) / f"rank-{distributed.GLOBAL_RANK}.log"
     file.parent.mkdir(parents=True, exist_ok=True)
 
     handler = logging.FileHandler(file, mode="a")
@@ -48,8 +51,8 @@ def log_to_file(file: str | Path):
     logger.info(f"Logging to {file}")
 
 
-def set_level(level: str | int):
+def set_log_level(level: str | int):
     """Set the logging level."""
 
-    _handler.setLevel(level)
+    std_out_handler.setLevel(level)
     logger.debug(f"Set logging level to {level}")

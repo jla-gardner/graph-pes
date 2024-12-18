@@ -1,110 +1,25 @@
 from __future__ import annotations
 
-import argparse
-import contextlib
 import os
 import random
 from datetime import datetime
 from pathlib import Path
-from typing import Callable
 
 import numpy as np
 import torch
 import yaml
 
 from graph_pes.config import Config, get_default_config_values
-from graph_pes.scripts.generation import config_auto_generation
+from graph_pes.config.utils import instantiate_config_from_dict
+from graph_pes.scripts.utils import extract_config_dict_from_command_line
 from graph_pes.training.trainer import (
+    WandbLogger,
     train_with_lightning,
     trainer_from_config,
 )
-from graph_pes.utils.distributed import DistributedCommunication
-from graph_pes.utils.logger import log_to_file, logger, set_level
-from graph_pes.utils.misc import (
-    build_single_nested_dict,
-    nested_merge_all,
-    random_dir,
-)
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Train a GraphPES model using PyTorch Lightning.",
-        epilog="Copyright 2023-24, John Gardner",
-    )
-
-    parser.add_argument(
-        "args",
-        nargs="*",
-        help=(
-            "Config files and command line specifications. "
-            "Config files should be YAML (.yaml/.yml) files. "
-            "Command line specifications should be in the form "
-            "my/nested/key=value. "
-            "Final config is built up from these items in a left "
-            "to right manner, with later items taking precedence "
-            "over earlier ones in the case of conflicts. "
-            "The data2objects package is used to resolve references "
-            "and create objects directly from the config dictionary."
-        ),
-    )
-
-    return parser.parse_args()
-
-
-def extract_config_from_command_line() -> dict:
-    args = parse_args()
-
-    # load default config
-    defaults = get_default_config_values()
-
-    parsed_configs = []
-
-    if not args.args:
-        parsed_configs.append(config_auto_generation())
-
-    for arg in args.args:
-        arg: str
-
-        if arg.endswith(".yaml") or arg.endswith(".yml"):
-            # it's a config file
-            try:
-                with open(arg) as f:
-                    parsed_configs.append(yaml.safe_load(f))
-            except Exception as e:
-                logger.error(
-                    f"You specified a config file ({arg}) "
-                    "that we couldn't load."
-                )
-                raise e
-
-        elif "=" in arg:
-            # it's an override
-            key, value = arg.split("=", maxsplit=1)
-            keys = key.split("/")
-
-            # parse the value
-            with contextlib.suppress(yaml.YAMLError):
-                value = yaml.safe_load(value)
-
-            nested_dict = build_single_nested_dict(keys, value)
-            parsed_configs.append(nested_dict)
-
-        else:
-            logger.error(
-                "We detected the following command line arguments: \n" "".join(
-                    f"- {arg}\n" for arg in args.args
-                )
-                + "We expected all of these to be in the form key=value or "
-                f"to end with .yaml or .yml - {arg} is invalid."
-            )
-
-            raise ValueError(
-                f"Invalid argument: {arg}. "
-                "Expected a YAML file or an override in the form key=value"
-            )
-
-    return nested_merge_all(defaults, *parsed_configs)
+from graph_pes.utils import distributed
+from graph_pes.utils.logger import log_to_file, logger, set_log_level
+from graph_pes.utils.misc import nested_merge_all, random_dir
 
 
 def train_from_config(config_data: dict):
@@ -136,24 +51,36 @@ def train_from_config(config_data: dict):
     # 5. (on all ranks) the trainer sets up the distributed backend and
     #    synchronizes the GPUs: training then proceeds as normal.
 
-    distributed = DistributedCommunication.from_env()
-    is_rank_0 = distributed.global_rank == 0
-
-    set_level(config_data["general"]["log_level"])
-    info = (lambda *args, **kwargs: None) if not is_rank_0 else logger.info
-    debug = (lambda *args, **kwargs: None) if not is_rank_0 else logger.debug
+    set_log_level(config_data["general"]["log_level"])
 
     now_ms = datetime.now().strftime("%F %T.%f")[:-3]
-    info(f"Started `graph-pes-train` at {now_ms}")
+    logger.info(f"Started `graph-pes-train` at {now_ms}")
 
-    debug("Parsing config...")
-    config_data, config = Config.from_raw_config_dicts(config_data)
-    info("Successfully parsed config.")
+    logger.debug("Parsing config...")
+
+    # handle default optimizer
+    if config_data["fitting"]["optimizer"] is None:
+        config_data["fitting"]["optimizer"] = yaml.safe_load(
+            """
+            +Optimizer:
+                name: Adam
+                lr: 0.001
+            """
+        )
+    try:
+        config_data, config = instantiate_config_from_dict(config_data, Config)
+    except Exception as e:
+        raise ValueError(
+            "Your configuration file could not be successfully parsed. "
+            "Please check that it is formatted correctly. For examples, "
+            "please see https://jla-gardner.github.io/graph-pes/cli/graph-pes-train.html"
+        ) from e
+    logger.info("Successfully parsed config.")
 
     # generate / look up the output directory for this training run
     # and handle the case where there is an ID collision by incrementing
     # the version number
-    if is_rank_0:
+    if distributed.IS_RANK_0:
         # set up directory structure
         if config.general.run_id is None:
             output_dir = random_dir(Path(config.general.root_dir))
@@ -178,54 +105,62 @@ def train_from_config(config_data: dict):
             yaml.dump(config_data, f)
 
         # communicate the output directory to other ranks
-        distributed.send("OUTPUT_DIR", str(output_dir))
+        distributed.send_to_other_ranks("OUTPUT_DIR", str(output_dir))
 
     else:
         # get the output directory from rank 0
-        output_dir = Path(distributed.receive("OUTPUT_DIR"))
+        output_dir = Path(distributed.receive_from_rank_0("OUTPUT_DIR"))
 
     # log
-    log_to_file(file=output_dir / f"logs/rank-{distributed.global_rank}.log")
+    log_to_file(output_dir)
 
     # torch things
-    configure_general_options(debug, config)
+    configure_general_options(config)
 
     # update the run id
     config_data["general"]["run_id"] = output_dir.name
     config.general.run_id = output_dir.name
-    info(f"ID for this training run: {config.general.run_id}")
-    info(f"""\
+    logger.info(f"ID for this training run: {config.general.run_id}")
+    wandb_line = (
+        """\
+      ├─ .wandb.id          # file containing the wandb ID\n"""
+        if config.wandb is not None
+        else ""
+    )
+    logger.info(f"""\
 Output for this training run can be found at:
    └─ {output_dir}
-      ├─ logs/rank-0.log    # find a verbose log here
+      ├─ logs/rank-0.log    # find a verbose log here{wandb_line}
       ├─ model.pt           # the best model
       ├─ lammps_model.pt    # the best model deployed to LAMMPS
       └─ train-config.yaml  # the complete config used for this run\
 """)
 
-    trainer = trainer_from_config(config, output_dir, debug)
+    trainer = trainer_from_config(config, output_dir)
 
     assert trainer.logger is not None
+    if config.wandb is not None:
+        assert isinstance(trainer.logger, WandbLogger)
+        (output_dir / ".wandb.id").write_text(str(trainer.logger._id))
     trainer.logger.log_hyperparams(config_data)
 
     # instantiate and log things
     model = config.get_model()  # gets logged later
 
     data = config.get_data()
-    debug(f"Data:\n{data}")
+    logger.debug(f"Data:\n{data}")
 
     optimizer = config.fitting.optimizer
-    debug(f"Optimizer:\n{optimizer}")
+    logger.debug(f"Optimizer:\n{optimizer}")
 
     scheduler = config.fitting.scheduler
     _scheduler_str = scheduler if scheduler is not None else "No LR scheduler."
-    debug(f"Scheduler:\n{_scheduler_str}")
+    logger.debug(f"Scheduler:\n{_scheduler_str}")
 
     total_loss = config.get_loss()
-    debug(f"Total loss:\n{total_loss}")
+    logger.debug(f"Total loss:\n{total_loss}")
 
-    debug(f"Starting training on rank {trainer.global_rank}.")
-
+    logger.debug(f"Starting training on rank {trainer.global_rank}.")
     train_with_lightning(
         trainer,
         model,
@@ -236,18 +171,18 @@ Output for this training run can be found at:
         scheduler=scheduler,
     )
 
-    info("Training complete. Awaiting final Lightning and W&B shutdown...")
-
-
-def configure_general_options(logging_function: Callable, config: Config):
-    prec = config.general.torch.float32_matmul_precision
-    torch.set_float32_matmul_precision(prec)
-    logging_function(
-        f"Using {prec} precision for float32 matrix multiplications."
+    logger.info(
+        "Training complete. Awaiting final Lightning and W&B shutdown..."
     )
 
+
+def configure_general_options(config: Config):
+    prec = config.general.torch.float32_matmul_precision
+    torch.set_float32_matmul_precision(prec)
+    logger.debug(f"Using {prec} precision for float32 matrix multiplications.")
+
     ftype = config.general.torch.dtype
-    logging_function(f"Using {ftype} as default dtype.")
+    logger.debug(f"Using {ftype} as default dtype.")
     torch.set_default_dtype(
         {
             "float16": torch.float16,
@@ -263,7 +198,7 @@ def configure_general_options(logging_function: Callable, config: Config):
 
     # a non-verbose version of pl.seed_everything
     seed = config.general.seed
-    logging_function(f"Using seed {seed} for reproducibility.")
+    logger.debug(f"Using seed {seed} for reproducibility.")
     os.environ["PL_GLOBAL_SEED"] = str(seed)
     random.seed(seed)
     np.random.seed(seed)
@@ -276,8 +211,15 @@ def main():
     # spamming logs with `rich` output
     os.environ["LOAD_ATOMS_VERBOSE"] = os.getenv("LOAD_ATOMS_VERBOSE", "1")
 
-    config = extract_config_from_command_line()
-    train_from_config(config)
+    # build up the config dict from available sources:
+    defaults = get_default_config_values()
+    cli_config = extract_config_dict_from_command_line(
+        "Train a GraphPES model using PyTorch Lightning."
+    )
+    config_dict = nested_merge_all(defaults, cli_config)
+
+    # train
+    train_from_config(config_dict)
 
 
 if __name__ == "__main__":

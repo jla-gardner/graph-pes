@@ -3,6 +3,7 @@ import torch
 import yaml
 
 from graph_pes.config import Config, get_default_config_values
+from graph_pes.config.utils import instantiate_config_from_dict
 from graph_pes.models import SchNet
 from graph_pes.models.addition import AdditionModel
 from graph_pes.utils.misc import nested_merge
@@ -21,14 +22,14 @@ def test_model_instantiation():
     # 1. test single model with no params:
     dummy_data = get_dummy_config_dict()
     dummy_data["model"] = "+SchNet()"
-    dummy_data, config = Config.from_raw_config_dicts(dummy_data)
+    dummy_data, config = instantiate_config_from_dict(dummy_data, Config)
     model = config.get_model()
     assert isinstance(model, SchNet)
 
     # 2. test single model with params:
     dummy_data = get_dummy_config_dict()
     dummy_data["model"] = {"+SchNet": {"cutoff": 3.7}}
-    dummy_data, config = Config.from_raw_config_dicts(dummy_data)
+    dummy_data, config = instantiate_config_from_dict(dummy_data, Config)
     model = config.get_model()
     assert isinstance(model, SchNet)
     assert model.cutoff == 3.7
@@ -42,7 +43,7 @@ many-body:
    +SchNet: {cutoff: 3.7}
 """
     )
-    dummy_data, config = Config.from_raw_config_dicts(dummy_data)
+    dummy_data, config = instantiate_config_from_dict(dummy_data, Config)
     model = config.get_model()
     assert isinstance(model, AdditionModel)
     assert len(model.models) == 2
@@ -52,18 +53,18 @@ many-body:
     dummy_data = get_dummy_config_dict()
     # clearly incorrect
     dummy_data["model"] = 3
-    with pytest.raises(ValueError, match="could not be successfully parsed."):
-        Config.from_raw_config_dicts(dummy_data)
+    with pytest.raises(ValueError, match="Failed to instantiate a config"):
+        instantiate_config_from_dict(dummy_data, Config)
 
     # not a GraphPESModel
     dummy_data["model"] = "+torch.nn.ReLU()"
     with pytest.raises(ValueError):
-        Config.from_raw_config_dicts(dummy_data)
+        instantiate_config_from_dict(dummy_data, Config)
 
     # incorrect AdditionModel spec
     dummy_data["model"] = {"a": "+torch.nn.ReLU()"}
     with pytest.raises(ValueError):
-        Config.from_raw_config_dicts(dummy_data)
+        instantiate_config_from_dict(dummy_data, Config)
 
 
 def test_optimizer():
@@ -76,7 +77,7 @@ def test_optimizer():
                 lr: 0.001
     """)
     actual_data = nested_merge(dummy_data, user_data)
-    _, config = Config.from_raw_config_dicts(actual_data)
+    _, config = instantiate_config_from_dict(actual_data, Config)
 
     dummy_model = SchNet()
     optimizer_instance = config.fitting.optimizer(dummy_model)
@@ -86,7 +87,7 @@ def test_optimizer():
 def test_scheduler():
     # no default scheduler
     dummy_data = get_dummy_config_dict()
-    _, config = Config.from_raw_config_dicts(dummy_data)
+    _, config = instantiate_config_from_dict(dummy_data, Config)
     scheduler = config.fitting.scheduler
     assert scheduler is None
 
@@ -101,7 +102,7 @@ def test_scheduler():
     """)
     dummy_data = get_dummy_config_dict()
     actual_data = nested_merge(dummy_data, user_data)
-    _, config = Config.from_raw_config_dicts(actual_data)
+    _, config = instantiate_config_from_dict(actual_data, Config)
 
     scheduler = config.fitting.scheduler
     assert scheduler is not None

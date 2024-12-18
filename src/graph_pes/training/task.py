@@ -33,6 +33,7 @@ class PESLearningTask(pl.LightningModule):
         loss: TotalLoss,
         optimizer: Optimizer,
         scheduler: LRScheduler | None,
+        test_names: list[str] | None = None,
     ):
         super().__init__()
         self.model = model
@@ -41,12 +42,14 @@ class PESLearningTask(pl.LightningModule):
         self.total_loss = loss
         self.train_properties: list[PropertyKey] = list(
             set.union(
+                set(),
                 *[
                     set(loss.required_properties)
                     for loss in self.total_loss.losses
-                ]
+                ],
             )
         )
+        self.test_names = test_names or []
 
     def forward(self, graphs: AtomicGraph) -> torch.Tensor:
         """Get the energy"""
@@ -76,6 +79,7 @@ class PESLearningTask(pl.LightningModule):
         self,
         graph: AtomicGraph,
         prefix: Literal["train", "valid", "test"],
+        test_name: str | None = None,
     ) -> torch.Tensor:
         """
         Get (and log) the losses and metrics for a step.
@@ -99,9 +103,10 @@ class PESLearningTask(pl.LightningModule):
 
             validating = prefix == "valid"
             training = prefix == "train"
+            _prefix = prefix if prefix != "test" else f"test/{test_name}"
 
             return self.log(
-                f"{prefix}/{name}",
+                f"{_prefix}/{name}",
                 value,
                 prog_bar=validating and "metric" in name,
                 on_step=training,
@@ -122,10 +127,11 @@ class PESLearningTask(pl.LightningModule):
         total_loss_result = self.total_loss(self.model, graph, predictions)
 
         # log
-        log("loss/total", total_loss_result.loss_value)
-        for name, loss_pair in total_loss_result.components.items():
-            log(f"metrics/{name}", loss_pair.loss_value)
-            log(f"loss/{name}_weighted", loss_pair.weighted_loss_value)
+        if prefix != "test":
+            log("loss/total", total_loss_result.loss_value)
+            for name, loss_pair in total_loss_result.components.items():
+                log(f"metrics/{name}", loss_pair.loss_value)
+                log(f"loss/{name}_weighted", loss_pair.weighted_loss_value)
 
         # log additional values during validation
         if prefix != "train":
@@ -160,8 +166,14 @@ class PESLearningTask(pl.LightningModule):
     def validation_step(self, structure: AtomicGraph, _):
         return self._step(structure, "valid")
 
-    def test_step(self, structure: AtomicGraph, _):
-        return self._step(structure, "test")
+    def test_step(
+        self,
+        structure: AtomicGraph,
+        batch_idx: int,
+        dataloader_idx: int = 0,
+    ):
+        test_name = self.test_names[dataloader_idx]
+        return self._step(structure, "test", test_name)
 
     def configure_optimizers(
         self,
@@ -223,6 +235,16 @@ class PESLearningTask(pl.LightningModule):
     def on_test_model_eval(self, *args, **kwargs):
         super().on_test_model_eval(*args, **kwargs)
         torch.set_grad_enabled(True)
+
+    @classmethod
+    def for_testing(cls, model: GraphPESModel, test_names: list[str]):
+        return cls(
+            model,
+            loss=TotalLoss([]),  # no need for loss
+            optimizer=Optimizer("Adam"),  # no need for optimizer
+            scheduler=None,  # no need for scheduler
+            test_names=test_names,
+        )
 
     @classmethod
     def load_best_weights(

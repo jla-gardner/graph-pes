@@ -7,9 +7,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Union
 
-import dacite
-import data2objects
-import yaml
 from pytorch_lightning import Callback
 
 from graph_pes.data.datasets import FittingData
@@ -18,7 +15,6 @@ from graph_pes.models.addition import AdditionModel
 from graph_pes.training.loss import Loss, TotalLoss, WeightedLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
 from graph_pes.training.util import VerboseSWACallback
-from graph_pes.utils.misc import nested_merge_all
 
 
 @dataclass
@@ -107,7 +103,7 @@ class SWAConfig:
 class FittingConfig(FittingOptions):
     """Configuration for the fitting process."""
 
-    optimizer: Optimizer
+    optimizer: Union[Optimizer, None]
     """
     Specification for the optimizer. Point to something that instantiates a
     :class:`~graph_pes.training.opt.Optimizer`.
@@ -481,60 +477,6 @@ class Config:
     """
 
     ### Methods ###
-
-    @classmethod
-    def from_raw_config_dicts(
-        cls, *data_dicts: dict[str, Any]
-    ) -> tuple[dict[str, Any], Config]:
-        """
-        Get the final, merged, reference-replaced config dictionary,
-        and corresponding Config instance
-        """
-
-        final_dict = nested_merge_all(*data_dicts)
-        # special, ugly handling of the fitting/optimizer field
-        if final_dict["fitting"]["optimizer"] is None:
-            final_dict["fitting"]["optimizer"] = yaml.safe_load(
-                """
-                +Optimizer:
-                    name: Adam
-                    lr: 0.001
-                """
-            )
-        final_dict: dict = data2objects.fill_referenced_parts(final_dict)  # type: ignore
-
-        import graph_pes
-        import graph_pes.data
-        import graph_pes.models
-        import graph_pes.training
-        import graph_pes.training.callbacks
-        import graph_pes.training.loss
-        import graph_pes.training.opt
-
-        object_dict = data2objects.from_dict(
-            final_dict,
-            modules=[
-                graph_pes,
-                graph_pes.models,
-                graph_pes.training,
-                graph_pes.training.opt,
-                graph_pes.training.loss,
-                graph_pes.data,
-                graph_pes.training.callbacks,
-            ],
-        )
-        try:
-            return final_dict, dacite.from_dict(
-                data_class=cls,
-                data=object_dict,
-                config=dacite.Config(strict=True),
-            )
-        except Exception as e:
-            raise ValueError(
-                "Your configuration file could not be successfully parsed. "
-                "Please check that it is formatted correctly. For examples, "
-                "please see https://jla-gardner.github.io/graph-pes/cli/graph-pes-train.html"
-            ) from e
 
     def get_model(self) -> GraphPESModel:
         if isinstance(self.model, GraphPESModel):

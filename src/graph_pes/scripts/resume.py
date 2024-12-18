@@ -6,6 +6,7 @@ from pathlib import Path
 import yaml
 
 from graph_pes.config.config import Config
+from graph_pes.config.utils import instantiate_config_from_dict
 from graph_pes.data.loader import GraphDataLoader
 from graph_pes.training.task import PESLearningTask
 from graph_pes.training.trainer import trainer_from_config
@@ -30,6 +31,10 @@ def parse_args():
 
 
 def main():
+    # set the load-atoms verbosity to 1 by default to avoid
+    # spamming logs with `rich` output
+    os.environ["LOAD_ATOMS_VERBOSE"] = os.getenv("LOAD_ATOMS_VERBOSE", "1")
+
     args = parse_args()
 
     train_dir = Path(args.train_directory)
@@ -48,7 +53,7 @@ def main():
         config_data = yaml.safe_load(f)
 
     # load the checkpoint
-    config_data, config = Config.from_raw_config_dicts(config_data)
+    config_data, config = instantiate_config_from_dict(config_data, Config)
     task = PESLearningTask.load_from_checkpoint(
         checkpoint_path,
         model=config.get_model(),
@@ -58,9 +63,7 @@ def main():
     )
 
     # create the trainer
-    trainer = trainer_from_config(
-        config, train_dir, logging_function=logger.debug
-    )
+    trainer = trainer_from_config(config, train_dir)
     if trainer.global_rank == 0:
         now_ms = datetime.now().strftime("%F %T.%f")[:-3]
         logger.info(f"Resuming training at {now_ms}")
@@ -76,8 +79,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # set the load-atoms verbosity to 1 by default to avoid
-    # spamming logs with `rich` output
-    os.environ["LOAD_ATOMS_VERBOSE"] = os.getenv("LOAD_ATOMS_VERBOSE", "1")
-
     main()

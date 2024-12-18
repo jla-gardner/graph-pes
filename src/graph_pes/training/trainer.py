@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable, Literal
+from typing import Literal
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import (
@@ -172,6 +172,7 @@ def create_trainer(
             )
         )
 
+    kwarg_overloads["inference_mode"] = False
     return pl.Trainer(**kwarg_overloads, logger=logger, callbacks=callbacks)
 
 
@@ -193,7 +194,6 @@ class WandbLogger(PTLWandbLogger):
 def trainer_from_config(
     config: Config,
     output_dir: Path,
-    logging_function: Callable = lambda x: None,
 ) -> pl.Trainer:
     # set up a logger on every rank - PTL handles this gracefully so that
     # e.g. we don't spin up >1 wandb experiment
@@ -201,7 +201,7 @@ def trainer_from_config(
         lightning_logger = WandbLogger(output_dir, **config.wandb)
     else:
         lightning_logger = CSVLogger(save_dir=output_dir, name="")
-    logging_function(f"Logging using {lightning_logger}")
+    logger.debug(f"Logging using {lightning_logger}")
 
     # create the trainer
     trainer_kwargs = {**config.fitting.trainer_kwargs}
@@ -218,7 +218,7 @@ def trainer_from_config(
     if config.fitting.swa is not None:
         callbacks.append(config.fitting.swa.instantiate_lightning_callback())
 
-    logging_function("Creating trainer...")
+    logger.debug("Creating trainer...")
     trainer = create_trainer(
         early_stopping_patience=config.fitting.early_stopping_patience,
         logger=lightning_logger,
@@ -235,6 +235,6 @@ def trainer_from_config(
     for cb in final_callbacks:
         if isinstance(cb, GraphPESCallback):
             cb._register_root(output_dir)
-    logging_function(f"Callbacks: {final_callbacks}")
+    logger.debug(f"Callbacks: {final_callbacks}")
 
     return trainer

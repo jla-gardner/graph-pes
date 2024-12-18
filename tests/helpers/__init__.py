@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Callable
 
@@ -30,6 +31,9 @@ from graph_pes.models.components.scaling import LocalEnergiesScaler
 
 # remove cache so that any changes are actually tested
 reset(get_all_graphs_and_cache_to_disk)
+
+# non-verbose load-atoms to avoid poluting the test output
+os.environ["LOAD_ATOMS_VERBOSE"] = "0"
 
 
 def all_model_factories(

@@ -7,11 +7,8 @@ import yaml
 
 from graph_pes.config import get_default_config_values
 from graph_pes.config.config import SWAConfig
-from graph_pes.scripts.train import (
-    extract_config_from_command_line,
-    parse_args,
-    train_from_config,
-)
+from graph_pes.scripts.train import train_from_config
+from graph_pes.scripts.utils import extract_config_dict_from_command_line
 from graph_pes.training.trainer import WandbLogger
 from graph_pes.utils.misc import nested_merge
 
@@ -27,14 +24,7 @@ graph-pes-train {config_path} \
 """
     sys.argv = command.split()
 
-    args = parse_args()
-    assert args.args == [
-        str(config_path),
-        "fitting/loader_kwargs/batch_size=32",
-        "data/+load_atoms_dataset/n_train=10",
-    ]
-
-    config_data = extract_config_from_command_line()
+    config_data = extract_config_dict_from_command_line("")
     assert config_data["fitting"]["loader_kwargs"]["batch_size"] == 32
     assert config_data["data"]["+load_atoms_dataset"]["n_train"] == 10
 
