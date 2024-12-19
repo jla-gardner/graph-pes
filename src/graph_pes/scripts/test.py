@@ -7,10 +7,8 @@ import pytorch_lightning as pl
 
 from graph_pes.config.shared import instantiate_config_from_dict
 from graph_pes.config.testing import TestingConfig
-from graph_pes.data.loader import GraphDataLoader
 from graph_pes.models import load_model
 from graph_pes.scripts.utils import extract_config_dict_from_command_line
-from graph_pes.training.loss import PerAtomEnergyLoss, PropertyLoss
 from graph_pes.training.tasks import test_with_lightning
 from graph_pes.utils import distributed
 from graph_pes.utils.logger import logger
@@ -25,11 +23,6 @@ def test(config: TestingConfig) -> None:
     logger.info("Loaded model.")
     logger.debug(f"Model: {model}")
 
-    loader_kwargs = {
-        **DEFAULT_LOADER_KWARGS,
-        **config.loader_kwargs,
-        "shuffle": False,
-    }
     datasets = (
         config.data if isinstance(config.data, dict) else {"test": config.data}
     )
@@ -39,36 +32,16 @@ def test(config: TestingConfig) -> None:
             dataset.prepare_data()
         dataset.setup()
 
-    dataloaders = {
-        name: GraphDataLoader(dataset, **loader_kwargs)
-        for name, dataset in datasets.items()
-    }
     trainer = pl.Trainer(
         logger=config.get_logger(),
         accelerator=config.accelerator,
         inference_mode=False,
     )
 
-    all_properties = set.union(
-        *[set(dataset.properties) for dataset in datasets.values()]
+    loader_kwargs = {**DEFAULT_LOADER_KWARGS, **config.loader_kwargs}
+    test_with_lightning(
+        trainer, model, datasets, loader_kwargs, user_eval_metrics=[]
     )
-    eval_metrics = []
-    if "energy" in all_properties:
-        eval_metrics.append(PerAtomEnergyLoss("RMSE"))
-        eval_metrics.append(PerAtomEnergyLoss("MAE"))
-        eval_metrics.append(PropertyLoss("energy", "RMSE"))
-        eval_metrics.append(PropertyLoss("energy", "MAE"))
-    if "forces" in all_properties:
-        eval_metrics.append(PropertyLoss("forces", "RMSE"))
-        # Force MAE is not invariant wrt. rotations, so we don't log it
-        # see "How to validate machine-learned interatomic potentials"
-        #      -> https://doi.org/10.1063/5.0139611
-    if "stress" in all_properties:
-        eval_metrics.append(PropertyLoss("stress", "RMSE"))
-    if "virial" in all_properties:
-        eval_metrics.append(PropertyLoss("virial", "RMSE"))
-
-    test_with_lightning(trainer, model, dataloaders, eval_metrics)
 
 
 def main():

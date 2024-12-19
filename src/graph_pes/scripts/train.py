@@ -30,7 +30,7 @@ from graph_pes.training.callbacks import (
     ScalesLogger,
     WandbLogger,
 )
-from graph_pes.training.tasks import train_with_lightning
+from graph_pes.training.tasks import test_with_lightning, train_with_lightning
 from graph_pes.training.utils import VALIDATION_LOSS_KEY
 from graph_pes.utils import distributed
 from graph_pes.utils.logger import log_to_file, logger, set_log_level
@@ -166,11 +166,37 @@ Output for this training run can be found at:
         fit_config=config.fitting,
         optimizer=optimizer,
         scheduler=scheduler,
+        user_eval_metrics=[],
+    )
+    logger.info("Training complete.")
+
+    logger.info("Testing best model...")
+    test_datasets = {
+        "train": data.train,
+        "valid": data.valid,
+    }
+    if config.data.test is not None:
+        if isinstance(config.data.test, dict):
+            test_datasets.update(config.data.test)
+        else:
+            test_datasets["test"] = config.data.test
+
+    tester = pl.Trainer(
+        logger=trainer.logger,
+        accelerator=trainer.accelerator,
+        inference_mode=False,
+    )
+    test_with_lightning(
+        tester,
+        model,
+        test_datasets,
+        loader_kwargs=config.fitting.loader_kwargs,
+        user_eval_metrics=[],
     )
 
-    logger.info(
-        "Training complete. Awaiting final Lightning and W&B shutdown..."
-    )
+    logger.info("Testing complete.")
+
+    logger.info("Awaiting final Lightning and W&B shutdown...")
 
 
 def trainer_from_config(

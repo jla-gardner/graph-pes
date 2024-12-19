@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Iterable, Literal
 
 import pytorch_lightning as pl
 import torch
@@ -14,7 +14,7 @@ from graph_pes.atomic_graph import (
     to_batch,
 )
 from graph_pes.config.training import FittingOptions
-from graph_pes.data.datasets import DatasetCollection
+from graph_pes.data.datasets import DatasetCollection, GraphDataset
 from graph_pes.data.loader import GraphDataLoader
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.training.loss import (
@@ -42,6 +42,7 @@ def train_with_lightning(
     loss: TotalLoss,
     fit_config: FittingOptions,
     optimizer: Optimizer,
+    user_eval_metrics: list[Loss] | None = None,
     scheduler: LRScheduler | None = None,
 ):
     # - prepare the data
@@ -60,6 +61,10 @@ def train_with_lightning(
     train_loader = GraphDataLoader(data.train, **loader_kwargs)
     loader_kwargs["shuffle"] = False
     valid_loader = GraphDataLoader(data.valid, **loader_kwargs)
+
+    eval_metrics = get_all_eval_metrics(
+        [data.train, data.valid], user_eval_metrics
+    )
 
     # - do some pre-fitting
     pre_fit_graphs = SequenceSampler(data.train.graphs)
@@ -86,7 +91,7 @@ def train_with_lightning(
     sanity_check(model, next(iter(train_loader)))
 
     # - create the task (a pytorch lightning module)
-    task = TrainingTask(model, loss, optimizer, scheduler)
+    task = TrainingTask(model, loss, optimizer, scheduler, eval_metrics)
 
     # - train the model
     logger.info("Starting fit...")
@@ -108,7 +113,7 @@ class TrainingTask(pl.LightningModule):
         loss: TotalLoss,
         optimizer: Optimizer,
         scheduler: LRScheduler | None,
-        test_names: list[str] | None = None,
+        eval_metrics: list[Loss],
     ):
         super().__init__()
         self.model = model
@@ -124,7 +129,12 @@ class TrainingTask(pl.LightningModule):
                 ],
             )
         )
-        self.test_names = test_names or []
+        self.eval_metrics = eval_metrics
+        self.validation_properties = list(
+            set.union(
+                set(), *[set(m.required_properties) for m in eval_metrics]
+            )
+        )
 
     def forward(self, graphs: AtomicGraph) -> torch.Tensor:
         """Get the energy"""
@@ -198,23 +208,7 @@ class TrainingTask(pl.LightningModule):
 
         # log additional values during validation
         if mode == "valid":
-            extra_metrics: list[Loss] = []
-            if "energy" in graph.properties:
-                extra_metrics.append(PerAtomEnergyLoss(metric=RMSE()))
-                extra_metrics.append(PerAtomEnergyLoss(metric=MAE()))
-                extra_metrics.append(PropertyLoss("energy", RMSE()))
-                extra_metrics.append(PropertyLoss("energy", MAE()))
-            if "forces" in graph.properties:
-                # Force MAE is not invariant wrt. rotations, so we don't log it
-                # see "How to validate machine-learned interatomic potentials"
-                #      -> https://doi.org/10.1063/5.0139611
-                extra_metrics.append(PropertyLoss("forces", RMSE()))
-            if "stress" in graph.properties:
-                extra_metrics.append(PropertyLoss("stress", RMSE()))
-            if "virial" in graph.properties:
-                extra_metrics.append(PropertyLoss("virial", RMSE()))
-
-            for metric in extra_metrics:
+            for metric in self.eval_metrics:
                 if metric.name in total_loss_result.components:
                     # don't double log
                     continue
@@ -318,12 +312,23 @@ class TrainingTask(pl.LightningModule):
 def test_with_lightning(
     trainer: pl.Trainer,
     model: GraphPESModel,
-    data: dict[str, GraphDataLoader],
-    eval_metrics: list[Loss],
+    data: dict[str, GraphDataset],
+    loader_kwargs: dict,
+    user_eval_metrics: list[Loss] | None = None,
 ):
     assert trainer.test_loop.inference_mode is False
-    task = TestingTask(model, list(data.keys()), eval_metrics)
-    trainer.test(task, list(data.values()))
+
+    test_loaders = [
+        GraphDataLoader(dataset, **{**loader_kwargs, "shuffle": False})
+        for dataset in data.values()
+    ]
+
+    task = TestingTask(
+        model,
+        list(data.keys()),
+        get_all_eval_metrics(data.values(), user_eval_metrics),
+    )
+    trainer.test(task, test_loaders)
 
 
 class TestingTask(pl.LightningModule):
@@ -380,3 +385,42 @@ class TestingTask(pl.LightningModule):
         self.model.eval()
         # we need grad enabled to compute forces using autograd
         torch.set_grad_enabled(True)
+
+
+def get_eval_metrics_for(dataset: GraphDataset) -> list[Loss]:
+    evals = []
+
+    if "energy" in dataset.properties:
+        evals.append(PerAtomEnergyLoss(metric=RMSE()))
+        evals.append(PerAtomEnergyLoss(metric=MAE()))
+        evals.append(PropertyLoss("energy", RMSE()))
+        evals.append(PropertyLoss("energy", MAE()))
+    if "forces" in dataset.properties:
+        # Force MAE is not invariant wrt. rotations, so we don't log it
+        # see "How to validate machine-learned interatomic potentials"
+        #      -> https://doi.org/10.1063/5.0139611
+        evals.append(PropertyLoss("forces", RMSE()))
+    if "stress" in dataset.properties:
+        evals.append(PropertyLoss("stress", RMSE()))
+    if "virial" in dataset.properties:
+        evals.append(PropertyLoss("virial", RMSE()))
+
+    return evals
+
+
+def get_all_eval_metrics(
+    data_sources: Iterable[GraphDataset],
+    user_specified_metrics: list[Loss] | None = None,
+) -> list[Loss]:
+    if user_specified_metrics is None:
+        user_specified_metrics = []
+
+    # de-duplicate based on the name of the metric
+    de_duped_metrics = {}
+    for data_source in data_sources:
+        de_duped_metrics.update(
+            {m.name: m for m in get_eval_metrics_for(data_source)}
+        )
+    de_duped_metrics.update({m.name: m for m in user_specified_metrics})
+
+    return list(de_duped_metrics.values())

@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-import logging
 import os
 from typing import Final
 
-from pytorch_lightning import Trainer
+from graph_pes.utils.misc import silently_create_trainer
 
 # dirty hack: just get lightning to work this out,
 # and ensure no annoying printing happens
-logger = logging.getLogger("pytorch_lightning.utilities.rank_zero")
-logger.setLevel(logging.ERROR)
-_trainer = Trainer(logger=False)
-logger.setLevel(logging.INFO)
+_trainer = silently_create_trainer(logger=False)
 
 GLOBAL_RANK: Final[int] = _trainer.global_rank
 WORLD_SIZE: Final[int] = _trainer.world_size
