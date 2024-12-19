@@ -14,7 +14,7 @@ from graph_pes.atomic_graph import (
     to_batch,
 )
 from graph_pes.config.training import FittingOptions
-from graph_pes.data.datasets import FittingData
+from graph_pes.data.datasets import DatasetCollection
 from graph_pes.data.loader import GraphDataLoader
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.training.loss import (
@@ -38,7 +38,7 @@ from graph_pes.utils.sampling import SequenceSampler
 def train_with_lightning(
     trainer: pl.Trainer,
     model: GraphPESModel,
-    data: FittingData,
+    data: DatasetCollection,
     loss: TotalLoss,
     fit_config: FittingOptions,
     optimizer: Optimizer,

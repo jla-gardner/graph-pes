@@ -12,7 +12,7 @@ import yaml
 from pytorch_lightning import Callback
 
 from graph_pes.config.shared import TorchConfig
-from graph_pes.data.datasets import FittingData
+from graph_pes.data.datasets import DatasetCollection
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.addition import AdditionModel
 from graph_pes.training.callbacks import VerboseSWACallback
@@ -297,7 +297,7 @@ class TrainingConfig:
         for dealing with arbitrary offset energies.
     """
 
-    data: FittingData
+    data: DatasetCollection
     """
     The data to train on.
 
@@ -306,7 +306,7 @@ class TrainingConfig:
         Point to a dictionary mapping ``"train"`` and ``"valid"`` keys to 
         :class:`~graph_pes.data.GraphDataset` instances, or to something that,
         when called, returns such a dictionary or
-        :class:`~graph_pes.data.FittingData` instance.
+        :class:`~graph_pes.data.DatasetCollection` instance.
 
 
         Load custom data from a function with no arguments:
@@ -347,7 +347,7 @@ class TrainingConfig:
                         path: validation_data.xyz
                         cutoff: 5.0
         
-        .. autoclass:: graph_pes.data.FittingData()
+        .. autoclass:: graph_pes.data.DatasetCollection()
             :show-inheritance:
             :members:
     """
@@ -486,14 +486,14 @@ class TrainingConfig:
             f"but got something else: {self.model}"
         )
 
-    def get_data(self) -> FittingData:
-        if isinstance(self.data, FittingData):
+    def get_data(self) -> DatasetCollection:
+        if isinstance(self.data, DatasetCollection):
             return self.data
         elif isinstance(self.data, dict):
-            return FittingData(**self.data)
+            return DatasetCollection(**self.data)
 
         raise ValueError(
-            "Expected to be able to parse a FittingData instance or a "
+            "Expected to be able to parse a DatasetCollection instance or a "
             "dictionary mapping 'train' and 'valid' keys to GraphDataset "
             "instances from the data config, but got something else: "
             f"{self.data}"

@@ -24,7 +24,7 @@ Base Classes
 .. autoclass:: graph_pes.data.ASEToGraphDataset()
     :show-inheritance:
 
-.. autoclass:: graph_pes.data.FittingData()
+.. autoclass:: graph_pes.data.DatasetCollection()
     :show-inheritance:
 
 

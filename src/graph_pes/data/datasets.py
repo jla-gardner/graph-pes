@@ -3,7 +3,7 @@ from __future__ import annotations
 import pathlib
 from abc import ABC
 from dataclasses import dataclass
-from typing import Literal, Mapping, Sequence, overload
+from typing import Literal, Mapping, Sequence, Union, overload
 
 import ase
 import ase.db
@@ -177,19 +177,25 @@ class ASEToGraphDataset(GraphDataset):
 
 
 @dataclass
-class FittingData:
-    """A convenience container for training and validation datasets."""
+class DatasetCollection:
+    """
+    A convenience container for training, validation, and optional test sets.
+    """
 
     train: GraphDataset
     """The training dataset."""
     valid: GraphDataset
     """The validation dataset."""
+    test: Union[GraphDataset, dict[str, GraphDataset]] | None = None  # noqa: UP007
+    """An optional test dataset, or collection of named test datasets."""
 
     def __repr__(self) -> str:
+        kwargs = {"train": self.train, "valid": self.valid}
+        if self.test is not None:
+            kwargs["test"] = self.test  # type: ignore
         return uniform_repr(
             self.__class__.__name__,
-            train=self.train,
-            valid=self.valid,
+            **kwargs,  # type: ignore
         )
 
 
@@ -197,12 +203,13 @@ def load_atoms_dataset(
     id: str | pathlib.Path,
     cutoff: float,
     n_train: int,
-    n_valid: int = -1,
+    n_valid: int,
+    n_test: int | None = None,
     split: Literal["random", "sequential"] = "random",
     seed: int = 42,
     pre_transform: bool = True,
     property_map: dict[str, PropertyKey] | None = None,
-) -> FittingData:
+) -> DatasetCollection:
     """
     Load an dataset of :class:`ase.Atoms` objects using
     `load-atoms <https://jla-gardner.github.io/load-atoms/>`__,
@@ -219,9 +226,9 @@ def load_atoms_dataset(
     n_train:
         The number of training structures.
     n_valid:
-        The number of validation structures. If ``-1``, the number of validation
-        structures is set to the number of remaining structures after
-        training structures are chosen.
+        The number of validation structures.
+    n_test:
+        The number of test structures. If ``None``, no test set is created.
     split:
         The split method. ``"random"`` shuffles the structures before
         choosing a non-overlapping split, while ``"sequential"`` takes the
@@ -239,8 +246,8 @@ def load_atoms_dataset(
 
     Returns
     -------
-    FittingData
-        A tuple of training and validation datasets.
+    DatasetCollection
+        A collection of training, validation, and optional test datasets.
 
     Examples
     --------
@@ -252,6 +259,7 @@ def load_atoms_dataset(
     ...     cutoff=5.0,
     ...     n_train=1_000,
     ...     n_valid=100,
+    ...     n_test=100,
     ...     property_map={"U0": "energy"},
     ... )
     """
@@ -260,15 +268,23 @@ def load_atoms_dataset(
     if split == "random":
         structures = structures.shuffled(seed)
 
-    if n_valid == -1:
-        n_valid = len(structures) - n_train
-
     train = structures[:n_train]
     val = structures[n_train : n_train + n_valid]
 
-    return FittingData(
+    if n_test is not None:
+        test = ASEToGraphDataset(
+            structures[n_train + n_valid : n_train + n_valid + n_test],
+            cutoff,
+            pre_transform,
+            property_map,
+        )
+    else:
+        test = None
+
+    return DatasetCollection(
         train=ASEToGraphDataset(train, cutoff, pre_transform, property_map),
         valid=ASEToGraphDataset(val, cutoff, pre_transform, property_map),
+        test=test,
     )
 
 

@@ -1,6 +1,6 @@
 from .datasets import (
     ASEToGraphDataset,
-    FittingData,
+    DatasetCollection,
     GraphDataset,
     file_dataset,
     load_atoms_dataset,
@@ -12,6 +12,6 @@ __all__ = [
     "file_dataset",
     "GraphDataset",
     "ASEToGraphDataset",
-    "FittingData",
+    "DatasetCollection",
     "GraphDataLoader",
 ]
