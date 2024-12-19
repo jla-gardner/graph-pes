@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Final, Literal, Union
+from typing import Any, Literal, Union
 
 import yaml
 from pytorch_lightning.loggers import CSVLogger, Logger
@@ -10,8 +10,6 @@ from pytorch_lightning.loggers import CSVLogger, Logger
 from graph_pes.config.shared import TorchConfig
 from graph_pes.data import GraphDataset
 from graph_pes.training.callbacks import WandbLogger
-
-DEFAULT_LOADER_KWARGS: Final[dict] = dict(batch_size=2, num_workers=0)
 
 
 @dataclass
@@ -100,4 +98,5 @@ class TestingConfig:
     def defaults(cls) -> dict:
         return {
             "torch": {"float32_matmul_precision": "high", "dtype": "float32"},
+            "loader_kwargs": {"batch_size": 2, "num_workers": 0},
         }

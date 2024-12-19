@@ -5,7 +5,7 @@ import os
 import pytorch_lightning as pl
 
 from graph_pes.config.shared import instantiate_config_from_dict
-from graph_pes.config.testing import DEFAULT_LOADER_KWARGS, TestingConfig
+from graph_pes.config.testing import TestingConfig
 from graph_pes.models import load_model
 from graph_pes.scripts.utils import (
     configure_general_options,
@@ -40,9 +40,8 @@ def test(config: TestingConfig) -> None:
         inference_mode=False,
     )
 
-    loader_kwargs = {**DEFAULT_LOADER_KWARGS, **config.loader_kwargs}
     test_with_lightning(
-        trainer, model, datasets, loader_kwargs, user_eval_metrics=[]
+        trainer, model, datasets, config.loader_kwargs, user_eval_metrics=[]
     )
 
 
