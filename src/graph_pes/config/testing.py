@@ -2,33 +2,51 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal, Union
+from typing import Any, Final, Literal, Union
 
 import yaml
 from pytorch_lightning.loggers import CSVLogger, Logger
 
 from graph_pes.data import GraphDataset
-from graph_pes.scripts.test import DEFAULT_LOADER_KWARGS
 from graph_pes.training.callbacks import WandbLogger
+
+DEFAULT_LOADER_KWARGS: Final[dict] = dict(batch_size=2, num_workers=0)
 
 
 @dataclass
 class TestingConfig:
+    """Configuration for testing a GraphPES model."""
+
     model_path: str
     """The path to the ``model.pt`` file."""
 
-    data: Union[dict[str, GraphDataset], GraphDataset]  # noqa: UP007
+    data: Union[GraphDataset, dict[str, GraphDataset]]  # noqa: UP007
     """
-    A mapping from names to datasets.
+    Either:
 
-    Results will be logged as ``"test/<name>/<metric>"``. This allows
-    for testing on multiple datasets at once.
+    - a single :class:`~graph_pes.data.GraphDataset`. Results will be logged as
+      ``"test/<metric>"``.
+    - a mapping from names to datasets. Results will be logged as
+      ``"test/<name>/<metric>"``, allowing for testing on multiple datasets.
     """
 
     loader_kwargs: dict[str, Any] = field(
         default_factory=lambda: DEFAULT_LOADER_KWARGS
     )
-    """Keyword arguments for the data loader."""
+    """
+    Keyword arguments to pass to the 
+    :class:`~graph_pes.data.loader.GraphDataLoader`.
+
+    Defaults to:
+
+    .. code-block:: yaml
+
+        loader_kwargs:
+            batch_size: 2
+            num_workers: 0
+    
+    You should tune this to make testing faster.
+    """
 
     logger: Union[Literal["auto", "csv"], dict[str, Any]] = "auto"  # noqa: UP007
     """
@@ -40,8 +58,9 @@ class TestingConfig:
 
     If ``"csv"``, we will use a CSVLogger.
 
-    If a dictionary, we will instantiate a new :class:`WandbLogger`
-    with the provided arguments.
+    If a dictionary, we will instantiate a new 
+    :class:`~graph_pes.training.callbacks.WandbLogger` with the provided 
+    arguments.
     """
 
     accelerator: str = "auto"

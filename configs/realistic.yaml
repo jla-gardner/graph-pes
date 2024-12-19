@@ -24,7 +24,8 @@ data:
         id: C-GAP-20U
         cutoff: =/misc/CUTOFF
         n_train: 5000
-        n_valid: -1
+        n_valid: 100
+        n_test: 500
         split: random
 
 loss:

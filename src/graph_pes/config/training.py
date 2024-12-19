@@ -19,9 +19,6 @@ from graph_pes.training.callbacks import VerboseSWACallback
 from graph_pes.training.loss import Loss, TotalLoss, WeightedLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
 
-DEFAULT_LOADER_KWARGS = {"batch_size": 16}
-DEFAULT_TRAINER_KWARGS = {"max_epochs": 100, "accelerator": "auto"}
-
 
 @dataclass
 class FittingOptions:
@@ -109,9 +106,7 @@ class SWAConfig:
 class FittingConfig(FittingOptions):
     """Configuration for the fitting process."""
 
-    trainer_kwargs: Dict[str, Any] = field(
-        default_factory=lambda: DEFAULT_TRAINER_KWARGS
-    )
+    trainer_kwargs: Dict[str, Any]
     """
     Key-word arguments to pass to the `PyTorch Lightning Trainer 
     <https://lightning.ai/docs/pytorch/stable/common/trainer.html>`__ .
@@ -205,7 +200,7 @@ class FittingConfig(FittingOptions):
 
         .. _stochastic weight averaging:
 
-        .. autoclass:: graph_pes.config.config.SWAConfig()
+        .. autoclass:: graph_pes.config.training.SWAConfig()
             :members:
     """
 
@@ -243,7 +238,7 @@ class GeneralConfig:
 
     .. dropdown:: ``torch`` options
 
-        .. autoclass:: graph_pes.config.config.TorchConfig()
+        .. autoclass:: graph_pes.config.shared.TorchConfig()
             :members:
     """
 
@@ -299,7 +294,7 @@ class TrainingConfig:
 
     data: DatasetCollection
     """
-    The data to train on.
+    The data to train (and optionally test) on.
 
     .. dropdown:: ``data`` options
     
@@ -347,9 +342,18 @@ class TrainingConfig:
                         path: validation_data.xyz
                         cutoff: 5.0
         
-        .. autoclass:: graph_pes.data.DatasetCollection()
-            :show-inheritance:
-            :members:
+        Inlcuding a "test" key will also include a test dataset in the
+        training run.
+
+        .. code-block:: yaml
+
+            data:
+                train: ...
+                valid: ...
+                test:
+                    +file_dataset:
+                        path: test_data.xyz
+                        cutoff: 5.0
     """
 
     loss: Union[Loss, WeightedLoss, TotalLoss, List[Union[WeightedLoss, Loss]]]
@@ -407,7 +411,7 @@ class TrainingConfig:
 
     .. dropdown:: ``fitting`` options
 
-        .. autoclass:: graph_pes.config.config.FittingConfig()
+        .. autoclass:: graph_pes.config.training.FittingConfig()
             :members:
             :inherited-members:
     """
@@ -418,7 +422,7 @@ class TrainingConfig:
 
     .. dropdown:: ``general`` options
 
-        .. autoclass:: graph_pes.config.config.GeneralConfig()
+        .. autoclass:: graph_pes.config.training.GeneralConfig()
             :members:
     """
 

@@ -1,19 +1,16 @@
 from __future__ import annotations
 
 import os
-from typing import Final
 
 import pytorch_lightning as pl
 
 from graph_pes.config.shared import instantiate_config_from_dict
-from graph_pes.config.testing import TestingConfig
+from graph_pes.config.testing import DEFAULT_LOADER_KWARGS, TestingConfig
 from graph_pes.models import load_model
 from graph_pes.scripts.utils import extract_config_dict_from_command_line
 from graph_pes.training.tasks import test_with_lightning
 from graph_pes.utils import distributed
 from graph_pes.utils.logger import logger
-
-DEFAULT_LOADER_KWARGS: Final[dict] = dict(batch_size=2, num_workers=0)
 
 
 def test(config: TestingConfig) -> None:

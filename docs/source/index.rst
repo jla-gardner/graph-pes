@@ -12,6 +12,7 @@
 
     cli/graph-pes-train
     cli/graph-pes-resume
+    cli/graph-pes-test
     cli/graph-pes-id
 
 .. toctree::
