@@ -7,7 +7,10 @@ import pytorch_lightning as pl
 from graph_pes.config.shared import instantiate_config_from_dict
 from graph_pes.config.testing import DEFAULT_LOADER_KWARGS, TestingConfig
 from graph_pes.models import load_model
-from graph_pes.scripts.utils import extract_config_dict_from_command_line
+from graph_pes.scripts.utils import (
+    configure_general_options,
+    extract_config_dict_from_command_line,
+)
 from graph_pes.training.tasks import test_with_lightning
 from graph_pes.utils import distributed
 from graph_pes.utils.logger import logger
@@ -15,6 +18,8 @@ from graph_pes.utils.logger import logger
 
 def test(config: TestingConfig) -> None:
     logger.info(f"Testing model at {config.model_path}...")
+
+    configure_general_options(config.torch, seed=0)
 
     model = load_model(config.model_path)
     logger.info("Loaded model.")

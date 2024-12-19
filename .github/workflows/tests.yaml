@@ -65,6 +65,12 @@ jobs:
               general/root_dir=results \
               general/run_id=test-run
 
+      - name: Run a very small testing run
+        run: |
+          graph-pes-test model_path=results/test-run/model.pt \
+              data/+file_dataset/path=tests/helpers/test.xyz \
+              data/+file_dataset/cutoff=5.0
+
   docs:
     runs-on: ubuntu-latest
     steps:

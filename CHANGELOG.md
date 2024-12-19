@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Add support for ASE `.db` files for backing datasets.
 
+Simplified the logic for distributed training set ups.
+
+Added the `graph-pes-test` command.
+
 ## [0.0.15] - 2024-12-13
 
 ### Changed

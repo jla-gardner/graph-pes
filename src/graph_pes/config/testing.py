@@ -7,6 +7,7 @@ from typing import Any, Final, Literal, Union
 import yaml
 from pytorch_lightning.loggers import CSVLogger, Logger
 
+from graph_pes.config.shared import TorchConfig
 from graph_pes.data import GraphDataset
 from graph_pes.training.callbacks import WandbLogger
 
@@ -65,6 +66,9 @@ class TestingConfig:
 
     accelerator: str = "auto"
     """The accelerator to use for testing."""
+
+    torch: TorchConfig = TorchConfig("float32", "high")
+    """The torch configuration to use for testing."""
 
     def get_logger(self) -> Logger:
         root_dir = Path(self.model_path).parent
