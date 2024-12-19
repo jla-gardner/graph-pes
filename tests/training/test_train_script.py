@@ -113,7 +113,11 @@ def test_wandb_logging(tmp_path: Path, caplog):
     # configure wandb to not actually log anything
     wandb.init = lambda *args, **kwargs: None
 
-    logger = WandbLogger(tmp_path / "logging-name", project="test-project")
+    logger = WandbLogger(
+        tmp_path / "logging-name",
+        project="test-project",
+        log_epoch=False,
+    )
     assert logger._id == "logging-name"
     assert logger.save_dir == str(tmp_path)
     assert logger._project == "test-project"
