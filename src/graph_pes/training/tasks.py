@@ -280,10 +280,6 @@ class TrainingTask(pl.LightningModule):
         super().on_validation_model_eval(*args, **kwargs)
         torch.set_grad_enabled(True)
 
-    def on_test_model_eval(self, *args, **kwargs):
-        super().on_test_model_eval(*args, **kwargs)
-        torch.set_grad_enabled(True)
-
     @classmethod
     def load_best_weights(
         cls,

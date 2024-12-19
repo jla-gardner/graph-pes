@@ -89,8 +89,9 @@ data:
     +graph_pes.data.load_atoms_dataset:
         id: {helpers.CU_STRUCTURES_FILE}
         cutoff: 3.0
-        n_train: 8
+        n_train: 6
         n_valid: 2
+        n_test: 2
 fitting:
     trainer_kwargs:
         max_epochs: 1

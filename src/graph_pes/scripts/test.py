@@ -54,14 +54,7 @@ def main():
     config_dict = extract_config_dict_from_command_line(
         "Test a GraphPES model using PyTorch Lightning."
     )
-    try:
-        _, config = instantiate_config_from_dict(config_dict, TestingConfig)
-    except Exception as e:
-        raise ValueError(
-            "Your configuration file could not be successfully parsed. "
-            "Please check that it is formatted correctly. For examples, "
-            "please see https://jla-gardner.github.io/graph-pes/cli/graph-pes-test.html"
-        ) from e
+    _, config = instantiate_config_from_dict(config_dict, TestingConfig)
     test(config)
 
 

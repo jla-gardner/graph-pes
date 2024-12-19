@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, TypeVar
+from typing import Literal, Protocol, TypeVar
 
 import dacite
 import data2objects
@@ -22,9 +22,17 @@ def _nice_dict_repr(d: dict) -> str:
     return _print_dict(d, 0)
 
 
+class HasDefaults(Protocol):
+    @classmethod
+    def defaults(cls) -> dict: ...
+
+
+HD = TypeVar("HD", bound=HasDefaults)
+
+
 def instantiate_config_from_dict(
-    config_dict: dict, config_class: type[T]
-) -> tuple[dict, T]:
+    config_dict: dict, config_class: type[HD]
+) -> tuple[dict, HD]:
     """Instantiate a config object from a dictionary."""
 
     final_dict: dict = data2objects.fill_referenced_parts(config_dict)  # type: ignore

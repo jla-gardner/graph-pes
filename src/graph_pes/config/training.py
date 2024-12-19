@@ -517,6 +517,6 @@ class TrainingConfig:
         )
 
     @classmethod
-    def defaults(cls) -> Dict[str, Any]:
+    def defaults(cls) -> dict:
         with open(Path(__file__).parent / "training-defaults.yaml") as f:
             return yaml.safe_load(f)

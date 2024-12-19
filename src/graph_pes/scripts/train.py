@@ -74,16 +74,9 @@ def train_from_config(config_data: dict):
 
     logger.debug("Parsing config...")
 
-    try:
-        config_data, config = instantiate_config_from_dict(
-            config_data, TrainingConfig
-        )
-    except Exception as e:
-        raise ValueError(
-            "Your configuration file could not be successfully parsed. "
-            "Please check that it is formatted correctly. For examples, "
-            "please see https://jla-gardner.github.io/graph-pes/cli/graph-pes-train.html"
-        ) from e
+    config_data, config = instantiate_config_from_dict(
+        config_data, TrainingConfig
+    )
     logger.info("Successfully parsed config.")
 
     # generate / look up the output directory for this training run

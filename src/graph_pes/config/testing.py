@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final, Literal, Union
 
@@ -31,9 +31,7 @@ class TestingConfig:
       ``"test/<name>/<metric>"``, allowing for testing on multiple datasets.
     """
 
-    loader_kwargs: dict[str, Any] = field(
-        default_factory=lambda: DEFAULT_LOADER_KWARGS
-    )
+    loader_kwargs: dict[str, Any]
     """
     Keyword arguments to pass to the 
     :class:`~graph_pes.data.loader.GraphDataLoader`.
@@ -48,6 +46,9 @@ class TestingConfig:
     
     You should tune this to make testing faster.
     """
+
+    torch: TorchConfig
+    """The torch configuration to use for testing."""
 
     logger: Union[Literal["auto", "csv"], dict[str, Any]] = "auto"  # noqa: UP007
     """
@@ -66,9 +67,6 @@ class TestingConfig:
 
     accelerator: str = "auto"
     """The accelerator to use for testing."""
-
-    torch: TorchConfig = TorchConfig("float32", "high")
-    """The torch configuration to use for testing."""
 
     def get_logger(self) -> Logger:
         root_dir = Path(self.model_path).parent
@@ -97,3 +95,9 @@ class TestingConfig:
             return CSVLogger(save_dir=root_dir, name="")
 
         return WandbLogger(output_dir=root_dir, log_epoch=False, **logger_data)
+
+    @classmethod
+    def defaults(cls) -> dict:
+        return {
+            "torch": {"float32_matmul_precision": "high", "dtype": "float32"},
+        }
