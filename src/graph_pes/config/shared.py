@@ -6,6 +6,8 @@ from typing import Literal, Protocol, TypeVar
 import dacite
 import data2objects
 
+from graph_pes.utils.misc import nested_merge
+
 T = TypeVar("T")
 
 
@@ -35,6 +37,7 @@ def instantiate_config_from_dict(
 ) -> tuple[dict, HD]:
     """Instantiate a config object from a dictionary."""
 
+    config_dict = nested_merge(config_class.defaults(), config_dict)
     final_dict: dict = data2objects.fill_referenced_parts(config_dict)  # type: ignore
 
     import graph_pes

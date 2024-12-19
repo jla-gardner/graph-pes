@@ -34,7 +34,7 @@ from graph_pes.training.tasks import test_with_lightning, train_with_lightning
 from graph_pes.training.utils import VALIDATION_LOSS_KEY
 from graph_pes.utils import distributed
 from graph_pes.utils.logger import log_to_file, logger, set_log_level
-from graph_pes.utils.misc import nested_merge, random_dir
+from graph_pes.utils.misc import random_dir
 
 
 def train_from_config(config_data: dict):
@@ -284,11 +284,9 @@ def main():
     os.environ["LOAD_ATOMS_VERBOSE"] = os.getenv("LOAD_ATOMS_VERBOSE", "1")
 
     # build up the config dict from available sources:
-    defaults = TrainingConfig.defaults()
-    cli_config = extract_config_dict_from_command_line(
+    config_dict = extract_config_dict_from_command_line(
         "Train a GraphPES model using PyTorch Lightning."
     )
-    config_dict = nested_merge(defaults, cli_config)
     train_from_config(config_dict)
 
 
