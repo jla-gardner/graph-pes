@@ -181,6 +181,9 @@ Output for this training run can be found at:
         else:
             test_datasets["test"] = config.data.test
 
+    if isinstance(trainer.logger, WandbLogger):
+        trainer.logger._log_epoch = False
+
     tester = pl.Trainer(
         logger=trainer.logger,
         accelerator=trainer.accelerator,
@@ -206,7 +209,9 @@ def trainer_from_config(
     # set up a logger on every rank - PTL handles this gracefully so that
     # e.g. we don't spin up >1 wandb experiment
     if config.wandb is not None:
-        lightning_logger = WandbLogger(output_dir, **config.wandb)
+        lightning_logger = WandbLogger(
+            output_dir, log_epoch=True, **config.wandb
+        )
     else:
         lightning_logger = CSVLogger(save_dir=output_dir, name="")
     logger.debug(f"Logging using {lightning_logger}")

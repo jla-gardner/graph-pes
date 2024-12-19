@@ -52,7 +52,11 @@ class TestingConfig:
         if self.logger == "csv":
             return CSVLogger(save_dir=root_dir, name="")
         elif isinstance(self.logger, dict):
-            return WandbLogger(output_dir=root_dir, **self.logger)
+            return WandbLogger(
+                output_dir=root_dir,
+                log_epoch=False,
+                **self.logger,
+            )
 
         if not self.logger == "auto":
             raise ValueError(f"Invalid logger: {self.logger}")
@@ -69,4 +73,4 @@ class TestingConfig:
         if logger_data is None:
             return CSVLogger(save_dir=root_dir, name="")
 
-        return WandbLogger(output_dir=root_dir, **logger_data)
+        return WandbLogger(output_dir=root_dir, log_epoch=False, **logger_data)

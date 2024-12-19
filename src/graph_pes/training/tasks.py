@@ -373,6 +373,7 @@ class TestingTask(pl.LightningModule):
                 on_epoch=True,
                 sync_dist=True,
                 batch_size=number_of_structures(structure),
+                add_dataloader_idx=False,
             )
 
         return torch.tensor(0.0, requires_grad=True)

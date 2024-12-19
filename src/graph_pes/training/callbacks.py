@@ -4,7 +4,7 @@ import copy
 import time
 from abc import ABC
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, Literal, Mapping, cast
 
 import pytorch_lightning as pl
 import torch
@@ -455,13 +455,21 @@ class LoggedProgressBar(ProgressBar):
 class WandbLogger(PTLWandbLogger):
     """A subclass of WandbLogger that automatically sets the id and save_dir."""
 
-    def __init__(self, output_dir: Path, **kwargs):
+    def __init__(self, output_dir: Path, log_epoch: bool, **kwargs):
         if "id" not in kwargs:
             kwargs["id"] = output_dir.name
         if "save_dir" not in kwargs:
             kwargs["save_dir"] = str(output_dir.parent)
         super().__init__(**kwargs)
         self._kwargs = kwargs
+        self._log_epoch = log_epoch
+
+    def log_metrics(
+        self, metrics: Mapping[str, float], step: int | None = None
+    ):
+        if not self._log_epoch:
+            metrics = {k: v for k, v in metrics.items() if k != "epoch"}
+        return super().log_metrics(metrics, step)
 
     def __repr__(self):
         return uniform_repr(self.__class__.__name__, **self._kwargs)
