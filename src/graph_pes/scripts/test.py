@@ -1,89 +1,24 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Final, Literal, Union
+from typing import Final
 
 import pytorch_lightning as pl
-import yaml
-from pytorch_lightning.loggers import CSVLogger, Logger
 
-from graph_pes.config.utils import instantiate_config_from_dict
-from graph_pes.data import GraphDataset
+from graph_pes.config.shared import instantiate_config_from_dict
+from graph_pes.config.testing import TestingConfig
 from graph_pes.data.loader import GraphDataLoader
-from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models import load_model
 from graph_pes.scripts.utils import extract_config_dict_from_command_line
-from graph_pes.training.task import PESLearningTask
-from graph_pes.training.trainer import WandbLogger
+from graph_pes.training.loss import PerAtomEnergyLoss, PropertyLoss
+from graph_pes.training.tasks import test_with_lightning
 from graph_pes.utils import distributed
 from graph_pes.utils.logger import logger
 
 DEFAULT_LOADER_KWARGS: Final[dict] = dict(batch_size=2, num_workers=0)
 
 
-@dataclass
-class TestConfig:
-    model_path: str
-    """The path to the ``model.pt`` file."""
-
-    data: Union[dict[str, GraphDataset], GraphDataset]  # noqa: UP007
-    """
-    A mapping from names to datasets.
-
-    Results will be logged as ``"test/<name>/<metric>"``. This allows
-    for testing on multiple datasets at once.
-    """
-
-    loader_kwargs: dict[str, Any] = field(
-        default_factory=lambda: DEFAULT_LOADER_KWARGS
-    )
-    """Keyword arguments for the data loader."""
-
-    logger: Union[Literal["auto", "csv"], dict[str, Any]] = "auto"  # noqa: UP007
-    """
-    The logger to use for logging the test metrics.
-
-    If ``"auto"``, we will attempt to find the training config
-    from ``<model_path>/../train-config.yaml``, and use the logger
-    from that config.
-
-    If ``"csv"``, we will use a CSVLogger.
-
-    If a dictionary, we will instantiate a new :class:`WandbLogger`
-    with the provided arguments.
-    """
-
-    accelerator: str = "auto"
-    """The accelerator to use for testing."""
-
-    def get_logger(self) -> Logger:
-        root_dir = Path(self.model_path).parent
-        if self.logger == "csv":
-            return CSVLogger(save_dir=root_dir, name="")
-        elif isinstance(self.logger, dict):
-            return WandbLogger(output_dir=root_dir, **self.logger)
-
-        if not self.logger == "auto":
-            raise ValueError(f"Invalid logger: {self.logger}")
-
-        train_config_path = root_dir / "train-config.yaml"
-        if not train_config_path.exists():
-            raise ValueError(
-                f"Could not find training config at {train_config_path}. "
-                "Please specify a logger explicitly."
-            )
-        with open(train_config_path) as f:
-            logger_data = yaml.safe_load(f).get("wandb", None)
-
-        if logger_data is None:
-            return CSVLogger(save_dir=root_dir, name="")
-
-        return WandbLogger(output_dir=root_dir, **logger_data)
-
-
-def test(config: TestConfig) -> None:
+def test(config: TestingConfig) -> None:
     logger.info(f"Testing model at {config.model_path}...")
 
     model = load_model(config.model_path)
@@ -113,19 +48,27 @@ def test(config: TestConfig) -> None:
         accelerator=config.accelerator,
         inference_mode=False,
     )
-    test_model(model, dataloaders, trainer)
 
-
-def test_model(
-    model: GraphPESModel,
-    data: dict[str, GraphDataLoader],
-    trainer: pl.Trainer,
-) -> None:
-    assert trainer.test_loop.inference_mode is False
-    testing_task = PESLearningTask.for_testing(
-        model, test_names=list(data.keys())
+    all_properties = set.union(
+        *[set(dataset.properties) for dataset in datasets.values()]
     )
-    trainer.test(testing_task, list(data.values()))
+    eval_metrics = []
+    if "energy" in all_properties:
+        eval_metrics.append(PerAtomEnergyLoss("RMSE"))
+        eval_metrics.append(PerAtomEnergyLoss("MAE"))
+        eval_metrics.append(PropertyLoss("energy", "RMSE"))
+        eval_metrics.append(PropertyLoss("energy", "MAE"))
+    if "forces" in all_properties:
+        eval_metrics.append(PropertyLoss("forces", "RMSE"))
+        # Force MAE is not invariant wrt. rotations, so we don't log it
+        # see "How to validate machine-learned interatomic potentials"
+        #      -> https://doi.org/10.1063/5.0139611
+    if "stress" in all_properties:
+        eval_metrics.append(PropertyLoss("stress", "RMSE"))
+    if "virial" in all_properties:
+        eval_metrics.append(PropertyLoss("virial", "RMSE"))
+
+    test_with_lightning(trainer, model, dataloaders, eval_metrics)
 
 
 def main():
@@ -137,7 +80,7 @@ def main():
         "Test a GraphPES model using PyTorch Lightning."
     )
     try:
-        _, config = instantiate_config_from_dict(config_dict, TestConfig)
+        _, config = instantiate_config_from_dict(config_dict, TestingConfig)
     except Exception as e:
         raise ValueError(
             "Your configuration file could not be successfully parsed. "

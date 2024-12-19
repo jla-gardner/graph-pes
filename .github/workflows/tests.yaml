@@ -61,7 +61,9 @@ jobs:
               data/+load_atoms_dataset/n_train=10 \
               data/+load_atoms_dataset/n_valid=10 \
               fitting/trainer_kwargs/max_epochs=5 \
-              wandb=null
+              wandb=null \
+              general/root_dir=results \
+              general/run_id=test-run
 
   docs:
     runs-on: ubuntu-latest

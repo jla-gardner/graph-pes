@@ -4,17 +4,23 @@
 #         we are targeting (3.8+)
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, List, Literal, Union
 
+import yaml
 from pytorch_lightning import Callback
 
+from graph_pes.config.shared import TorchConfig
 from graph_pes.data.datasets import FittingData
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.addition import AdditionModel
+from graph_pes.training.callbacks import VerboseSWACallback
 from graph_pes.training.loss import Loss, TotalLoss, WeightedLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
-from graph_pes.training.util import VerboseSWACallback
+
+DEFAULT_LOADER_KWARGS = {"batch_size": 16}
+DEFAULT_TRAINER_KWARGS = {"max_epochs": 100, "accelerator": "auto"}
 
 
 @dataclass
@@ -103,7 +109,49 @@ class SWAConfig:
 class FittingConfig(FittingOptions):
     """Configuration for the fitting process."""
 
-    optimizer: Union[Optimizer, None]
+    trainer_kwargs: Dict[str, Any] = field(
+        default_factory=lambda: DEFAULT_TRAINER_KWARGS
+    )
+    """
+    Key-word arguments to pass to the `PyTorch Lightning Trainer 
+    <https://lightning.ai/docs/pytorch/stable/common/trainer.html>`__ .
+    
+    Example
+    -------
+
+    The defaults:
+
+    .. code-block:: yaml
+        
+        fitting:
+            trainer_kwargs:
+                max_epochs: 100
+                accelerator: auto
+    
+    Configure gradient clipping (see `PyTorch Lightning documentation 
+    <https://lightning.ai/docs/pytorch/stable/advanced/training_tricks.html#gradient-clipping>`__
+    for details):
+    
+    .. code-block:: yaml
+    
+        fitting:
+            trainer_kwargs:
+                gradient_clip_val: 1.0
+                gradient_clip_algorithm: "norm"
+                # ... and any other arguments
+    
+    Validate several times per epoch for large training datasets:
+
+    .. code-block:: yaml
+    
+        fitting:
+            trainer_kwargs:
+                # validate when we are 10%, 20%, 30% etc. 
+                # through the training dataset
+                val_check_interval: 0.1  
+    """
+
+    optimizer: Optimizer = Optimizer(name="AdamW", lr=1e-3, amsgrad=False)
     """
     Specification for the optimizer. Point to something that instantiates a
     :class:`~graph_pes.training.opt.Optimizer`.
@@ -130,7 +178,7 @@ class FittingConfig(FittingOptions):
             optimizer: +my.module.MagicOptimizer()
     """
 
-    scheduler: Union[LRScheduler, None]
+    scheduler: Union[LRScheduler, None] = None
     """
     .. _learning rate scheduler:
     
@@ -149,7 +197,7 @@ class FittingConfig(FittingOptions):
                     patience: 10
     """
 
-    swa: Union[SWAConfig, None]
+    swa: Union[SWAConfig, None] = None
     """
     Optional, defaults to ``None``.
 
@@ -161,44 +209,7 @@ class FittingConfig(FittingOptions):
             :members:
     """
 
-    trainer_kwargs: Dict[str, Any]
-    """
-    Key-word arguments to pass to the `PyTorch Lightning Trainer 
-    <https://lightning.ai/docs/pytorch/stable/common/trainer.html>`__ .
-    
-    Example
-    -------
-    .. code-block:: yaml
-        
-        fitting:
-            trainer_kwargs:
-                max_epochs: 10000
-                accelerator: gpu
-                accumulate_grad_batches: 4
-    
-    Configure gradient clipping (see `PyTorch Lightning documentation 
-    <https://lightning.ai/docs/pytorch/stable/advanced/training_tricks.html#gradient-clipping>`__
-    for details):
-    
-    .. code-block:: yaml
-    
-        fitting:
-            trainer_kwargs:
-                gradient_clip_val: 1.0
-                gradient_clip_algorithm: "norm"
-    
-    Validate several times per epoch for large training datasets:
-
-    .. code-block:: yaml
-    
-        fitting:
-            trainer_kwargs:
-                # validate when we are 10%, 20%, 30% etc. 
-                # through the training dataset
-                val_check_interval: 0.1  
-    """
-
-    callbacks: List[Callback]
+    callbacks: List[Callback] = field(default_factory=list)
     """
     List of PyTorch Lightning :class:`~pytorch_lightning.Callback` or
     :class:`~graph_pes.training.callbacks.GraphPESCallback` instances.
@@ -226,12 +237,6 @@ class GeneralConfig:
     run_id: Union[str, None]
     """A unique identifier for this run."""
 
-    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-    """The logging level for the logger."""
-
-    progress: Literal["rich", "logged"]
-    """The progress bar style to use."""
-
     torch: TorchConfig
     """
     Configuration for PyTorch.
@@ -242,30 +247,15 @@ class GeneralConfig:
             :members:
     """
 
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
+    """The logging level for the logger."""
 
-@dataclass
-class TorchConfig:
-    """Configuration for PyTorch."""
-
-    dtype: Literal["float16", "float32", "float64"]
-    """
-    The dtype to use for all model parameters and graph properties.
-    Defaults is ``"float32"``.
-    """
-
-    float32_matmul_precision: Literal["highest", "high", "medium"]
-    """
-    The precision to use internally for float32 matrix multiplications. Refer to the
-    `PyTorch documentation <https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html>`__
-    for details.
-
-    Defaults to ``"high"`` to favour accelerated learning over numerical
-    exactness for matmuls.
-    """  # noqa: E501
+    progress: Literal["rich", "logged"] = "rich"
+    """The progress bar style to use."""
 
 
 @dataclass
-class Config:
+class TrainingConfig:
     """
     A schema for a configuration file to train a
     :class:`~graph_pes.GraphPESModel`.
@@ -521,3 +511,8 @@ class Config:
             "WeightedLoss instances from the loss config, but got something "
             f"else: {self.loss}"
         )
+
+    @classmethod
+    def defaults(cls) -> Dict[str, Any]:
+        with open(Path(__file__).parent / "training-defaults.yaml") as f:
+            return yaml.safe_load(f)

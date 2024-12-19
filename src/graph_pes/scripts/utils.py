@@ -2,9 +2,14 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import os
+import random
 
+import numpy as np
+import torch
 import yaml
 
+from graph_pes.config.shared import TorchConfig
 from graph_pes.utils.logger import logger
 from graph_pes.utils.misc import build_single_nested_dict, nested_merge_all
 
@@ -60,3 +65,32 @@ def get_data_from_cli_arg(arg: str) -> dict:
         f"Invalid argument: {arg}. "
         "Expected a YAML file or an override in the form key=value"
     )
+
+
+def configure_general_options(torch_config: TorchConfig, seed: int):
+    prec = torch_config.float32_matmul_precision
+    torch.set_float32_matmul_precision(prec)
+    logger.debug(f"Using {prec} precision for float32 matrix multiplications.")
+
+    ftype = torch_config.dtype
+    logger.debug(f"Using {ftype} as default dtype.")
+    torch.set_default_dtype(
+        {
+            "float16": torch.float16,
+            "float32": torch.float32,
+            "float64": torch.float64,
+        }[ftype]
+    )
+    # a nice setting for e3nn components that get scripted upon instantiation
+    # - DYNAMIC refers to the fact that they will expect different input sizes
+    #   at every iteration (graphs are not all the same size)
+    # - 4 is the number of times we attempt to recompile before giving up
+    torch.jit.set_fusion_strategy([("DYNAMIC", 4)])
+
+    # a non-verbose version of pl.seed_everything
+    logger.debug(f"Using seed {seed} for reproducibility.")
+    os.environ["PL_GLOBAL_SEED"] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    os.environ["PL_SEED_WORKERS"] = "0"

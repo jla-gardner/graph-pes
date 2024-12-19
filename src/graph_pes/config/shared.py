@@ -1,11 +1,25 @@
 from __future__ import annotations
 
-from typing import TypeVar
+from dataclasses import dataclass
+from typing import Literal, TypeVar
 
 import dacite
 import data2objects
 
 T = TypeVar("T")
+
+
+def _nice_dict_repr(d: dict) -> str:
+    def _print_dict(d: dict, indent: int = 0) -> str:
+        nice = {
+            k: v
+            if not isinstance(v, dict)
+            else "\n" + _print_dict(v, indent + 1)
+            for k, v in d.items()
+        }
+        return "\n".join([f"{'  ' * indent}{k}: {v}" for k, v in nice.items()])
+
+    return _print_dict(d, 0)
 
 
 def instantiate_config_from_dict(
@@ -48,5 +62,26 @@ def instantiate_config_from_dict(
     except Exception as e:
         raise ValueError(
             f"Failed to instantiate a config object of type {config_class} "
-            "from the following object-replaced dictionary:\n{final_dict}"
+            f"from the following dictionary:\n{_nice_dict_repr(final_dict)}"
         ) from e
+
+
+@dataclass
+class TorchConfig:
+    """Configuration for PyTorch."""
+
+    dtype: Literal["float16", "float32", "float64"]
+    """
+    The dtype to use for all model parameters and graph properties.
+    Defaults is ``"float32"``.
+    """
+
+    float32_matmul_precision: Literal["highest", "high", "medium"]
+    """
+    The precision to use internally for float32 matrix multiplications. Refer to the
+    `PyTorch documentation <https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html>`__
+    for details.
+
+    Defaults to ``"high"`` to favour accelerated learning over numerical
+    exactness for matmuls.
+    """  # noqa: E501

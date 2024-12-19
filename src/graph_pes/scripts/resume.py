@@ -5,11 +5,11 @@ from pathlib import Path
 
 import yaml
 
-from graph_pes.config.config import Config
-from graph_pes.config.utils import instantiate_config_from_dict
+from graph_pes.config.shared import instantiate_config_from_dict
+from graph_pes.config.training import TrainingConfig
 from graph_pes.data.loader import GraphDataLoader
-from graph_pes.training.task import PESLearningTask
-from graph_pes.training.trainer import trainer_from_config
+from graph_pes.scripts.train import trainer_from_config
+from graph_pes.training.tasks import TrainingTask
 from graph_pes.utils.logger import logger
 
 
@@ -53,8 +53,10 @@ def main():
         config_data = yaml.safe_load(f)
 
     # load the checkpoint
-    config_data, config = instantiate_config_from_dict(config_data, Config)
-    task = PESLearningTask.load_from_checkpoint(
+    config_data, config = instantiate_config_from_dict(
+        config_data, TrainingConfig
+    )
+    task = TrainingTask.load_from_checkpoint(
         checkpoint_path,
         model=config.get_model(),
         loss=config.get_loss(),

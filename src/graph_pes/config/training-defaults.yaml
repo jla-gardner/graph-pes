@@ -12,8 +12,6 @@ fitting:
     pre_fit_model: true
     max_n_pre_fit: 5_000
 
-    optimizer: null # intentional : defaults to AdamW(lr=1e-3)
-
     # train for 100 epochs on the best device available
     trainer_kwargs:
         max_epochs: 100

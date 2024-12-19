@@ -5,11 +5,10 @@ from pathlib import Path
 
 import yaml
 
-from graph_pes.config import get_default_config_values
-from graph_pes.config.config import SWAConfig
+from graph_pes.config.training import SWAConfig, TrainingConfig
 from graph_pes.scripts.train import train_from_config
 from graph_pes.scripts.utils import extract_config_dict_from_command_line
-from graph_pes.training.trainer import WandbLogger
+from graph_pes.training.callbacks import WandbLogger
 from graph_pes.utils.misc import nested_merge
 
 from .. import helpers
@@ -24,7 +23,10 @@ graph-pes-train {config_path} \
 """
     sys.argv = command.split()
 
-    config_data = extract_config_dict_from_command_line("")
+    config_data = nested_merge(
+        TrainingConfig.defaults(),
+        extract_config_dict_from_command_line(""),
+    )
     assert config_data["fitting"]["loader_kwargs"]["batch_size"] == 32
     assert config_data["data"]["+load_atoms_dataset"]["n_train"] == 10
 
@@ -100,7 +102,7 @@ fitting:
         persistent_workers: false
 """
     return nested_merge(
-        get_default_config_values(),
+        TrainingConfig.defaults(),
         yaml.safe_load(config_str),
     )
 

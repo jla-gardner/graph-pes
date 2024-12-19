@@ -11,7 +11,11 @@ from graph_pes.atomic_graph import (
     AtomicGraph,
     PropertyKey,
     number_of_structures,
+    to_batch,
 )
+from graph_pes.config.training import FittingOptions
+from graph_pes.data.datasets import FittingData
+from graph_pes.data.loader import GraphDataLoader
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.training.loss import (
     MAE,
@@ -22,11 +26,82 @@ from graph_pes.training.loss import (
     TotalLoss,
 )
 from graph_pes.training.opt import LRScheduler, Optimizer
-from graph_pes.training.util import VALIDATION_LOSS_KEY
+from graph_pes.training.utils import (
+    VALIDATION_LOSS_KEY,
+    log_model_info,
+    sanity_check,
+)
 from graph_pes.utils.logger import logger
+from graph_pes.utils.sampling import SequenceSampler
 
 
-class PESLearningTask(pl.LightningModule):
+def train_with_lightning(
+    trainer: pl.Trainer,
+    model: GraphPESModel,
+    data: FittingData,
+    loss: TotalLoss,
+    fit_config: FittingOptions,
+    optimizer: Optimizer,
+    scheduler: LRScheduler | None = None,
+):
+    # - prepare the data
+    if trainer.global_rank == 0:
+        logger.info("Preparing data")
+        data.train.prepare_data()
+        data.valid.prepare_data()
+    trainer.strategy.barrier("data prepare")
+
+    logger.info("Setting up datasets")
+    data.train.setup()
+    data.valid.setup()
+
+    loader_kwargs = {**fit_config.loader_kwargs}
+    loader_kwargs["shuffle"] = True
+    train_loader = GraphDataLoader(data.train, **loader_kwargs)
+    loader_kwargs["shuffle"] = False
+    valid_loader = GraphDataLoader(data.valid, **loader_kwargs)
+
+    # - do some pre-fitting
+    pre_fit_graphs = SequenceSampler(data.train.graphs)
+    if fit_config.max_n_pre_fit is not None:
+        pre_fit_graphs = pre_fit_graphs.sample_at_most(fit_config.max_n_pre_fit)
+    pre_fit_graphs = list(pre_fit_graphs)
+
+    # optionally pre-fit the model
+    if fit_config.pre_fit_model:
+        logger.info(f"Pre-fitting the model on {len(pre_fit_graphs):,} samples")
+        model.pre_fit_all_components(pre_fit_graphs)
+    trainer.strategy.barrier("pre-fit")
+
+    # always pre-fit the losses
+    for subloss in loss.losses:
+        subloss.pre_fit(to_batch(pre_fit_graphs))
+
+    # - log the model info
+    if trainer.global_rank == 0:
+        log_model_info(model, trainer.logger)
+
+    # - sanity checks
+    logger.info("Sanity checking the model...")
+    sanity_check(model, next(iter(train_loader)))
+
+    # - create the task (a pytorch lightning module)
+    task = TrainingTask(model, loss, optimizer, scheduler)
+
+    # - train the model
+    logger.info("Starting fit...")
+    try:
+        trainer.fit(task, train_loader, valid_loader)
+    except Exception as e:
+        logger.error(f"Training failed: {e}")
+    finally:
+        try:
+            task.load_best_weights(model, trainer)
+        except Exception as e:
+            logger.error(f"Failed to load best weights: {e}")
+
+
+class TrainingTask(pl.LightningModule):
     def __init__(
         self,
         model: GraphPESModel,
@@ -67,19 +142,10 @@ class PESLearningTask(pl.LightningModule):
         super().on_validation_end()
         self.model.train()
 
-    def on_test_start(self):
-        super().on_test_start()
-        self.model.eval()
-
-    def on_test_end(self) -> None:
-        super().on_test_end()
-        self.model.train()
-
     def _step(
         self,
         graph: AtomicGraph,
-        prefix: Literal["train", "valid", "test"],
-        test_name: str | None = None,
+        mode: Literal["train", "valid"],
     ) -> torch.Tensor:
         """
         Get (and log) the losses and metrics for a step.
@@ -101,22 +167,20 @@ class PESLearningTask(pl.LightningModule):
             if isinstance(value, torch.Tensor):
                 value = value.item()
 
-            validating = prefix == "valid"
-            training = prefix == "train"
-            _prefix = prefix if prefix != "test" else f"test/{test_name}"
+            validating = mode == "valid"
 
             return self.log(
-                f"{_prefix}/{name}",
+                f"{mode}/{name}",
                 value,
                 prog_bar=validating and "metric" in name,
-                on_step=training,
-                on_epoch=not training,
-                sync_dist=not training,
+                on_step=not validating,
+                on_epoch=validating,
+                sync_dist=validating,
                 batch_size=number_of_structures(graph),
             )
 
         # generate prediction:
-        if prefix == "train":
+        if mode == "train":
             desired_properties = self.train_properties
         else:
             desired_properties = list(graph.properties.keys())
@@ -127,14 +191,13 @@ class PESLearningTask(pl.LightningModule):
         total_loss_result = self.total_loss(self.model, graph, predictions)
 
         # log
-        if prefix != "test":
-            log("loss/total", total_loss_result.loss_value)
-            for name, loss_pair in total_loss_result.components.items():
-                log(f"metrics/{name}", loss_pair.loss_value)
-                log(f"loss/{name}_weighted", loss_pair.weighted_loss_value)
+        log("loss/total", total_loss_result.loss_value)
+        for name, loss_pair in total_loss_result.components.items():
+            log(f"metrics/{name}", loss_pair.loss_value)
+            log(f"loss/{name}_weighted", loss_pair.weighted_loss_value)
 
         # log additional values during validation
-        if prefix != "train":
+        if mode == "valid":
             extra_metrics: list[Loss] = []
             if "energy" in graph.properties:
                 extra_metrics.append(PerAtomEnergyLoss(metric=RMSE()))
@@ -165,15 +228,6 @@ class PESLearningTask(pl.LightningModule):
 
     def validation_step(self, structure: AtomicGraph, _):
         return self._step(structure, "valid")
-
-    def test_step(
-        self,
-        structure: AtomicGraph,
-        batch_idx: int,
-        dataloader_idx: int = 0,
-    ):
-        test_name = self.test_names[dataloader_idx]
-        return self._step(structure, "test", test_name)
 
     def configure_optimizers(
         self,
@@ -237,16 +291,6 @@ class PESLearningTask(pl.LightningModule):
         torch.set_grad_enabled(True)
 
     @classmethod
-    def for_testing(cls, model: GraphPESModel, test_names: list[str]):
-        return cls(
-            model,
-            loss=TotalLoss([]),  # no need for loss
-            optimizer=Optimizer("Adam"),  # no need for optimizer
-            scheduler=None,  # no need for scheduler
-            test_names=test_names,
-        )
-
-    @classmethod
     def load_best_weights(
         cls,
         model: GraphPESModel,
@@ -269,3 +313,70 @@ class PESLearningTask(pl.LightningModule):
             if k.startswith("model.")
         }
         model.load_state_dict(state_dict)
+
+
+def test_with_lightning(
+    trainer: pl.Trainer,
+    model: GraphPESModel,
+    data: dict[str, GraphDataLoader],
+    eval_metrics: list[Loss],
+):
+    assert trainer.test_loop.inference_mode is False
+    task = TestingTask(model, list(data.keys()), eval_metrics)
+    trainer.test(task, list(data.values()))
+
+
+class TestingTask(pl.LightningModule):
+    def __init__(
+        self,
+        model: GraphPESModel,
+        test_names: list[str],
+        eval_metrics: list[Loss],
+    ):
+        super().__init__()
+        self.model = model
+        self.test_names = test_names
+        self.eval_metrics = eval_metrics
+        self.test_properties = list(
+            set.union(
+                set(), *[set(m.required_properties) for m in eval_metrics]
+            )
+        )
+
+    def test_step(
+        self, structure: AtomicGraph, batch_idx: int, dataloader_idx: int = 0
+    ):
+        predictions = self.model.predict(
+            structure, properties=self.test_properties
+        )
+        test_name = self.test_names[dataloader_idx]
+        if test_name == "test" and len(self.test_names) == 1:
+            prefix = "test"
+        else:
+            prefix = f"test/{test_name}"
+
+        for metric in self.eval_metrics:
+            if not all(
+                p in structure.properties for p in metric.required_properties
+            ):
+                continue
+
+            value = metric(self.model, structure, predictions)
+            self.log(
+                f"{prefix}/{metric.name}",
+                value,
+                on_epoch=True,
+                sync_dist=True,
+                batch_size=number_of_structures(structure),
+            )
+
+        return torch.tensor(0.0, requires_grad=True)
+
+    def configure_optimizers(self):
+        # no need for optimizer or scheduler during testing
+        return None
+
+    def on_test_model_eval(self):
+        self.model.eval()
+        # we need grad enabled to compute forces using autograd
+        torch.set_grad_enabled(True)

@@ -4,13 +4,16 @@ import pytorch_lightning as pl
 
 from graph_pes import AtomicGraph, GraphPESModel
 from graph_pes.atomic_graph import to_batch
-from graph_pes.config import FittingOptions
+from graph_pes.config.training import FittingOptions
 from graph_pes.data.datasets import FittingData, GraphDataset
-from graph_pes.training.callbacks import EarlyStoppingWithLogging
+from graph_pes.training.callbacks import (
+    EarlyStoppingWithLogging,
+    LoggedProgressBar,
+)
 from graph_pes.training.loss import PerAtomEnergyLoss, TotalLoss
 from graph_pes.training.opt import Optimizer
-from graph_pes.training.trainer import train_with_lightning
-from graph_pes.training.util import VALIDATION_LOSS_KEY, LoggedProgressBar
+from graph_pes.training.tasks import train_with_lightning
+from graph_pes.training.utils import VALIDATION_LOSS_KEY
 
 from .. import helpers
 
