@@ -1,4 +1,4 @@
-name: CI
+name: changelog
 
 on:
   pull_request:

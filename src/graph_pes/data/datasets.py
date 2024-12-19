@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import pathlib
 from abc import ABC
 from dataclasses import dataclass
@@ -85,10 +86,12 @@ class ASEToGraphsConverter(Sequence[AtomicGraph]):
         structures: Sequence[ase.Atoms],
         cutoff: float,
         property_mapping: Mapping[str, PropertyKey] | None = None,
+        others_to_include: list[str] | None = None,
     ):
         self.structures = structures
         self.cutoff = cutoff
         self.property_mapping = property_mapping
+        self.others_to_include = others_to_include
 
     @overload
     def __getitem__(self, index: int) -> AtomicGraph: ...
@@ -105,6 +108,7 @@ class ASEToGraphsConverter(Sequence[AtomicGraph]):
             self.structures[index],
             cutoff=self.cutoff,
             property_mapping=self.property_mapping,
+            others_to_include=self.others_to_include,
         )
 
     def __len__(self) -> int:
@@ -148,6 +152,10 @@ class ASEToGraphDataset(GraphDataset):
         A mapping from properties defined on the :class:`ase.Atoms` objects to
         their appropriate names in ``graph-pes``, see
         :meth:`~graph_pes.AtomicGraph.from_ase`.
+    others_to_include
+        A list of properties to include in the ``graph.other`` field
+        that are present as per-atom or per-structure properties on the
+        :class:`ase.Atoms` objects.
     """
 
     def __init__(
@@ -156,9 +164,12 @@ class ASEToGraphDataset(GraphDataset):
         cutoff: float,
         pre_transform: bool = False,
         property_mapping: Mapping[str, PropertyKey] | None = None,
+        others_to_include: list[str] | None = None,
     ):
         super().__init__(
-            ASEToGraphsConverter(structures, cutoff, property_mapping),
+            ASEToGraphsConverter(
+                structures, cutoff, property_mapping, others_to_include
+            ),
         )
         self.pre_transform = pre_transform
 
@@ -209,6 +220,7 @@ def load_atoms_dataset(
     seed: int = 42,
     pre_transform: bool = True,
     property_map: dict[str, PropertyKey] | None = None,
+    others_to_include: list[str] | None = None,
 ) -> DatasetCollection:
     """
     Load an dataset of :class:`ase.Atoms` objects using
@@ -243,6 +255,10 @@ def load_atoms_dataset(
     property_map:
         A mapping from properties as named on the atoms objects to
         ``graph-pes`` property keys, e.g. ``{"U0": "energy"}``.
+    others_to_include:
+        A list of properties to include in the ``graph.other`` field
+        that are present as per-atom or per-structure properties on the
+        :class:`ase.Atoms` objects.
 
     Returns
     -------
@@ -263,6 +279,14 @@ def load_atoms_dataset(
     ...     property_map={"U0": "energy"},
     ... )
     """
+    _dataset_factory = functools.partial(
+        ASEToGraphDataset,
+        cutoff=cutoff,
+        pre_transform=pre_transform,
+        property_mapping=property_map,
+        others_to_include=others_to_include,
+    )
+
     structures = SequenceSampler(load_dataset(id))
 
     if split == "random":
@@ -271,20 +295,14 @@ def load_atoms_dataset(
     train = structures[:n_train]
     val = structures[n_train : n_train + n_valid]
 
-    if n_test is not None:
-        test = ASEToGraphDataset(
-            structures[n_train + n_valid : n_train + n_valid + n_test],
-            cutoff,
-            pre_transform,
-            property_map,
-        )
-    else:
-        test = None
-
     return DatasetCollection(
-        train=ASEToGraphDataset(train, cutoff, pre_transform, property_map),
-        valid=ASEToGraphDataset(val, cutoff, pre_transform, property_map),
-        test=test,
+        train=_dataset_factory(train),
+        valid=_dataset_factory(val),
+        test=_dataset_factory(
+            structures[n_train + n_valid : n_train + n_valid + n_test],
+        )
+        if n_test is not None
+        else None,
     )
 
 
@@ -296,6 +314,7 @@ def file_dataset(
     seed: int = 42,
     pre_transform: bool = True,
     property_map: dict[str, PropertyKey] | None = None,
+    others_to_include: list[str] | None = None,
 ) -> ASEToGraphDataset:
     """
     Load an ASE dataset from a file that is either:
@@ -325,6 +344,10 @@ def file_dataset(
     property_map:
         A mapping from properties as named on the atoms objects to
         ``graph-pes`` property keys, e.g. ``{"U0": "energy"}``.
+    others_to_include:
+        A list of properties to include in the ``graph.other`` field
+        that are present as per-atom or per-structure properties on the
+        :class:`ase.Atoms` objects.
 
     Returns
     -------
@@ -360,5 +383,9 @@ def file_dataset(
         structure_collection = structure_collection[:n]
 
     return ASEToGraphDataset(
-        structure_collection, cutoff, pre_transform, property_map
+        structure_collection,
+        cutoff,
+        pre_transform,
+        property_map,
+        others_to_include,
     )
