@@ -26,6 +26,14 @@
     building-blocks/root
     utils
 
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Interfaces
+    :hidden:
+
+    interfaces/mace
+
 .. toctree::
     :maxdepth: 2
     :caption: Tools
