@@ -1,6 +1,15 @@
+from __future__ import annotations
+
+import ase.build
+import numpy as np
+import pytest
 import torch
 from e3nn import o3
+from mace.calculators import MACECalculator
 from mace.modules import ScaleShiftMACE, gate_dict, interaction_classes
+
+from graph_pes.interfaces.mace import MACEWrapper
+from graph_pes.utils.calculator import GraphPESCalculator
 
 ELEMENTS = [1, 6, 8]
 CUTOFF = 5.0
@@ -15,35 +24,14 @@ def create_default_scaleshift_mace(
     num_interactions: int = 3,
     hidden_irreps: str = "32x0e + 32x1o",
     mlp_irreps: str = "16x0e",
-    atomic_energies: torch.Tensor = None,
+    atomic_energies: torch.Tensor | None = None,
     avg_num_neighbors: float = 1.0,
     atomic_inter_scale: float = 1.0,
     atomic_inter_shift: float = 0.0,
 ) -> ScaleShiftMACE:
-    """Creates a ScaleShiftMACE model with default parameters.
-
-    Args:
-        atomic_numbers: List of atomic numbers to include in the model
-        r_max: Cutoff radius in Angstroms
-        num_bessel: Number of radial basis functions
-        num_polynomial_cutoff: Number of polynomial functions for cutoff
-        max_ell: Maximum L for spherical harmonics
-        num_interactions: Number of interaction blocks
-        hidden_irreps: Irreps string for hidden features
-        mlp_irreps: Irreps string for MLP in final layer
-        atomic_energies: Per-atom energy shifts (defaults to zeros)
-        avg_num_neighbors: Average number of neighbors per atom
-        atomic_inter_scale: Scale factor for interaction energies
-        atomic_inter_shift: Shift for interaction energies
-
-    Returns:
-        ScaleShiftMACE model
-    """
-    # Set up default atomic energies if not provided
     if atomic_energies is None:
         atomic_energies = torch.zeros(len(atomic_numbers))
 
-    # Default interaction classes
     interaction_cls = interaction_classes[
         "RealAgnosticResidualInteractionBlock"
     ]
@@ -87,5 +75,49 @@ def create_default_scaleshift_mace(
 MACE_MODEL = create_default_scaleshift_mace(ELEMENTS, CUTOFF)
 
 
-def test_interface():
-    pass
+def test_molecular():
+    ch4 = ase.build.molecule("CH4")
+
+    mace_calc = MACECalculator(models=MACE_MODEL)
+    mace_calc.calculate(ch4, properties=["energy", "forces"])
+
+    graph_pes_model = MACEWrapper(MACE_MODEL)
+    graph_pes_calc = GraphPESCalculator(graph_pes_model)
+    graph_pes_calc.calculate(ch4, properties=["energy", "forces"])
+
+    assert mace_calc.results["energy"] == pytest.approx(
+        graph_pes_calc.results["energy"]
+    )
+    np.testing.assert_allclose(
+        mace_calc.results["forces"],
+        graph_pes_calc.results["forces"],
+        atol=1e-4,
+        rtol=100,
+    )
+
+
+def test_periodic():
+    diamond = ase.build.bulk("C", "diamond", a=3.5668)
+
+    mace_calc = MACECalculator(models=MACE_MODEL)
+    mace_calc.calculate(diamond, properties=["energy", "forces", "stress"])
+
+    graph_pes_model = MACEWrapper(MACE_MODEL)
+    graph_pes_calc = GraphPESCalculator(graph_pes_model)
+    graph_pes_calc.calculate(diamond, properties=["energy", "forces", "stress"])
+
+    assert mace_calc.results["energy"] == pytest.approx(
+        graph_pes_calc.results["energy"], abs=1e-4
+    )
+    np.testing.assert_allclose(
+        mace_calc.results["forces"],
+        graph_pes_calc.results["forces"],
+        atol=1e-4,
+        rtol=100,
+    )
+    np.testing.assert_allclose(
+        mace_calc.results["stress"].flatten(),
+        graph_pes_calc.results["stress"].flatten(),
+        atol=1e-4,
+        rtol=100,
+    )
