@@ -142,4 +142,4 @@ jobs:
         run: pip install mace-torch
 
       - name: Run tests
-        run: pytest src/graph_pes/interfaces/mace_test.py -v --import-mode=importlib
+        run: pytest src/graph_pes/interfaces/mace_test.py -vvv --import-mode=importlib

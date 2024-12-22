@@ -8,7 +8,7 @@ from e3nn import o3
 from mace.calculators import MACECalculator
 from mace.modules import ScaleShiftMACE, gate_dict, interaction_classes
 
-from graph_pes.interfaces.mace import MACEWrapper
+from graph_pes.interfaces.mace import MACEWrapper, mace_mp, mace_off
 from graph_pes.utils.calculator import GraphPESCalculator
 
 ELEMENTS = [1, 6, 8]
@@ -74,50 +74,66 @@ def create_default_scaleshift_mace(
 
 MACE_MODEL = create_default_scaleshift_mace(ELEMENTS, CUTOFF)
 
+# Test molecules/crystals
+CH4 = ase.build.molecule("CH4")
+DIAMOND = ase.build.bulk("C", "diamond", a=3.5668)
+
+# Pre-configured calculators
+MACE_CALC = MACECalculator(models=MACE_MODEL)
+GRAPH_PES_MODEL = MACEWrapper(MACE_MODEL)
+GRAPH_PES_CALC = GraphPESCalculator(GRAPH_PES_MODEL)
+
 
 def test_molecular():
-    ch4 = ase.build.molecule("CH4")
+    MACE_CALC.calculate(CH4, properties=["energy", "forces"])
+    GRAPH_PES_CALC.calculate(CH4, properties=["energy", "forces"])
 
-    mace_calc = MACECalculator(models=MACE_MODEL)
-    mace_calc.calculate(ch4, properties=["energy", "forces"])
-
-    graph_pes_model = MACEWrapper(MACE_MODEL)
-    graph_pes_calc = GraphPESCalculator(graph_pes_model)
-    graph_pes_calc.calculate(ch4, properties=["energy", "forces"])
-
-    assert mace_calc.results["energy"] == pytest.approx(
-        graph_pes_calc.results["energy"]
+    assert MACE_CALC.results["energy"] == pytest.approx(
+        GRAPH_PES_CALC.results["energy"]
     )
     np.testing.assert_allclose(
-        mace_calc.results["forces"],
-        graph_pes_calc.results["forces"],
-        atol=1e-4,
+        MACE_CALC.results["forces"],
+        GRAPH_PES_CALC.results["forces"],
+        atol=1e-5,
         rtol=100,
     )
 
 
 def test_periodic():
-    diamond = ase.build.bulk("C", "diamond", a=3.5668)
+    MACE_CALC.calculate(DIAMOND, properties=["energy", "forces", "stress"])
+    GRAPH_PES_CALC.calculate(DIAMOND, properties=["energy", "forces", "stress"])
 
-    mace_calc = MACECalculator(models=MACE_MODEL)
-    mace_calc.calculate(diamond, properties=["energy", "forces", "stress"])
-
-    graph_pes_model = MACEWrapper(MACE_MODEL)
-    graph_pes_calc = GraphPESCalculator(graph_pes_model)
-    graph_pes_calc.calculate(diamond, properties=["energy", "forces", "stress"])
-
-    assert mace_calc.results["energy"] == pytest.approx(
-        graph_pes_calc.results["energy"], abs=1e-4
+    assert MACE_CALC.results["energy"] == pytest.approx(
+        GRAPH_PES_CALC.results["energy"], abs=1e-5
     )
     np.testing.assert_allclose(
-        mace_calc.results["forces"],
-        graph_pes_calc.results["forces"],
-        atol=1e-4,
+        MACE_CALC.results["forces"],
+        GRAPH_PES_CALC.results["forces"],
+        atol=1e-5,
         rtol=100,
     )
     np.testing.assert_allclose(
-        mace_calc.results["stress"].flatten(),
-        graph_pes_calc.results["stress"].flatten(),
-        atol=1e-4,
+        MACE_CALC.results["stress"].flatten(),
+        GRAPH_PES_CALC.results["stress"].flatten(),
+        atol=1e-5,
         rtol=100,
     )
+
+
+def test_mace_mp():
+    # check can download model
+    base_model = mace_mp("small", "float32")
+    calc = GraphPESCalculator(base_model)
+
+    # check that forces on central atom are roughly zero
+    calc.calculate(CH4, properties=["energy", "forces"])
+    assert np.abs(calc.results["forces"][0]).max() < 1e-5
+
+
+def test_mace_off():
+    base_model = mace_off("small", "float32")
+    calc = GraphPESCalculator(base_model)
+
+    # check that forces on central atom are roughly zero
+    calc.calculate(CH4, properties=["energy", "forces"])
+    assert np.abs(calc.results["forces"][0]).max() < 1e-5

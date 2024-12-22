@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Callable
+from itertools import chain
+from typing import Callable, Literal
 
 import torch
 
@@ -122,3 +123,45 @@ class MACEWrapper(GraphPESModel):
             if key in MACE_KEY_MAPPING
         }
         return {k: v for k, v in predictions.items() if k in properties}
+
+
+def _fix_precision(model: torch.nn.Module, precision: str) -> None:
+    dtype = {"float32": torch.float32, "float64": torch.float64}[precision]
+    for tensor in chain(
+        model.parameters(),
+        model.buffers(),
+    ):
+        if tensor.dtype.is_floating_point:
+            tensor.data = tensor.data.to(dtype)
+
+
+def mace_mp(
+    model: Literal["small", "medium", "large"],
+    precision: Literal["float32", "float64"] = "float64",
+) -> MACEWrapper:
+    from mace.calculators.foundations_models import mace_mp
+
+    mace_torch_model = mace_mp(
+        model,
+        default_dtype=precision,
+        return_raw_model=True,
+    )
+    assert isinstance(mace_torch_model, torch.nn.Module)
+    _fix_precision(mace_torch_model, precision)
+    return MACEWrapper(mace_torch_model)
+
+
+def mace_off(
+    model: Literal["small", "medium", "large"],
+    precision: Literal["float32", "float64"] = "float64",
+) -> MACEWrapper:
+    from mace.calculators.foundations_models import mace_off
+
+    mace_torch_model = mace_off(
+        model,
+        default_dtype=precision,
+        return_raw_model=True,
+    )
+    assert isinstance(mace_torch_model, torch.nn.Module)
+    _fix_precision(mace_torch_model, precision)
+    return MACEWrapper(mace_torch_model)
