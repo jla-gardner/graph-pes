@@ -139,6 +139,29 @@ def mace_mp(
     model: Literal["small", "medium", "large"],
     precision: Literal["float32", "float64"] = "float64",
 ) -> MACEWrapper:
+    """
+    Donwload a MACE-MP model and convert it for use with ``graph-pes``.
+
+    Internally, we use the `foundation_models <https://mace-docs.readthedocs.io/en/latest/guide/foundation_models.html>`__
+    functionality from the `mace-torch <https://github.com/ACEsuit/mace-torch>`__ package.
+
+    Please cite the following if you use this model:
+
+    - MACE-MP by Ilyes Batatia, Philipp Benner, Yuan Chiang, Alin M. Elena,
+      Dávid P. Kovács, Janosh Riebesell, et al., 2023, arXiv:2401.00096
+    - MACE-Universal by Yuan Chiang, 2023, Hugging Face, Revision e5ebd9b,
+      DOI: 10.57967/hf/1202, URL: https://huggingface.co/cyrusyc/mace-universal
+    - Matbench Discovery by Janosh Riebesell, Rhys EA Goodall, Philipp Benner,
+      Yuan Chiang, Alpha A Lee, Anubhav Jain, Kristin A Persson, 2023,
+      arXiv:2308.14920
+
+    Parameters
+    ----------
+    model
+        The size of the MACE-MP model to download.
+    precision
+        The precision of the model.
+    """  # noqa: E501
     from mace.calculators.foundations_models import mace_mp
 
     mace_torch_model = mace_mp(
@@ -155,6 +178,18 @@ def mace_off(
     model: Literal["small", "medium", "large"],
     precision: Literal["float32", "float64"] = "float64",
 ) -> MACEWrapper:
+    """
+    Download a MACE-OFF model and convert it for use with ``graph-pes``.
+
+    If you use this model, please cite the relevant paper by Kovacs et.al., arXiv:2312.15211
+
+    Parameters
+    ----------
+    model
+        The size of the MACE-OFF model to download.
+    precision
+        The precision of the model.
+    """  # noqa: E501
     from mace.calculators.foundations_models import mace_off
 
     mace_torch_model = mace_off(
