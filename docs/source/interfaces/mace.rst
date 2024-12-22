@@ -6,7 +6,7 @@
 
 We also provide two convenience functions to the recently trained ``MACE-MP`` and ``MACE-OFF`` "foundation" models.
 
-If you use any ``mace-torch`` models in your work, please visit the `MACE-Torch <https://github.com/ACEsuit/mace-torch>`__ repository and cite the following:
+If you use any ``mace-torch`` models in your work, please visit the `mace-torch <https://github.com/ACEsuit/mace-torch>`__ repository and cite the following:
 
 .. code-block:: bibtex
 
