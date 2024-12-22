@@ -26,6 +26,11 @@ A batch of :class:`~graph_pes.AtomicGraph` instances is itself represented by a 
 .. autofunction:: graph_pes.atomic_graph.to_batch
 .. autofunction:: graph_pes.atomic_graph.is_batch
 
+If you need to define custom batching logic for a field in the ``other`` property,
+you can use :func:`~graph_pes.atomic_graph.register_custom_batcher`:
+
+.. autofunction:: graph_pes.atomic_graph.register_custom_batcher
+
 Derived Properties
 ------------------
 

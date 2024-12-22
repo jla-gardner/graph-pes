@@ -7,6 +7,7 @@ from typing import (
     Literal,
     Mapping,
     NamedTuple,
+    Protocol,
     Sequence,
     Tuple,
     Union,
@@ -365,17 +366,23 @@ class AtomicGraph(NamedTuple):
         # relevant info/arrays dicts (with help from load_atoms.utils)
         remove_calculator(structure)
 
-        dtype = torch.get_default_dtype()
+        def as_tensor(
+            value, dtype: Union[torch.dtype, None] = None
+        ) -> torch.Tensor:
+            t = torch.tensor(value, dtype=dtype)
+            if t.is_floating_point():
+                t = t.to(torch.get_default_dtype())
+            return t
 
         # structure
-        Z = torch.tensor(structure.numbers, dtype=torch.long)
-        R = torch.tensor(structure.positions, dtype=dtype)
-        cell = torch.tensor(structure.cell.array, dtype=dtype)
+        Z = as_tensor(structure.numbers, torch.long)
+        R = as_tensor(structure.positions)
+        cell = as_tensor(structure.cell.array)
 
         # neighbour list
         i, j, offsets = neighbor_list("ijS", structure, cutoff)
-        neighbour_list = torch.tensor(np.vstack([i, j]), dtype=torch.long)
-        neighbour_cell_offsets = torch.tensor(offsets, dtype=dtype)
+        neighbour_list = as_tensor(np.vstack([i, j]), torch.long)
+        neighbour_cell_offsets = as_tensor(offsets)
 
         # properties
         properties: dict[PropertyKey, torch.Tensor] = {}
@@ -401,10 +408,10 @@ class AtomicGraph(NamedTuple):
                     -1
                 ).shape == (6,):
                     value = voigt_6_to_full_3x3_stress(value)
-                properties[property] = torch.tensor(value, dtype=dtype)
+                properties[property] = as_tensor(value)
 
             elif key in others_to_include:
-                other[key] = torch.tensor(value, dtype=dtype)
+                other[key] = as_tensor(value)
 
         missing = set(
             structure_key
@@ -522,6 +529,63 @@ class AtomicGraph(NamedTuple):
 ############################### BATCHING ###############################
 
 
+class CustomPropertyBatcher(Protocol):
+    def __call__(
+        self, batch: AtomicGraph, values: list[torch.Tensor]
+    ) -> torch.Tensor:
+        """
+        Batch the given values.
+
+        Parameters
+        ----------
+        batch
+            The batch of graphs.
+        values
+            The list of values to batch.
+        """
+        ...
+
+
+_custom_batchers: dict[str, CustomPropertyBatcher] = {}
+
+
+def register_custom_batcher(key: str):
+    """
+    Register a custom batcher for a property in the ``other`` field.
+
+    The batcher should conform to the following protocol:
+
+    .. autoclass:: graph_pes.atomic_graph.CustomPropertyBatcher()
+        :members: __call__
+
+    Parameters
+    ----------
+    key
+        The key of the property to register a custom batcher for.
+
+    Examples
+    --------
+
+    >>> from graph_pes.atomic_graph import register_custom_batcher
+    >>> @register_custom_batcher("foo")
+    ... def foo_batcher(batch, values):
+    ...     return torch.max(torch.vstack(values), dim=0).values
+    >>> ... # create graphs
+    >>> graphs[0].other["foo"], graphs[1].other["foo"]
+    (tensor([1]), tensor([2]))
+    >>> ... # batch the graphs
+    >>> batch = to_batch(graphs)
+    >>> batch.other["foo"]
+    tensor([2])
+    """
+
+    def decorator(func: CustomPropertyBatcher):
+        _custom_batchers[key] = func
+        return func
+
+    return decorator
+
+
 def to_batch(
     graphs: Sequence[AtomicGraph],
 ) -> AtomicGraph:
@@ -616,31 +680,34 @@ def to_batch(
         if all(key in g.properties for g in graphs):
             properties[key] = torch.cat([g.properties[key] for g in graphs])
 
-    # - finally, add in the other stuff: this is a bit tricky
-    #   since we need to try and infer whether these are per-atom
-    #   or per-structure
-    other: dict[str, torch.Tensor] = {}
-    for key in graphs[0].other:
-        # if all of the value tensors have the same number of entries
-        # as atoms in the structure, we'll treat them as per-atom
-        if all(is_local_property(g.other[key], g) for g in graphs):
-            other[key] = torch.cat([g.other[key] for g in graphs])
-        # otherwise, we'll assume they're per-structure
-        else:
-            other[key] = torch.stack([g.other[key] for g in graphs])
-
-    return AtomicGraph(
+    batched_graph = AtomicGraph(
         Z=Z,
         R=R,
         cell=cells,
         neighbour_list=neighbour_list,
         neighbour_cell_offsets=neighbour_offsets,
         properties=properties,
-        other=other,
+        other={},
         cutoff=cutoff,
         batch=batch,
         ptr=ptr,
     )
+
+    # - finally, add in the other stuff: this is a bit tricky
+    #   since we need to try and infer whether these are per-atom
+    #   or per-structure
+    for key in graphs[0].other:
+        if key in _custom_batchers:
+            batcher = _custom_batchers[key]
+        elif all(is_local_property(g.other[key], g) for g in graphs):
+            batcher = lambda batch, values: torch.cat(values)  # noqa: E731
+        else:
+            batcher = lambda batch, values: torch.stack(values)  # noqa: E731
+        batched_graph.other[key] = batcher(
+            batched_graph, [g.other[key] for g in graphs]
+        )
+
+    return batched_graph
 
 
 def is_batch(graph: AtomicGraph) -> bool:

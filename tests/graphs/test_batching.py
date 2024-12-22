@@ -12,6 +12,7 @@ from graph_pes.atomic_graph import (
     number_of_atoms,
     number_of_edges,
     number_of_structures,
+    register_custom_batcher,
     structure_sizes,
     sum_per_structure,
     to_batch,
@@ -130,3 +131,27 @@ def test_data_loader():
 def test_number_of_structures():
     assert number_of_structures(to_batch(GRAPHS)) == len(GRAPHS)
     assert number_of_structures(GRAPHS[0]) == 1
+
+
+def test_batching_of_other():
+    graphs = [AtomicGraph(*g) for g in GRAPHS]
+    for g in graphs:
+        g.other["foo"] = torch.tensor([1, 2, 3], dtype=torch.long)
+
+    batch = to_batch(graphs)
+    assert batch.other["foo"].shape == (2, 3)
+    assert batch.other["foo"].dtype == torch.long
+
+
+def test_custom_batching():
+    graphs = [AtomicGraph(*g) for g in GRAPHS]
+    graphs[0].other["foo"] = torch.tensor([1, 2, 3], dtype=torch.long)
+    graphs[1].other["foo"] = torch.tensor([4, 5, 6], dtype=torch.long)
+
+    @register_custom_batcher("foo")
+    def batcher(batch, values):
+        return torch.vstack(values).max(dim=0).values
+
+    batch = to_batch(graphs)
+    assert batch.other["foo"].shape == (3,)
+    assert batch.other["foo"].dtype == torch.long

@@ -197,7 +197,7 @@ class DatasetCollection:
     """The training dataset."""
     valid: GraphDataset
     """The validation dataset."""
-    test: Union[GraphDataset, dict[str, GraphDataset]] | None = None  # noqa: UP007
+    test: Union[GraphDataset, dict[str, GraphDataset], None] = None  # noqa: UP007
     """An optional test dataset, or collection of named test datasets."""
 
     def __repr__(self) -> str:
