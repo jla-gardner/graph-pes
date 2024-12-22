@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+Added support for using arbitrary ``mace-torch`` models within ``graph-pes``, including the ``MACE-MP`` and ``MACE-OFF`` foundation models.
+
 ## [0.0.17] - 2024-12-19
 
 Add support for ASE `.db` files for backing datasets.
