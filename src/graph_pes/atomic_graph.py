@@ -366,23 +366,17 @@ class AtomicGraph(NamedTuple):
         # relevant info/arrays dicts (with help from load_atoms.utils)
         remove_calculator(structure)
 
-        def as_tensor(
-            value, dtype: Union[torch.dtype, None] = None
-        ) -> torch.Tensor:
-            t = torch.tensor(value, dtype=dtype)
-            if t.is_floating_point():
-                t = t.to(torch.get_default_dtype())
-            return t
+        _float = torch.get_default_dtype()
 
         # structure
-        Z = as_tensor(structure.numbers, torch.long)
-        R = as_tensor(structure.positions)
-        cell = as_tensor(structure.cell.array)
+        Z = torch.tensor(structure.numbers, dtype=torch.long)
+        R = torch.tensor(structure.positions, dtype=_float)
+        cell = torch.tensor(structure.cell.array, dtype=_float)
 
         # neighbour list
         i, j, offsets = neighbor_list("ijS", structure, cutoff)
-        neighbour_list = as_tensor(np.vstack([i, j]), torch.long)
-        neighbour_cell_offsets = as_tensor(offsets)
+        neighbour_list = torch.tensor(np.vstack([i, j]), dtype=torch.long)
+        neighbour_cell_offsets = torch.tensor(offsets, dtype=_float)
 
         # properties
         properties: dict[PropertyKey, torch.Tensor] = {}
@@ -398,6 +392,12 @@ class AtomicGraph(NamedTuple):
         if others_to_include is None:
             others_to_include = []
 
+        def to_tensor(value):
+            t = torch.tensor(value)
+            if t.is_floating_point():
+                t = t.to(_float)
+            return t
+
         for key, value in list(structure.info.items()) + list(
             structure.arrays.items()
         ):
@@ -408,10 +408,10 @@ class AtomicGraph(NamedTuple):
                     -1
                 ).shape == (6,):
                     value = voigt_6_to_full_3x3_stress(value)
-                properties[property] = as_tensor(value)
+                properties[property] = to_tensor(value)
 
             elif key in others_to_include:
-                other[key] = as_tensor(value)
+                other[key] = to_tensor(value)
 
         missing = set(
             structure_key
@@ -697,15 +697,14 @@ def to_batch(
     #   since we need to try and infer whether these are per-atom
     #   or per-structure
     for key in graphs[0].other:
+        values = [g.other[key] for g in graphs]
         if key in _custom_batchers:
             batcher = _custom_batchers[key]
+            batched_graph.other[key] = batcher(batched_graph, values)
         elif all(is_local_property(g.other[key], g) for g in graphs):
-            batcher = lambda batch, values: torch.cat(values)  # noqa: E731
+            batched_graph.other[key] = torch.cat(values)
         else:
-            batcher = lambda batch, values: torch.stack(values)  # noqa: E731
-        batched_graph.other[key] = batcher(
-            batched_graph, [g.other[key] for g in graphs]
-        )
+            batched_graph.other[key] = torch.stack(values)
 
     return batched_graph
 

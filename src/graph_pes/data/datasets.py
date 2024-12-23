@@ -53,14 +53,12 @@ class GraphDataset(torch.utils.data.Dataset, ABC):
         May be called multiple times.
         """
 
-    def setup(self) -> GraphDataset | None:
+    def setup(self) -> None:
         """
         Set-up the data for this specific instance of the dataset.
 
-        Called on every process in the distributed setup:
-
-        * if you want to set state directly, do it here and return ``None``
-        * if you want to return a new dataset, return that instead
+        Called on every process in the distributed setup. May be called
+        multiple times.
         """
 
     @property
@@ -180,11 +178,11 @@ class ASEToGraphDataset(GraphDataset):
             # recomputed on each rank in the distributed setup
             get_all_graphs_and_cache_to_disk(self.graphs)
 
-    def setup(self) -> GraphDataset | None:
-        if self.pre_transform:
+    def setup(self) -> None:
+        if self.pre_transform and isinstance(self.graphs, ASEToGraphsConverter):
             # load the graphs from disk
             actual_graphs = get_all_graphs_and_cache_to_disk(self.graphs)
-            return GraphDataset(actual_graphs)
+            self.graphs = actual_graphs
 
 
 @dataclass
