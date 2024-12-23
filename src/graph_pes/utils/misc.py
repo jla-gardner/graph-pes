@@ -532,3 +532,13 @@ def silently_create_trainer(**trainer_kwargs) -> pl.Trainer:
     _trainer = pl.Trainer(**trainer_kwargs)
     logger.setLevel(logging.INFO)
     return _trainer
+
+
+def first(iterable: Iterable[T]) -> T | None:
+    """
+    Get the first element of an iterable, or `None` if the iterable is empty.
+    """
+    try:
+        return next(iter(iterable))
+    except StopIteration:
+        return None

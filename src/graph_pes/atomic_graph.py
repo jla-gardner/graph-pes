@@ -7,6 +7,7 @@ from typing import (
     Literal,
     Mapping,
     NamedTuple,
+    Optional,
     Protocol,
     Sequence,
     Tuple,
@@ -17,6 +18,8 @@ from typing import (
 import ase
 import numpy as np
 import torch
+import torch.multiprocessing
+import torch.utils.data
 from ase.neighborlist import neighbor_list
 from ase.stress import voigt_6_to_full_3x3_stress
 from load_atoms.utils import remove_calculator
@@ -526,6 +529,40 @@ class AtomicGraph(NamedTuple):
         return uniform_repr(name, **info, indent_width=4)
 
 
+def replace(
+    graph: AtomicGraph,
+    Z: Optional[torch.Tensor] = None,
+    R: Optional[torch.Tensor] = None,
+    cell: Optional[torch.Tensor] = None,
+    neighbour_list: Optional[torch.Tensor] = None,
+    neighbour_cell_offsets: Optional[torch.Tensor] = None,
+    properties: Optional[dict[PropertyKey, torch.Tensor]] = None,
+    other: Optional[dict[str, torch.Tensor]] = None,
+    cutoff: Optional[float] = None,
+) -> AtomicGraph:
+    """
+    A convenience function for replacing the values of an :class:`AtomicGraph`
+    that is ``TorchScript`` compatible (as opposed to the built-in ``._replace``
+    namedtuple method).
+    """
+    return AtomicGraph(
+        Z=Z if Z is not None else graph.Z,
+        R=R if R is not None else graph.R,
+        cell=cell if cell is not None else graph.cell,
+        neighbour_list=neighbour_list
+        if neighbour_list is not None
+        else graph.neighbour_list,
+        neighbour_cell_offsets=neighbour_cell_offsets
+        if neighbour_cell_offsets is not None
+        else graph.neighbour_cell_offsets,
+        properties=properties if properties is not None else graph.properties,
+        other=other if other is not None else graph.other,
+        cutoff=cutoff if cutoff is not None else graph.cutoff,
+        batch=graph.batch,
+        ptr=graph.ptr,
+    )
+
+
 ############################### BATCHING ###############################
 
 
@@ -547,6 +584,11 @@ class CustomPropertyBatcher(Protocol):
 
 
 _custom_batchers: dict[str, CustomPropertyBatcher] = {}
+
+# NB this is essential, otherwise all data loader workers will
+# have an empty _custom_batchers dict, and hence fail to perform
+# any custom batching
+torch.multiprocessing.set_start_method("fork", force=True)
 
 
 def register_custom_batcher(key: str):

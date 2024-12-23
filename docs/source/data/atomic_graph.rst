@@ -14,6 +14,7 @@ Definition
     :show-inheritance:
     :members:
 
+.. autofunction:: graph_pes.atomic_graph.replace
 
 Batching
 --------
