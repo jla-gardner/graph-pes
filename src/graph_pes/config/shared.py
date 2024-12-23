@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from typing import Literal, Protocol, TypeVar
 
 import dacite
@@ -60,6 +60,12 @@ def instantiate_config_from_dict(
             graph_pes.training.callbacks,
         ],
     )
+    field_names = {f.name for f in fields(config_class)}  # type: ignore
+    object_dict = {
+        k: v
+        for k, v in object_dict.items()
+        if k in field_names  # type: ignore
+    }
 
     try:
         return (

@@ -450,26 +450,6 @@ class TrainingConfig:
                 
     """  # noqa: E501
 
-    misc: Dict[str, Any]
-    """
-    Miscellaneous configuration - unused by ``graph-pes``, but useful for
-    passing through configuration for external tools, or for defining
-    constants used in several places in the config:
-
-    .. code-block:: yaml
-    
-        misc:
-            CUTOFF: 5.0
-
-        model:
-            +my_module.create_model:
-                cutoff: =/misc/CUTOFF        
-    
-        data:
-            +my_module.create_data:
-                cutoff: =/misc/CUTOFF
-    """
-
     ### Methods ###
 
     def get_model(self) -> GraphPESModel:
