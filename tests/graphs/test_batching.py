@@ -155,3 +155,17 @@ def test_custom_batching():
     batch = to_batch(graphs)
     assert batch.other["foo"].shape == (3,)
     assert batch.other["foo"].dtype == torch.long
+
+
+def test_automatic_batching():
+    graphs = [AtomicGraph.from_ase(s, cutoff=1.5) for s in STRUCTURES]
+    graphs[0].other["local_property"] = torch.zeros((2, 6), dtype=torch.float)
+    graphs[1].other["local_property"] = torch.zeros((3, 6), dtype=torch.float)
+    graphs[0].other["global_property"] = torch.zeros(5, dtype=torch.bool)
+    graphs[1].other["global_property"] = torch.zeros(5, dtype=torch.bool)
+
+    batch = to_batch(graphs)
+    assert batch.other["local_property"].shape == (5, 6)
+    assert batch.other["local_property"].dtype == torch.float
+    assert batch.other["global_property"].shape == (2, 5)
+    assert batch.other["global_property"].dtype == torch.bool

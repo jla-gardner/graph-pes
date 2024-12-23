@@ -95,7 +95,7 @@ def test_sum_over_neighbours(structure):
 
     torchscript_sum: Callable[[torch.Tensor, AtomicGraph], torch.Tensor] = (
         torch.jit.script(sum_over_neighbours)
-    )
+    )  # type: ignore
     for shape in [(E,), (E, 2), (E, 2, 3), (E, 2, 2, 2)]:
         for summing_fn in (
             sum_over_neighbours,
@@ -260,3 +260,14 @@ def test_sum_over_central_atom(shape: tuple[int, ...]):
     torch.testing.assert_close(result[0], p.sum(dim=0))
     # and that the other elements are zero
     torch.testing.assert_close(result[1], torch.zeros_like(p[0]))
+
+
+def test_other():
+    atoms = Atoms("H2", positions=[(0, 0, 0), (0, 0, 1)], pbc=False)
+    atoms.info["foo"] = 1
+    atoms.arrays["bar"] = np.array([1, 2, 3])
+    graph = AtomicGraph.from_ase(
+        atoms, cutoff=1.0, others_to_include=["foo", "bar"]
+    )
+    assert graph.other["foo"].item() == 1
+    assert (graph.other["bar"] == torch.tensor([1, 2, 3])).all()
