@@ -117,3 +117,12 @@ def test_scheduler():
     assert isinstance(scheduler_instance, torch.optim.lr_scheduler.StepLR)
     assert scheduler_instance.step_size == 10
     assert scheduler_instance.gamma == 0.1
+
+
+def test_extra_keys():
+    dummy_data = get_dummy_config_dict()
+    dummy_data["extra_key"] = "extra_value"
+    final_data, config = instantiate_config_from_dict(
+        dummy_data, TrainingConfig
+    )
+    assert "extra_key" in final_data
