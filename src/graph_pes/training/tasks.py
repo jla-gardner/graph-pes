@@ -99,6 +99,7 @@ def train_with_lightning(
         trainer.fit(task, train_loader, valid_loader)
     except Exception as e:
         logger.error(f"Training failed: {e}")
+        raise e
     finally:
         try:
             task.load_best_weights(model, trainer)
@@ -310,6 +311,7 @@ def test_with_lightning(
     model: GraphPESModel,
     data: dict[str, GraphDataset],
     loader_kwargs: dict,
+    logging_prefix: str,
     user_eval_metrics: list[Loss] | None = None,
 ):
     assert trainer.test_loop.inference_mode is False
@@ -323,6 +325,7 @@ def test_with_lightning(
         model,
         list(data.keys()),
         get_all_eval_metrics(data.values(), user_eval_metrics),
+        logging_prefix,
     )
     trainer.test(task, test_loaders)
 
@@ -333,6 +336,7 @@ class TestingTask(pl.LightningModule):
         model: GraphPESModel,
         test_names: list[str],
         eval_metrics: list[Loss],
+        logging_prefix: str,
     ):
         super().__init__()
         self.model = model

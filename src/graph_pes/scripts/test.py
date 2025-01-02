@@ -41,7 +41,12 @@ def test(config: TestingConfig) -> None:
     )
 
     test_with_lightning(
-        trainer, model, datasets, config.loader_kwargs, user_eval_metrics=[]
+        trainer,
+        model,
+        datasets,
+        config.loader_kwargs,
+        config.prefix,
+        user_eval_metrics=[],
     )
 
 

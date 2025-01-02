@@ -1,5 +1,4 @@
-misc:
-    CUTOFF: 3.7
+CUTOFF: 3.7
 
 model:
     offset:
@@ -7,11 +6,11 @@ model:
     core-repulsion:
         +ZBLCoreRepulsion:
             trainable: true
-            cutoff: =/misc/CUTOFF
+            cutoff: =/CUTOFF
     many-body:
         +NequIP:
             elements: [C, H, O, N]
-            cutoff: =/misc/CUTOFF
+            cutoff: =/CUTOFF
             channels: 128
             hidden_irreps: 0e + 1o
             self_connection: true
@@ -20,18 +19,18 @@ data:
     train:
         +file_dataset:
             path: training_data.xyz
-            cutoff: =/misc/CUTOFF
+            cutoff: =/CUTOFF
             n: 1000
             shuffle: true
             seed: 42
     valid:
         +file_dataset:
             path: validation_data.xyz
-            cutoff: =/misc/CUTOFF
+            cutoff: =/CUTOFF
     test:
         +file_dataset:
             path: test_data.xyz
-            cutoff: =/misc/CUTOFF
+            cutoff: =/CUTOFF
 
 loss:
     - +PerAtomEnergyLoss()

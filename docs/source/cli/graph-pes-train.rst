@@ -168,7 +168,7 @@ Note the use of the :attr:`~graph_pes.config.training.TrainingConfig.misc` secti
 .. code-block:: bash
 
     $ for cutoff in 3.5 4.5 5.5; do
-    >     graph-pes-train realistic.yaml misc/CUTOFF=$cutoff
+    >     graph-pes-train realistic.yaml CUTOFF=$cutoff
     > done
 
 A more realistic configuration might look like this:

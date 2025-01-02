@@ -1,20 +1,19 @@
+CUTOFF: 3.7
+
 general:
     seed: 42
     run_id: mace-c-gap-20u
-
-misc:
-    CUTOFF: 3.7
 
 model:
     offset: +LearnableOffset()
     core-repulsion:
         +ZBLCoreRepulsion:
             trainable: true
-            cutoff: =/misc/CUTOFF
+            cutoff: =/CUTOFF
     many-body:
         +MACE:
             elements: [C]
-            cutoff: =/misc/CUTOFF
+            cutoff: =/CUTOFF
             channels: 128
             hidden_irreps: 0e + 1o
             self_connection: true
@@ -22,7 +21,7 @@ model:
 data:
     +load_atoms_dataset:
         id: C-GAP-20U
-        cutoff: =/misc/CUTOFF
+        cutoff: =/CUTOFF
         n_train: 5000
         n_valid: 100
         n_test: 500

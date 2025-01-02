@@ -24,9 +24,10 @@ class TestingConfig:
     Either:
 
     - a single :class:`~graph_pes.data.GraphDataset`. Results will be logged as
-      ``"test/<metric>"``.
+      ``"<prefix>/<metric>"``.
     - a mapping from names to datasets. Results will be logged as
-      ``"test/<name>/<metric>"``, allowing for testing on multiple datasets.
+      ``"<prefix>/<dataset-name>/<metric>"``, allowing for testing on multiple 
+      datasets.
     """
 
     loader_kwargs: dict[str, Any]
@@ -65,6 +66,11 @@ class TestingConfig:
 
     accelerator: str = "auto"
     """The accelerator to use for testing."""
+
+    prefix: str = "testing"
+    """The prefix to use for logging. Individual metrics will be logged as
+    ``<prefix>/<dataset_name>/<metric>``.
+    """
 
     def get_logger(self) -> Logger:
         root_dir = Path(self.model_path).parent
