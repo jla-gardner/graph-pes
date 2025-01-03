@@ -12,7 +12,7 @@ A realistic config for training a :class:`~graph_pes.models.MACE` model on the `
 
 
 Kitchen sink config
-------------------
+-------------------
 
 A `"kitchen sink"` config that attempts to specify every possible option:
 
@@ -21,7 +21,7 @@ A `"kitchen sink"` config that attempts to specify every possible option:
 
 
 Default config
--------------
+--------------
 
 For reference, here are the default config options used in ``graph-pes-train``:
 

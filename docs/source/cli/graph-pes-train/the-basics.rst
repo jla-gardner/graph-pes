@@ -44,7 +44,7 @@ To use this config file, while overriding the default ``CUTOFF`` value, you woul
 
     You may have noticed two special syntaxes in the config file above: ``=/CUTOFF`` and ``+SchNet``\ /\ ``+load_atoms_dataset``.
 
-    Under-the-hood, ``graph-pes-train`` turns the final nested config dictionary into a :class:`~graph_pes.config.training.TrainingConfig` object via a 3 step process:
+    Under-the-hood, ``graph-pes-train`` turns the final nested config dictionary into a ``TrainingConfig`` object via a 3 step process:
 
     1. all reference strings (of the form ``=/absolute/path/to/object`` or ``=../relative/path/to/object``) are replaced with the corresponding value.
        For example:
@@ -80,4 +80,4 @@ To use this config file, while overriding the default ``CUTOFF`` value, you woul
        and hence ``+SchNet`` is shorthand for ``+graph_pes.models.SchNet``.
        Ending the name with ``()`` will call the function/class constructor with no arguments. Pointing the key to a nested dictionary will pass those values as keyword arguments to the constructor. Hence, above, ``+PerAtomEnergyLoss()`` will resolve to a ``~graph_pes.training.loss.PerAtomEnergyLoss`` object, while the :class:`~graph_pes.models.SchNet` model will be constructed with the keyword arguments specified in the config.
     
-    3. the resulting dictionary of python objects is then converted, using `dacite <https://github.com/konradhalas/dacite/tree/master/>`__, into a final nested :class:`~graph_pes.config.training.TrainingConfig` object.
+    3. the resulting dictionary of python objects is then converted, using `dacite <https://github.com/konradhalas/dacite/tree/master/>`__, into a final nested ``TrainingConfig`` object.

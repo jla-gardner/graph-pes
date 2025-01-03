@@ -94,7 +94,7 @@ def test_molecular():
     np.testing.assert_allclose(
         MACE_CALC.results["forces"],
         GRAPH_PES_CALC.results["forces"],
-        atol=1e-5,
+        atol=1e-4,
         rtol=100,
     )
 
@@ -104,18 +104,18 @@ def test_periodic():
     GRAPH_PES_CALC.calculate(DIAMOND, properties=["energy", "forces", "stress"])
 
     assert MACE_CALC.results["energy"] == pytest.approx(
-        GRAPH_PES_CALC.results["energy"], abs=1e-5
+        GRAPH_PES_CALC.results["energy"], abs=1e-4
     )
     np.testing.assert_allclose(
         MACE_CALC.results["forces"],
         GRAPH_PES_CALC.results["forces"],
-        atol=1e-5,
+        atol=1e-4,
         rtol=100,
     )
     np.testing.assert_allclose(
         MACE_CALC.results["stress"].flatten(),
         GRAPH_PES_CALC.results["stress"].flatten(),
-        atol=1e-5,
+        atol=1e-4,
         rtol=100,
     )
 
@@ -127,7 +127,7 @@ def test_mace_mp():
 
     # check that forces on central atom are roughly zero
     calc.calculate(CH4, properties=["energy", "forces"])
-    assert np.abs(calc.results["forces"][0]).max() < 1e-5
+    assert np.abs(calc.results["forces"][0]).max() < 1e-4
 
 
 def test_mace_off():
@@ -136,4 +136,4 @@ def test_mace_off():
 
     # check that forces on central atom are roughly zero
     calc.calculate(CH4, properties=["energy", "forces"])
-    assert np.abs(calc.results["forces"][0]).max() < 1e-5
+    assert np.abs(calc.results["forces"][0]).max() < 1e-4

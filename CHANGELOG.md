@@ -13,6 +13,10 @@ Added support for using arbitrary ``mace-torch`` models within ``graph-pes``, in
 
 Support for custom batchers for properties in the ``other`` field via the `@register_custom_batcher` decorator.
 
+### Changed
+
+Updated the documentation for the `graph-pes-train` command.
+
 ## [0.0.17] - 2024-12-19
 
 Add support for ASE `.db` files for backing datasets.
