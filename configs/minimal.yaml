@@ -13,7 +13,9 @@ data:
         n_train: 5_000
         n_valid: 100
 
-# ...training on energy labels
+# ...training on energy labels...
 loss: +PerAtomEnergyLoss()
 
+# ...using a cutoff of 5.0 Å
+#    (referenced above)
 CUTOFF: 5.0

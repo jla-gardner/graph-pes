@@ -71,6 +71,8 @@ nitpick_ignore = [
     ("py:class", "graph_pes.config.training.GeneralConfig"),
     ("py:class", "graph_pes.config.shared.TorchConfig"),
     ("py:class", "pytorch_lightning.Callback"),
+    ("py:class", "pytorch_lightning.Trainer"),
+    ("py:class", "pytorch_lightning.callbacks.Callback"),
     ("py:class", "pytorch_lightning.callbacks.callback.Callback"),
 ]
 

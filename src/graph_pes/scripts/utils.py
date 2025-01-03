@@ -30,8 +30,6 @@ def extract_config_dict_from_command_line(description: str) -> dict:
             "Final config is built up from these items in a left "
             "to right manner, with later items taking precedence "
             "over earlier ones in the case of conflicts. "
-            "The data2objects package is used to resolve references "
-            "and create objects directly from the config dictionary."
         ),
     )
     args = parser.parse_args()

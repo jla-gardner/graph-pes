@@ -4,7 +4,7 @@ repos:
     rev: v0.6.4
     hooks:
       - id: ruff-format # formatter
-        types_or: [python, pyi, jupyter, toml]
+        types_or: [python, pyi, toml]
       - id: ruff # linter
-        types_or: [python, pyi, jupyter, toml]
+        types_or: [python, pyi, toml]
         args: [--fix]

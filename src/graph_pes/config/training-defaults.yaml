@@ -31,4 +31,3 @@ fitting:
     swa: null
 
 wandb: {}
-misc: {}

@@ -15,14 +15,15 @@ A common use case for this is to create a series of experiments associated with 
     $ # generate a random id
     $ ID=$(graph-pes-id)
 
-    $ # train a pre-training model
+    $ # pre-train a model
     $ graph-pes-train pre-train.yaml \
         general/root_dir=results \
         general/run_id=$ID-pre-train
     ...
     
-    $ # we know where the model weights are - 
-    $ # fine-tuning is easy: we just load them in
+    $ # fine-tune the model:
+    $ # we know where the model weights are and so 
+    $ # fine-tuning is easy: we just load the weights
     $ graph-pes-train fine-tune.yaml \
         general/root_dir=results \
         model/+load_model/path=results/$ID-pre-train/model.pt \

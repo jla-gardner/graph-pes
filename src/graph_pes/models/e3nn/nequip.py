@@ -610,7 +610,7 @@ class NequIP(_BaseNequIP):
     --------
 
     Configure a NequIP model for use with
-    :doc:`graph-pes-train <../../cli/graph-pes-train>`:
+    :doc:`graph-pes-train <../../cli/graph-pes-train/root>`:
 
     .. code:: yaml
 

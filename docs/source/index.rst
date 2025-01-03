@@ -10,7 +10,7 @@
     :hidden:
     :caption: CLI Reference
 
-    cli/graph-pes-train
+    cli/graph-pes-train/root
     cli/graph-pes-resume
     cli/graph-pes-test
     cli/graph-pes-id
@@ -87,7 +87,7 @@ A 3-in-1 toolset:
 
    - get up and running quickly with sensible defaults to train new models from scratch
    - fine-tune existing models on new datasets
-   - easily configure advanced features such as :ref:`distributed training <multi-GPU training>`, :ref:`learning rate scheduling <learning rate scheduler>`, :ref:`stochastic weight averaging <stochastic weight averaging>`, and logging to `Weights & Biases <https://wandb.ai>`__
+   - easily configure advanced features such as :ref:`distributed training <multi-GPU training>`, :ref:`learning rate scheduling <learning rate scheduler>`, :ref:`stochastic weight averaging <swa>`, and logging to `Weights & Biases <https://wandb.ai>`__
 
 .. dropdown:: ``pair_style graph_pes``: a LAMMPS pair style for GPU-accelerated MD
 
