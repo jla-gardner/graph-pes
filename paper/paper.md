@@ -16,7 +16,7 @@ affiliations:
  - name: Inorganic Chemistry Deparment, University of Oxford
    index: 1
 date: 10/01/2025
-bibliography: paper.bib
+bibliography: paper/paper.bib
 ---
 
 # Summary
