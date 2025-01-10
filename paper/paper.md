@@ -16,7 +16,7 @@ affiliations:
  - name: Inorganic Chemistry Deparment, University of Oxford
    index: 1
 date: 10/01/2025
-bibliography: paper/paper.bib
+bibliography: paper.bib
 ---
 
 # Summary
@@ -29,12 +29,12 @@ TODO
 
 # Key references
 
-`graph-pes` is driving a significant number of projects within the Deringer group, and has already been cited in `@Liu-24-12`.
+`graph-pes` is driving a significant number of projects within the Deringer group, and has already been cited in @Liu-24-12.
 
 The core functionality of `graph-pes` builds upon the
-    - `PyTorch` `[@Paszke-19]`
-    - `ase` `[@HjorthLarsen-17-06]`
-`graph-pes` also builds upon the `e3nn` `[@Geiger-22-07]` package for implementing the `NequIP` `[@Batzner-22-05]` and `MACE` `[@Batatia-23-01]` architectures.
+    - `PyTorch` [@Paszke-19]
+    - `ase` [@HjorthLarsen-17-06]
+`graph-pes` also builds upon the `e3nn` [@Geiger-22-07] package for implementing the `NequIP` [@Batzner-22-05] and `MACE` [@Batatia-23-01] architectures.
 
 Other note-worthy softwares that offer similar functionality to `graph-pes` include:
 - `nequip`
