@@ -38,8 +38,6 @@ We present `graph-pes`, an open-source toolkit for accelerating the development,
 
 In recent years, machine-learned potential energy surfaces (ML-PESs) have become an indispensable tool for computational chemists. Their high accuracy, favourable scaling with system size, and ease of parallelisation allows ML-PES models to faithfully simulate the dynamics of large systems over long timescales. ML-PESs are thus facilitating the study of complex chemical phenomena at the atomic scale, and hence the generation of novel insight and understanding. [cite]
 
-<!-- A (ground-state, un-charged) chemical structure is completely defined by the positions of its atoms ($R$), and their chemical identities ($Z$). -->
-
 Many "flavours" of ML-PES exist, and with them have arisen a variety of softwares that are tailored to training specific architectures (see below). Given their unique specialisations, these varied softwares fail to conform to a common interface, making it difficult for practitioners to migrate their training and validation setups between different architectures.
 
 `graph_pes` provides a **unified interface and framework** for defining, training, and  working with all ML-PES models that act on graph-based representations of atomic structures. This unified interface has several advantages:
@@ -50,36 +48,32 @@ Many "flavours" of ML-PES exist, and with them have arisen a variety of software
 
 - **transferable training and validation pipelines.** The unified interface of the `graph_pes.GraphPESModel` class and the `graph-pes-train` CLI tool allow researchers to easily transfer their training and validation pipelines between different model architectures. For convenience, we have implemented several popular model architectures out of the box (including PaiNN, NequIP, MACE and TensorNet). Training scripts require as little as 2 lines of code to change to the model architecture. LAMMPS input scripts require no changes other than pointing to the new model's file.
 
-- **accelerated ML-PES development.** `graph-pes` provides all the functionality required to quickly design new ML-PES architectures, including common data manipulations, message passing operations and common model building blocks such as distance expansions and neighbour summations. By inheriting from the `graph_pes.GraphPESModel` class, these new architectures can instantly be trained using the `graph-pes-train` CLI tool, and validated using the `pair style graph_pes` LAMMPS pair style.
-
+- **accelerated ML-PES development.** `graph-pes` provides all the functionality required to quickly design new ML-PES architectures, including common and well-documented data manipulations, message passing operations and model building blocks such as distance expansions and neighbour summations. By inheriting from the `graph_pes.GraphPESModel` class, these new architectures can instantly be trained using the `graph-pes-train` CLI tool, and validated using the `pair style graph_pes` LAMMPS pair style.
 
 ML-PES research is not just limited to the development of new model architectures. 
+Among other important research topics, `graph-pes` aims to facilitate:
 
+- **model fine-tuning.** Various pre-train/fine-tune strategies have been proposed for improving the accuraacy and robustness of ML-PES models. Model fine-tuning in `graph-pes` can be performed using the `graph-pes-train` CLI tool, where users can optionally specify which of the model's parameters should be frozen during training.
 
-- advanced workflows: 
-    - fine-tuning
-    - foundation models
-    - own training loop
+- **universal force-fields.** A topical and recent area of research is the development of universal force-fields that can be used to describe the potential energy surface of a wide range of systems. `graph-pes` provides access to the `MACE-OFF` and `MACE-MP0` fuondation models for ease of use and fine-tuning. We use these models as an example of how to incorporate externally trained models into the `graph-pes` framework, either by porting the model's implementation into the `graph_pes` package, or by constructing a custom, lightweight interface to a 3rd party package (in this case, `mace-torch`).
 
-- beyond numerical validation, generation of rdfs, dimer curves, energy volume scans, density isobars etc.: write validation procedure/script once, use forever.
+<!-- - **customised training procedures.** Custom optimziers, loss functions etc in the `graph-pes-train` CLI tool, but also well documented examples of how to implement custom training procedures. -->
 
-- porting or interfacing
+- **customised training procedures.** The `graph-pes-train` CLI tool supports user-defined optimizers, loss functions, and datasets through the flexible plugin system provided by the `data2objects` package. 
+Beyond this, we provide well documented examples of how to implement custom, architecture-agnostic training procedures in simple Python scripts.
+
+- **beyond numerical validation.** While it is common to benchmark ML-PES models using numerical validation metrics (such as energy and force RMSEs), more extensive and physically motivated validation routines are important. The *unified*, *varied* and *architecture-agnostic* functionalities that `graph-pes` provide (including an `ase` Calculator interface and `LAMMPS` pair style) allow researchers to define a validation procedure once, and then to use it for all their ML-PES models, and to share this validation procedure with the wider community. To aid in these validation procedures, we provide some utility functions for plotting dimer curves, energy volume scans and parity plots. 
+
 
 # Related work
 
 `graph-pes` is driving a significant number of projects within the Deringer group, and has already been cited in @Liu-24-12.
 
-The core functionality of `graph-pes` builds upon several existing, open-source packages:
-
-- `PyTorch` [@Paszke-19]
-
-- `ase` [@HjorthLarsen-17-06]
-
-- `LAMMPS` [@Thompson-22-02]
+The core functionality of `graph-pes` builds upon several existing, open-source packages. We use the `Tensor` data structure, `nn` module and `autograd` functionality from `PyTorch` [@Paszke-19] for data representation, model definition and automatic differentiation respectively. We use the `ase` [@HjorthLarsen-17-06] package for reading serialised atomic structures from disc, and for converting them into graph representations. We use the `LAMMPS` [@Thompson-22-02] framework for creating the `pair style graph_pes` command for molecular dynamics simulations.
 
 We also use the `e3nn` [@Geiger-22-07] package for implementing the `NequIP` [@Batzner-22-05] and `MACE` [@Batatia-23-01] architectures.
 
-Other note-worthy softwares that offer similar functionality to `graph-pes` include:
+Note-worthy softwares that offer training and validation functionaltiy for specific ML-PES architectures include:
 
 - `nequip`
 
