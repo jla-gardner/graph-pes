@@ -37,8 +37,9 @@ def log_model_info(
         logger.info(info_str)
 
     else:
-        params = sum(p.numel() for p in model.parameters())
-        logger.info(f"Number of learnable params : {params:,}")
+        logger.info(
+            f"Number of learnable params : {learnable_parameters(model):,}"
+        )
 
     if ptl_logger is not None:
         all_params = sum(p.numel() for p in model.parameters())

@@ -47,8 +47,8 @@ def _atomic_graph_to_mace_input(
     _shifts = torch.einsum(
         "kl,klm->km", graph.neighbour_cell_offsets, _cell_per_edge
     )  # (E, 3)
-    return {
-        "node_attrs": z_to_one_hot(graph.Z).float(),
+    data = {
+        "node_attrs": z_to_one_hot(graph.Z).to(torch.get_default_dtype()),
         "positions": graph.R,
         "cell": graph.cell,
         "edge_index": graph.neighbour_list,
@@ -57,6 +57,7 @@ def _atomic_graph_to_mace_input(
         "batch": graph.batch,
         "ptr": graph.ptr,
     }
+    return {k: v.to(graph.Z.device) for k, v in data.items()}
 
 
 class MACEWrapper(GraphPESModel):
@@ -166,6 +167,7 @@ def mace_mp(
 
     mace_torch_model = mace_mp(
         model,
+        device="cpu",
         default_dtype=precision,
         return_raw_model=True,
     )
@@ -194,6 +196,7 @@ def mace_off(
 
     mace_torch_model = mace_off(
         model,
+        device="cpu",
         default_dtype=precision,
         return_raw_model=True,
     )
