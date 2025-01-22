@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import warnings
+from typing import TypeVar
 
 warnings.filterwarnings(
     "ignore",
@@ -64,24 +65,7 @@ ALL_MODELS: list[type[GraphPESModel]] = [
 ]
 
 
-def freeze_model(module: torch.nn.Module) -> None:
-    """Freeze all parameters in a module."""
-    for param in module.parameters():
-        param.requires_grad = False
-
-
-def freeze_components_matching(module: torch.nn.Module, pattern: str) -> None:
-    """Freeze all parameters in a module matching a given pattern."""
-    for name, param in module.named_parameters():
-        if re.match(pattern, name):
-            logger.info(f"Freezing {name}")
-            param.requires_grad = False
-
-
-def load_model(
-    path: str | pathlib.Path,
-    freeze: bool | list[str] = False,
-) -> GraphPESModel:
+def load_model(path: str | pathlib.Path) -> GraphPESModel:
     """
     Load a model from a file.
 
@@ -89,9 +73,6 @@ def load_model(
     ----------
     path
         The path to the file.
-    freeze
-        If ``True``, freeze all model parameters. If a list of strings, freeze
-        all parameters that match any of the regular expressions in the list.
 
     Returns
     -------
@@ -146,19 +127,12 @@ def load_model(
             stacklevel=2,
         )
 
-    if isinstance(freeze, bool) and freeze:
-        freeze_model(model)
-    elif isinstance(freeze, list):
-        for pattern in freeze:
-            freeze_components_matching(model, pattern)
-
     return model
 
 
 def load_model_component(
     path: str | pathlib.Path,
     key: str,
-    freeze: bool | list[str] = False,
 ) -> GraphPESModel:
     """
     Load a component from an :class:`~graph_pes.models.AdditionModel`.
@@ -169,9 +143,6 @@ def load_model_component(
         The path to the file.
     key
         The key to load.
-    freeze
-        If ``True``, freeze all model parameters. If a list of strings, freeze
-        all parameters that match any of the regular expressions in the list.
 
     Returns
     -------
@@ -200,3 +171,126 @@ def load_model_component(
         )
 
     return base_model[key]
+
+
+T = TypeVar("T", bound=torch.nn.Module)
+
+
+def freeze(model: T) -> T:
+    """
+    Freeze all parameters in a module.
+
+    Parameters
+    ----------
+    model
+        The model to freeze.
+
+    Returns
+    -------
+    T
+        The model.
+    """
+    for param in model.parameters():
+        param.requires_grad = False
+    return model
+
+
+def freeze_matching(model: T, pattern: str) -> T:
+    r"""
+    Freeze all parameters that match the given pattern.
+
+    Parameters
+    ----------
+    model
+        The model to freeze.
+    pattern
+        The regular expression to match the names of the parameters to freeze.
+
+    Returns
+    -------
+    T
+        The model.
+
+    Examples
+    --------
+
+    Freeze all the parameters in the first layer of a MACE-MP0 model from
+    :func:`~graph_pes.interfaces.mace.mace_mp` (which have names of the form
+    ``"model.interactions.0.<name>"``):
+
+    .. code-block:: yaml
+
+        model:
+            +freeze_any_matching:
+                model: +mace_mp()
+                pattern: model\.interactions\.0\..*
+    """
+    for name, param in model.named_parameters():
+        if re.match(pattern, name):
+            logger.info(f"Freezing {name}")
+            param.requires_grad = False
+    return model
+
+
+def freeze_any_matching(model: T, patterns: list[str]) -> T:
+    r"""
+    Freeze all parameters that match any of the given patterns.
+
+    Parameters
+    ----------
+    model
+        The model to freeze.
+    patterns
+        The patterns to match.
+
+    Returns
+    -------
+    T
+        The model.
+
+
+    """
+    for pattern in patterns:
+        freeze_matching(model, pattern)
+    return model
+
+
+def freeze_all_except(model: T, pattern: str | list[str]) -> T:
+    r"""
+    Freeze all parameters in a model except those matching a given pattern.
+
+    Parameters
+    ----------
+    model
+        The model to freeze.
+    pattern
+        The pattern/s to match.
+
+    Returns
+    -------
+    T
+        The model.
+
+    Examples
+    --------
+
+    Freeze all parameters in a MACE-MP0 model from
+    :func:`~graph_pes.interfaces.mace.mace_mp` except those in the
+    read-out heads:
+
+    .. code-block:: yaml
+
+        model:
+            +freeze_all_except:
+                model: +mace_mp()
+                pattern: model\.readouts.*
+    """
+    freeze(model)
+
+    if isinstance(pattern, str):
+        pattern = [pattern]
+    for name, param in model.named_parameters():
+        if not any(re.match(p, name) for p in pattern):
+            param.requires_grad = True
+
+    return model
