@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+Added more fine-grained control over parameter freezing.
+
+### Fixed
+
+Parameter counting bug
+
 ## [0.0.18] - 2025-01-03
 
 ### Added

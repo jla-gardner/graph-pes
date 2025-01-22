@@ -222,7 +222,7 @@ def freeze_matching(model: T, pattern: str) -> T:
 
         model:
             +freeze_any_matching:
-                model: +mace_mp()
+                model: +graph_pes.interfaces.mace.mace_mp()
                 pattern: model\.interactions\.0\..*
     """
     for name, param in model.named_parameters():
@@ -282,7 +282,7 @@ def freeze_all_except(model: T, pattern: str | list[str]) -> T:
 
         model:
             +freeze_all_except:
-                model: +mace_mp()
+                model: +graph_pes.interfaces.mace.mace_mp()
                 pattern: model\.readouts.*
     """
     freeze(model)
@@ -290,7 +290,7 @@ def freeze_all_except(model: T, pattern: str | list[str]) -> T:
     if isinstance(pattern, str):
         pattern = [pattern]
     for name, param in model.named_parameters():
-        if not any(re.match(p, name) for p in pattern):
+        if any(re.match(p, name) for p in pattern):
             param.requires_grad = True
 
     return model
