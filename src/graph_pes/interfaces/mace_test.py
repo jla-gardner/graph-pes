@@ -8,6 +8,7 @@ from e3nn import o3
 from mace.calculators import MACECalculator
 from mace.modules import ScaleShiftMACE, gate_dict, interaction_classes
 
+from graph_pes.atomic_graph import AtomicGraph, to_batch
 from graph_pes.interfaces.mace import MACEWrapper, mace_mp, mace_off
 from graph_pes.utils.calculator import GraphPESCalculator
 
@@ -82,6 +83,22 @@ DIAMOND = ase.build.bulk("C", "diamond", a=3.5668)
 MACE_CALC = MACECalculator(models=MACE_MODEL)
 GRAPH_PES_MODEL = MACEWrapper(MACE_MODEL)
 GRAPH_PES_CALC = GraphPESCalculator(GRAPH_PES_MODEL)
+
+
+def test_output_shapes():
+    graph = AtomicGraph.from_ase(DIAMOND)
+    outputs = GRAPH_PES_MODEL.get_all_PES_predictions(graph)
+
+    assert outputs["energy"].shape == ()
+    assert outputs["forces"].shape == (2, 3)  # 2 atoms in unit cell
+    assert outputs["stress"].shape == (3, 3)
+
+    batch = to_batch([graph, graph])
+    outputs = GRAPH_PES_MODEL.get_all_PES_predictions(batch)
+
+    assert outputs["energy"].shape == (2,)
+    assert outputs["forces"].shape == (4, 3)
+    assert outputs["stress"].shape == (2, 3, 3)
 
 
 def test_molecular():

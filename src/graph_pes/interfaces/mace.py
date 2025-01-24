@@ -6,7 +6,7 @@ from typing import Callable, Literal
 import torch
 
 from graph_pes import AtomicGraph, GraphPESModel
-from graph_pes.atomic_graph import PropertyKey, to_batch
+from graph_pes.atomic_graph import PropertyKey, is_batch, to_batch
 from graph_pes.utils.misc import MAX_Z
 
 MACE_KEY_MAPPING: dict[str, PropertyKey] = {
@@ -35,7 +35,7 @@ def _atomic_graph_to_mace_input(
     graph: AtomicGraph,
     z_to_one_hot: Callable[[torch.Tensor], torch.Tensor],
 ) -> dict[str, torch.Tensor]:
-    if graph.batch is None:
+    if not is_batch(graph):
         graph = to_batch([graph])
 
     assert graph.batch is not None
@@ -123,6 +123,10 @@ class MACEWrapper(GraphPESModel):
             for key, value in raw_predictions.items()
             if key in MACE_KEY_MAPPING
         }
+        if not is_batch(graph):
+            for p in ["energy", "stress", "virial"]:
+                if p in properties:
+                    predictions[p] = predictions[p].squeeze()
         return {k: v for k, v in predictions.items() if k in properties}
 
 
