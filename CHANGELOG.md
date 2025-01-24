@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Fixed an inconsistency in the output shapes of `mace-torch` model predictions.
+
+Added documentation for the `freeze` family of functions.
+
 ## [0.0.19] - 2025-01-22
 
 ### Added

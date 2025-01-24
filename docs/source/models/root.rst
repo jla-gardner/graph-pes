@@ -20,6 +20,10 @@ Loading Models
 Freezing Models
 ===============
 
+.. class:: graph_pes.models.T 
+
+   Type alias for ``TypeVar("T", bound=torch.nn.Module)``.
+
 .. autofunction:: graph_pes.models.freeze
 .. autofunction:: graph_pes.models.freeze_matching
 .. autofunction:: graph_pes.models.freeze_all_except
