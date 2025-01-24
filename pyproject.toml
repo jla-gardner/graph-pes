@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "graph-pes"
-version = "0.0.19"
+version = "0.0.20"
 description = "Potential Energy Surfaces on Graphs"
 readme = "README.md"
 authors = [{ name = "John Gardner", email = "gardner.john97@gmail.com" }]
@@ -54,7 +54,7 @@ graph-pes-id = "graph_pes.scripts.id:main"
 Homepage = "https://github.com/jla-gardner/graph-pes"
 
 [tool.bumpver]
-current_version = "0.0.19"
+current_version = "0.0.20"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump {old_version} -> {new_version}"
 commit = true
