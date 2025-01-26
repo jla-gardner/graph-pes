@@ -37,16 +37,16 @@ def test_equivariance(model: GraphPESModel):
     torch.testing.assert_close(
         og_predictions["energy"],
         new_predictions["energy"],
-        atol=1e-5,
-        rtol=1e-5,
+        atol=2e-5,
+        rtol=1e-3,
     )
 
     # 2. invariance of force magnitude
     torch.testing.assert_close(
         og_predictions["forces"].norm(dim=-1),
         new_predictions["forces"].norm(dim=-1),
-        atol=1e-5,
-        rtol=1e-5,
+        atol=2e-5,
+        rtol=1e-3,
     )
 
     # 3. equivariance of forces

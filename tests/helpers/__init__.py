@@ -100,6 +100,7 @@ def all_models(
     expected_elements: list[str],
     cutoff: float,
 ) -> tuple[list[str], list[GraphPESModel]]:
+    torch.manual_seed(42)
     names, factories = all_model_factories(expected_elements, cutoff)
     return names, [factory() for factory in factories]
 
