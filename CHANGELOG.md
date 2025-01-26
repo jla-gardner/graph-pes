@@ -11,6 +11,8 @@ Fixed an inconsistency in the output shapes of `mace-torch` model predictions.
 
 Added documentation for the `freeze` family of functions.
 
+Fixed numerical instability in the `PaiNN` model.
+
 ## [0.0.19] - 2025-01-22
 
 ### Added
