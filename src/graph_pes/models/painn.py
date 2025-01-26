@@ -24,6 +24,8 @@ from graph_pes.utils.nn import (
 
 from .components.distances import Bessel, PolynomialEnvelope
 
+EPS = 1e-8
+
 
 class Interaction(nn.Module):
     r"""
@@ -142,10 +144,8 @@ class Update(nn.Module):
         v = self.V(vector_embeddings)  # (N, D, 3)
 
         # stack scalar message and the norm of v
-        m = torch.cat(
-            [scalar_embeddings, torch.linalg.norm(v, dim=-1)],
-            dim=-1,
-        )  # (N, 2D)
+        vnorm = torch.sqrt(torch.sum(v**2, dim=-1) + EPS)
+        m = torch.cat([scalar_embeddings, vnorm], dim=-1)  # (N, 2D)
         m = self.mlp(m)  # (N, 3D)
 
         # split the update into 3 parts
@@ -243,27 +243,24 @@ class PaiNN(GraphPESModel):
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, Tensor]:
         # initialise embbedings:
         # - scalars as an embedding of the atomic numbers
-        scalar_embeddings = self.z_embedding(graph.Z)
+        scalars = self.z_embedding(graph.Z)
         # - vectors as all 0s:
-        vector_embeddings = torch.zeros(
-            (number_of_atoms(graph), self.channels, 3),
-            device=graph.Z.device,
+        vectors = torch.zeros(
+            (number_of_atoms(graph), self.channels, 3), device=graph.Z.device
         )
 
         # iteratively interact and update the scalar and vector embeddings
         for interaction, update in zip(self.interactions, self.updates):
-            delta_v, delta_s = interaction(
-                vector_embeddings, scalar_embeddings, graph
-            )
-            vector_embeddings = vector_embeddings + delta_v
-            scalar_embeddings = scalar_embeddings + delta_s
+            dv, ds = interaction(vectors, scalars, graph)
+            vectors = vectors + dv
+            scalars = scalars + ds
 
-            delta_v, delta_s = update(vector_embeddings, scalar_embeddings)
-            vector_embeddings = vector_embeddings + delta_v
-            scalar_embeddings = scalar_embeddings + delta_s
+            dv, ds = update(vectors, scalars)
+            vectors = vectors + dv
+            scalars = scalars + ds
 
         # mlp read out
-        local_energies = self.read_out(scalar_embeddings).squeeze()
+        local_energies = self.read_out(scalars).squeeze()
 
         # scaling
         local_energies = self.scaler(local_energies, graph)

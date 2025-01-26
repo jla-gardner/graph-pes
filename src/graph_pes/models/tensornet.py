@@ -218,7 +218,7 @@ class EdgeEmbedding(nn.Module):
         # 2. encode atomic species of ordered neighbour pairs:
         h_z_atom = self.z_embedding(graph.Z)  # (N, C)
         h_z_edge = h_z_atom[graph.neighbour_list]  # (2, E, C)
-        h_z_edge = h_z_edge.reshape(E, 2 * C)
+        h_z_edge = h_z_edge.permute(1, 0, 2).reshape(E, 2 * C)
         h_z_edge = self.z_map(h_z_edge)  # (E, C)
 
         # 3. embed edge distances
@@ -355,7 +355,7 @@ class Interaction(nn.Module):
         Y = Y @ M_i + M_i @ Y  # (N, C, 3, 3)
 
         # renormalise and decompose
-        norm = frobenius_norm(Y + 1)[..., None, None]  # (N, C, 1, 1)
+        norm = (frobenius_norm(Y) + 1)[..., None, None]  # (N, C, 1, 1)
         I, A, S = decompose_matrix(Y / norm)  # (N, C, 3, 3)
 
         # mix features again
