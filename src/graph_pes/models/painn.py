@@ -24,8 +24,6 @@ from graph_pes.utils.nn import (
 
 from .components.distances import Bessel, PolynomialEnvelope
 
-EPS = 1e-8
-
 
 class Interaction(nn.Module):
     r"""
@@ -144,7 +142,7 @@ class Update(nn.Module):
         v = self.V(vector_embeddings)  # (N, D, 3)
 
         # stack scalar message and the norm of v
-        vnorm = torch.sqrt(torch.sum(v**2, dim=-1) + EPS)
+        vnorm = torch.sqrt(torch.sum(v**2, dim=-1) + 1e-8)
         m = torch.cat([scalar_embeddings, vnorm], dim=-1)  # (N, 2D)
         m = self.mlp(m)  # (N, 3D)
 
