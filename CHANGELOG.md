@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Added a `summary.yaml` file to the output of each training/testing run that stores results locally.
+
 ## [0.0.21] - 2025-01-26
 
 Fixed an inconsistency in the output shapes of `mace-torch` model predictions.
