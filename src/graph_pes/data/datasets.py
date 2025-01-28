@@ -117,14 +117,17 @@ class ASEToGraphsConverter(Sequence[AtomicGraph]):
 # transform to disk: this means that multiple training runs on the
 # same dataset will be able to reuse the same graphs, massively speeding
 # up the start to training for the (n>1)th run
+# to ensure that the graphs we get back are of the correct dtype,
+# we need to pass the current torch dtype to this caching function
 @locache.persist
 def get_all_graphs_and_cache_to_disk(
     converter: ASEToGraphsConverter,
+    torch_dtype: torch.dtype,
 ) -> list[AtomicGraph]:
     logger.info(
         f"Caching neighbour lists for {len(converter)} structures "
-        f"with cutoff {converter.cutoff} and property mapping "
-        f"{converter.property_mapping}"
+        f"with cutoff {converter.cutoff}, property mapping "
+        f"{converter.property_mapping} and torch dtype {torch_dtype}"
     )
     return [converter[i] for i in range(len(converter))]
 
@@ -176,12 +179,16 @@ class ASEToGraphDataset(GraphDataset):
             # cache the graphs to disk - this is done on rank-0 only
             # and means that expensive data pre-transforms don't need to be
             # recomputed on each rank in the distributed setup
-            get_all_graphs_and_cache_to_disk(self.graphs)
+            get_all_graphs_and_cache_to_disk(
+                self.graphs, torch.get_default_dtype()
+            )
 
     def setup(self) -> None:
         if self.pre_transform and isinstance(self.graphs, ASEToGraphsConverter):
             # load the graphs from disk
-            actual_graphs = get_all_graphs_and_cache_to_disk(self.graphs)
+            actual_graphs = get_all_graphs_and_cache_to_disk(
+                self.graphs, torch.get_default_dtype()
+            )
             self.graphs = actual_graphs
 
 
