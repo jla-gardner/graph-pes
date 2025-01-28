@@ -1,17 +1,27 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import contextlib
+import csv
 import os
 import random
+from pathlib import Path
 
 import numpy as np
 import torch
 import yaml
+from pytorch_lightning.loggers import CSVLogger, Logger
 
 from graph_pes.config.shared import TorchConfig
+from graph_pes.training.callbacks import WandbLogger
+from graph_pes.utils import distributed
 from graph_pes.utils.logger import logger
-from graph_pes.utils.misc import build_single_nested_dict, nested_merge_all
+from graph_pes.utils.misc import (
+    build_single_nested_dict,
+    nested_merge,
+    nested_merge_all,
+)
 
 
 def extract_config_dict_from_command_line(description: str) -> dict:
@@ -92,3 +102,52 @@ def configure_general_options(torch_config: TorchConfig, seed: int):
     np.random.seed(seed)
     torch.manual_seed(seed)
     os.environ["PL_SEED_WORKERS"] = "0"
+
+
+def extract_summary(logs: Logger) -> dict:
+    if isinstance(logs, WandbLogger):
+        return dict(logs.experiment.summary)
+
+    elif isinstance(logs, CSVLogger):
+        try:
+            experiment = logs.experiment
+            with experiment._fs.open(
+                experiment.metrics_file_path, "r", newline=""
+            ) as file:
+                metrics = list(csv.DictReader(file))
+        except Exception as e:
+            logger.warning(f"Failed to read metrics file: {e}")
+            return {}
+
+        summary = {}
+        for metric_row in metrics:
+            m = {
+                k: ast.literal_eval(v) for k, v in metric_row.items() if v != ""
+            }
+            summary.update(m)
+        return summary
+
+    else:
+        logger.warning(
+            f"Unsupported logger type: {type(logs)}. "
+            "We can't extract a summary."
+        )
+        return {}
+
+
+def update_summary(logger: Logger | None, summary_file: Path):
+    if logger is None:
+        return
+    if not distributed.IS_RANK_0:
+        return
+
+    if summary_file.exists():
+        with open(summary_file) as f:
+            existing = yaml.safe_load(f)
+    else:
+        existing = {}
+
+    summary = extract_summary(logger)
+    summary_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(summary_file, "w") as f:
+        yaml.dump(nested_merge(existing, summary), f)

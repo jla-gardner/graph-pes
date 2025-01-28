@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import pytorch_lightning as pl
 
@@ -10,6 +11,7 @@ from graph_pes.models import load_model
 from graph_pes.scripts.utils import (
     configure_general_options,
     extract_config_dict_from_command_line,
+    update_summary,
 )
 from graph_pes.training.tasks import test_with_lightning
 from graph_pes.utils import distributed
@@ -48,6 +50,9 @@ def test(config: TestingConfig) -> None:
         config.prefix,
         user_eval_metrics=[],
     )
+
+    summary_file = Path(config.model_path).parent / "summary.yaml"
+    update_summary(trainer.logger, summary_file)
 
 
 def main():

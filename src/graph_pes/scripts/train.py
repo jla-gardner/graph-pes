@@ -19,6 +19,7 @@ from graph_pes.config.training import TrainingConfig
 from graph_pes.scripts.utils import (
     configure_general_options,
     extract_config_dict_from_command_line,
+    update_summary,
 )
 from graph_pes.training.callbacks import (
     EarlyStoppingWithLogging,
@@ -121,10 +122,11 @@ def train_from_config(config_data: dict):
     logger.info(f"""\
 Output for this training run can be found at:
    └─ {output_dir}
-      ├─ logs/rank-0.log    # find a verbose log here
-      ├─ model.pt           # the best model
+      ├─ rank-0.log         # find a verbose log here
+      ├─ model.pt           # the best model (according to valid/loss/total)
       ├─ lammps_model.pt    # the best model deployed to LAMMPS
-      └─ train-config.yaml  # the complete config used for this run\
+      ├─ train-config.yaml  # the complete config used for this run
+      └─ summary.yaml       # the summary of the training run
 """)
 
     configure_general_options(config.general.torch, config.general.seed)
@@ -161,6 +163,7 @@ Output for this training run can be found at:
         scheduler=scheduler,
         user_eval_metrics=[],
     )
+    update_summary(trainer.logger, output_dir / "summary.yaml")
     logger.info("Training complete.")
 
     logger.info("Testing best model...")
@@ -190,9 +193,9 @@ Output for this training run can be found at:
         logging_prefix="best_model",
         user_eval_metrics=[],
     )
+    update_summary(tester.logger, output_dir / "summary.yaml")
 
     logger.info("Testing complete.")
-
     logger.info("Awaiting final Lightning and W&B shutdown...")
 
 
