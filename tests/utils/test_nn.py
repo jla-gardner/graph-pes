@@ -33,7 +33,7 @@ def test_per_element_parameter(tmp_path):
 
     # test save and loading
     torch.save(pep, tmp_path / "pep.pt")
-    pep_loaded = torch.load(tmp_path / "pep.pt")
+    pep_loaded = torch.load(tmp_path / "pep.pt", weights_only=False)
     assert pep_loaded.numel() == 5
     assert pep.data.allclose(pep_loaded.data)
     assert pep.requires_grad == pep_loaded.requires_grad

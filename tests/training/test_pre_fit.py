@@ -118,7 +118,7 @@ def test(
 
     # check that these are persisted over save and load
     torch.save(model, tmp_path / "model.pt")
-    loaded = torch.load(tmp_path / "model.pt")
+    loaded = torch.load(tmp_path / "model.pt", weights_only=False)
     assert loaded.elements_seen == ["H", "C"]
 
     # show the model C, H, and O
