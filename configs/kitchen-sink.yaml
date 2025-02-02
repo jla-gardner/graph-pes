@@ -33,15 +33,16 @@ data:
             cutoff: =/CUTOFF
 
 loss:
-    - +PerAtomEnergyLoss()
-    - +WeightedLoss:
-          component:
-              +PropertyLoss: { property: forces, metric: RMSE }
-          weight: 3.0
-    - +WeightedLoss:
-          component:
-              +PropertyLoss: { property: stress, metric: RMSE }
-          weight: 10.0
+    energy: +PerAtomEnergyLoss()
+    forces:
+        +WeightedLoss:
+            component: +ForceRMSE()
+            weight: 3.0
+    stress:
+        +WeightedLoss:
+            component:
+                +PropertyLoss: { property: stress, metric: RMSE }
+            weight: 10.0
 
 fitting:
     pre_fit_model: true

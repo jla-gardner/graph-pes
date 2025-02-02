@@ -310,16 +310,17 @@ class PerAtomEnergyLoss(PropertyLoss):
         return f"per_atom_energy_{_get_metric_name(self.metric)}"
 
 
+class ForceRMSE(PropertyLoss):
+    def __init__(self):
+        super().__init__("forces", RMSE())
+
+
 ## METRICS ##
 
 
 def parse_metric(metric: Metric | MetricName | None) -> Metric:
     if isinstance(metric, str):
-        return {
-            "MAE": MAE(),
-            "RMSE": RMSE(),
-            "MSE": MSE(),
-        }[metric]
+        return {"MAE": MAE(), "RMSE": RMSE(), "MSE": MSE()}[metric]
 
     if metric is None:
         return RMSE()

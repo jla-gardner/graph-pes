@@ -14,7 +14,6 @@ from pytorch_lightning import Callback
 from graph_pes.config.shared import TorchConfig
 from graph_pes.data.datasets import DatasetCollection
 from graph_pes.graph_pes_model import GraphPESModel
-from graph_pes.models.addition import AdditionModel
 from graph_pes.training.callbacks import VerboseSWACallback
 from graph_pes.training.loss import Loss, TotalLoss, WeightedLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
@@ -92,6 +91,11 @@ class GeneralConfig:
     progress: Literal["rich", "logged"] = "rich"
 
 
+# TODO:
+# - move get_model to utils, call it parse_model
+# - turn loss into dict with human readable names + move parse_loss to utils
+
+
 @dataclass
 class TrainingConfig:
     """
@@ -101,30 +105,14 @@ class TrainingConfig:
 
     model: Union[GraphPESModel, Dict[str, GraphPESModel]]
     data: DatasetCollection
-    loss: Union[Loss, WeightedLoss, TotalLoss, List[Union[WeightedLoss, Loss]]]
+    loss: Union[
+        Loss, WeightedLoss, TotalLoss, Dict[str, Union[WeightedLoss, Loss]]
+    ]
     fitting: FittingConfig
     general: GeneralConfig
     wandb: Union[Dict[str, Any], None]
 
     ### Methods ###
-
-    def get_model(self) -> GraphPESModel:
-        if isinstance(self.model, GraphPESModel):
-            return self.model
-        elif isinstance(self.model, dict):
-            if not all(
-                isinstance(m, GraphPESModel) for m in self.model.values()
-            ):
-                raise ValueError(
-                    "Expected all values in the model dictionary to be "
-                    "GraphPESModel instances."
-                )
-            return AdditionModel(**self.model)
-        raise ValueError(
-            "Expected to be able to parse a GraphPESModel or a "
-            "dictionary of named GraphPESModels from the model config, "
-            f"but got something else: {self.model}"
-        )
 
     def get_data(self) -> DatasetCollection:
         if isinstance(self.data, DatasetCollection):
@@ -137,19 +125,6 @@ class TrainingConfig:
             "dictionary mapping 'train' and 'valid' keys to GraphDataset "
             "instances from the data config, but got something else: "
             f"{self.data}"
-        )
-
-    def get_loss(self) -> TotalLoss:
-        if isinstance(self.loss, Loss):
-            return TotalLoss([self.loss])
-        elif isinstance(self.loss, TotalLoss):
-            return self.loss
-        elif isinstance(self.loss, list):
-            return TotalLoss(self.loss)
-        raise ValueError(
-            "Expected to be able to parse a Loss, TotalLoss, or a list of "
-            "WeightedLoss instances from the loss config, but got something "
-            f"else: {self.loss}"
         )
 
     @classmethod

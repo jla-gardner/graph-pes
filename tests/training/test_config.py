@@ -4,6 +4,7 @@ import yaml
 
 from graph_pes.config.shared import instantiate_config_from_dict
 from graph_pes.config.training import TrainingConfig
+from graph_pes.config.utils import parse_model
 from graph_pes.models import SchNet
 from graph_pes.models.addition import AdditionModel
 from graph_pes.utils.misc import nested_merge
@@ -25,7 +26,7 @@ def test_model_instantiation():
     dummy_data, config = instantiate_config_from_dict(
         dummy_data, TrainingConfig
     )
-    model = config.get_model()
+    model = parse_model(config.model)
     assert isinstance(model, SchNet)
 
     # 2. test single model with params:
@@ -34,7 +35,7 @@ def test_model_instantiation():
     dummy_data, config = instantiate_config_from_dict(
         dummy_data, TrainingConfig
     )
-    model = config.get_model()
+    model = parse_model(config.model)
     assert isinstance(model, SchNet)
     assert model.cutoff == 3.7
 
@@ -50,7 +51,7 @@ many-body:
     dummy_data, config = instantiate_config_from_dict(
         dummy_data, TrainingConfig
     )
-    model = config.get_model()
+    model = parse_model(config.model)
     assert isinstance(model, AdditionModel)
     assert len(model.models) == 2
     assert isinstance(model.models["many-body"], SchNet)
