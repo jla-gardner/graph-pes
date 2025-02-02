@@ -37,7 +37,7 @@ def test_deploy(model: GraphPESModel, tmp_path: Path):
 
     # 1. saving and unsaving works
     torch.save(model, tmp_path / "model.pt")
-    loaded_model = torch.load(tmp_path / "model.pt")
+    loaded_model = torch.load(tmp_path / "model.pt", weights_only=False)
     assert isinstance(loaded_model, GraphPESModel)
     torch.testing.assert_close(
         model.predict_forces(graph),
