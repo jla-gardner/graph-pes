@@ -2,10 +2,15 @@ import pytest
 import torch
 import yaml
 
-from graph_pes.config.shared import instantiate_config_from_dict, parse_model
+from graph_pes.config.shared import (
+    instantiate_config_from_dict,
+    parse_loss,
+    parse_model,
+)
 from graph_pes.config.training import TrainingConfig
 from graph_pes.models import SchNet
 from graph_pes.models.addition import AdditionModel
+from graph_pes.training.loss import ForceRMSE, PerAtomEnergyLoss, TotalLoss
 from graph_pes.utils.misc import nested_merge
 
 from .. import helpers
@@ -126,3 +131,51 @@ def test_extra_keys():
         dummy_data, TrainingConfig
     )
     assert "extra_key" in final_data
+
+
+def test_parse_loss():
+    # 1. a single loss should be wrapped in a TotalLoss
+    loss = PerAtomEnergyLoss()
+    total_loss = parse_loss(loss)
+    assert isinstance(total_loss, TotalLoss)
+    assert len(total_loss.losses) == 1
+    assert total_loss.losses[0] is loss
+
+    # 2. a list of losses should be wrapped in a TotalLoss
+    loss = [PerAtomEnergyLoss(), ForceRMSE()]
+    total_loss = parse_loss(loss)
+    assert isinstance(total_loss, TotalLoss)
+    assert len(total_loss.losses) == 2
+
+    # 3. as should a dictionary of losses
+    loss = {"energy": PerAtomEnergyLoss(), "forces": ForceRMSE()}
+    total_loss = parse_loss(loss)
+    assert isinstance(total_loss, TotalLoss)
+    assert len(total_loss.losses) == 2
+    assert total_loss.losses[0] is loss["energy"]
+    assert total_loss.losses[1] is loss["forces"]
+
+    # 4. a TotalLoss should be returned as is
+    loss = TotalLoss([PerAtomEnergyLoss()])
+    assert parse_loss(loss) is loss
+
+    # 5. a non-Loss should raise an error
+    with pytest.raises(ValueError):
+        parse_loss(1)  # type: ignore
+
+
+def test_parse_model():
+    model = SchNet()
+    parsed = parse_model(model)
+    assert parsed is model
+
+    parsed = parse_model({"schnet": model})
+    assert isinstance(parsed, AdditionModel)
+    assert len(parsed.models) == 1
+    assert parsed.models["schnet"] is model
+
+    with pytest.raises(ValueError):
+        parse_model(1)  # type: ignore
+
+    with pytest.raises(ValueError):
+        parse_model({"schnet": 1})  # type: ignore
