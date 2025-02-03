@@ -29,7 +29,7 @@ def parse_model(
 
 
 def parse_loss(
-    loss: Loss | TotalLoss | dict[str, Loss],
+    loss: Loss | TotalLoss | dict[str, Loss] | list[Loss],
 ) -> TotalLoss:
     if isinstance(loss, Loss):
         return TotalLoss([loss])
@@ -37,8 +37,11 @@ def parse_loss(
         return loss
     elif isinstance(loss, dict):
         return TotalLoss(list(loss.values()))
+    elif isinstance(loss, list):
+        return TotalLoss(loss)
     raise ValueError(
-        "Expected to be able to parse a Loss, TotalLoss, or a dictionary "
-        "of Loss instances from the loss config, but got something "
-        f"else: {loss}"
+        "Expected to be able to parse a Loss, TotalLoss, a list of "
+        "Loss instances, or a dictionary mapping keys to Loss instances from "
+        "the loss config, but got something else:\n"
+        f"{loss}"
     )

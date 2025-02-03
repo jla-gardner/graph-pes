@@ -181,19 +181,17 @@ This config section should either point to something that instantiates a single
             property: stress
             metric: MAE  # defaults to RMSE if not specified
 
-...or specify a dictionary of :class:`~graph_pes.training.loss.Loss` instances,
-where the keys have no meaning other than to be unique, human readable identifiers...
+...or specify a list of :class:`~graph_pes.training.loss.Loss` instances...
 
 .. code-block:: yaml
 
     loss:
         # specify a loss with several components:
-        energy: +PerAtomEnergyLoss()  # defaults to weight 1.0
-        forces:
-            +PropertyLoss:
-                property: forces
-                metric: MSE
-                weight: 10.0
+        - +PerAtomEnergyLoss()  # defaults to weight 1.0
+        - +PropertyLoss:
+            property: forces
+            metric: MSE
+            weight: 10.0
 
 ...or point to your own custom loss implementation, either in isolation:
 
@@ -207,9 +205,28 @@ where the keys have no meaning other than to be unique, human readable identifie
 .. code-block:: yaml
 
     loss:
+        - +PerAtomEnergyLoss()
+        - +my.module.CustomLoss: { alpha: 0.5 }
+
+
+If you want to sweep over a loss component weight via the command line, you can use a
+dictionary mapping arbitrary strings to loss instances like so:
+
+.. code-block:: yaml
+
+    loss:
         energy: +PerAtomEnergyLoss()
-        custom: 
-            +my.module.CustomLoss: { alpha: 0.5 }
+        forces:
+            +ForceRMSE:
+                weight: 5.0
+
+allowing you to run a command such as:
+
+.. code-block:: bash
+
+    for weight in 0.1 0.5 1.0; do
+        graph-pes-train config.yaml loss/forces/+ForceRMSE/weight=$weight
+    done
 
 
 ``fitting``

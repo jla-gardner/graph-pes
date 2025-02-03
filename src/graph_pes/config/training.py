@@ -105,7 +105,7 @@ class TrainingConfig:
 
     model: Union[GraphPESModel, Dict[str, GraphPESModel]]
     data: DatasetCollection
-    loss: Union[Loss, TotalLoss, Dict[str, Loss]]
+    loss: Union[Loss, TotalLoss, Dict[str, Loss], List[Loss]]
     fitting: FittingConfig
     general: GeneralConfig
     wandb: Union[Dict[str, Any], None]

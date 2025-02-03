@@ -15,6 +15,17 @@ Metric = Callable[[Tensor, Tensor], Tensor]
 MetricName = Literal["MAE", "RMSE", "MSE"]
 
 
+class WeightedLoss:
+    def __init__(self, *args, **kwargs):
+        # this is now depracated: pass weight directly to the loss object
+        raise Exception(
+            "The WeightedLoss class has been removed from graph-pes "
+            "as of version 0.0.22. Please now pass loss weights directly "
+            "to the loss instances! See the docs for more information: "
+            "https://jla-gardner.github.io/graph-pes/fitting/losses.html"
+        )
+
+
 class Loss(nn.Module, ABC):
     """
     A general base class for all loss functions in ``graph-pes``.
