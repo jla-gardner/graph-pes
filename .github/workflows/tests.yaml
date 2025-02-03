@@ -139,7 +139,7 @@ jobs:
         run: pip install --upgrade --upgrade-strategy eager ".[test]"
 
       - name: Install mace-torch
-        run: pip install mace-torch
+        run: pip install mace-torch torch==2.5 # TODO: unfix this version
 
       - name: Run tests
         run: pytest src/graph_pes/interfaces/mace_test.py -vvv --import-mode=importlib
