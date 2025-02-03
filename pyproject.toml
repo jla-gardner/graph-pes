@@ -22,7 +22,7 @@ dependencies = [
     "numpy",
     "rich",
     "dacite",
-    "e3nn",
+    "e3nn==0.5.4",
     "scikit-learn",
     "locache>=4.0.2",
     "load-atoms>=0.3.9",
