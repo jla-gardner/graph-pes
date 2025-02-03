@@ -2,9 +2,8 @@ import pytest
 import torch
 import yaml
 
-from graph_pes.config.shared import instantiate_config_from_dict
+from graph_pes.config.shared import instantiate_config_from_dict, parse_model
 from graph_pes.config.training import TrainingConfig
-from graph_pes.config.utils import parse_model
 from graph_pes.models import SchNet
 from graph_pes.models.addition import AdditionModel
 from graph_pes.utils.misc import nested_merge

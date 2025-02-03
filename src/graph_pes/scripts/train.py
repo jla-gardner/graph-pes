@@ -14,9 +14,12 @@ from pytorch_lightning.callbacks import (
 )
 from pytorch_lightning.loggers import CSVLogger
 
-from graph_pes.config.shared import instantiate_config_from_dict
+from graph_pes.config.shared import (
+    instantiate_config_from_dict,
+    parse_loss,
+    parse_model,
+)
 from graph_pes.config.training import TrainingConfig
-from graph_pes.config.utils import parse_loss, parse_model
 from graph_pes.scripts.utils import (
     configure_general_options,
     extract_config_dict_from_command_line,
