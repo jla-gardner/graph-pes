@@ -255,7 +255,7 @@ class TotalLoss(torch.nn.Module):
     def __repr__(self) -> str:
         return "\n".join(
             ["TotalLoss:"]
-            + ["    ".join(loss.split("\n")) for loss in self.losses]
+            + ["    ".join(str(loss).split("\n")) for loss in self.losses]
         )
 
 
