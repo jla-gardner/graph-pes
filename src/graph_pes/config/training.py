@@ -15,7 +15,7 @@ from graph_pes.config.shared import TorchConfig
 from graph_pes.data.datasets import DatasetCollection
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.training.callbacks import VerboseSWACallback
-from graph_pes.training.loss import Loss, TotalLoss, WeightedLoss
+from graph_pes.training.loss import Loss, TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
 
 
@@ -105,9 +105,7 @@ class TrainingConfig:
 
     model: Union[GraphPESModel, Dict[str, GraphPESModel]]
     data: DatasetCollection
-    loss: Union[
-        Loss, WeightedLoss, TotalLoss, Dict[str, Union[WeightedLoss, Loss]]
-    ]
+    loss: Union[Loss, TotalLoss, Dict[str, Loss]]
     fitting: FittingConfig
     general: GeneralConfig
     wandb: Union[Dict[str, Any], None]

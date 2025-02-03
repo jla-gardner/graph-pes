@@ -3,7 +3,6 @@ from __future__ import annotations
 import copy
 import logging
 import random
-import re
 import string
 import sys
 from pathlib import Path
@@ -170,14 +169,6 @@ def uniform_repr(
 
     # remove trailing comma, add final newline and close bracket
     return rep[:-1] + "\n)"
-
-
-def force_to_single_line(s: str) -> str:
-    """
-    Convert a multi-line string to a single line by replacing all whitespace
-    sequences (including newlines) with a single space.
-    """
-    return re.sub(r"\s+", " ", s.strip())
 
 
 def nested_merge_all(*dicts: dict) -> dict:

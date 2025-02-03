@@ -167,7 +167,7 @@ You can also test on other datasets at this point by including a ``"test"`` key 
 ``loss``
 --------
 
-This config section should either point to something that instantiates a
+This config section should either point to something that instantiates a single
 :class:`graph_pes.training.loss.Loss` object...
 
 .. code-block:: yaml
@@ -178,20 +178,22 @@ This config section should either point to something that instantiates a
     # or more fine-grained control
     loss:
         +PropertyLoss:
-            property: energy
+            property: stress
             metric: MAE  # defaults to RMSE if not specified
 
-...or specify a list of :class:`~graph_pes.training.loss.WeightedLoss`
-and/or :class:`~graph_pes.training.loss.Loss` instances...
+...or specify a dictionary of :class:`~graph_pes.training.loss.Loss` instances,
+where the keys have no meaning other than to be unique, human readable identifiers...
 
 .. code-block:: yaml
 
     loss:
         # specify a loss with several components:
-        - +PerAtomEnergyLoss()  # defaults to weight 1.0
-        - +WeightedLoss:
-            component: +PropertyLoss: { property: forces, metric: MSE }
-            weight: 10.0
+        energy: +PerAtomEnergyLoss()  # defaults to weight 1.0
+        forces:
+            +PropertyLoss:
+                property: forces
+                metric: MSE
+                weight: 10.0
 
 ...or point to your own custom loss implementation, either in isolation:
 
@@ -205,8 +207,9 @@ and/or :class:`~graph_pes.training.loss.Loss` instances...
 .. code-block:: yaml
 
     loss:
-        - +PerAtomEnergyLoss()
-        - +my.module.CustomLoss: { alpha: 0.5 }
+        energy: +PerAtomEnergyLoss()
+        custom: 
+            +my.module.CustomLoss: { alpha: 0.5 }
 
 
 ``fitting``

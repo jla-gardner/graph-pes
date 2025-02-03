@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models import AdditionModel
-from graph_pes.training.loss import Loss, TotalLoss, WeightedLoss
+from graph_pes.training.loss import Loss, TotalLoss
 
 
 def parse_model(
@@ -29,9 +29,9 @@ def parse_model(
 
 
 def parse_loss(
-    loss: Loss | WeightedLoss | TotalLoss | dict[str, WeightedLoss | Loss],
+    loss: Loss | TotalLoss | dict[str, Loss],
 ) -> TotalLoss:
-    if isinstance(loss, (Loss, WeightedLoss)):
+    if isinstance(loss, Loss):
         return TotalLoss([loss])
     elif isinstance(loss, TotalLoss):
         return loss
@@ -39,6 +39,6 @@ def parse_loss(
         return TotalLoss(list(loss.values()))
     raise ValueError(
         "Expected to be able to parse a Loss, TotalLoss, or a dictionary "
-        "of WeightedLoss instances from the loss config, but got something "
+        "of Loss instances from the loss config, but got something "
         f"else: {loss}"
     )

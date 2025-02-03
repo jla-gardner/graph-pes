@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Callable, Literal, NamedTuple, Sequence
 
 import torch
@@ -9,7 +8,7 @@ from torch import Tensor, nn
 
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey, divide_per_atom
 from graph_pes.graph_pes_model import GraphPESModel
-from graph_pes.utils.misc import force_to_single_line, uniform_repr
+from graph_pes.utils.misc import uniform_repr
 from graph_pes.utils.nn import UniformModuleList
 
 Metric = Callable[[Tensor, Tensor], Tensor]
@@ -31,7 +30,17 @@ class Loss(nn.Module, ABC):
 
     * :meth:`pre_fit` to perform any necessary operations before training
       commences.
+
+    Parameters
+    ----------
+    weight
+        A scalar multiplier for weighting the value returned by
+        :meth:`forward` as part of a :class:`TotalLoss`.
     """
+
+    def __init__(self, weight):
+        super().__init__()
+        self.weight = weight
 
     @abstractmethod
     def forward(
@@ -41,6 +50,8 @@ class Loss(nn.Module, ABC):
         predictions: dict[PropertyKey, torch.Tensor],
     ) -> torch.Tensor:
         r"""
+        Compute the unweighted loss value.
+
         :class:`Loss`\ s can act on any of:
 
         Parameters
@@ -105,7 +116,7 @@ class PropertyLoss(Loss):
 
     .. code-block:: python
 
-        energy_rmse_loss = Loss("energy", RMSE())
+        energy_rmse_loss = PropertyLoss("energy", RMSE())
         energy_rmse_value = energy_rmse_loss(
             predictions,  # a dict of key (energy/force/etc.) to value
             graph.properties,
@@ -116,8 +127,9 @@ class PropertyLoss(Loss):
         self,
         property: PropertyKey,
         metric: Metric | MetricName = "RMSE",
+        weight: float = 1.0,
     ):
-        super().__init__()
+        super().__init__(weight)
         self.property: PropertyKey = property
         self.metric = parse_metric(metric)
 
@@ -158,20 +170,6 @@ class PropertyLoss(Loss):
         )
 
 
-@dataclass
-class WeightedLoss:
-    """
-    Specification for a component of a
-    :class:`~graph_pes.training.loss.TotalLoss`.
-    """
-
-    component: Loss
-    """Point to a :class:`~graph_pes.training.loss.Loss` instance."""
-
-    weight: int | float = 1.0
-    """The weight of this loss component."""
-
-
 class SubLossPair(NamedTuple):
     loss_value: torch.Tensor
     weighted_loss_value: torch.Tensor
@@ -184,7 +182,7 @@ class TotalLossResult(NamedTuple):
 
 class TotalLoss(torch.nn.Module):
     r"""
-    A lightweight wrapper around a collection of (optionally weighted) losses.
+    A lightweight wrapper around a collection of losses.
 
     .. math::
 
@@ -201,18 +199,9 @@ class TotalLoss(torch.nn.Module):
         The collection of losses to aggregate.
     """
 
-    def __init__(self, losses: Sequence[Loss | WeightedLoss]):
+    def __init__(self, losses: Sequence[Loss]):
         super().__init__()
-        _losses = [
-            loss if isinstance(loss, Loss) else loss.component
-            for loss in losses
-        ]
-        _weights = [
-            loss.weight if isinstance(loss, WeightedLoss) else 1.0
-            for loss in losses
-        ]
-        self.losses = UniformModuleList(_losses)
-        self.weights = _weights
+        self.losses = UniformModuleList(losses)
 
     def forward(
         self,
@@ -234,9 +223,9 @@ class TotalLoss(torch.nn.Module):
         total_loss = torch.scalar_tensor(0.0, device=graph.Z.device)
         components: dict[str, SubLossPair] = {}
 
-        for loss, weight in zip(self.losses, self.weights):
+        for loss in self.losses:
             loss_value = loss(model, graph, predictions)
-            weighted_loss_value = loss_value * weight
+            weighted_loss_value = loss_value * loss.weight
 
             total_loss += weighted_loss_value
             components[loss.name] = SubLossPair(loss_value, weighted_loss_value)
@@ -253,15 +242,9 @@ class TotalLoss(torch.nn.Module):
         return super().__call__(model, graph, predictions)
 
     def __repr__(self) -> str:
-        losses = ["(loss)"] + [
-            force_to_single_line(str(loss)) for loss in self.losses
-        ]
-        weights = ["(weight)"] + [str(weight) for weight in self.weights]
-
-        max_width = max(len(w) for w in weights)
         return "\n".join(
             ["TotalLoss:"]
-            + [f"    {w:>{max_width}} : {l}" for w, l in zip(weights, losses)]
+            + ["    ".join(loss.split("\n")) for loss in self.losses]
         )
 
 
@@ -291,8 +274,9 @@ class PerAtomEnergyLoss(PropertyLoss):
     def __init__(
         self,
         metric: Metric | MetricName = "RMSE",
+        weight: float = 1.0,
     ):
-        super().__init__("energy", metric)
+        super().__init__("energy", metric, weight)
 
     def forward(
         self,
@@ -311,8 +295,13 @@ class PerAtomEnergyLoss(PropertyLoss):
 
 
 class ForceRMSE(PropertyLoss):
-    def __init__(self):
-        super().__init__("forces", RMSE())
+    """
+    Alias for :class:`PropertyLoss` with ``property="forces"`` and
+    ``metric=RMSE``.
+    """
+
+    def __init__(self, weight: float = 1.0):
+        super().__init__("forces", RMSE(), weight)
 
 
 ## METRICS ##
