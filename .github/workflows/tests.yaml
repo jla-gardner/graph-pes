@@ -31,7 +31,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
 
       - name: Install graph-pes and required dependencies
-        run: uv sync
+        run: uv pip install --upgrade ".[test,docs]"
 
       # - name: Cache dependencies
       #   # Caching the python environment. This is different to just caching the
