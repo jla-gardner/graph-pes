@@ -25,28 +25,36 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache dependencies
-        # Caching the python environment. This is different to just caching the
-        # pip wheels, as we save on the installation time of large packages such
-        # as torch.
-        uses: actions/cache@v4.0.2
-        id: cache
+      - uses: astral-sh/setup-uv@v5
         with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
 
       - name: Install graph-pes and required dependencies
-        # Install graph-pes and update any dependencies that are not up to date in
-        # the cached environment. We use the --upgrade-strategy eager flag to get
-        # the latest version of the dependencies.
-        run: pip install --upgrade --upgrade-strategy eager ".[test,docs]"
+        run: uv sync
+
+      # - name: Cache dependencies
+      #   # Caching the python environment. This is different to just caching the
+      #   # pip wheels, as we save on the installation time of large packages such
+      #   # as torch.
+      #   uses: actions/cache@v4.0.2
+      #   id: cache
+      #   with:
+      #     path: ${{ env.pythonLocation }}
+      #     key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
+
+      # - name: Install graph-pes and required dependencies
+      #   # Install graph-pes and update any dependencies that are not up to date in
+      #   # the cached environment. We use the --upgrade-strategy eager flag to get
+      #   # the latest version of the dependencies.
+      #   run: pip install --upgrade --upgrade-strategy eager ".[test,docs]"
 
       - name: Useful info
-        run: pip freeze
+        run: uv pip freeze
 
       ### CODE TESTS ###
       - name: Run tests
-        run: PYTHONPATH=. pytest --cov --cov-report xml tests/
+        run: PYTHONPATH=. uv run pytest --cov --cov-report xml tests/
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
@@ -57,7 +65,7 @@ jobs:
 
       - name: Run a very small training run
         run: |
-          graph-pes-train configs/minimal.yaml \
+          uv run graph-pes-train configs/minimal.yaml \
               data/+load_atoms_dataset/n_train=10 \
               data/+load_atoms_dataset/n_valid=10 \
               fitting/trainer_kwargs/max_epochs=5 \
@@ -67,7 +75,7 @@ jobs:
 
       - name: Run a very small testing run
         run: |
-          graph-pes-test model_path=results/test-run/model.pt \
+          uv run graph-pes-test model_path=results/test-run/model.pt \
               data/+file_dataset/path=tests/helpers/test.xyz \
               data/+file_dataset/cutoff=5.0
 
