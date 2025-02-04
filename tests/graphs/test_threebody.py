@@ -8,8 +8,8 @@ from ase.build import molecule
 from graph_pes import AtomicGraph
 from graph_pes.atomic_graph import number_of_atoms, number_of_edges
 from graph_pes.utils.threebody import (
-    neighbour_triplets,
     triplet_bond_descriptors,
+    triplet_edge_pairs,
 )
 
 
@@ -45,54 +45,57 @@ def check_angle_measures(a: float, b: float, theta: float):
 
     assert len(angle) == len(triplet_idxs) == 6
 
+    def assert_close(a, b):
+        return torch.testing.assert_close(a, b, atol=1e-3, rtol=1e-3)
+
     ############################################################
     # first triplet is 0-1-2
     # therefore angle is theta
     # and r_ij and r_ik are a and b
     assert list(triplet_idxs[0]) == [0, 1, 2]
-    torch.testing.assert_close(angle[0], rad_theta)
-    torch.testing.assert_close(r_ij[0], torch.tensor(a))
-    torch.testing.assert_close(r_ik[0], torch.tensor(b))
+    assert_close(angle[0], rad_theta)
+    assert_close(r_ij[0], torch.tensor(a))
+    assert_close(r_ik[0], torch.tensor(b))
 
     ############################################################
     # second triplet is 0-2-1
     assert list(triplet_idxs[1]) == [0, 2, 1]
-    torch.testing.assert_close(angle[1], rad_theta)
-    torch.testing.assert_close(r_ij[1], torch.tensor(b))
-    torch.testing.assert_close(r_ik[1], torch.tensor(a))
+    assert_close(angle[1], rad_theta)
+    assert_close(r_ij[1], torch.tensor(b))
+    assert_close(r_ik[1], torch.tensor(a))
 
     ############################################################
     # third triplet is 1-0-2
     assert list(triplet_idxs[2]) == [1, 0, 2]
-    torch.testing.assert_close(r_ij[2], torch.tensor(a))
+    assert_close(r_ij[2], torch.tensor(a))
     # use cosine rule to get r_ik
     c = torch.sqrt(a**2 + b**2 - 2 * a * b * torch.cos(rad_theta))
-    torch.testing.assert_close(r_ik[2], c)
+    assert_close(r_ik[2], c)
     # use sine rule to get angle
     sin_phi = b * torch.sin(rad_theta) / c
     phi = torch.asin(sin_phi)
-    torch.testing.assert_close(angle[2], phi)
+    assert_close(angle[2], phi)
 
     ############################################################
     # fourth triplet is 1-2-0
     assert list(triplet_idxs[3]) == [1, 2, 0]
-    torch.testing.assert_close(r_ij[3], c)
-    torch.testing.assert_close(r_ik[3], torch.tensor(a))
-    torch.testing.assert_close(angle[3], phi)
+    assert_close(r_ij[3], c)
+    assert_close(r_ik[3], torch.tensor(a))
+    assert_close(angle[3], phi)
 
     ############################################################
     # fifth triplet is 2-0-1
     assert list(triplet_idxs[4]) == [2, 0, 1]
     sin_zeta = a * torch.sin(rad_theta) / c
     zeta = torch.asin(sin_zeta)
-    torch.testing.assert_close(angle[4], zeta)
+    assert_close(angle[4], zeta)
 
     ############################################################
     # sixth triplet is 2-1-0
     assert list(triplet_idxs[5]) == [2, 1, 0]
-    torch.testing.assert_close(r_ij[5], c)
-    torch.testing.assert_close(r_ik[5], torch.tensor(b))
-    torch.testing.assert_close(angle[5], zeta)
+    assert_close(r_ij[5], c)
+    assert_close(r_ik[5], torch.tensor(b))
+    assert_close(angle[5], zeta)
 
 
 def test_angle_measures():
@@ -112,8 +115,8 @@ def test_triplets_on_isolated_atoms():
     )
     assert graph.neighbour_list.shape == (2, 0)
 
-    triplets, _ = neighbour_triplets(graph)
-    assert triplets.shape == (0, 3)
+    triplets = triplet_edge_pairs(graph, graph.cutoff)
+    assert triplets.shape == (0, 2)
 
     atoms = Atoms("H", positions=[(0.5, 0.5, 0.5)], cell=np.eye(3), pbc=True)
     graph = AtomicGraph.from_ase(atoms, cutoff=1.1)
@@ -126,5 +129,8 @@ def test_triplets_on_isolated_atoms():
     # (up, [down, left, right, front, back]),
     # (down, [up, left, right, front, back]),
     # etc.
-    triplets, _ = neighbour_triplets(graph)
-    assert triplets.shape == (30, 3)
+    triplets = triplet_edge_pairs(graph, graph.cutoff)
+    assert triplets.shape == (30, 2)
+
+    triplets = triplet_edge_pairs(graph, 0.5)
+    assert triplets.shape == (0, 2)

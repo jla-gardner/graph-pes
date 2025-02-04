@@ -102,8 +102,8 @@ def test_output_shapes():
 
 
 def test_molecular():
-    MACE_CALC.calculate(CH4, properties=["energy", "forces"])
-    GRAPH_PES_CALC.calculate(CH4, properties=["energy", "forces"])
+    MACE_CALC.calculate(CH4, properties=["energy", "forces", "stress"])
+    GRAPH_PES_CALC.calculate(CH4, properties=["energy", "forces", "stress"])
 
     assert MACE_CALC.results["energy"] == pytest.approx(
         GRAPH_PES_CALC.results["energy"]
@@ -111,6 +111,12 @@ def test_molecular():
     np.testing.assert_allclose(
         MACE_CALC.results["forces"],
         GRAPH_PES_CALC.results["forces"],
+        atol=1e-4,
+        rtol=100,
+    )
+    np.testing.assert_allclose(
+        MACE_CALC.results["stress"],
+        GRAPH_PES_CALC.results["stress"],
         atol=1e-4,
         rtol=100,
     )

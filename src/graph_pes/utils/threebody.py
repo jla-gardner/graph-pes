@@ -4,7 +4,9 @@ import torch
 
 from graph_pes.atomic_graph import (
     AtomicGraph,
+    neighbour_distances,
     neighbour_vectors,
+    number_of_atoms,
     number_of_edges,
 )
 
@@ -33,104 +35,13 @@ def angle_spanned_by(v1: torch.Tensor, v2: torch.Tensor):
     v2_mag = torch.linalg.vector_norm(v2, dim=1)
 
     # Compute cosine of angle, add small epsilon to prevent division by zero
-    cos_angle = dot_product / (v1_mag * v2_mag + 1e-8)
+    cos_angle = dot_product / (v1_mag * v2_mag)
 
     # Clamp cosine values to handle numerical instabilities
-    cos_angle = torch.clamp(cos_angle, -1.0 + 1e-8, 1.0 - 1e-8)
+    cos_angle = torch.clamp(cos_angle, min=-1.0 + 1e-7, max=1.0 - 1e-7)
 
     # Compute angle using arccos
     return torch.arccos(cos_angle)
-
-
-@torch.no_grad()
-def neighbour_triplets(graph: AtomicGraph) -> tuple[torch.Tensor, torch.Tensor]:
-    r"""
-    Find all the triplets :math:`(i, j, k)` such that
-    :math:`k` and :math:`j` are neighbours of :math:`i`,
-    and:
-
-    * :math:`j \neq k` for non periodic graphs
-    * :math:`j, k` do not refer to the same image of an atom (respecting pbcs)
-      for periodic graphs
-
-    Returns
-    -------
-    triplet_idxs
-        A ``(Y, 3)`` shaped tensor indicating the triplets, such that
-
-        .. code-block:: python
-
-            # get the y'th triplet
-            i, j, k = triplet_idxs[y]
-
-    triplet_vectors
-        A ``(Y, 2, 3)`` shaped tensor indicating the vectors, such that
-
-        .. code-block:: python
-
-            # get the y'th vector triplet
-            v_ij, v_ik = vector_triplets[y]
-
-    Examples
-    --------
-    Note that the triplets are permutation sensitive, and hence
-    both ``(i, j, k)`` and ``(i, k, j)`` are included:
-
-    >>> graph = AtomicGraph.from_ase(molecule("H2O"))
-    >>> triplet_idxs, triplet_vectors = neighbour_triplets(graph)
-    >>> triplet_idxs
-    tensor([[0, 1, 2],
-            [0, 2, 1],
-            [1, 0, 2],
-            [1, 2, 0],
-            [2, 0, 1],
-            [2, 1, 0]])
-    """
-
-    vectors = neighbour_vectors(graph)
-
-    # graph.neighbour_list is an (2, E) shaped tensor
-    # indicating the indices of the neighbours of each atom
-    # the first row is the central atom index
-    # the second row is the neighbour atom index
-    # the indices are 0-indexed
-    central_atoms = graph.neighbour_list[0]
-    neighbour_atoms = graph.neighbour_list[1]
-
-    # we want to find all the triplets (i, j, k) such that
-    # k and j are neighbours of i, and j != k (respecting pbc ghost atoms)
-    triplet_idxs = []
-    triplets_vectors = []
-
-    for i in torch.unique(central_atoms):
-        mask = central_atoms == i
-        relevant_neighbours = neighbour_atoms[mask]
-        relevant_vectors = vectors[mask]
-
-        N = relevant_neighbours.shape[0]
-        _idx = torch.cartesian_prod(
-            torch.arange(N),
-            torch.arange(N),
-        )  # (N**2, 2)
-        _idx = _idx[_idx[:, 0] != _idx[:, 1]]  # (N**2 - N, 2)
-
-        kj = relevant_neighbours[_idx]  # (N**2 - N, 2)
-        ikj = torch.hstack([i.expand(kj.shape[0]).view(-1, 1), kj])
-        triplet_idxs.append(ikj)
-
-        vkj = relevant_vectors[_idx]  # (N**2 - N, 2, 3)
-        triplets_vectors.append(vkj)
-
-    if len(triplet_idxs) == 0:
-        return (
-            torch.zeros(0, 3, device=graph.R.device).long(),
-            torch.zeros(0, 2, 3, device=graph.R.device),
-        )
-
-    triplet_idxs = torch.vstack(triplet_idxs)
-    triplets_vectors = torch.vstack(triplets_vectors)
-
-    return triplet_idxs, triplets_vectors
 
 
 @torch.no_grad()
@@ -160,9 +71,13 @@ def triplet_bond_descriptors(
     tensor([103.9999, 103.9999,  38.0001,  38.0001,  38.0001,  38.0001])
     """
 
-    triplet_idxs, vector_triplets = neighbour_triplets(graph)
+    edge_pairs = triplet_edge_pairs(graph, graph.cutoff)  # (Y, 2)
 
-    if vector_triplets.shape[0] == 0:
+    ij = graph.neighbour_list[:, edge_pairs[:, 0]]  # (2, Y)
+    k = graph.neighbour_list[1, edge_pairs[:, 1]].unsqueeze(0)  # (1, Y)
+    triplet_idxs = torch.cat([ij, k], dim=0).transpose(0, 1)  # (Y, 3)
+
+    if triplet_idxs.shape[0] == 0:
         return (
             triplet_idxs,
             torch.zeros(0, device=graph.R.device).float(),
@@ -170,8 +85,9 @@ def triplet_bond_descriptors(
             torch.zeros(0, device=graph.R.device).float(),
         )
 
-    v1 = vector_triplets[:, 0]
-    v2 = vector_triplets[:, 1]
+    v = neighbour_vectors(graph)
+    v1 = v[edge_pairs[:, 0]]
+    v2 = v[edge_pairs[:, 1]]
 
     return (
         triplet_idxs,
@@ -182,17 +98,15 @@ def triplet_bond_descriptors(
 
 
 @torch.no_grad()
-def neighbour_triples_edge_view(
-    graph: AtomicGraph,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """
-    Find all the triplets :math:`(i, j, k)` such that
-    :math:`k` and :math:`j` are both neighbours of :math:`i`,
-    and:
+def triplet_edge_pairs(graph: AtomicGraph, three_body_cutoff: float):
+    r"""
+    Find all the pairs of edges, :math:`a = (i, j), b = (i, k)`, such that:
 
-    * :math:`j \neq k` for non periodic graphs
-    * :math:`j, k` do not refer to the same image of an atom (respecting pbcs)
-      for periodic graphs
+    * :math:`i, j, k \in \{0, 1, \dots, N-1\}` are indices of distinct
+      (images of) atoms within the graph
+    * :math:`j \neq k`
+    * :math:`r_{ij} \leq` ``three_body_cutoff``
+    * :math:`r_{ik} \leq` ``three_body_cutoff``
 
     Returns
     -------
@@ -202,39 +116,69 @@ def neighbour_triples_edge_view(
         .. code-block:: python
 
             a, b = edge_pairs[y]
-            i, j = graph.neighbour_list[a]
-            i, k = graph.neighbour_list[b]
-
-    triplets_per_edge: torch.Tensor
-        A ``(E)`` shaped tensor indicating in how many ordered pairs of edges
-        each edge is first in, such that
-
-        .. code-block:: python
-
-            triplets_per_edge[a] == sum(edge_pairs[:, 0] == a)
+            i, j = graph.neighbour_list[:,a]
+            i, k = graph.neighbour_list[:,b]
     """
-    central_atoms = graph.neighbour_list[0]
 
     edge_indexes = torch.arange(number_of_edges(graph), device=graph.R.device)
 
+    three_body_mask = neighbour_distances(graph) < three_body_cutoff
+    relevant_edge_indexes = edge_indexes[three_body_mask]
+    relevant_central_atoms = graph.neighbour_list[0][relevant_edge_indexes]
+
     edge_pairs = []
-    triplets_per_edge = torch.zeros_like(edge_indexes)
 
-    for i in torch.unique(central_atoms):
-        mask = central_atoms == i
-        relevant_edge_indexes = edge_indexes[mask]
+    for i in range(number_of_atoms(graph)):
+        mask = relevant_central_atoms == i
+        masked_edge_indexes = relevant_edge_indexes[mask]
 
-        N = relevant_edge_indexes.shape[0]
+        # number of edges of distance <= three_body_cutoff
+        # that have i as a central atom
+        N = masked_edge_indexes.shape[0]
         _idx = torch.cartesian_prod(
             torch.arange(N),
             torch.arange(N),
         )  # (N**2, 2)
         _idx = _idx[_idx[:, 0] != _idx[:, 1]]  # (N**2 - N, 2)
 
-        pairs_for_i = relevant_edge_indexes[_idx]
+        pairs_for_i = masked_edge_indexes[_idx]
         edge_pairs.append(pairs_for_i)
 
     edge_pairs = torch.cat(edge_pairs)
-    for j in range(triplets_per_edge.shape[0]):
-        triplets_per_edge[j] = (edge_pairs[:, 0] == j).sum()
-    return edge_pairs, triplets_per_edge
+
+    return edge_pairs
+
+
+@torch.no_grad()
+def count_number_of_triplets_per_leading_edge(
+    edge_pairs: torch.Tensor,
+    graph: AtomicGraph,
+):
+    """
+    Return ``T`` of shape ``(E,)`` where ``T[e]`` is the number of edge pairs
+    that have edge number ``e`` as the first edge in the pair.
+
+    Parameters
+    ----------
+    edge_pairs: torch.Tensor
+        A ``(E, 2)`` shaped tensor indicating pairs of edges that form a
+        triplet ``(i, j, k)`` (see :func:`triplet_edge_pairs`).
+    graph: AtomicGraph
+        The graph from which the edge pairs were derived.
+
+    Returns
+    -------
+    triplets_per_edge: torch.Tensor
+        A ``(E,)`` shaped tensor where ``triplets_per_edge[e]`` is the
+        number of edge pairs that have edge ``e`` as the first edge in the
+        pair.
+
+    """
+    triplets_per_edge = torch.zeros(
+        number_of_edges(graph), device=graph.R.device, dtype=torch.long
+    )
+    return triplets_per_edge.scatter_add(
+        dim=0,
+        index=edge_pairs[:, 0],
+        src=torch.ones_like(edge_pairs[:, 0]),
+    )

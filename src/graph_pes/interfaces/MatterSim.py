@@ -1,17 +1,16 @@
-# note that this file is called MatterSim, so as to avoid
-# clash with the mattersim package we import from
-
 import torch
 
 from graph_pes import AtomicGraph, GraphPESModel
 from graph_pes.atomic_graph import (
     PropertyKey,
     neighbour_distances,
+    neighbour_vectors,
     sum_per_structure,
 )
 from graph_pes.utils.threebody import (
-    neighbour_triples_edge_view,
-    triplet_bond_descriptors,
+    angle_spanned_by,
+    count_number_of_triplets_per_leading_edge,
+    triplet_edge_pairs,
 )
 
 
@@ -22,13 +21,24 @@ class MatterSim_M3Gnet_Wrapper(GraphPESModel):
             implemented_properties=["local_energies"],
         )
         self.model = model
+        self.threebody_cutoff = model.model_args["threebody_cutoff"]  # type: ignore
 
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         # pre-compute
         edge_lengths = neighbour_distances(graph)  # (E)
-        _, angle, _, r_ik = triplet_bond_descriptors(graph)
-        three_body_indices, num_triple_ij = neighbour_triples_edge_view(graph)
-        num_atoms = sum_per_structure(torch.ones_like(graph.Z), graph)
+        edge_pairs = triplet_edge_pairs(graph, self.threebody_cutoff)
+        triplets_per_leading_edge = count_number_of_triplets_per_leading_edge(
+            edge_pairs, graph
+        )
+        r_ik = edge_lengths[edge_pairs[:, 1]]
+        v = neighbour_vectors(graph)
+        v_ij = v[edge_pairs[:, 0]]
+        v_ik = v[edge_pairs[:, 1]]
+        angle = angle_spanned_by(v_ij, v_ik)
+
+        num_atoms = sum_per_structure(
+            torch.ones_like(graph.Z), graph
+        ).unsqueeze(-1)
 
         # num_bonds is of shape (n_structures,) such that
         # num_bonds[i] = sum(graph.neighbour_list[0] == i)
@@ -38,7 +48,10 @@ class MatterSim_M3Gnet_Wrapper(GraphPESModel):
             index=graph.neighbour_list[0],
             src=torch.ones_like(graph.neighbour_list[0]),
         )
-        num_bonds = sum_per_structure(bonds_per_atom, graph)
+        num_bonds = sum_per_structure(bonds_per_atom, graph).unsqueeze(-1)
+
+        three_body_indices = edge_pairs
+        num_triple_ij = triplets_per_leading_edge.unsqueeze(-1)
 
         # use the forward pass of M3Gnet
         atom_attr = self.model.atom_embedding(self.model.one_hot_atoms(graph.Z))
@@ -56,9 +69,9 @@ class MatterSim_M3Gnet_Wrapper(GraphPESModel):
                 three_basis,
                 three_body_indices,
                 edge_lengths.unsqueeze(-1),
-                num_bonds.unsqueeze(-1),
-                num_triple_ij.unsqueeze(-1),
-                num_atoms.unsqueeze(-1),
+                num_bonds,
+                num_triple_ij,
+                num_atoms,
             )
 
         local_energies = self.model.final(atom_attr).view(-1)
