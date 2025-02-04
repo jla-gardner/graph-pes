@@ -113,7 +113,7 @@ source = ["src", "*/site-packages"]
 [tool.coverage.run]
 branch = true
 source = ["graph_pes"]
-omit = ["src/graph_pes/interfaces/*"]
+omit = ["*/graph_pes/interfaces/*"]
 
 [tool.pytest.ini_options]
 # ignore all warnings coming from the pytorch_lightning package
