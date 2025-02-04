@@ -142,7 +142,7 @@ jobs:
         run: pip install mace-torch torch==2.5 # TODO: unfix this version
 
       - name: Run tests
-        run: pytest src/graph_pes/interfaces/mace_test.py -vvv --import-mode=importlib
+        run: pytest src/graph_pes/interfaces/mace_test.py -vvv
 
   mattersim-interface:
     runs-on: ubuntu-latest
@@ -173,4 +173,4 @@ jobs:
         run: pip install mattersim==1.0.0
 
       - name: Run tests
-        run: pytest src/graph_pes/interfaces/mattersim_test.py -vvv --import-mode=importlib
+        run: pytest src/graph_pes/interfaces/mattersim_test.py -vvv

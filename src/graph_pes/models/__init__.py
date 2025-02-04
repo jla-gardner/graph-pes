@@ -215,14 +215,14 @@ def freeze_matching(model: T, pattern: str) -> T:
     --------
 
     Freeze all the parameters in the first layer of a MACE-MP0 model from
-    :func:`~graph_pes.interfaces.mace.mace_mp` (which have names of the form
+    :func:`~graph_pes.interfaces.mace_mp` (which have names of the form
     ``"model.interactions.0.<name>"``):
 
     .. code-block:: yaml
 
         model:
             +freeze_any_matching:
-                model: +graph_pes.interfaces.mace.mace_mp()
+                model: +graph_pes.interfaces.mace_mp()
                 pattern: model\.interactions\.0\..*
     """
     for name, param in model.named_parameters():
@@ -275,14 +275,14 @@ def freeze_all_except(model: T, pattern: str | list[str]) -> T:
     --------
 
     Freeze all parameters in a MACE-MP0 model from
-    :func:`~graph_pes.interfaces.mace.mace_mp` except those in the
+    :func:`~graph_pes.interfaces.mace_mp` except those in the
     read-out heads:
 
     .. code-block:: yaml
 
         model:
             +freeze_all_except:
-                model: +graph_pes.interfaces.mace.mace_mp()
+                model: +graph_pes.interfaces.mace_mp()
                 pattern: model\.readouts.*
     """
     freeze(model)

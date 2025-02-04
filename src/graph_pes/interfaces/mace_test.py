@@ -9,7 +9,7 @@ from mace.calculators import MACECalculator
 from mace.modules import ScaleShiftMACE, gate_dict, interaction_classes
 
 from graph_pes.atomic_graph import AtomicGraph, to_batch
-from graph_pes.interfaces.mace import MACEWrapper, mace_mp, mace_off
+from graph_pes.interfaces._mace import MACEWrapper, mace_mp, mace_off
 from graph_pes.utils.calculator import GraphPESCalculator
 
 ELEMENTS = [1, 6, 8]

@@ -81,6 +81,16 @@ class MatterSim_M3Gnet_Wrapper(GraphPESModel):
 
 
 def mattersim(load_path: str = "mattersim-v1.0.0-1m") -> GraphPESModel:
+    """
+    Load a ``mattersim`` model from a checkpoint file, and convert it to a
+    :class:`~graph_pes.GraphPESModel` on the CPU.
+
+    Parameters
+    ----------
+    load_path: str
+        The path to the ``mattersim`` checkpoint file. Expected to be one of
+        ``mattersim-v1.0.0-1m`` or ``mattersim-v1.0.0-5m`` currently.
+    """
     from mattersim.forcefield.potential import Potential
 
     model = Potential.from_checkpoint(  # type: ignore

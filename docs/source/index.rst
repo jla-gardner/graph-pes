@@ -33,7 +33,8 @@
     :hidden:
 
     interfaces/mace
-
+    interfaces/mattersim
+    
 .. toctree::
     :maxdepth: 2
     :caption: Tools
