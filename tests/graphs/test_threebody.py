@@ -118,6 +118,11 @@ def test_triplets_on_isolated_atoms():
     triplets = triplet_edge_pairs(graph, graph.cutoff)
     assert triplets.shape == (0, 2)
 
+    _, angles, r_ij, r_ik = triplet_bond_descriptors(graph)
+    assert angles.shape == (0,)
+    assert r_ij.shape == (0,)
+    assert r_ik.shape == (0,)
+
     atoms = Atoms("H", positions=[(0.5, 0.5, 0.5)], cell=np.eye(3), pbc=True)
     graph = AtomicGraph.from_ase(atoms, cutoff=1.1)
     assert number_of_atoms(graph) == 1

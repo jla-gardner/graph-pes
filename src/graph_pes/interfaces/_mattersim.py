@@ -5,11 +5,11 @@ from graph_pes.atomic_graph import (
     PropertyKey,
     neighbour_distances,
     neighbour_vectors,
+    number_of_edges,
     sum_per_structure,
 )
 from graph_pes.utils.threebody import (
     angle_spanned_by,
-    count_number_of_triplets_per_leading_edge,
     triplet_edge_pairs,
 )
 
@@ -99,3 +99,38 @@ def mattersim(load_path: str = "mattersim-v1.0.0-1m") -> GraphPESModel:
         device="cpu",  # manage the device ourself later
     ).model
     return MatterSim_M3Gnet_Wrapper(model)
+
+
+@torch.no_grad()
+def count_number_of_triplets_per_leading_edge(
+    edge_pairs: torch.Tensor,
+    graph: AtomicGraph,
+):
+    """
+    Return ``T`` of shape ``(E,)`` where ``T[e]`` is the number of edge pairs
+    that have edge number ``e`` as the first edge in the pair.
+
+    Parameters
+    ----------
+    edge_pairs: torch.Tensor
+        A ``(E, 2)`` shaped tensor indicating pairs of edges that form a
+        triplet ``(i, j, k)`` (see :func:`triplet_edge_pairs`).
+    graph: AtomicGraph
+        The graph from which the edge pairs were derived.
+
+    Returns
+    -------
+    triplets_per_edge: torch.Tensor
+        A ``(E,)`` shaped tensor where ``triplets_per_edge[e]`` is the
+        number of edge pairs that have edge ``e`` as the first edge in the
+        pair.
+
+    """
+    triplets_per_edge = torch.zeros(
+        number_of_edges(graph), device=graph.R.device, dtype=torch.long
+    )
+    return triplets_per_edge.scatter_add(
+        dim=0,
+        index=edge_pairs[:, 0],
+        src=torch.ones_like(edge_pairs[:, 0]),
+    )

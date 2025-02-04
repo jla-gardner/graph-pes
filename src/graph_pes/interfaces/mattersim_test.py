@@ -14,10 +14,13 @@ from torch_geometric.loader import DataLoader as DataLoader_pyg
 
 from graph_pes.atomic_graph import AtomicGraph, to_batch
 from graph_pes.graph_pes_model import GraphPESModel
-from graph_pes.interfaces._mattersim import MatterSim_M3Gnet_Wrapper, mattersim
+from graph_pes.interfaces._mattersim import (
+    MatterSim_M3Gnet_Wrapper,
+    count_number_of_triplets_per_leading_edge,
+    mattersim,
+)
 from graph_pes.utils.calculator import GraphPESCalculator
 from graph_pes.utils.threebody import (
-    count_number_of_triplets_per_leading_edge,
     triplet_edge_pairs,
 )
 
