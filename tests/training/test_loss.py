@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import pytest
 import torch
 
-from graph_pes.training.loss import MAE, RMSE
+from graph_pes.training.loss import MAE, RMSE, WeightedLoss
 
 
 def test_metrics():
@@ -15,3 +16,8 @@ def test_metrics():
     c = torch.tensor([0, 0, 0]).float()
     assert torch.allclose(MAE()(a, c), torch.tensor(2.0))
     assert torch.allclose(RMSE()(a, c), torch.tensor((1 + 4 + 9) / 3).sqrt())
+
+
+def test_excpetion():
+    with pytest.raises(ImportError):
+        WeightedLoss()

@@ -244,7 +244,7 @@ class LennardJones(PairPotential):
     @staticmethod
     def from_ase(
         sigma: float = 1.0,
-        epsilon: float = 0.1,
+        epsilon: float = 1.0,
         rc: float | None = None,
         ro: float | None = None,
         smooth: bool = False,

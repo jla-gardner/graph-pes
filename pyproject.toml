@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "graph-pes"
-version = "0.0.21"
+version = "0.0.22"
 description = "Potential Energy Surfaces on Graphs"
 readme = "README.md"
 authors = [{ name = "John Gardner", email = "gardner.john97@gmail.com" }]
@@ -22,7 +22,7 @@ dependencies = [
     "numpy",
     "rich",
     "dacite",
-    "e3nn",
+    "e3nn==0.5.3",
     "scikit-learn",
     "locache>=4.0.2",
     "load-atoms>=0.3.9",
@@ -54,7 +54,7 @@ graph-pes-id = "graph_pes.scripts.id:main"
 Homepage = "https://github.com/jla-gardner/graph-pes"
 
 [tool.bumpver]
-current_version = "0.0.21"
+current_version = "0.0.22"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump {old_version} -> {new_version}"
 commit = true
@@ -113,6 +113,7 @@ source = ["src", "*/site-packages"]
 [tool.coverage.run]
 branch = true
 source = ["graph_pes"]
+omit = ["*/graph_pes/interfaces/*"]
 
 [tool.pytest.ini_options]
 # ignore all warnings coming from the pytorch_lightning package

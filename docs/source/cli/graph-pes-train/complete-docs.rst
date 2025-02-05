@@ -167,7 +167,7 @@ You can also test on other datasets at this point by including a ``"test"`` key 
 ``loss``
 --------
 
-This config section should either point to something that instantiates a
+This config section should either point to something that instantiates a single
 :class:`graph_pes.training.loss.Loss` object...
 
 .. code-block:: yaml
@@ -178,19 +178,19 @@ This config section should either point to something that instantiates a
     # or more fine-grained control
     loss:
         +PropertyLoss:
-            property: energy
+            property: stress
             metric: MAE  # defaults to RMSE if not specified
 
-...or specify a list of :class:`~graph_pes.training.loss.WeightedLoss`
-and/or :class:`~graph_pes.training.loss.Loss` instances...
+...or specify a list of :class:`~graph_pes.training.loss.Loss` instances...
 
 .. code-block:: yaml
 
     loss:
         # specify a loss with several components:
         - +PerAtomEnergyLoss()  # defaults to weight 1.0
-        - +WeightedLoss:
-            component: +PropertyLoss: { property: forces, metric: MSE }
+        - +PropertyLoss:
+            property: forces
+            metric: MSE
             weight: 10.0
 
 ...or point to your own custom loss implementation, either in isolation:
@@ -207,6 +207,26 @@ and/or :class:`~graph_pes.training.loss.Loss` instances...
     loss:
         - +PerAtomEnergyLoss()
         - +my.module.CustomLoss: { alpha: 0.5 }
+
+
+If you want to sweep over a loss component weight via the command line, you can use a
+dictionary mapping arbitrary strings to loss instances like so:
+
+.. code-block:: yaml
+
+    loss:
+        energy: +PerAtomEnergyLoss()
+        forces:
+            +ForceRMSE:
+                weight: 5.0
+
+allowing you to run a command such as:
+
+.. code-block:: bash
+
+    for weight in 0.1 0.5 1.0; do
+        graph-pes-train config.yaml loss/forces/+ForceRMSE/weight=$weight
+    done
 
 
 ``fitting``

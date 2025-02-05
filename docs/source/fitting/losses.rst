@@ -53,5 +53,3 @@ Helpers
 
     A type alias for a ``Literal["RMSE", "MAE", "MSE"]``.
 
-.. autoclass:: graph_pes.training.loss.WeightedLoss
-    :members:

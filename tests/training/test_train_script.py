@@ -82,11 +82,11 @@ general:
     root_dir: {root}
     run_id: null
 wandb: null
-loss: +graph_pes.training.loss.PerAtomEnergyLoss()
+loss: +PerAtomEnergyLoss()
 model: 
     +LennardJones: {{cutoff: 3.0}}
 data:
-    +graph_pes.data.load_atoms_dataset:
+    +load_atoms_dataset:
         id: {helpers.CU_STRUCTURES_FILE}
         cutoff: 3.0
         n_train: 6

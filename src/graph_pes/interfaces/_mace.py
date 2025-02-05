@@ -76,7 +76,7 @@ class MACEWrapper(GraphPESModel):
     Examples
     --------
     >>> mace_torch_model = ...  # create your MACE model any-which way
-    >>> from graph_pes.interfaces.mace import MACEWrapper
+    >>> from graph_pes.interfaces._mace import MACEWrapper
     >>> graph_pes_model = MACEWrapper(mace_torch_model)  # convert to graph-pes
     >>> graph_pes_model.predict_energy(graph)
     torch.Tensor([123.456])

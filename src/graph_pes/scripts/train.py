@@ -14,7 +14,11 @@ from pytorch_lightning.callbacks import (
 )
 from pytorch_lightning.loggers import CSVLogger
 
-from graph_pes.config.shared import instantiate_config_from_dict
+from graph_pes.config.shared import (
+    instantiate_config_from_dict,
+    parse_loss,
+    parse_model,
+)
 from graph_pes.config.training import TrainingConfig
 from graph_pes.scripts.utils import (
     configure_general_options,
@@ -137,7 +141,7 @@ Output for this training run can be found at:
     trainer.logger.log_hyperparams(config_data)
 
     # instantiate and log things
-    model = config.get_model()
+    model = parse_model(config.model)
     logger.debug(f"Model:\n{model}")
 
     data = config.get_data()
@@ -150,7 +154,7 @@ Output for this training run can be found at:
     _scheduler_str = scheduler if scheduler is not None else "No LR scheduler."
     logger.debug(f"Scheduler:\n{_scheduler_str}")
 
-    total_loss = config.get_loss()
+    total_loss = parse_loss(config.loss)
     logger.debug(f"Total loss:\n{total_loss}")
 
     train_with_lightning(

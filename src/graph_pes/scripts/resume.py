@@ -5,7 +5,11 @@ from pathlib import Path
 
 import yaml
 
-from graph_pes.config.shared import instantiate_config_from_dict
+from graph_pes.config.shared import (
+    instantiate_config_from_dict,
+    parse_loss,
+    parse_model,
+)
 from graph_pes.config.training import TrainingConfig
 from graph_pes.data.loader import GraphDataLoader
 from graph_pes.scripts.train import trainer_from_config
@@ -58,8 +62,8 @@ def main():
     )
     task = TrainingTask.load_from_checkpoint(
         checkpoint_path,
-        model=config.get_model(),
-        loss=config.get_loss(),
+        model=parse_model(config.model),
+        loss=parse_loss(config.loss),
         optimizer=config.fitting.optimizer,
         scheduler=config.fitting.scheduler,
     )

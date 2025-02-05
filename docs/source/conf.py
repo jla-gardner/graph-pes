@@ -1,7 +1,7 @@
 project = "graph-pes"
 copyright = "2023-2024, John Gardner"
 author = "John Gardner"
-release = "0.0.21"
+release = "0.0.22"
 
 extensions = [
     "sphinx.ext.duration",
@@ -65,7 +65,6 @@ nitpick_ignore = [
     ("py:class", "e3nn.*"),
     ("py:class", "optional"),
     ("py:class", "o3.Irreps"),
-    ("py:class", "graph_pes.config.training.WeightedLoss"),
     ("py:class", "graph_pes.config.training.FittingConfig"),
     ("py:class", "graph_pes.config.training.SWAConfig"),
     ("py:class", "graph_pes.config.training.GeneralConfig"),

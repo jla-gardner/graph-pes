@@ -28,11 +28,10 @@ data:
         split: random
 
 loss:
-    - +PerAtomEnergyLoss()
-    - +WeightedLoss:
-          component:
-              +PropertyLoss: { property: forces, metric: RMSE }
-          weight: 3.0
+    energy: +PerAtomEnergyLoss()
+    forces:
+        +ForceRMSE:
+            weight: 10.0
 
 fitting:
     trainer_kwargs:
