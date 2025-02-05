@@ -82,7 +82,7 @@ jobs:
         run: sudo apt-get install -y --no-install-recommends pandoc
 
       - name: Install graph-pes and required dependencies
-        run: uv pip install --system --upgrade ".[docs]"
+        run: uv pip install --system --upgrade -e ".[docs]"
 
       ### DOCS ###
       - name: Build docs
