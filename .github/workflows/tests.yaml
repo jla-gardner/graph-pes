@@ -31,23 +31,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
 
       - name: Install graph-pes and required dependencies
-        run: uv pip install --system --upgrade ".[test,docs]"
-
-      # - name: Cache dependencies
-      #   # Caching the python environment. This is different to just caching the
-      #   # pip wheels, as we save on the installation time of large packages such
-      #   # as torch.
-      #   uses: actions/cache@v4.0.2
-      #   id: cache
-      #   with:
-      #     path: ${{ env.pythonLocation }}
-      #     key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
-
-      # - name: Install graph-pes and required dependencies
-      #   # Install graph-pes and update any dependencies that are not up to date in
-      #   # the cached environment. We use the --upgrade-strategy eager flag to get
-      #   # the latest version of the dependencies.
-      #   run: pip install --upgrade --upgrade-strategy eager ".[test,docs]"
+        run: uv pip install --system --upgrade ".[test]"
 
       - name: Useful info
         run: uv pip freeze
@@ -89,22 +73,16 @@ jobs:
         with:
           python-version: 3.9
 
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+
       - name: Install pandoc
         run: sudo apt-get install -y --no-install-recommends pandoc
 
-      - name: Cache dependencies
-        # Caching the python environment. This is different to just caching the
-        # pip wheels, as we save on the installation time of large packages such
-        # as torch.
-        uses: actions/cache@v4.0.2
-        id: cache
-        with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
-
       - name: Install graph-pes and required dependencies
-        # -e flag to install in place, allowing for correct links
-        run: pip install -e".[docs]"
+        run: uv pip install --system --upgrade ".[docs]"
 
       ### DOCS ###
       - name: Build docs
@@ -130,24 +108,16 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Cache dependencies
-        # Caching the python environment. This is different to just caching the
-        # pip wheels, as we save on the installation time of large packages such
-        # as torch.
-        uses: actions/cache@v4.0.2
-        id: cache
+      - uses: astral-sh/setup-uv@v5
         with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
 
       - name: Install graph-pes and required dependencies
-        # Install graph-pes and update any dependencies that are not up to date in
-        # the cached environment. We use the --upgrade-strategy eager flag to get
-        # the latest version of the dependencies.
-        run: pip install --upgrade --upgrade-strategy eager ".[test]"
+        run: uv pip install --system --upgrade ".[test]"
 
       - name: Install mace-torch
-        run: pip install mace-torch torch==2.5 # TODO: unfix this version
+        run: uv pip install mace-torch torch==2.5 # TODO: unfix this version
 
       - name: Run tests
         run: pytest src/graph_pes/interfaces/mace_test.py -vvv
@@ -159,26 +129,18 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.9"
 
-      - name: Cache dependencies
-        # Caching the python environment. This is different to just caching the
-        # pip wheels, as we save on the installation time of large packages such
-        # as torch.
-        uses: actions/cache@v4.0.2
-        id: cache
+      - uses: astral-sh/setup-uv@v5
         with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('**/pyproject.toml') }}
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
 
       - name: Install graph-pes and required dependencies
-        # Install graph-pes and update any dependencies that are not up to date in
-        # the cached environment. We use the --upgrade-strategy eager flag to get
-        # the latest version of the dependencies.
-        run: pip install --upgrade --upgrade-strategy eager ".[test]"
+        run: uv pip install --system --upgrade ".[test]"
 
       - name: Install mattersim
-        run: pip install mattersim==1.0.0
+        run: uv pip install mattersim==1.0.0
 
       - name: Run tests
         run: pytest src/graph_pes/interfaces/mattersim_test.py -vvv
