@@ -81,6 +81,7 @@ A 3-in-1 toolset:
    - a set of operations for common tasks on :class:`~graph_pes.AtomicGraph` objects, including :func:`edge-trimming <graph_pes.atomic_graph.trim_edges>`, :func:`neighbour indexing <graph_pes.atomic_graph.index_over_neighbours>`, :func:`summations <graph_pes.atomic_graph.sum_over_neighbours>`, and :func:`batching <graph_pes.atomic_graph.to_batch>`,
    - a base class for all model of the potential energy surface (:class:`~graph_pes.GraphPESModel`) that automatically infers force and stress predictions if these are not provided by the model's implementation
    - reference implementations of popular models, including :class:`~graph_pes.models.NequIP`, :class:`~graph_pes.models.PaiNN`, :class:`~graph_pes.models.MACE` and :class:`~graph_pes.models.TensorNet`
+   - interfaces to popular foundation models, including :class:`~graph_pes.interfaces.mace_mp`, :class:`~graph_pes.interfaces.mace_off`, and :class:`~graph_pes.interfaces.mattersim`
    
    ``graph_pes`` is written in vanilla ``PyTorch`` that is 100% compatible with ``TorchScript`` compilation for use within LAMMPS
 

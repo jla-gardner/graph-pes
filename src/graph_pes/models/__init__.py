@@ -222,7 +222,7 @@ def freeze_matching(model: T, pattern: str) -> T:
 
         model:
             +freeze_any_matching:
-                model: +graph_pes.interfaces.mace_mp()
+                model: +mace_mp()
                 pattern: model\.interactions\.0\..*
     """
     for name, param in model.named_parameters():
@@ -282,7 +282,7 @@ def freeze_all_except(model: T, pattern: str | list[str]) -> T:
 
         model:
             +freeze_all_except:
-                model: +graph_pes.interfaces.mace_mp()
+                model: +mace_mp()
                 pattern: model\.readouts.*
     """
     freeze(model)

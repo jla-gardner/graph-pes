@@ -16,7 +16,7 @@
 .. code-block:: yaml
 
    model:
-      +graph_pes.interfaces.mattersim:
+      +mattersim:
          load_path: "mattersim-v1.0.0-5m"
 
 

@@ -45,6 +45,7 @@ def instantiate_config_from_dict(
 
     import graph_pes
     import graph_pes.data
+    import graph_pes.interfaces
     import graph_pes.models
     import graph_pes.training
     import graph_pes.training.callbacks
@@ -61,6 +62,7 @@ def instantiate_config_from_dict(
             graph_pes.training.loss,
             graph_pes.data,
             graph_pes.training.callbacks,
+            graph_pes.interfaces,
         ],
     )
     field_names = {f.name for f in fields(config_class)}  # type: ignore

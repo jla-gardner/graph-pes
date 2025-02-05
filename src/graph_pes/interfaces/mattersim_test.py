@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import ase.build
 import numpy as np
 import pytest
@@ -20,6 +22,7 @@ from graph_pes.interfaces._mattersim import (
     mattersim,
 )
 from graph_pes.utils.calculator import GraphPESCalculator
+from graph_pes.utils.lammps import deploy_model
 from graph_pes.utils.threebody import (
     triplet_edge_pairs,
 )
@@ -97,8 +100,8 @@ def test_calculator_agreement():
 
 def test_batch_agreement():
     graph = AtomicGraph.from_ase(DIAMOND)
-    batch = to_batch([graph, graph])
-    us = GRAPH_PES_MODEL.predict_energy(batch)
+    our_batch = to_batch([graph, graph])
+    us = GRAPH_PES_MODEL.predict_energy(our_batch)
     assert us.shape == (2,)
 
     c = GraphConvertor(
@@ -113,6 +116,14 @@ def test_batch_agreement():
     them = MATTERSIM_MODEL(batch_dict)
     assert them.shape == (2,)
     torch.testing.assert_close(us, them)
+
+    # test forces
+    pot = Potential(MATTERSIM_MODEL)
+    their_forces = pot(batch_dict)["forces"]
+    assert their_forces.shape == (4, 3)
+
+    our_forces = GRAPH_PES_MODEL.predict_forces(our_batch)
+    torch.testing.assert_close(our_forces, their_forces)
 
 
 def test_api():
@@ -136,8 +147,14 @@ def test_implementation():
         neighbour_cell_offsets=batch_dict["pbc_offsets"],
     )
 
-    tep = triplet_edge_pairs(graph, GRAPH_PES_MODEL.threebody_cutoff)
+    tep = triplet_edge_pairs(graph, GRAPH_PES_MODEL.threebody_cutoff.item())
     assert torch.all(batch_dict["three_body_indices"] == tep).item()
 
     count = count_number_of_triplets_per_leading_edge(tep, graph).unsqueeze(-1)
     assert torch.all(batch_dict["num_triple_ij"] == count).item()
+
+
+def test_deploy(tmp_path: Path):
+    pytest.skip("TODO: fix threebody torchscripting")
+
+    deploy_model(GRAPH_PES_MODEL, tmp_path / "test_model.pt")
