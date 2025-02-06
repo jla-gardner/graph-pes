@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from itertools import chain
+from pathlib import Path
 from typing import Callable, Literal
 
+import requests
 import torch
 
 from graph_pes import AtomicGraph, GraphPESModel
@@ -207,3 +209,60 @@ def mace_off(
     assert isinstance(mace_torch_model, torch.nn.Module)
     _fix_precision(mace_torch_model, precision)
     return MACEWrapper(mace_torch_model)
+
+
+def go_mace_23(
+    precision: Literal["float32", "float64"] = "float32",
+) -> MACEWrapper:
+    """
+    Download the `GO-MACE-23 model <https://doi.org/10.1002/anie.202410088>`__
+    and convert it for use with ``graph-pes``.
+
+    .. note::
+
+        This model is only for use on structures containing Carbon, Hydrogen and
+        Oxygen. Attempting to use on structures with other elements will raise
+        an error.
+
+    If you use this model, please cite the following:
+
+    .. code-block:: bibtex
+
+        @article{El-Machachi-24,
+            title = {Accelerated {{First-Principles Exploration}} of {{Structure}} and {{Reactivity}} in {{Graphene Oxide}}},
+            author = {{El-Machachi}, Zakariya and Frantzov, Damyan and Nijamudheen, A. and Zarrouk, Tigany and Caro, Miguel A. and Deringer, Volker L.},
+            year = {2024},
+            journal = {Angewandte Chemie International Edition},
+            volume = {63},
+            number = {52},
+            pages = {e202410088},
+            doi = {10.1002/anie.202410088},
+        }
+
+    """  # noqa: E501
+
+    url = "https://github.com/zakmachachi/GO-MACE-23/raw/refs/heads/main/models/fitting/potential/iter-12-final-model/go-mace-23.pt"
+    save_path = Path.home() / ".graph-pes" / "go-mace-23.pt"
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if not save_path.exists():
+        print(f"Downloading GO-MACE-23 model to {save_path}")
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for bad status codes
+
+        with open(save_path, "wb") as file:
+            file.write(response.content)
+
+    print(f"Loading GO-MACE-23 model from {save_path}")
+    mace_torch_model = torch.load(
+        save_path, weights_only=False, map_location=torch.device("cpu")
+    )
+    for p in mace_torch_model.parameters():
+        p.data = p.data.to(
+            dtype={"float32": torch.float32, "float64": torch.float64}[
+                precision
+            ]
+        )
+    model = MACEWrapper(mace_torch_model)
+
+    return model

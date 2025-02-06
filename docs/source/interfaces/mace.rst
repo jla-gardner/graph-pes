@@ -4,7 +4,7 @@
 
 ``graph-pes`` supports the conversion of arbitrary ``mace-torch`` models to :class:`~graph_pes.GraphPESModel` objects via the :class:`~graph_pes.interfaces._mace.MACEWrapper` class.
 
-We also provide two convenience functions to the recently trained ``MACE-MP`` and ``MACE-OFF`` "foundation" models.
+We also provide two convenience functions to the recently trained ``MACE-MP`` and ``MACE-OFF`` "foundation" models, as well as the ``GO-MACE-23`` model.
 
 If you use any ``mace-torch`` models in your work, please visit the `mace-torch <https://github.com/ACEsuit/mace-torch>`__ repository and cite the following:
 
@@ -32,7 +32,6 @@ If you use any ``mace-torch`` models in your work, please visit the `mace-torch 
 
 
 
-
 Installation
 ------------
 
@@ -51,5 +50,6 @@ Interface
 
 .. autofunction:: graph_pes.interfaces.mace_mp
 .. autofunction:: graph_pes.interfaces.mace_off
+.. autofunction:: graph_pes.interfaces.go_mace_23
 
 .. autoclass:: graph_pes.interfaces._mace.MACEWrapper

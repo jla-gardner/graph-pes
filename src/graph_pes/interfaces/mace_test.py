@@ -9,7 +9,12 @@ from mace.calculators import MACECalculator
 from mace.modules import ScaleShiftMACE, gate_dict, interaction_classes
 
 from graph_pes.atomic_graph import AtomicGraph, to_batch
-from graph_pes.interfaces._mace import MACEWrapper, mace_mp, mace_off
+from graph_pes.interfaces._mace import (
+    MACEWrapper,
+    go_mace_23,
+    mace_mp,
+    mace_off,
+)
 from graph_pes.utils.calculator import GraphPESCalculator
 
 ELEMENTS = [1, 6, 8]
@@ -158,5 +163,13 @@ def test_mace_off():
     calc = GraphPESCalculator(base_model)
 
     # check that forces on central atom are roughly zero
+    calc.calculate(CH4, properties=["energy", "forces"])
+    assert np.abs(calc.results["forces"][0]).max() < 1e-4
+
+
+def test_go_mace_23():
+    base_model = go_mace_23()
+    calc = GraphPESCalculator(base_model)
+
     calc.calculate(CH4, properties=["energy", "forces"])
     assert np.abs(calc.results["forces"][0]).max() < 1e-4
