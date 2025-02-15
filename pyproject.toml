@@ -36,7 +36,6 @@ requires-python = ">=3.9"
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-cov"]
-dev = ["ruff", "sphinx-autobuild"]
 docs = [
     "sphinx",
     "furo",
@@ -130,3 +129,6 @@ filterwarnings = [
     "ignore:.*The TorchScript type system doesn't support instance-level annotations on empty non-base types.*",
 ]
 norecursedirs = "tests/helpers"
+
+[dependency-groups]
+dev = ["notebook>=7.3.2", "ruff", "sphinx-autobuild"]

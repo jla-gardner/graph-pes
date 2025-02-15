@@ -34,7 +34,7 @@ Next verify the tests all pass:
 
 ```bash
 pip install pytest
-pytest src/  # or uv run pytest src/
+pytest tests/  # or uv run pytest tests/
 ```
 
 Then push your changes back to your fork of the repository:

@@ -376,7 +376,9 @@ class AtomicGraph(NamedTuple):
         cell = torch.tensor(structure.cell.array, dtype=_float)
 
         # neighbour list
-        i, j, offsets = vesin.ase_neighbor_list("ijS", structure, cutoff)
+        i, j, offsets = vesin.ase_neighbor_list("ijS", structure, float(cutoff))
+        i = i.astype(np.int64)
+        j = j.astype(np.int64)
         neighbour_list = torch.tensor(np.vstack([i, j]), dtype=torch.long)
         neighbour_cell_offsets = torch.tensor(offsets, dtype=_float)
 
