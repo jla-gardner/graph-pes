@@ -126,7 +126,10 @@ jobs:
           cache-dependency-glob: "uv.lock"
 
       - name: Install graph-pes and required dependencies
-        run: uv sync --extra test --extra mace
+        run: uv sync --extra test
+
+      - name: Install mace-torch
+        run: uv pip install --system mace-torch torch==2.5 # TODO: unfix this version
 
       - name: Run tests
         run: uv run pytest src/graph_pes/interfaces/mace_test.py -vvv
@@ -146,7 +149,10 @@ jobs:
           cache-dependency-glob: "uv.lock"
 
       - name: Install graph-pes and required dependencies
-        run: uv sync --extra test --extra mattersim
+        run: uv sync --extra test
+
+      - name: Install mattersim
+        run: uv pip install --system mattersim==1.0.0
 
       - name: Run tests
         run: uv run pytest src/graph_pes/interfaces/mattersim_test.py -vvv

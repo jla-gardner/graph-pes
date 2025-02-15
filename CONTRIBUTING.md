@@ -16,14 +16,6 @@ cd graph-pes
 pip install -e ".[dev]"
 ```
 
-Then install the pre-commit hooks:
-
-```bash
-pre-commit install
-```
-
-These hooks use ruff to format and lint the code.
-
 ---
 
 **If you're making changes to the code:**
