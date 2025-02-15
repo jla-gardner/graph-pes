@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Add `ruff` check to CI.
+
 ## [0.0.22] - 2025-02-05
 
 Add support for the `MatterSim` potential.

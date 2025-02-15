@@ -28,12 +28,13 @@ dependencies = [
     "load-atoms>=0.3.9",
     "wandb",
     "data2objects>=0.1.0",
+    "pyright>=1.1.394",
 ]
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-cov"]
-dev = ["ruff", "sphinx-autobuild", "pre-commit"]
+dev = ["ruff", "sphinx-autobuild"]
 docs = [
     "sphinx",
     "furo",

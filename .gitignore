@@ -1,6 +1,7 @@
 lightning_logs
 __pycache__
 TODO*
+.venv
 
 exclude
 docs/build
