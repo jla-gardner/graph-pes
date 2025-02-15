@@ -16,6 +16,14 @@ cd graph-pes
 pip install -e ".[dev]"
 ```
 
+Alternatively, you can use [`uv`](https://docs.astral.sh/uv/):
+
+```bash
+git clone https://github.com/<your-username-here>/graph-pes.git
+cd graph-pes
+uv sync --extra test
+```
+
 ---
 
 **If you're making changes to the code:**
@@ -26,7 +34,7 @@ Next verify the tests all pass:
 
 ```bash
 pip install pytest
-pytest
+pytest src/  # or uv run pytest src/
 ```
 
 Then push your changes back to your fork of the repository:
@@ -44,7 +52,7 @@ Finally, open a pull request on GitHub!
 Make your changes. You can then build the documentation by doing
 
 ```bash
-pip install -e ".[docs]"
+pip install -e ".[docs]"  # or uv sync --extra docs
 sphinx-autobuild docs/source docs/build
 ```
 
