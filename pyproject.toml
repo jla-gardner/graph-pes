@@ -32,7 +32,9 @@ dependencies = [
 ]
 requires-python = ">=3.9"
 
-[project.optional-dependencies]
+[dependency-groups]
+mattersim = ["mattersim"]
+mace = ["mace-torch", "torch==2.5"]
 test = ["pytest", "pytest-cov"]
 dev = ["ruff", "sphinx-autobuild"]
 docs = [
