@@ -10,7 +10,6 @@ Models
    :show-inheritance:
 
 
-
 Loading Models
 ==============
 

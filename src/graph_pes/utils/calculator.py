@@ -12,7 +12,7 @@ from ase.stress import full_3x3_to_voigt_6_stress
 
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey, has_cell, to_batch
 from graph_pes.graph_pes_model import GraphPESModel
-from graph_pes.utils.misc import groups_of, pairs
+from graph_pes.utils.misc import groups_of, pairs, uniform_repr
 
 
 class GraphPESCalculator(Calculator):
@@ -239,6 +239,14 @@ class GraphPESCalculator(Calculator):
                     r[key] = full_3x3_to_voigt_6_stress(r[key])
 
         return results
+
+    def __repr__(self):
+        return uniform_repr(
+            self.__class__.__name__,
+            model=self.model,
+            device=self.model.device,
+            skin=self.skin,
+        )
 
 
 ## utils ##

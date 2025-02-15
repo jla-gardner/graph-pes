@@ -132,8 +132,7 @@ class MACEWrapper(GraphPESModel):
         return {k: v for k, v in predictions.items() if k in properties}
 
 
-def _fix_precision(model: torch.nn.Module, precision: str) -> None:
-    dtype = {"float32": torch.float32, "float64": torch.float64}[precision]
+def _fix_dtype(model: torch.nn.Module, dtype: torch.dtype) -> None:
     for tensor in chain(
         model.parameters(),
         model.buffers(),
@@ -142,9 +141,17 @@ def _fix_precision(model: torch.nn.Module, precision: str) -> None:
             tensor.data = tensor.data.to(dtype)
 
 
+def _get_dtype(
+    precision: Literal["float32", "float64"] | None,
+) -> torch.dtype:
+    if precision is None:
+        return torch.get_default_dtype()
+    return {"float32": torch.float32, "float64": torch.float64}[precision]
+
+
 def mace_mp(
     model: Literal["small", "medium", "large"],
-    precision: Literal["float32", "float64"] = "float64",
+    precision: Literal["float32", "float64"] | None = None,
 ) -> MACEWrapper:
     """
     Donwload a MACE-MP model and convert it for use with ``graph-pes``.
@@ -167,24 +174,29 @@ def mace_mp(
     model
         The size of the MACE-MP model to download.
     precision
-        The precision of the model.
+        The precision of the model. If ``None``, the default precision
+        of torch will be used (you can set this when using ``graph-pes-train``
+        via ``general/torch/dtype``)
     """  # noqa: E501
     from mace.calculators.foundations_models import mace_mp
+
+    dtype = _get_dtype(precision)
+    precision_str = {torch.float32: "float32", torch.float64: "float64"}[dtype]
 
     mace_torch_model = mace_mp(
         model,
         device="cpu",
-        default_dtype=precision,
+        default_dtype=precision_str,
         return_raw_model=True,
     )
     assert isinstance(mace_torch_model, torch.nn.Module)
-    _fix_precision(mace_torch_model, precision)
+    _fix_dtype(mace_torch_model, dtype)
     return MACEWrapper(mace_torch_model)
 
 
 def mace_off(
     model: Literal["small", "medium", "large"],
-    precision: Literal["float32", "float64"] = "float64",
+    precision: Literal["float32", "float64"] | None = None,
 ) -> MACEWrapper:
     """
     Download a MACE-OFF model and convert it for use with ``graph-pes``.
@@ -200,19 +212,22 @@ def mace_off(
     """  # noqa: E501
     from mace.calculators.foundations_models import mace_off
 
+    dtype = _get_dtype(precision)
+    precision_str = {torch.float32: "float32", torch.float64: "float64"}[dtype]
+
     mace_torch_model = mace_off(
         model,
         device="cpu",
-        default_dtype=precision,
+        default_dtype=precision_str,
         return_raw_model=True,
     )
     assert isinstance(mace_torch_model, torch.nn.Module)
-    _fix_precision(mace_torch_model, precision)
+    _fix_dtype(mace_torch_model, dtype)
     return MACEWrapper(mace_torch_model)
 
 
 def go_mace_23(
-    precision: Literal["float32", "float64"] = "float32",
+    precision: Literal["float32", "float64"] | None = None,
 ) -> MACEWrapper:
     """
     Download the `GO-MACE-23 model <https://doi.org/10.1002/anie.202410088>`__
@@ -241,6 +256,8 @@ def go_mace_23(
 
     """  # noqa: E501
 
+    dtype = _get_dtype(precision)
+
     url = "https://github.com/zakmachachi/GO-MACE-23/raw/refs/heads/main/models/fitting/potential/iter-12-final-model/go-mace-23.pt"
     save_path = Path.home() / ".graph-pes" / "go-mace-23.pt"
     save_path.parent.mkdir(parents=True, exist_ok=True)
@@ -258,11 +275,7 @@ def go_mace_23(
         save_path, weights_only=False, map_location=torch.device("cpu")
     )
     for p in mace_torch_model.parameters():
-        p.data = p.data.to(
-            dtype={"float32": torch.float32, "float64": torch.float64}[
-                precision
-            ]
-        )
+        p.data = p.data.to(dtype)
     model = MACEWrapper(mace_torch_model)
 
     return model

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import Any, Final, Sequence, final
+from typing import TYPE_CHECKING, Any, Final, Sequence, final
 
 import torch
 from ase.data import chemical_symbols
@@ -22,6 +22,9 @@ from graph_pes.utils.logger import logger
 
 from .utils.misc import differentiate, differentiate_all
 from .utils.nn import PerElementParameter
+
+if TYPE_CHECKING:
+    from graph_pes.utils.calculator import GraphPESCalculator
 
 
 class GraphPESModel(nn.Module, ABC):
@@ -569,3 +572,27 @@ class GraphPESModel(nn.Module, ABC):
         :meth:`~graph_pes.GraphPESModel.extra_state` property.
         """
         pass
+
+    @torch.jit.unused
+    def ase_calculator(
+        self, device: torch.device | str | None = None, skin: float = 1.0
+    ) -> "GraphPESCalculator":
+        """
+        Return an ASE calculator wrapping this model. See
+        :class:`~graph_pes.utils.calculator.GraphPESCalculator` for more
+        information.
+
+        Parameters
+        ----------
+        device
+            The device to use for the calculator. If ``None``, the device of the
+            model will be used.
+        skin
+            The skin to use for the neighbour list. If all atoms have moved less
+            than half of this distance between calls to `calculate`, the
+            neighbour list will be reused, saving (in some cases) significant
+            computation time.
+        """
+        from graph_pes.utils.calculator import GraphPESCalculator
+
+        return GraphPESCalculator(self, device=device, skin=skin)

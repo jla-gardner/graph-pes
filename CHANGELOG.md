@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Use [`vesin`](https://luthaf.fr/vesin/latest/index.html#) for accelerated neighbour list construction.
+
+Add `ase_calculator` method to `GraphPESModel` for easy access to an ASE calculator wrapping the model.
+
+Update the `mace` interfaces to use the default torch dtype if none is specified.
+
 Add `ruff` check to CI.
 
 ## [0.0.22] - 2025-02-05

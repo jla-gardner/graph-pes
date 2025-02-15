@@ -22,7 +22,7 @@ def test_calc():
 
 
 def test_calc_all():
-    calc = GraphPESCalculator(LennardJones())
+    calc = LennardJones().ase_calculator()
     molecules = [molecule(s) for s in "CH4 H2O CH3CH2OH C2H6".split()]
 
     # add cell info so we can test stresses
