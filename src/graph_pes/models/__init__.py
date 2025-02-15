@@ -20,6 +20,7 @@ from graph_pes.utils.logger import logger
 from .addition import AdditionModel
 from .e3nn.mace import MACE, ZEmbeddingMACE
 from .e3nn.nequip import NequIP, ZEmbeddingNequIP
+from .m3gnet import M3GNet
 from .offsets import FixedOffset, LearnableOffset
 from .painn import PaiNN
 from .pairwise import (
@@ -39,6 +40,7 @@ __all__ = [
     "LearnableOffset",
     "LennardJones",
     "LennardJonesMixture",
+    "M3GNet",
     "MACE",
     "Morse",
     "NequIP",
