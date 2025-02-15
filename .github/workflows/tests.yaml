@@ -43,7 +43,7 @@ jobs:
           cache-dependency-glob: "uv.lock"
 
       - name: Install graph-pes and required dependencies
-        run: uv sync --system --extra test
+        run: uv sync --extra test
 
       - name: Useful info
         run: uv pip freeze
@@ -126,7 +126,7 @@ jobs:
           cache-dependency-glob: "uv.lock"
 
       - name: Install graph-pes and required dependencies
-        run: uv sync --system --extra test
+        run: uv sync --extra test
 
       - name: Install mace-torch
         run: uv pip install --system mace-torch torch==2.5 # TODO: unfix this version
