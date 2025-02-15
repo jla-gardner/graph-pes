@@ -19,7 +19,7 @@ import numpy as np
 import torch
 import torch.multiprocessing
 import torch.utils.data
-from ase.neighborlist import neighbor_list
+import vesin
 from ase.stress import voigt_6_to_full_3x3_stress
 from load_atoms.utils import remove_calculator
 from typing_extensions import TypeAlias
@@ -376,7 +376,7 @@ class AtomicGraph(NamedTuple):
         cell = torch.tensor(structure.cell.array, dtype=_float)
 
         # neighbour list
-        i, j, offsets = neighbor_list("ijS", structure, cutoff)
+        i, j, offsets = vesin.ase_neighbor_list("ijS", structure, cutoff)
         neighbour_list = torch.tensor(np.vstack([i, j]), dtype=torch.long)
         neighbour_cell_offsets = torch.tensor(offsets, dtype=_float)
 

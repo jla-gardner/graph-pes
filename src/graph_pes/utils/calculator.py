@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 import warnings
 from typing import Iterable, TypeVar, overload
 
@@ -67,9 +68,10 @@ class GraphPESCalculator(Calculator):
         self._cached_cell: numpy.ndarray | None = None
         self.skin = skin
 
-        # cache stats
+        # stats
         self.cache_hits = 0
         self.total_calls = 0
+        self.nl_timings = []
 
     def calculate(
         self,
@@ -125,9 +127,12 @@ class GraphPESCalculator(Calculator):
 
         # cache miss
         if graph is None:
+            tick = time.perf_counter()
             graph = AtomicGraph.from_ase(
                 self.atoms, self.model.cutoff.item() + self.skin
             ).to(self.model.device)
+            tock = time.perf_counter()
+            self.nl_timings.append(tock - tick)
             self._cached_graph = graph
             self._cached_R = graph.R.detach().cpu().numpy()
             self._cached_cell = graph.cell.detach().cpu().numpy()
@@ -161,10 +166,21 @@ class GraphPESCalculator(Calculator):
             return 0.0
         return self.cache_hits / self.total_calls
 
+    @property
+    def average_nl_timing(self) -> float:
+        """The average time taken to calculate the neighbour list in seconds."""
+        return numpy.mean(self.nl_timings).item()
+
+    @property
+    def total_nl_timing(self) -> float:
+        """The total time taken to calculate the neighbour list in seconds."""
+        return sum(self.nl_timings)
+
     def reset_cache_stats(self):
         """Reset the :attr:`cache_hit_rate` statistic."""
         self.cache_hits = 0
         self.total_calls = 0
+        self.nl_timings = []
 
     def calculate_all(
         self,

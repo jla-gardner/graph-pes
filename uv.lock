@@ -1065,6 +1065,7 @@ dependencies = [
     { name = "rich" },
     { name = "scikit-learn" },
     { name = "torch" },
+    { name = "vesin" },
     { name = "wandb" },
 ]
 
@@ -1117,6 +1118,7 @@ requires-dist = [
     { name = "sphinxext-opengraph", marker = "extra == 'docs'" },
     { name = "torch" },
     { name = "twine", marker = "extra == 'publish'" },
+    { name = "vesin", specifier = ">=0.3.2" },
     { name = "wandb" },
 ]
 
@@ -4137,6 +4139,23 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/4b/4d/938bd85e5bf2edeec766267a5015ad969730bb91e31b44021dfe8b22df6c/uvicorn-0.34.0.tar.gz", hash = "sha256:404051050cd7e905de2c9a7e61790943440b3416f49cb409f965d9dcd0fa73e9", size = 76568 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/61/14/33a3a1352cfa71812a3a21e8c9bfb83f60b0011f5e36f2b1399d51928209/uvicorn-0.34.0-py3-none-any.whl", hash = "sha256:023dc038422502fa28a09c7a30bf2b6991512da7dcdb8fd35fe57cfc154126f4", size = 62315 },
+]
+
+[[package]]
+name = "vesin"
+version = "0.3.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "numpy", version = "2.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1c/df/14ea62b8fe455dfe2a99c2401471af8b65a6e9b1806045b3484f7fd01c94/vesin-0.3.2.tar.gz", hash = "sha256:7fc156d2475eca763534a08f7e91d153c707c209bc10e8d081276b4338eb2d5a", size = 27741 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8b/63/37244a53cd97430c6c920c0f79f83170d8c65d2f83ef6ff3643651cfa8f8/vesin-0.3.2-py3-none-macosx_10_13_x86_64.whl", hash = "sha256:635d905905e52d145dd26ac55ff896d28d1de871bc418310dfbe30c4eb1b7e1c", size = 22163 },
+    { url = "https://files.pythonhosted.org/packages/ec/d5/cdf7f4b3bebfa1c20e7309fbdaf789a3fa5b0642b75bfe736508d4ec4a5c/vesin-0.3.2-py3-none-macosx_11_0_arm64.whl", hash = "sha256:629e2b772969b67d44ccd32a6dd0c67da2fa8f4ea057c85ff70e03db7dde6bb6", size = 22280 },
+    { url = "https://files.pythonhosted.org/packages/45/d6/3e8c62308e2a9d7dbe35ed2f8afa1218c8cdf2fa437f2338e78f8ef05efe/vesin-0.3.2-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e7e1c266ed674d1503f1de198a3aa67dcdf932e4245aeb02a8800595423ec755", size = 50876 },
+    { url = "https://files.pythonhosted.org/packages/77/d6/fc1e5d46ad1be762f716723db32827c73a67dddab8c8a12e28ff14d934f5/vesin-0.3.2-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ecf93d8e02c8ef128bd5bb50403fa9ddf1be4f23178e04e6f7137ca2b36ca8af", size = 52208 },
+    { url = "https://files.pythonhosted.org/packages/05/cc/6a2300581d0f41eb39088ebf4189ce7c618f5c3eab71415092bff3a1c744/vesin-0.3.2-py3-none-win_amd64.whl", hash = "sha256:cb6a5594a950dca6490d83ae78a876395e9cc9b5e3b30b5d76f467664aa10e3f", size = 52880 },
 ]
 
 [[package]]

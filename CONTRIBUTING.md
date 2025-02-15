@@ -21,7 +21,7 @@ Alternatively, you can use [`uv`](https://docs.astral.sh/uv/):
 ```bash
 git clone https://github.com/<your-username-here>/graph-pes.git
 cd graph-pes
-uv sync --extra test
+uv sync --all-extras
 ```
 
 ---
