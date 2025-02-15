@@ -1068,7 +1068,7 @@ dependencies = [
     { name = "wandb" },
 ]
 
-[package.dev-dependencies]
+[package.optional-dependencies]
 dev = [
     { name = "ruff" },
     { name = "sphinx-autobuild" },
@@ -1094,40 +1094,30 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "ase" },
+    { name = "build", marker = "extra == 'publish'" },
     { name = "dacite" },
     { name = "data2objects", specifier = ">=0.1.0" },
     { name = "e3nn", specifier = "<=0.5.3" },
+    { name = "furo", marker = "extra == 'docs'" },
     { name = "load-atoms", specifier = ">=0.3.9" },
     { name = "locache", specifier = ">=4.0.2" },
+    { name = "nbsphinx", marker = "extra == 'docs'" },
     { name = "numpy" },
     { name = "pyright", specifier = ">=1.1.394" },
+    { name = "pytest", marker = "extra == 'test'" },
+    { name = "pytest-cov", marker = "extra == 'test'" },
     { name = "pytorch-lightning" },
     { name = "rich" },
+    { name = "ruff", marker = "extra == 'dev'" },
     { name = "scikit-learn" },
+    { name = "sphinx", marker = "extra == 'docs'" },
+    { name = "sphinx-autobuild", marker = "extra == 'dev'" },
+    { name = "sphinx-copybutton", marker = "extra == 'docs'" },
+    { name = "sphinx-design", marker = "extra == 'docs'" },
+    { name = "sphinxext-opengraph", marker = "extra == 'docs'" },
     { name = "torch" },
+    { name = "twine", marker = "extra == 'publish'" },
     { name = "wandb" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "ruff" },
-    { name = "sphinx-autobuild" },
-]
-docs = [
-    { name = "furo" },
-    { name = "nbsphinx" },
-    { name = "sphinx" },
-    { name = "sphinx-copybutton" },
-    { name = "sphinx-design" },
-    { name = "sphinxext-opengraph" },
-]
-publish = [
-    { name = "build" },
-    { name = "twine" },
-]
-test = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
 ]
 
 [[package]]

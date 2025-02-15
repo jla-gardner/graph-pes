@@ -33,6 +33,19 @@ dependencies = [
 requires-python = ">=3.9"
 
 
+[project.optional-dependencies]
+test = ["pytest", "pytest-cov"]
+dev = ["ruff", "sphinx-autobuild"]
+docs = [
+    "sphinx",
+    "furo",
+    "nbsphinx",
+    "sphinxext-opengraph",
+    "sphinx-copybutton",
+    "sphinx-design",
+]
+publish = ["build", "twine"]
+
 [project.scripts]
 graph-pes-train = "graph_pes.scripts.train:main"
 graph-pes-test = "graph_pes.scripts.test:main"
@@ -116,16 +129,3 @@ filterwarnings = [
     "ignore:.*The TorchScript type system doesn't support instance-level annotations on empty non-base types.*",
 ]
 norecursedirs = "tests/helpers"
-
-[dependency-groups]
-test = ["pytest", "pytest-cov"]
-dev = ["ruff", "sphinx-autobuild"]
-docs = [
-    "sphinx",
-    "furo",
-    "nbsphinx",
-    "sphinxext-opengraph",
-    "sphinx-copybutton",
-    "sphinx-design",
-]
-publish = ["build", "twine"]
