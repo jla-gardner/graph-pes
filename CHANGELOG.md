@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Fixed a bug whereby gradients were not being propagated through the three-body angle and distance terms.
+
 ## [0.0.24] - 2025-02-15
 
 Use [`vesin`](https://luthaf.fr/vesin/latest/index.html#) for accelerated neighbour list construction.
