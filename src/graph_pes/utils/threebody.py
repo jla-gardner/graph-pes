@@ -44,7 +44,6 @@ def angle_spanned_by(v1: torch.Tensor, v2: torch.Tensor):
     return torch.arccos(cos_angle)
 
 
-@torch.no_grad()
 def triplet_bond_descriptors(
     graph: AtomicGraph,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
