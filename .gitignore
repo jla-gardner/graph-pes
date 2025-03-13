@@ -25,4 +25,4 @@ coverage.xml
 .isort.cfg
 .DS_Store
 
-**.cache
+**.cacheuv.lock
