@@ -10,8 +10,8 @@ from graph_pes.atomic_graph import (
     index_over_neighbours,
     neighbour_distances,
     sum_over_neighbours,
-    triplet_bond_descriptors,
 )
+from graph_pes.utils.threebody import triplet_bond_descriptors
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.components.distances import (
     DistanceExpansion,
@@ -44,6 +44,13 @@ class M3GNetInteraction(torch.nn.Module):
        - Three-body angular messages from bond angles
     3. Message aggregation
     4. Post-linear transformation
+
+    Key Tensor Shapes:
+    - Input node features: [n_atoms, channels]
+    - Radial basis features: [n_edges, expansion_features]
+    - Two-body messages: [n_edges, channels]
+    - Three-body messages: [n_triplets, channels]
+    - Output node features: [n_atoms, channels]
     """
 
     def __init__(
@@ -53,6 +60,7 @@ class M3GNetInteraction(torch.nn.Module):
         cutoff: float,
         basis_type: type[DistanceExpansion],
     ):
+
         super().__init__()
 
         self.cutoff = cutoff
@@ -60,12 +68,15 @@ class M3GNetInteraction(torch.nn.Module):
         self.pre_linear = torch.nn.Linear(channels, channels, bias=False)
 
         self.radial_basis = basis_type(expansion_features, cutoff)
+
+        # [n_edges, expansion_features] -> [n_edges, channels]
         self.two_body_net = MLP(
             [expansion_features, expansion_features, channels],
             activation=ShiftedSoftplus(),
             bias=False,
         )
 
+        # [n_triplets, 3] -> [n_triplets, channels]
         self.three_body_net = MLP(
             [3, channels // 2, channels],
             activation=ShiftedSoftplus(),
@@ -74,25 +85,39 @@ class M3GNetInteraction(torch.nn.Module):
 
         self.post_linear = torch.nn.Linear(channels, channels, bias=False)
 
-    def compute_three_body_messages(
+    def _compute_three_body_messages(
         self,
         node_features: torch.Tensor,
         graph: AtomicGraph,
     ) -> torch.Tensor:
+        """
+        Compute three-body messages for each edge in the graph.
+
+        Args:
+            node_features (torch.Tensor): [n_atoms, channels]
+            graph (AtomicGraph): Graph object containing the atomic graph structure
+
+        Returns:
+            torch.Tensor: [n_edges, channels]
+        """
+
         triplet_idxs, angles, r_ij, r_ik = triplet_bond_descriptors(graph)
 
         if triplet_idxs.shape[0] == 0:
             return torch.zeros_like(node_features[graph.neighbour_list[0]])
 
-        three_body_features = torch.stack(
-            [r_ij, r_ik, torch.cos(angles)], dim=-1
-        )
+        # [n_triplets, 3] -> [n_triplets, channels]
+        three_body_features = torch.stack([r_ij, r_ik, torch.cos(angles)], dim=-1)
         three_body_weights = self.three_body_net(three_body_features)
 
-        # Weight the neighbor j features
+        # [n_triplets, channels]
         neighbor_features = node_features[triplet_idxs[:, 1]]
+
+        # [n_triplets, channels]
         messages = neighbor_features * three_body_weights
 
+        # Aggregate messages for each edge
+        # [n_edges, channels]
         edge_messages = torch.zeros_like(node_features[graph.neighbour_list[0]])
         edge_messages.index_add_(0, triplet_idxs[:, 1], messages)
 
@@ -104,30 +129,44 @@ class M3GNetInteraction(torch.nn.Module):
         neighbour_distances: torch.Tensor,
         graph: AtomicGraph,
     ) -> torch.Tensor:
+        """
+        Forward pass of the M3GNet interaction block.
+
+        Args:
+            features (torch.Tensor): [n_atoms, channels]
+            neighbor_distances (torch.Tensor): [n_edges]
+            graph (AtomicGraph): Graph object containing the atomic graph structure
+
+        Returns:
+            torch.Tensor: [n_atoms, channels]
+        """
+
+        # [n_atoms, channels] -> [n_atoms, channels]
         h = self.pre_linear(features)
 
+        # [n_edges,] -> [n_edges, expansion_features]
         radial_basis = self.radial_basis(neighbour_distances.unsqueeze(-1))
 
-        # Apply smooth cutoff
         cutoff_mask = (neighbour_distances < self.cutoff).float()
-        cutoff_values = 0.5 * (
-            1 + torch.cos(np.pi * neighbour_distances / self.cutoff)
-        )
+        # Smooth cutoff values [n_edges,]
+        cutoff_values = 0.5 * (1 + torch.cos(np.pi * neighbour_distances / self.cutoff))
+        # [n_edges, expansion_features]
         radial_basis = (
-            radial_basis
-            * cutoff_values.unsqueeze(-1)
-            * cutoff_mask.unsqueeze(-1)
+            radial_basis * cutoff_values.unsqueeze(-1) * cutoff_mask.unsqueeze(-1)
         )
 
-        # Two-body * 3-body messages
+        # Messages
+        # [n_edges, channels] -> [n_edges, channels]
         neighbor_h = index_over_neighbours(h, graph)
         two_body_messages = neighbor_h * self.two_body_net(radial_basis)
-        three_body_messages = self.compute_three_body_messages(h, graph)
+        three_body_messages = self._compute_three_body_messages(h, graph)
 
-        # Message aggregation
+        # Message Aggregation
+        # [n_edges, channels] -> [n_atoms, channels]
         messages = two_body_messages + three_body_messages
         h = sum_over_neighbours(messages, graph)
 
+        # [n_atoms, channels]
         return self.post_linear(h)
 
 
@@ -188,6 +227,7 @@ class M3GNet(GraphPESModel):
         self.scaler = LocalEnergiesScaler()
 
         # Stack of M3GNet interaction blocks
+        # All are [n_atoms, channels]
         self.interactions = UniformModuleList(
             M3GNetInteraction(channels, expansion_features, cutoff, expansion)
             for _ in range(layers)
@@ -199,13 +239,19 @@ class M3GNet(GraphPESModel):
         )
 
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
+
+        # [n_atoms,] -> [n_atoms, channels]
         h = self.chemical_embedding(graph.Z)
 
+        # [n_edges,]
         d = neighbour_distances(graph)
 
+        # Update node features, [n_atoms, channels
         for interaction in self.interactions:
             h = h + interaction(h, d, graph)
 
+        # Local energies from readout
+        # [n_atoms, channels] -> [n_atoms, 1] -> [n_atoms,]
         local_energies = self.read_out(h).squeeze()
         local_energies = self.scaler(local_energies, graph)
 
