@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import warnings
 from datetime import datetime
 from pathlib import Path
 
@@ -243,11 +242,9 @@ def trainer_from_config(
     early_stopping_config = None
     # TODO: remove this at a later date
     if config.fitting.early_stopping_patience is not None:
-        warnings.warn(
+        logger.warning(
             "`early_stopping_patience` is deprecated. Use the `early_stopping` "
             "config option instead.",
-            DeprecationWarning,
-            stacklevel=2,
         )
         early_stopping_config = EarlyStoppingConfig(
             patience=config.fitting.early_stopping_patience,
