@@ -660,13 +660,16 @@ class AtomicOneHot(torch.nn.Module):
             Z = atomic_numbers[symbol]
             self.Z_to_idx[Z] = i
 
+        # make this a local variable to keep torchscript happy
+        self.chemical_symbols: list[str] = chemical_symbols
+
     def forward(self, Z: Tensor) -> Tensor:
         internal_idx = self.Z_to_idx[Z]
 
         with torch.no_grad():
             if (internal_idx == 1234).any():
                 unknown_Z = torch.unique(Z[internal_idx == 1234])
-                unknown_symbols = [chemical_symbols[Z] for Z in unknown_Z]
+                unknown_symbols = [self.chemical_symbols[Z] for Z in unknown_Z]
 
                 raise ValueError(
                     f"Unknown elements: {unknown_symbols}. "
