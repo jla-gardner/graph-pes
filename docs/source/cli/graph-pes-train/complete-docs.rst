@@ -86,6 +86,7 @@ You could also load in parts of a model if e.g. you are fine-tuning on a differe
         force_field: 
             +load_model_component:
                 path: path/to/model.pt
+                key: many-body
 
 See `the fine-tuning guide <https://jla-gardner.github.io/graph-pes/quickstart/quickstart.html#Fine-tuning>`__, 
 :func:`~graph_pes.models.load_model`, and :func:`~graph_pes.models.load_model_component` for more details.
@@ -134,7 +135,7 @@ This is what the :func:`~graph_pes.data.load_atoms_dataset` function does:
 After training is finished, the ``graph-pes-train`` command will load the best model weights and re-test the model on the training and validation data.
 You can also test on other datasets at this point by including a ``"test"`` key in your config file. This should either point to:
 
-* a :class:`~graph_pes.data.GraphDataset` instance (in which case testing metrics will be logged to ``"best_model/test/<metric_name>"``)
+* a :class:`~graph_pes.data.GraphDataset` instance (in which case testing metrics will be logged to ``"test/test/<metric_name>"``)
 
   .. code-block:: yaml
 
@@ -146,7 +147,7 @@ You can also test on other datasets at this point by including a ``"test"`` key 
                   path: test_data.xyz
                   cutoff: 5.0
 
-* a dictionary mapping custom names to :class:`~graph_pes.data.GraphDataset` instances (in which case testing metrics will be logged to ``"best_model/<custom_name>/<metric_name>"``)
+* a dictionary mapping custom names to :class:`~graph_pes.data.GraphDataset` instances (in which case testing metrics will be logged to ``"test/<custom_name>/<metric_name>"``)
 
   .. code-block:: yaml
 
@@ -304,26 +305,30 @@ To set the maximum number of graphs to use for :ref:`pre-fitting <pre-fit-model>
 Early stopping
 +++++++++++++++
 
-Turn on early stopping by setting the ``early_stopping_patience`` field to an integer value (by default it is ``null``, indicating that early stopping is disabled). This will stop training when the total validation loss (``"valid/loss/total"``) has not improved for ``early_stopping_patience`` validation checks.
+Turn on early stopping by setting the ``early_stopping`` field to a dictionary with keys corresponding to the :class:`~graph_pes.config.training.EarlyStoppingConfig` class.
+
+.. autoclass:: graph_pes.config.training.EarlyStoppingConfig()
+    :members:
+
+
+The minimal required config for early stopping:
 
 .. code-block:: yaml
 
     fitting:
-        early_stopping_patience: 10
+        early_stopping: 
+            patience: 10
 
-To have more fine-grained control over early stopping, set this field to ``null`` and use the ``callbacks`` field to add an `EarlyStopping <https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.EarlyStopping.html#lightning.pytorch.callbacks.EarlyStopping>`__ Lightning callback:
+
+Achieve more fine-grained control:
 
 .. code-block:: yaml
 
     fitting:
-        early_stopping_patience: null
-        callbacks:
-            - +pytorch_lightning.callbacks.early_stopping.EarlyStopping:
-                monitor: valid/loss/forces_rmse
-                patience: 100
-                min_delta: 0.01
-                mode: min
-
+        early_stopping:
+            monitor: valid/metrics/forces_rmse  # early stop on forces...
+            patience: 10  # ... after 10 checks with no improvement
+            min_delta: 0.01  # ... with a minimum change of 0.01 in the rmse
 
 Data loaders
 ++++++++++++

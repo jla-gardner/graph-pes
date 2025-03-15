@@ -20,13 +20,33 @@ from graph_pes.training.opt import LRScheduler, Optimizer
 
 
 @dataclass
+class EarlyStoppingConfig:
+    patience: int
+    """
+    The number of validation checks with no improvement before stopping.
+    """
+
+    min_delta: float = 0.0
+    """
+    The minimum change in the monitored quantity to qualify as an improvement.
+    """
+
+    monitor: str = "valid/loss/total"
+    """The quantity to monitor."""
+
+
+@dataclass
 class FittingOptions:
     """Options for the fitting process."""
 
     pre_fit_model: bool
     max_n_pre_fit: Union[int, None]
-    early_stopping_patience: Union[int, None]
+    early_stopping: Union[EarlyStoppingConfig, None]
     loader_kwargs: Dict[str, Any]
+    early_stopping_patience: Union[int, None]
+    """
+    DEPRECATED: use the `early_stopping` config option instead.
+    """
 
 
 @dataclass

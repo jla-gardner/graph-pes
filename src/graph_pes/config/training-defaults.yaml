@@ -26,8 +26,11 @@ fitting:
 
     # "fancy"/optional training options disabled
     callbacks: []
-    early_stopping_patience: null
     scheduler: null
     swa: null
+    early_stopping: null
+
+    # this is deprecated, use `early_stopping` instead
+    early_stopping_patience: null
 
 wandb: {}

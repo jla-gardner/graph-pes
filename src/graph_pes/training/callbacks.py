@@ -49,7 +49,8 @@ class GraphPESCallback(Callback, ABC):
         return model
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(root={self.root})"
+        root = self.root if hasattr(self, "root") else None
+        return f"{self.__class__.__name__}(root={root})"
 
 
 class DumpModel(GraphPESCallback):
@@ -165,8 +166,15 @@ class EarlyStoppingWithLogging(EarlyStopping, GraphPESCallback):
     * "distances above" the best validation loss
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        monitor: str,
+        patience: int,
+        min_delta: float = 0.0,
+        **kwargs,
+    ):
+        super().__init__(monitor, min_delta, patience, **kwargs)
+        self._min_delta = min_delta
         self.state = {
             "best_val_loss": float("inf"),
             "best_val_loss_check": 0,
@@ -187,7 +195,7 @@ class EarlyStoppingWithLogging(EarlyStopping, GraphPESCallback):
             return
         current_loss = current_loss.item()
 
-        if current_loss < self.state["best_val_loss"]:
+        if current_loss < self.state["best_val_loss"] - self._min_delta:
             self.state["best_val_loss"] = current_loss
             self.state["best_val_loss_check"] = self.state["total_checks"]
 

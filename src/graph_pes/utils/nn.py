@@ -666,9 +666,10 @@ class AtomicOneHot(torch.nn.Module):
         with torch.no_grad():
             if (internal_idx == 1234).any():
                 unknown_Z = torch.unique(Z[internal_idx == 1234])
+                unknown_symbols = [chemical_symbols[Z] for Z in unknown_Z]
 
                 raise ValueError(
-                    f"Unknown elements: {unknown_Z}. "
+                    f"Unknown elements: {unknown_symbols}. "
                     f"Expected one of {self.elements}"
                 )
 

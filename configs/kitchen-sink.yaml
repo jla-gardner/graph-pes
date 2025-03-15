@@ -46,7 +46,10 @@ loss:
 fitting:
     pre_fit_model: true
     max_n_pre_fit: 1000
-    early_stopping_patience: 50
+    early_stopping:
+        monitor: valid/metrics/forces_rmse
+        patience: 50
+        min_delta: 1e-3
 
     trainer_kwargs:
         max_epochs: 1000

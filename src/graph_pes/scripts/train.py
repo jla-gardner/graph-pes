@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import warnings
 from datetime import datetime
 from pathlib import Path
 
@@ -19,7 +20,7 @@ from graph_pes.config.shared import (
     parse_loss,
     parse_model,
 )
-from graph_pes.config.training import TrainingConfig
+from graph_pes.config.training import EarlyStoppingConfig, TrainingConfig
 from graph_pes.scripts.utils import (
     configure_general_options,
     extract_config_dict_from_command_line,
@@ -238,15 +239,34 @@ def trainer_from_config(
         )
     if not any(isinstance(c, LearningRateMonitor) for c in callbacks):
         callbacks.append(LearningRateMonitor(logging_interval="epoch"))
+
+    early_stopping_config = None
+    # TODO: remove this at a later date
     if config.fitting.early_stopping_patience is not None:
+        warnings.warn(
+            "`early_stopping_patience` is deprecated. Use the `early_stopping` "
+            "config option instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        early_stopping_config = EarlyStoppingConfig(
+            patience=config.fitting.early_stopping_patience,
+            min_delta=1e-6,
+            monitor=VALIDATION_LOSS_KEY,
+        )
+    if config.fitting.early_stopping is not None:
+        early_stopping_config = config.fitting.early_stopping
+
+    if early_stopping_config is not None:
         callbacks.append(
             EarlyStoppingWithLogging(
-                monitor=VALIDATION_LOSS_KEY,
-                patience=config.fitting.early_stopping_patience,
+                monitor=early_stopping_config.monitor,
+                patience=early_stopping_config.patience,
                 mode="min",
-                min_delta=1e-6,
+                min_delta=early_stopping_config.min_delta,
             )
         )
+
     if not any(isinstance(c, ModelCheckpoint) for c in callbacks):
         checkpoint_dir = None if not output_dir else output_dir / "checkpoints"
         callbacks.extend(
@@ -269,21 +289,18 @@ def trainer_from_config(
             ]
         )
 
-    trainer = pl.Trainer(
+    # special handling for GraphPESCallback: we need to register the
+    # output directory with it so that it knows where to save the model etc.
+    for cb in callbacks:
+        if isinstance(cb, GraphPESCallback):
+            cb._register_root(output_dir)
+    logger.debug(f"Callbacks: {callbacks}")
+
+    return pl.Trainer(
         **trainer_kwargs,
         logger=lightning_logger,
         callbacks=callbacks,
     )
-
-    # special handling for GraphPESCallback: we need to register the
-    # output directory with it so that it knows where to save the model etc.
-    final_callbacks: list[pl.Callback] = trainer.callbacks  # type: ignore
-    for cb in final_callbacks:
-        if isinstance(cb, GraphPESCallback):
-            cb._register_root(output_dir)
-    logger.debug(f"Callbacks: {final_callbacks}")
-
-    return trainer
 
 
 def main():

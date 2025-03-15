@@ -42,7 +42,8 @@ fitting:
         - +graph_pes.training.callbacks.DumpModel:
               every_n_val_checks: 10
 
-    early_stopping_patience: 50
+    early_stopping:
+        patience: 50
 
     optimizer:
         +Optimizer:

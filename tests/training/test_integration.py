@@ -71,6 +71,7 @@ def test_integration(model: GraphPESModel):
             pre_fit_model=False,
             loader_kwargs={"batch_size": 8},
             max_n_pre_fit=100,
+            early_stopping=None,
             early_stopping_patience=None,
         ),
         optimizer=Optimizer("Adam", lr=3e-3),
