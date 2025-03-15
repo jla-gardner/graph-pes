@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Fixed a bug whereby gradients were not being propagated through the three-body angle and distance terms.
 
+Improved handling of early stopping.
+
+Fixed a bug where custom callbacks were causing graph-pes-train to fail.
+
 ## [0.0.24] - 2025-02-15
 
 Use [`vesin`](https://luthaf.fr/vesin/latest/index.html#) for accelerated neighbour list construction.
