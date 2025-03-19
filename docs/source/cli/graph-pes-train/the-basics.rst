@@ -81,3 +81,24 @@ To use this config file, while overriding the default ``CUTOFF`` value, you woul
        Ending the name with ``()`` will call the function/class constructor with no arguments. Pointing the key to a nested dictionary will pass those values as keyword arguments to the constructor. Hence, above, ``+PerAtomEnergyLoss()`` will resolve to a ``~graph_pes.training.loss.PerAtomEnergyLoss`` object, while the :class:`~graph_pes.models.SchNet` model will be constructed with the keyword arguments specified in the config.
     
     3. the resulting dictionary of python objects is then converted, using `dacite <https://github.com/konradhalas/dacite/tree/master/>`__, into a final nested ``TrainingConfig`` object.
+
+
+Units
+-----
+
+Providing that you use a consistent unit system, ``graph-pes`` doesn't care about the exact units you use.
+
+What do we mean by consistent? If your energies are provided in units of ``A``, and your lengths (positions and cell vectors) are provided in units of ``B``, then:
+
+* forces should be in units of ``A/B``
+* stress should be in units of ``A/B^3``
+* virial should be in units of ``A``
+
+Common choices for ``A`` and ``B`` are:
+
+* ``A = eV`` and ``B = Å``
+* ``A = kcal/mol`` and ``B = Å``
+
+but you could also use ``A = J`` and ``B = m`` if you wanted to!
+
+See :doc:`../../theory` for more details on the units of the various properties, and for the conventions adopted by ``graph-pes`` for calculating stresses and virials in particular.

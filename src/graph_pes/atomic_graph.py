@@ -293,6 +293,25 @@ class AtomicGraph(NamedTuple):
     atom in each structure within the batch. Not present for a single structure.
     """
 
+    pbc: Union[torch.Tensor, None] = None
+    """
+    Whether the structure has periodic boundary conditions (i.e., is periodic)
+    in each of the three spatial dimensions: ``(x, y, z)``.  Shape ``(3,)``.
+    DType: :code:`torch.bool`.
+
+    ``graph-pes`` does not use this information directly (and hence this field
+    is options), but it can be useful for external tools to have access to this,
+    e.g. when converting to and from an :class:`ase.Atoms` object.
+
+    .. code-block:: python
+
+        >>> assert atoms.pbc
+        >>> graph = AtomicGraph.from_ase(atoms)
+        >>> atoms = graph.to_ase()
+        >>> atoms.pbc
+        tensor([ True,  True,  True])
+    """
+
     @classmethod
     def from_ase(
         cls,
@@ -376,6 +395,12 @@ class AtomicGraph(NamedTuple):
         cell = torch.tensor(structure.cell.array, dtype=_float)
 
         # neighbour list
+        if structure.pbc.any() and np.all(structure.cell == 0):
+            raise ValueError(
+                "PBCs are set to True, but cell is all zeros: we can't "
+                "create a neighbour list. Please set the cell or switch off "
+                "PBCs."
+            )
         i, j, offsets = vesin.ase_neighbor_list("ijS", structure, float(cutoff))
         i = i.astype(np.int64)
         j = j.astype(np.int64)
@@ -425,7 +450,9 @@ class AtomicGraph(NamedTuple):
         if missing:
             raise ValueError(f"Unable to find properties: {missing}")
 
-        return cls.create_with_defaults(
+        pbc = torch.tensor(structure.pbc, dtype=torch.bool)
+
+        return cls(
             Z=Z,
             R=R,
             cell=cell,
@@ -434,6 +461,7 @@ class AtomicGraph(NamedTuple):
             properties=properties,
             other=other,
             cutoff=cutoff,
+            pbc=pbc,
         )
 
     @classmethod
@@ -447,6 +475,7 @@ class AtomicGraph(NamedTuple):
         properties: Union[Dict[PropertyKey, torch.Tensor], None] = None,
         other: Union[Dict[str, torch.Tensor], None] = None,
         cutoff: float = 0.0,
+        pbc: Union[torch.Tensor, None] = None,
     ) -> "AtomicGraph":
         """
         Create an :class:`AtomicGraph`, populating missing values with defaults.
@@ -488,6 +517,7 @@ class AtomicGraph(NamedTuple):
             properties=properties,
             other=other,
             cutoff=cutoff,
+            pbc=pbc,
         )
 
     def to(self, device: Union[torch.device, str]) -> "AtomicGraph":
@@ -507,6 +537,7 @@ class AtomicGraph(NamedTuple):
             cutoff=self.cutoff,
             batch=self.batch.to(device) if self.batch is not None else None,
             ptr=self.ptr.to(device) if self.ptr is not None else None,
+            pbc=self.pbc.to(device) if self.pbc is not None else None,
         )
 
     def __repr__(self):
@@ -529,6 +560,34 @@ class AtomicGraph(NamedTuple):
 
         return uniform_repr(name, **info, indent_width=4)
 
+    def to_ase(self) -> ase.Atoms:
+        """Convert this graph to an :class:`ase.Atoms` object."""
+
+        pbc = self.pbc.cpu().numpy() if self.pbc is not None else None
+        atoms = ase.Atoms(
+            numbers=self.Z.detach().cpu().numpy(),
+            positions=self.R.detach().cpu().numpy(),
+            cell=self.cell.detach().cpu().numpy(),
+            pbc=pbc,
+        )
+        for key, value in self.other.items():
+            atoms.info[key] = value.detach().cpu().numpy()
+
+        if "energy" in self.properties:
+            atoms.info["energy"] = (
+                self.properties["energy"].detach().cpu().item()
+            )
+
+        for key in ["stress", "virial"]:
+            if key in self.properties:
+                atoms.info[key] = self.properties[key].detach().cpu().numpy()
+
+        for key in ["forces", "local_energies"]:
+            if key in self.properties:
+                atoms.arrays[key] = self.properties[key].detach().cpu().numpy()
+
+        return atoms
+
 
 def replace(
     graph: AtomicGraph,
@@ -540,6 +599,7 @@ def replace(
     properties: Optional[dict[PropertyKey, torch.Tensor]] = None,
     other: Optional[dict[str, torch.Tensor]] = None,
     cutoff: Optional[float] = None,
+    pbc: Optional[torch.Tensor] = None,
 ) -> AtomicGraph:
     """
     A convenience function for replacing the values of an :class:`AtomicGraph`
@@ -561,6 +621,7 @@ def replace(
         cutoff=cutoff if cutoff is not None else graph.cutoff,
         batch=graph.batch,
         ptr=graph.ptr,
+        pbc=pbc if pbc is not None else graph.pbc,
     )
 
 

@@ -78,7 +78,7 @@ def test_model_serialisation(model_class: type[GraphPESModel], tmp_path):
 
     m2 = model_class()  # type: ignore
     # check no errors occur
-    m2.load_state_dict(torch.load(tmp_path / "model.pt"))
+    m2.load_state_dict(torch.load(tmp_path / "model.pt", weights_only=False))
 
     # check predictions are the same
     assert torch.allclose(

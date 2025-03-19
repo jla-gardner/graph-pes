@@ -13,6 +13,7 @@ from graph_pes.atomic_graph import (
     PropertyKey,
     has_cell,
     is_batch,
+    replace,
     sum_per_structure,
     to_batch,
     trim_edges,
@@ -42,27 +43,38 @@ class GraphPESModel(nn.Module, ABC):
             * - Key
               - Single graph
               - Batch of graphs
+              - Units
             * - :code:`"local_energies"`
               - :code:`(N,)`
               - :code:`(N,)`
+              - :code:`[energy]`
             * - :code:`"energy"`
               - :code:`()`
               - :code:`(M,)`
+              - :code:`[energy]`
             * - :code:`"forces"`
               - :code:`(N, 3)`
               - :code:`(N, 3)`
+              - :code:`[energy / length]`
             * - :code:`"stress"`
               - :code:`(3, 3)`
               - :code:`(M, 3, 3)`
+              - :code:`[energy / length^3]`
             * - :code:`"virial"`
               - :code:`(3, 3)`
               - :code:`(M, 3, 3)`
+              - :code:`[energy]`
 
     assuming an input of an :class:`~graph_pes.AtomicGraph` representing a
     single structure composed of ``N`` atoms, or an
     :class:`~graph_pes.AtomicGraph` composed of ``M`` structures and containing
     a total of ``N`` atoms. (see :func:`~graph_pes.atomic_graph.is_batch` for
     more information about batching).
+
+    Note that ``graph-pes`` makes no assumptions as to the actual units of
+    the ``energy`` and ``length`` quantities - these will depend on the
+    labels the model has been trained on (e.g. could be ``eV`` and ``Å``,
+    ``kcal/mol`` and ``nm`` or even ``J`` and ``m``).
 
     Implementations must override the
     :meth:`~graph_pes.GraphPESModel.forward` method to generate a
@@ -78,7 +90,10 @@ class GraphPESModel(nn.Module, ABC):
       atomic positions.
     * ``"stress"``: as the negative gradient of the energy with respect to a
       symmetric expansion of the unit cell, normalised by the cell volume.
-    * ``"virial"``: as ``-stress * volume``.
+      In keeping with convention, a negative stress indicates the system is
+      under static compression (wants to expand).
+    * ``"virial"``: as ``-stress * volume``. A negative virial indicates the
+      system is under static tension (wants to contract).
 
     For more details on how these are calculated, see :doc:`../theory`.
 
@@ -242,18 +257,7 @@ class GraphPESModel(nn.Module, ABC):
             # and allow us to calculate the stress tensor as the gradient
             # of the energy wrt the change in cell.
 
-            graph = AtomicGraph(  # can't use _replace here due to TorchScript
-                Z=graph.Z,
-                R=new_positions,  # <- new positions
-                cell=new_cell,  # <- new cell
-                neighbour_list=graph.neighbour_list,
-                neighbour_cell_offsets=graph.neighbour_cell_offsets,
-                properties=graph.properties,
-                other=graph.other,
-                cutoff=graph.cutoff,
-                batch=graph.batch,
-                ptr=graph.ptr,
-            )
+            graph = replace(graph, R=new_positions, cell=new_cell)
 
         else:
             change_to_cell = torch.zeros_like(graph.cell)
@@ -326,18 +330,7 @@ class GraphPESModel(nn.Module, ABC):
                 predictions["virial"] = -predictions["stress"] * cell_volume
 
         # put things back to how they were before
-        graph = AtomicGraph(  # can't use _replace here due to TorchScript
-            Z=graph.Z,
-            R=existing_positions,  # <- old positions
-            cell=existing_cell,  # <- old cell
-            neighbour_list=graph.neighbour_list,
-            neighbour_cell_offsets=graph.neighbour_cell_offsets,
-            properties=graph.properties,
-            other=graph.other,
-            cutoff=graph.cutoff,
-            batch=graph.batch,
-            ptr=graph.ptr,
-        )
+        graph = replace(graph, R=existing_positions, cell=existing_cell)
 
         # make sure we don't leave auxiliary predictions
         # e.g. local_energies if we only asked for energy

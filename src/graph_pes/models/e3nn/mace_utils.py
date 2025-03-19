@@ -254,7 +254,7 @@ def get_U_matrix(
             "so we can fix this."
         )
 
-    return _U_cache_sparse[key].to_dense()
+    return _U_cache_sparse[key].to_dense().to(dtype=torch.get_default_dtype())
 
 
 class UnflattenIrreps(torch.nn.Module):

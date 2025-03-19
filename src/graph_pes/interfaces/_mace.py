@@ -223,6 +223,9 @@ def mace_off(
     )
     assert isinstance(mace_torch_model, torch.nn.Module)
     _fix_dtype(mace_torch_model, dtype)
+    # un freeze all parameters
+    for p in mace_torch_model.parameters():
+        p.requires_grad = True
     return MACEWrapper(mace_torch_model)
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from typing import Iterable, Literal
 
@@ -212,6 +213,19 @@ class TrainingTask(pl.LightningModule):
             for metric in self.eval_metrics:
                 if metric.name in total_loss_result.components:
                     # don't double log
+                    continue
+                if any(
+                    p not in graph.properties
+                    for p in metric.required_properties
+                ):
+                    warnings.warn(
+                        f"Metric {metric.name} requires properties "
+                        f"{metric.required_properties} that are "
+                        "not present in the graph: "
+                        f"{list(graph.properties.keys())}. We won't log this "
+                        "in this batch",
+                        stacklevel=2,
+                    )
                     continue
                 value = metric(self.model, graph, predictions)
                 log(f"metrics/{metric.name}", value)
