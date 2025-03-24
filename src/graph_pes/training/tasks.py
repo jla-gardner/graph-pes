@@ -33,6 +33,7 @@ from graph_pes.training.utils import (
     sanity_check,
 )
 from graph_pes.utils.logger import logger
+from graph_pes.utils.nn import PerElementParameter
 from graph_pes.utils.sampling import SequenceSampler
 
 
@@ -78,6 +79,13 @@ def train_with_lightning(
         logger.info(f"Pre-fitting the model on {len(pre_fit_graphs):,} samples")
         model.pre_fit_all_components(pre_fit_graphs)
     trainer.strategy.barrier("pre-fit")
+
+    # always register the elements in the training set
+    for param in model.parameters():
+        if isinstance(param, PerElementParameter):
+            param.register_elements(
+                torch.unique(to_batch(pre_fit_graphs).Z).tolist()
+            )
 
     # always pre-fit the losses
     for subloss in loss.losses:
