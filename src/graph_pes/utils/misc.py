@@ -538,20 +538,5 @@ class MultiSequence(Sequence[T]):
 
         elif isinstance(index, slice):
             return MultiSequence(self.sequences, self.indices[index])
-            # _index = range(len(self))[index]
-
-            # offset = 0
-            # new_seq_idxs = []
-
-            # for seq_idxs in self.indices:
-            #     new = []
-            #     for i in _index:
-            #         if 0 <= i - offset < len(seq_idxs):
-            #             new.append(seq_idxs[i - offset])
-
-            #     new_seq_idxs.append(new)
-            #     offset += len(seq_idxs)
-
-            # return MultiSequence(self.sequences, new_seq_idxs)
 
         raise NotImplementedError(f"Index {index} is not supported")

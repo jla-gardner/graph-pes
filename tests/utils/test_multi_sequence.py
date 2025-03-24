@@ -1,3 +1,5 @@
+import pytest
+
 from graph_pes.utils.misc import MultiSequence
 
 
@@ -37,3 +39,6 @@ def test_multi_sequence():
     sliced = ms[::-1]
     assert len(sliced) == 10
     assert list(sliced) == [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+
+    with pytest.raises(IndexError):
+        ms[100]
