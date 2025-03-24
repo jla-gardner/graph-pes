@@ -118,3 +118,6 @@ def test_concat_dataset():
     assert c[5].cutoff == b[0].cutoff
 
     assert set(c.properties) == set(a.properties + b.properties)
+
+    with pytest.raises(IndexError):
+        c[100]
