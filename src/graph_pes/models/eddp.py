@@ -27,9 +27,9 @@ class RadialExpansion(torch.nn.Module):
         self.cutoff = cutoff
         powers = 2 + (max_power - 2) * torch.linspace(0, 1, features)
         if learnable_powers:
-            self.powers = torch.nn.Parameter(powers)
+            self.exponents = torch.nn.Parameter(powers)
         else:
-            self.register_buffer("powers", powers)
+            self.register_buffer("exponents", powers)
 
     def forward(
         self,
