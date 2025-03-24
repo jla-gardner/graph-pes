@@ -78,6 +78,70 @@ class GraphDataset(torch.utils.data.Dataset, ABC):
         )
 
 
+class ConcatDataset(GraphDataset):
+    """
+    A dataset that concatenates multiple :class:`GraphDataset` instances.
+    Useful for e.g. training on datasets from multiple files simultaneously:
+
+    .. code-block:: yaml
+
+        data:
+            train:
+                +ConcatDataset:
+                    dimers:
+                        +file_dataset:
+                            path: dimers.xyz
+                            cutoff: 5.0
+                    crystals:
+                        +file_dataset:
+                            path: crystals.xyz
+                            cutoff: 5.0
+
+            valid:
+                ...
+
+
+    Parameters
+    ----------
+    datasets
+        The collection of :class:`GraphDataset` instances to concatenate.
+        The keys are arbitrary names for the datasets, and the values are
+        the :class:`GraphDataset` instances.
+    """
+
+    def __init__(self, **datasets: GraphDataset):
+        self.datasets = datasets
+        self._lengths = {k: len(v) for k, v in datasets.items()}
+
+    def __len__(self):
+        return sum(self._lengths.values())
+
+    def __getitem__(self, index: int) -> AtomicGraph:
+        for k, v in self._lengths.items():
+            if index < v:
+                return self.datasets[k][index]
+            index -= v
+        raise IndexError(f"Index {index} is out of bounds for the dataset")
+
+    def prepare_data(self) -> None:
+        for dataset in self.datasets.values():
+            dataset.prepare_data()
+
+    def setup(self) -> None:
+        for dataset in self.datasets.values():
+            dataset.setup()
+
+    @property
+    def properties(self) -> list[PropertyKey]:
+        return list(
+            set(
+                p
+                for dataset in self.datasets.values()
+                for p in dataset.properties
+            )
+        )
+
+
 class ASEToGraphsConverter(Sequence[AtomicGraph]):
     def __init__(
         self,
@@ -233,6 +297,35 @@ def load_atoms_dataset(
     convert them to :class:`~graph_pes.AtomicGraph` instances, and split into
     train and valid sets.
 
+    Examples
+    --------
+    Load a subset of the QM9 dataset. Ensure that the ``U0`` property is
+    mapped to ``energy``:
+
+    >>> load_atoms_dataset(
+    ...     "QM9",
+    ...     cutoff=5.0,
+    ...     n_train=1_000,
+    ...     n_valid=100,
+    ...     n_test=100,
+    ...     property_map={"U0": "energy"},
+    ... )
+
+    Use this to specify a complete collection of datasets (train, val and test)
+    in a YAML configuration file:
+
+    .. code-block:: yaml
+
+        data:
+            +load_atoms_dataset:
+                id: QM9
+                cutoff: 5.0
+                n_train: 1_000
+                n_valid: 100
+                n_test: 100
+                property_map:
+                    U0: energy
+
     Parameters
     ----------
     id:
@@ -269,20 +362,6 @@ def load_atoms_dataset(
     -------
     DatasetCollection
         A collection of training, validation, and optional test datasets.
-
-    Examples
-    --------
-    Load a subset of the QM9 dataset. Ensure that the ``U0`` property is
-    mapped to ``energy``:
-
-    >>> load_atoms_dataset(
-    ...     "QM9",
-    ...     cutoff=5.0,
-    ...     n_train=1_000,
-    ...     n_valid=100,
-    ...     n_test=100,
-    ...     property_map={"U0": "energy"},
-    ... )
     """
     _dataset_factory = functools.partial(
         ASEToGraphDataset,
@@ -331,6 +410,29 @@ def file_dataset(
       Under the hood, this uses the :class:`~graph_pes.data.ase_db.ASEDatabase`
       class - see there for more details.
 
+    Examples
+    --------
+    Load a dataset from a file, ensuring that the ``energy`` property is
+    mapped to ``U0``:
+
+    >>> file_dataset(
+    ...     "training_data.xyz",
+    ...     cutoff=5.0,
+    ...     property_map={"U0": "energy"},
+    ... )
+
+    Use this to specify e.g. a training dataset in a YAML configuration file:
+
+    .. code-block:: yaml
+
+        data:
+            train:
+                +file_dataset:
+                    path: training_data.xyz
+                    cutoff: 5.0
+                    property_map:
+                    U0: energy
+
     Parameters
     ----------
     path:
@@ -358,17 +460,6 @@ def file_dataset(
     -------
     ASEToGraphDataset
         The ASE dataset.
-
-    Example
-    -------
-    Load a dataset from a file, ensuring that the ``energy`` property is
-    mapped to ``U0``:
-
-    >>> file_dataset(
-    ...     "training_data.xyz",
-    ...     cutoff=5.0,
-    ...     property_map={"U0": "energy"},
-    ... )
     """
 
     if isinstance(path, str):

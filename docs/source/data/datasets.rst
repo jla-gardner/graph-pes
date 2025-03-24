@@ -9,9 +9,12 @@ implementations. The most common way to get a dataset of graphs is to use
 Useful Datasets
 ---------------
 
+.. autofunction:: graph_pes.data.file_dataset
+
 .. autofunction:: graph_pes.data.load_atoms_dataset
 
-.. autofunction:: graph_pes.data.file_dataset
+.. autoclass:: graph_pes.data.ConcatDataset()
+    :show-inheritance:
 
 Base Classes
 -------------

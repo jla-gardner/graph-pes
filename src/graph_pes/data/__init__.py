@@ -1,5 +1,6 @@
 from .datasets import (
     ASEToGraphDataset,
+    ConcatDataset,
     DatasetCollection,
     GraphDataset,
     file_dataset,
@@ -14,4 +15,5 @@ __all__ = [
     "ASEToGraphDataset",
     "DatasetCollection",
     "GraphDataLoader",
+    "ConcatDataset",
 ]
