@@ -17,6 +17,7 @@ from graph_pes.data.datasets import get_all_graphs_and_cache_to_disk
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models import (
     ALL_MODELS,
+    EDDP,
     MACE,
     AdditionModel,
     FixedOffset,
@@ -76,6 +77,7 @@ def all_model_factories(
             "radial_features": 24,
             "channels": 8,
         },
+        EDDP: {"elements": expected_elements},
     }
 
     def _model_factory(
