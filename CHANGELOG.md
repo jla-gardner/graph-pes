@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Add the `ConcatDataset` class.
+
 ## [0.0.26] - 2025-03-15
 
 Fixed a bug whereby gradients were not being propagated through the three-body angle and distance terms.
