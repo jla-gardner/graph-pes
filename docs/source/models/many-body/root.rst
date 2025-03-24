@@ -5,7 +5,8 @@ Many Body Models
 
 .. toctree::
     :maxdepth: 1
-    
+
+    eddp
     schnet
     painn
     nequip
