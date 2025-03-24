@@ -96,7 +96,7 @@ def triplet_bond_descriptors(
     )
 
 
-@torch.no_grad()
+# @torch.no_grad()
 def triplet_edge_pairs(graph: AtomicGraph, three_body_cutoff: float):
     r"""
     Find all the pairs of edges, :math:`a = (i, j), b = (i, k)`, such that:
@@ -119,30 +119,33 @@ def triplet_edge_pairs(graph: AtomicGraph, three_body_cutoff: float):
             i, k = graph.neighbour_list[:,b]
     """
 
-    edge_indexes = torch.arange(number_of_edges(graph), device=graph.R.device)
+    with torch.no_grad():
+        edge_indexes = torch.arange(
+            number_of_edges(graph), device=graph.R.device
+        )
 
-    three_body_mask = neighbour_distances(graph) < three_body_cutoff
-    relevant_edge_indexes = edge_indexes[three_body_mask]
-    relevant_central_atoms = graph.neighbour_list[0][relevant_edge_indexes]
+        three_body_mask = neighbour_distances(graph) < three_body_cutoff
+        relevant_edge_indexes = edge_indexes[three_body_mask]
+        relevant_central_atoms = graph.neighbour_list[0][relevant_edge_indexes]
 
-    edge_pairs = []
+        edge_pairs = []
 
-    for i in range(number_of_atoms(graph)):
-        mask = relevant_central_atoms == i
-        masked_edge_indexes = relevant_edge_indexes[mask]
+        for i in range(number_of_atoms(graph)):
+            mask = relevant_central_atoms == i
+            masked_edge_indexes = relevant_edge_indexes[mask]
 
-        # number of edges of distance <= three_body_cutoff
-        # that have i as a central atom
-        N = masked_edge_indexes.shape[0]
-        _idx = torch.cartesian_prod(
-            torch.arange(N),
-            torch.arange(N),
-        )  # (N**2, 2)
-        _idx = _idx[_idx[:, 0] != _idx[:, 1]]  # (N**2 - N, 2)
+            # number of edges of distance <= three_body_cutoff
+            # that have i as a central atom
+            N = masked_edge_indexes.shape[0]
+            _idx = torch.cartesian_prod(
+                torch.arange(N),
+                torch.arange(N),
+            )  # (N**2, 2)
+            _idx = _idx[_idx[:, 0] != _idx[:, 1]]  # (N**2 - N, 2)
 
-        pairs_for_i = masked_edge_indexes[_idx]
-        edge_pairs.append(pairs_for_i)
+            pairs_for_i = masked_edge_indexes[_idx]
+            edge_pairs.append(pairs_for_i)
 
-    edge_pairs = torch.cat(edge_pairs)
+        edge_pairs = torch.cat(edge_pairs)
 
-    return edge_pairs
+        return edge_pairs
