@@ -500,3 +500,58 @@ def first(iterable: Iterable[T]) -> T | None:
         return next(iter(iterable))
     except StopIteration:
         return None
+
+
+class MultiSequence(Sequence[T]):
+    """
+    A class that mimics a concatenation of sequences without performing
+    costly indexing operations.
+    """
+
+    def __init__(
+        self,
+        sequences: Sequence[Sequence[T]],
+        indices: Sequence[int] | None = None,
+    ):
+        self.sequences = sequences
+        self.indices = indices or range(sum(len(s) for s in sequences))
+
+    def __len__(self) -> int:
+        return len(self.indices)
+
+    @overload
+    def __getitem__(self, index: int) -> T: ...
+    @overload
+    def __getitem__(self, index: slice) -> MultiSequence[T]: ...
+    def __getitem__(self, index: int | slice) -> T | MultiSequence[T]:
+        """
+        Get the element/s at the given ``index``.
+        """
+        if isinstance(index, int):
+            actual_index = self.indices[index]
+
+            for seq in self.sequences:
+                if actual_index < len(seq):
+                    return seq[actual_index]
+                actual_index -= len(seq)
+            raise IndexError(f"Index {index} is out of bounds for the sequence")
+
+        elif isinstance(index, slice):
+            return MultiSequence(self.sequences, self.indices[index])
+            # _index = range(len(self))[index]
+
+            # offset = 0
+            # new_seq_idxs = []
+
+            # for seq_idxs in self.indices:
+            #     new = []
+            #     for i in _index:
+            #         if 0 <= i - offset < len(seq_idxs):
+            #             new.append(seq_idxs[i - offset])
+
+            #     new_seq_idxs.append(new)
+            #     offset += len(seq_idxs)
+
+            # return MultiSequence(self.sequences, new_seq_idxs)
+
+        raise NotImplementedError(f"Index {index} is not supported")

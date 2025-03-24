@@ -2,8 +2,9 @@ from typing import Literal
 
 import numpy as np
 import pytest
+import torch
 
-from graph_pes.atomic_graph import number_of_atoms
+from graph_pes.atomic_graph import AtomicGraph, number_of_atoms
 from graph_pes.data import load_atoms_dataset
 from graph_pes.data.datasets import (
     ASEToGraphsConverter,
@@ -116,10 +117,10 @@ def test_concat_dataset():
 
     # check correct length
     assert len(c) == 10
-    assert c[0].R.shape == a[0].R.shape
+    assert torch.allclose(c[0].R, a[0].R)
     assert c[0].cutoff == a[0].cutoff
 
-    assert c[5].R.shape == b[0].R.shape
+    assert torch.allclose(c[5].R, b[0].R)
     assert c[5].cutoff == b[0].cutoff
 
     # check that the properties are correct
@@ -134,3 +135,8 @@ def test_concat_dataset():
     c.prepare_data()
     c.setup()
     assert isinstance(c.datasets["a"].graphs, list)
+
+    # check that graphs is available
+    g = c.graphs[0]
+    assert isinstance(g, AtomicGraph)
+    assert torch.allclose(g.R, a[0].R)

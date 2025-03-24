@@ -20,7 +20,7 @@ from graph_pes.atomic_graph import (
 )
 from graph_pes.data.ase_db import ASEDatabase
 from graph_pes.utils.logger import logger
-from graph_pes.utils.misc import slice_to_range, uniform_repr
+from graph_pes.utils.misc import MultiSequence, slice_to_range, uniform_repr
 from graph_pes.utils.sampling import SequenceSampler
 
 
@@ -139,6 +139,12 @@ class ConcatDataset(GraphDataset):
                 for dataset in self.datasets.values()
                 for p in dataset.properties
             )
+        )
+
+    @property
+    def graphs(self) -> MultiSequence[AtomicGraph]:
+        return MultiSequence(
+            [dataset.graphs for dataset in self.datasets.values()],
         )
 
 
