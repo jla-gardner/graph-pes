@@ -25,7 +25,10 @@ class RadialExpansion(torch.nn.Module):
     ):
         super().__init__()
         self.cutoff = cutoff
-        powers = 2 + (max_power - 2) * torch.linspace(0, 1, features)
+        beta = (max_power / 2) ** (1.0 / (features - 1))
+        powers = torch.tensor(
+            [2 * (beta**i) for i in range(features)], dtype=torch.float
+        )
         if learnable_powers:
             self.exponents = torch.nn.Parameter(powers)
         else:
@@ -258,8 +261,8 @@ class EDDP(GraphPESModel):
         super().__init__(
             cutoff=max(cutoff, three_body_cutoff),
             implemented_properties=["local_energies"],
+            three_body_cutoff=three_body_cutoff,
         )
-        self.three_body_cutoff = three_body_cutoff
 
         self.elements = elements
         Zs = [atomic_numbers[Z] for Z in elements]
@@ -325,7 +328,7 @@ class EDDP(GraphPESModel):
             central_atom_features.append(descriptor(rs, graph))
 
         # three body terms
-        A = triplet_edge_pairs(graph, self.three_body_cutoff)
+        A = triplet_edge_pairs(graph, self.three_body_cutoff.item())
         a = A[:, 0]
         b = A[:, 1]
         i = graph.neighbour_list[0, a]

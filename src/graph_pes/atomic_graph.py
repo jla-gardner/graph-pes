@@ -692,6 +692,7 @@ def register_custom_batcher(key: str):
 
 def to_batch(
     graphs: Sequence[AtomicGraph],
+    three_body_cutoff: float | None = None,
 ) -> AtomicGraph:
     """
     Collate a sequence of atomic graphs into a single batch object.
@@ -709,6 +710,9 @@ def to_batch(
     ----------
     graphs
         The graphs to collate.
+    three_body_cutoff
+        The cutoff radius for the three-body interactions. If specified,
+        these are pre-computed and cached on the graph object.
 
     Examples
     --------
@@ -802,13 +806,22 @@ def to_batch(
     #   or per-structure
     for key in graphs[0].other:
         values = [g.other[key] for g in graphs]
-        if key in _custom_batchers:
+        if key.startswith("__threebody-"):
+            # we don't handle batching of 3body neighbour list info currently
+            continue
+        elif key in _custom_batchers:
             batcher = _custom_batchers[key]
             batched_graph.other[key] = batcher(batched_graph, values)
         elif all(is_local_property(g.other[key], g) for g in graphs):
             batched_graph.other[key] = torch.cat(values)
         else:
-            batched_graph.other[key] = torch.stack(values)
+            batched_graph.other[key] = torch.vstack(values)
+
+    if three_body_cutoff is not None:
+        from graph_pes.utils.threebody import triplet_edge_pairs
+
+        # cache these on the graph
+        triplet_edge_pairs(batched_graph, three_body_cutoff)
 
     return batched_graph
 

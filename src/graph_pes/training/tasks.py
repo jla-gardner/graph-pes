@@ -60,9 +60,17 @@ def train_with_lightning(
 
     loader_kwargs = {**fit_config.loader_kwargs}
     loader_kwargs["shuffle"] = True
-    train_loader = GraphDataLoader(data.train, **loader_kwargs)
+    train_loader = GraphDataLoader(
+        data.train,
+        **loader_kwargs,
+        three_body_cutoff=model.three_body_cutoff.item() or None,
+    )
     loader_kwargs["shuffle"] = False
-    valid_loader = GraphDataLoader(data.valid, **loader_kwargs)
+    valid_loader = GraphDataLoader(
+        data.valid,
+        **loader_kwargs,
+        three_body_cutoff=model.three_body_cutoff.item() or None,
+    )
 
     eval_metrics = get_all_eval_metrics(
         [data.train, data.valid], user_eval_metrics

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from functools import partial
 from typing import Iterator, Sequence
 
 import torch.utils.data
@@ -34,6 +35,7 @@ class GraphDataLoader(torch.utils.data.DataLoader):
         dataset: GraphDataset | Sequence[AtomicGraph],
         batch_size: int = 1,
         shuffle: bool = False,
+        three_body_cutoff: float | None = None,
         **kwargs,
     ):
         if not isinstance(dataset, GraphDataset):
@@ -46,7 +48,10 @@ class GraphDataLoader(torch.utils.data.DataLoader):
                 stacklevel=2,
             )
 
-        collate_fn = kwargs.pop("collate_fn", to_batch)
+        collate_fn = kwargs.pop(
+            "collate_fn",
+            partial(to_batch, three_body_cutoff=three_body_cutoff),
+        )
 
         super().__init__(
             dataset,

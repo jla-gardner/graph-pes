@@ -96,7 +96,6 @@ def triplet_bond_descriptors(
     )
 
 
-# @torch.no_grad()
 def triplet_edge_pairs(graph: AtomicGraph, three_body_cutoff: float):
     r"""
     Find all the pairs of edges, :math:`a = (i, j), b = (i, k)`, such that:
@@ -118,6 +117,17 @@ def triplet_edge_pairs(graph: AtomicGraph, three_body_cutoff: float):
             i, j = graph.neighbour_list[:,a]
             i, k = graph.neighbour_list[:,b]
     """
+
+    if three_body_cutoff > graph.cutoff:
+        raise ValueError(
+            "Three-body cutoff is greater than the graph cutoff. "
+            "This is not allowed."
+        )
+
+    # check if already cached, using old .format to be torchscript compatible
+    key = "__threebody-{:.3f}".format(three_body_cutoff)  # noqa: UP032
+    if key in graph.other:
+        return graph.other[key]
 
     with torch.no_grad():
         edge_indexes = torch.arange(
@@ -147,5 +157,7 @@ def triplet_edge_pairs(graph: AtomicGraph, three_body_cutoff: float):
             edge_pairs.append(pairs_for_i)
 
         edge_pairs = torch.cat(edge_pairs)
+
+        graph.other[key] = edge_pairs
 
         return edge_pairs
