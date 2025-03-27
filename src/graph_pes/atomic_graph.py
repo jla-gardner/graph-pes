@@ -805,11 +805,12 @@ def to_batch(
     #   since we need to try and infer whether these are per-atom
     #   or per-structure
     for key in graphs[0].other:
-        values = [g.other[key] for g in graphs]
         if key.startswith("__threebody-"):
             # we don't handle batching of 3body neighbour list info currently
             continue
-        elif key in _custom_batchers:
+
+        values = [g.other[key] for g in graphs]
+        if key in _custom_batchers:
             batcher = _custom_batchers[key]
             batched_graph.other[key] = batcher(batched_graph, values)
         elif all(is_local_property(g.other[key], g) for g in graphs):

@@ -96,7 +96,10 @@ def triplet_bond_descriptors(
     )
 
 
-def triplet_edge_pairs(graph: AtomicGraph, three_body_cutoff: float):
+def triplet_edge_pairs(
+    graph: AtomicGraph,
+    three_body_cutoff: float,
+) -> torch.Tensor:
     r"""
     Find all the pairs of edges, :math:`a = (i, j), b = (i, k)`, such that:
 
@@ -127,7 +130,9 @@ def triplet_edge_pairs(graph: AtomicGraph, three_body_cutoff: float):
     # check if already cached, using old .format to be torchscript compatible
     key = "__threebody-{:.3f}".format(three_body_cutoff)  # noqa: UP032
     if key in graph.other:
-        return graph.other[key]
+        v = graph.other.get(key)
+        if v is not None:
+            return v
 
     with torch.no_grad():
         edge_indexes = torch.arange(
@@ -156,8 +161,8 @@ def triplet_edge_pairs(graph: AtomicGraph, three_body_cutoff: float):
             pairs_for_i = masked_edge_indexes[_idx]
             edge_pairs.append(pairs_for_i)
 
-        edge_pairs = torch.cat(edge_pairs)
+        edge_pairs_t: torch.Tensor = torch.cat(edge_pairs)
 
-        graph.other[key] = edge_pairs
+        # graph.other[key] = edge_pairs_t
 
-        return edge_pairs
+        return edge_pairs_t
