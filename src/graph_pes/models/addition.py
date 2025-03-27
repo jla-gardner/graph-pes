@@ -12,7 +12,6 @@ from graph_pes.atomic_graph import (
     number_of_atoms,
     number_of_structures,
 )
-from graph_pes.data.datasets import GraphDataset
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.utils.misc import all_equal, uniform_repr
 from graph_pes.utils.nn import UniformModuleDict
@@ -52,9 +51,24 @@ class AdditionModel(GraphPESModel):
         implemented_properties = list(
             set().union(*[m.implemented_properties for m in models.values()])
         )
+        three_bodies = set(
+            [
+                m.three_body_cutoff.item()
+                for m in models.values()
+                if m.three_body_cutoff.item() > 0
+            ]
+        )
+        if len(three_bodies) == 0:
+            three_body_cutoff = None
+        elif len(three_bodies) == 1:
+            three_body_cutoff = three_bodies.pop()
+        else:
+            three_body_cutoff = None
+
         super().__init__(
             cutoff=max_cutoff,
             implemented_properties=implemented_properties,
+            three_body_cutoff=three_body_cutoff,
         )
         self.models = UniformModuleDict(**models)
 
@@ -116,9 +130,7 @@ class AdditionModel(GraphPESModel):
             for k in predictions[0]
         }
 
-    def pre_fit_all_components(
-        self, graphs: GraphDataset | Sequence[AtomicGraph]
-    ):
+    def pre_fit_all_components(self, graphs: Sequence[AtomicGraph]):
         for model in self.models.values():
             model.pre_fit_all_components(graphs)
 
