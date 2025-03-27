@@ -121,7 +121,7 @@ def triplet_edge_pairs(
             i, k = graph.neighbour_list[:,b]
     """
 
-    if three_body_cutoff > graph.cutoff:
+    if three_body_cutoff > graph.cutoff + 1e-6:
         raise ValueError(
             "Three-body cutoff is greater than the graph cutoff. "
             "This is not allowed."

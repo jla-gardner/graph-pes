@@ -818,7 +818,7 @@ def to_batch(
         else:
             batched_graph.other[key] = torch.vstack(values)
 
-    if three_body_cutoff is not None:
+    if three_body_cutoff is not None and three_body_cutoff > 0:
         from graph_pes.utils.threebody import triplet_edge_pairs
 
         # cache these on the graph
