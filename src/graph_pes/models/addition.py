@@ -53,7 +53,7 @@ class AdditionModel(GraphPESModel):
         )
         three_bodies = set(
             [
-                m.three_body_cutoff.item()
+                round(m.three_body_cutoff.item(), 3)
                 for m in models.values()
                 if m.three_body_cutoff.item() > 0
             ]

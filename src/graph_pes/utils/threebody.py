@@ -163,6 +163,6 @@ def triplet_edge_pairs(
 
         edge_pairs_t: torch.Tensor = torch.cat(edge_pairs)
 
-        # graph.other[key] = edge_pairs_t
+        graph.other[key] = edge_pairs_t
 
         return edge_pairs_t
