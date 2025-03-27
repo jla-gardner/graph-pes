@@ -246,6 +246,7 @@ class EDDP(GraphPESModel):
         max_power: float = 8,
         mlp_width: int = 16,
         mlp_layers: int = 1,
+        activation: str = "CELU",
         three_body_cutoff: float | None = None,
         three_body_features: int | None = None,
         three_body_max_power: float | None = None,
@@ -316,7 +317,7 @@ class EDDP(GraphPESModel):
             + len(self.three_body_descriptors) * three_body_features**2
         )
         layers = [input_features] + [mlp_width] * mlp_layers + [1]
-        self.mlp = MLP(layers, activation="CELU")
+        self.mlp = MLP(layers, activation=activation)
 
     def featurise(self, graph: AtomicGraph) -> torch.Tensor:
         # one body terms
