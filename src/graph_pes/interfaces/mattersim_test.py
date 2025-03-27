@@ -147,7 +147,7 @@ def test_implementation():
         neighbour_cell_offsets=batch_dict["pbc_offsets"],
     )
 
-    tep = triplet_edge_pairs(graph, GRAPH_PES_MODEL.threebody_cutoff.item())
+    tep = triplet_edge_pairs(graph, GRAPH_PES_MODEL.three_body_cutoff.item())
     assert torch.all(batch_dict["three_body_indices"] == tep).item()
 
     count = count_number_of_triplets_per_leading_edge(tep, graph).unsqueeze(-1)
