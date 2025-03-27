@@ -692,7 +692,7 @@ def register_custom_batcher(key: str):
 
 def to_batch(
     graphs: Sequence[AtomicGraph],
-    three_body_cutoff: float | None = None,
+    three_body_cutoff: Optional[float] = None,
 ) -> AtomicGraph:
     """
     Collate a sequence of atomic graphs into a single batch object.
