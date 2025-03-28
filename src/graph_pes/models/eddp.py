@@ -129,19 +129,14 @@ class ThreeBodyDescriptor(torch.nn.Module):
         r_ik = r_ik[mask]
         r_jk = r_jk[mask]
 
-        central_atom_basis = (  # (E, F)
-            self.central_atom_expansion(r_ij)
-            * self.central_atom_expansion(r_ik)
-        )
+        e_ij = self.central_atom_expansion(r_ij)
+        e_ik = self.central_atom_expansion(r_ik)
+        e_jk = self.neighbour_atom_expansion(r_jk)
 
-        neighbour_atom_basis = self.neighbour_atom_expansion(r_jk)
-
-        # outer product to get (E, FxF)
         E = r_ij.shape[0]
-        F = central_atom_basis.shape[1]
-        prod = torch.einsum(
-            "ij,ik->ijk", central_atom_basis, neighbour_atom_basis
-        ).view(E, F * F)
+        F = e_ij.shape[1]
+        prod = (e_ij * e_ik)[:, None, :] * e_jk[:, :, None]
+        prod = prod.view(E, F * F) / F
 
         # sum over central atoms
         return sum_over_central_atom_index(prod, i[mask], graph)
@@ -341,6 +336,7 @@ class EDDP(GraphPESModel):
         for descriptor in self.three_body_descriptors:
             central_atom_features.append(
                 descriptor(i, j, k, r_ij, r_ik, r_jk, graph)
+                / 2  # account for double counting
             )
 
         # concatenate all features
