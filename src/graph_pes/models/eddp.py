@@ -314,6 +314,9 @@ class EDDP(GraphPESModel):
         layers = [input_features] + [mlp_width] * mlp_layers + [1]
         self.mlp = MLP(layers, activation=activation)
 
+        self.shifts = torch.nn.Parameter(torch.zeros(len(elements)))
+        self.scales = torch.nn.Parameter(torch.ones(len(elements)))
+
     def featurise(self, graph: AtomicGraph) -> torch.Tensor:
         # one body terms
         central_atom_features = [self.one_hot(graph.Z)]
@@ -340,8 +343,19 @@ class EDDP(GraphPESModel):
             )
 
         # concatenate all features
-        return torch.cat(central_atom_features, dim=1)
+        f = torch.cat(central_atom_features, dim=1)
+        f = (f - self.shifts) / self.scales
+        return f
 
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         features = self.featurise(graph)
         return {"local_energies": self.mlp(features).view(-1)}
+
+    def pre_fit(self, graphs: AtomicGraph) -> None:
+        X = self.featurise(graphs)
+        _mean = X.mean(dim=0)
+        _std = X.std(dim=0)
+        # replace nans
+        _std[torch.isnan(_std) | (_std < 1e-6)] = 1
+        self.shifts.data = _mean
+        self.scales.data = _std
