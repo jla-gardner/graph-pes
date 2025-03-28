@@ -12,7 +12,7 @@ from ..atomic_graph import (
 from ..graph_pes_model import GraphPESModel
 from ..utils.misc import uniform_repr
 from ..utils.nn import MLP, AtomicOneHot, UniformModuleList
-from ..utils.threebody import triplet_edge_pairs
+from ..utils.threebody import triplet_edges
 
 
 class RadialExpansion(torch.nn.Module):
@@ -136,7 +136,7 @@ class ThreeBodyDescriptor(torch.nn.Module):
         E = r_ij.shape[0]
         F = e_ij.shape[1]
         prod = (e_ij * e_ik)[:, None, :] * e_jk[:, :, None]
-        prod = prod.view(E, F * F) / F
+        prod = prod.view(E, F * F)
 
         # sum over central atoms
         return sum_over_central_atom_index(prod, i[mask], graph)
@@ -314,8 +314,8 @@ class EDDP(GraphPESModel):
         layers = [input_features] + [mlp_width] * mlp_layers + [1]
         self.mlp = MLP(layers, activation=activation)
 
-        self.shifts = torch.nn.Parameter(torch.zeros(len(elements)))
-        self.scales = torch.nn.Parameter(torch.ones(len(elements)))
+        self.shifts = torch.nn.Parameter(torch.zeros(input_features))
+        self.scales = torch.nn.Parameter(torch.ones(input_features))
 
     def featurise(self, graph: AtomicGraph) -> torch.Tensor:
         # one body terms
@@ -327,19 +327,13 @@ class EDDP(GraphPESModel):
             central_atom_features.append(descriptor(rs, graph))
 
         # three body terms
-        A = triplet_edge_pairs(graph, self.three_body_cutoff.item())
-        a = A[:, 0]
-        b = A[:, 1]
-        i = graph.neighbour_list[0, a]
-        j = graph.neighbour_list[1, a]
-        k = graph.neighbour_list[1, b]
-        r_ij = rs[a]
-        r_ik = rs[b]
-        r_jk = rs[b]
+        i, j, k, r_ij, r_ik, r_jk = triplet_edges(
+            graph, self.three_body_cutoff.item()
+        )
+
         for descriptor in self.three_body_descriptors:
             central_atom_features.append(
                 descriptor(i, j, k, r_ij, r_ik, r_jk, graph)
-                / 2  # account for double counting
             )
 
         # concatenate all features

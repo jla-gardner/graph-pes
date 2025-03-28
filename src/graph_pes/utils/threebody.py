@@ -4,6 +4,7 @@ import torch
 
 from graph_pes.atomic_graph import (
     AtomicGraph,
+    get_vectors,
     neighbour_distances,
     neighbour_vectors,
     number_of_atoms,
@@ -166,3 +167,61 @@ def triplet_edge_pairs(
         graph.other[key] = edge_pairs_t
 
         return edge_pairs_t
+
+
+def triplet_edges(
+    graph: AtomicGraph,
+    three_body_cutoff: float,
+) -> tuple[
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+]:
+    """
+    Finds all ``Y`` triplets ``(i, j, k)`` such that:
+
+    * ``i, j, k`` are indices of distinct (images of) atoms within the graph
+    * ``r_{ij} <=`` ``three_body_cutoff``
+    * ``r_{ik} <=`` ``three_body_cutoff``
+
+    Returns
+    -------
+    i: torch.Tensor
+        The central atom indices, shape ``(Y,)``.
+    j: torch.Tensor
+        The first paired atom indices, shape ``(Y,)``.
+    k: torch.Tensor
+        The second paired atom indices, shape ``(Y,)``.
+    r_ij: torch.Tensor
+        The bond length :math:`r_{ij}`, shape ``(Y,)``.
+    r_ik: torch.Tensor
+        The bond length :math:`r_{ik}`, shape ``(Y,)``.
+    r_jk: torch.Tensor
+        The bond length :math:`r_{jk}`, shape ``(Y,)``.
+    """
+
+    ij_ik = triplet_edge_pairs(graph, three_body_cutoff)
+    ij = graph.neighbour_list[:, ij_ik[:, 0]]
+    ik = graph.neighbour_list[:, ij_ik[:, 1]]
+    shifts_ij = graph.neighbour_cell_offsets[ij_ik[:, 0]]
+    shifts_ik = graph.neighbour_cell_offsets[ij_ik[:, 1]]
+
+    v_ij = get_vectors(graph, i=ij[0, :], j=ij[1, :], shifts=shifts_ij)
+    v_ik = get_vectors(graph, i=ik[0, :], j=ik[1, :], shifts=shifts_ik)
+    v_jk = v_ik - v_ij
+
+    r_ij = torch.norm(v_ij, dim=-1)
+    r_ik = torch.norm(v_ik, dim=-1)
+    r_jk = torch.norm(v_jk, dim=-1)
+
+    return (
+        ij[0, :],
+        ij[1, :],
+        ik[1, :],
+        r_ij,
+        r_ik,
+        r_jk,
+    )
