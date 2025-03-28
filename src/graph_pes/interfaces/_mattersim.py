@@ -19,16 +19,14 @@ class MatterSim_M3Gnet_Wrapper(GraphPESModel):
         super().__init__(
             cutoff=model.model_args["cutoff"],  # type: ignore
             implemented_properties=["local_energies"],
+            three_body_cutoff=model.model_args["threebody_cutoff"],  # type: ignore
         )
         self.model = model
-        self.threebody_cutoff = torch.tensor(
-            model.model_args["threebody_cutoff"]
-        )  # type: ignore
 
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         # pre-compute
         edge_lengths = neighbour_distances(graph)  # (E)
-        edge_pairs = triplet_edge_pairs(graph, self.threebody_cutoff.item())
+        edge_pairs = triplet_edge_pairs(graph, self.three_body_cutoff.item())
         triplets_per_leading_edge = count_number_of_triplets_per_leading_edge(
             edge_pairs, graph
         )

@@ -20,6 +20,7 @@ from graph_pes.utils.logger import logger
 from .addition import AdditionModel
 from .e3nn.mace import MACE, ZEmbeddingMACE
 from .e3nn.nequip import NequIP, ZEmbeddingNequIP
+from .eddp import EDDP
 from .offsets import FixedOffset, LearnableOffset
 from .painn import PaiNN
 from .pairwise import (
@@ -35,6 +36,7 @@ from .tensornet import TensorNet
 
 __all__ = [
     "AdditionModel",
+    "EDDP",
     "FixedOffset",
     "LearnableOffset",
     "LennardJones",

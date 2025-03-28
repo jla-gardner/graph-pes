@@ -692,6 +692,7 @@ def register_custom_batcher(key: str):
 
 def to_batch(
     graphs: Sequence[AtomicGraph],
+    three_body_cutoff: Optional[float] = None,
 ) -> AtomicGraph:
     """
     Collate a sequence of atomic graphs into a single batch object.
@@ -709,6 +710,9 @@ def to_batch(
     ----------
     graphs
         The graphs to collate.
+    three_body_cutoff
+        The cutoff radius for the three-body interactions. If specified,
+        these are pre-computed and cached on the graph object.
 
     Examples
     --------
@@ -801,6 +805,10 @@ def to_batch(
     #   since we need to try and infer whether these are per-atom
     #   or per-structure
     for key in graphs[0].other:
+        if key.startswith("__threebody-"):
+            # we don't handle batching of 3body neighbour list info currently
+            continue
+
         values = [g.other[key] for g in graphs]
         if key in _custom_batchers:
             batcher = _custom_batchers[key]
@@ -808,7 +816,13 @@ def to_batch(
         elif all(is_local_property(g.other[key], g) for g in graphs):
             batched_graph.other[key] = torch.cat(values)
         else:
-            batched_graph.other[key] = torch.stack(values)
+            batched_graph.other[key] = torch.vstack(values)
+
+    if three_body_cutoff is not None and three_body_cutoff > 0:
+        from graph_pes.utils.threebody import triplet_edge_pairs
+
+        # cache these on the graph
+        triplet_edge_pairs(batched_graph, three_body_cutoff)
 
     return batched_graph
 
@@ -861,11 +875,31 @@ def has_cell(graph: AtomicGraph) -> bool:
     return not torch.allclose(graph.cell, torch.zeros_like(graph.cell))
 
 
-def neighbour_vectors(graph: AtomicGraph) -> torch.Tensor:
+def get_vectors(
+    graph: AtomicGraph,
+    i: torch.Tensor,
+    j: torch.Tensor,
+    shifts: torch.Tensor,
+) -> torch.Tensor:
     """
-    Get the vector between each pair of atoms specified in the
-    ``graph``'s ``"neighbour_list"`` property, respecting periodic
-    boundary conditions where present.
+    Get ``v`` such that ``v[x] = R[i[x]] - R[j[x]]`` (and accounting
+    for the cell shift ``shifts[x]``).
+
+    Parameters
+    ----------
+    graph: AtomicGraph
+        The graph to get the vectors from.
+    i: torch.Tensor
+        The indices of the central atoms. Shape ``(E,)``.
+    j: torch.Tensor
+        The indices of the atoms to get the vectors to. Shape ``(E,)``.
+    shifts: torch.Tensor
+        The cell shifts to account for. Shape ``(E, 3)``.
+
+    Returns
+    -------
+    v: torch.Tensor
+        A ``(E, 3)``-shaped tensor of vectors.
     """
 
     # to simplify the logic below, we'll expand
@@ -879,19 +913,32 @@ def neighbour_vectors(graph: AtomicGraph) -> torch.Tensor:
         cell = graph.cell
         batch = graph_batch
 
-    # avoid tuple de-structuring to keep torchscript happy
-    i, j = graph.neighbour_list[0], graph.neighbour_list[1]  # (E,)
     if i.shape[0] == 0:
         return torch.zeros(0, 3, device=graph.R.device)
 
     cell_per_edge = cell[batch[i]]  # (E, 3, 3)
     distance_offsets = torch.einsum(
         "kl,klm->km",
-        graph.neighbour_cell_offsets.to(cell_per_edge.dtype),
+        shifts.to(cell_per_edge.dtype),
         cell_per_edge,
     )  # (E, 3)
     neighbour_positions = graph.R[j] + distance_offsets  # (E, 3)
     return neighbour_positions - graph.R[i]  # (E, 3)
+
+
+def neighbour_vectors(graph: AtomicGraph) -> torch.Tensor:
+    """
+    Get the vector between each pair of atoms specified in the
+    ``graph``'s ``"neighbour_list"`` property, respecting periodic
+    boundary conditions where present.
+    """
+
+    return get_vectors(
+        graph,
+        i=graph.neighbour_list[0],
+        j=graph.neighbour_list[1],
+        shifts=graph.neighbour_cell_offsets,
+    )
 
 
 def neighbour_distances(graph: AtomicGraph) -> torch.Tensor:

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Add the `EDDP` architecture.
+
 Add the `ConcatDataset` class.
 
 ## [0.0.26] - 2025-03-15

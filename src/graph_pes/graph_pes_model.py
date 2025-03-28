@@ -113,12 +113,16 @@ class GraphPESModel(nn.Module, ABC):
     implemented_properties
         The property predictions that the model implements in the forward pass.
         Must include at least ``"local_energies"``.
+    three_body_cutoff
+        The cutoff radius for this model's three-body interactions, if
+        applicable.
     """
 
     def __init__(
         self,
         cutoff: float,
         implemented_properties: list[PropertyKey],
+        three_body_cutoff: float | None = None,
     ):
         super().__init__()
 
@@ -126,6 +130,10 @@ class GraphPESModel(nn.Module, ABC):
 
         self.cutoff: torch.Tensor
         self.register_buffer("cutoff", torch.tensor(cutoff))
+        self.three_body_cutoff: torch.Tensor
+        self.register_buffer(
+            "three_body_cutoff", torch.tensor(three_body_cutoff or 0)
+        )
         self._has_been_pre_fit: torch.Tensor
         self.register_buffer("_has_been_pre_fit", torch.tensor(0))
 
