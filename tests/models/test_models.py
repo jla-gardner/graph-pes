@@ -15,6 +15,7 @@ from graph_pes.atomic_graph import (
     to_batch,
 )
 from graph_pes.models import (
+    EDDP,
     LennardJones,
     Morse,
     SchNet,
@@ -115,6 +116,19 @@ def test_addition():
         addition_model.predict_stress(graphs[0]),
         lj.predict_stress(graphs[0]) + m.predict_stress(graphs[0]),
     )
+
+
+def test_addition_cutoffs():
+    lj = LennardJones(cutoff=4.0)
+    eddp = EDDP(cutoff=3.0, elements=["Cu"])
+    addition_model = AdditionModel(lj=lj, eddp=eddp)
+
+    # check that the addition model has the largest cutoff
+    assert torch.allclose(torch.tensor(4.0), addition_model.cutoff)
+
+    #  ensure that 3 body cuttoff is the same as the eddp cutoff
+    assert torch.allclose(torch.tensor(3.0), eddp.three_body_cutoff)
+    assert torch.allclose(torch.tensor(3.0), addition_model.three_body_cutoff)
 
 
 @helpers.parameterise_all_models(expected_elements=["Cu"], cutoff=3.0)

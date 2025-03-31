@@ -10,6 +10,7 @@ from graph_pes.atomic_graph import number_of_atoms, number_of_edges
 from graph_pes.utils.threebody import (
     triplet_bond_descriptors,
     triplet_edge_pairs,
+    triplet_edges,
 )
 
 
@@ -68,7 +69,7 @@ def check_angle_measures(a: float, b: float, theta: float):
     # third triplet is 1-0-2
     assert list(triplet_idxs[2]) == [1, 0, 2]
     assert_close(r_ij[2], torch.tensor(a))
-    # use cosine rule to get r_ik
+    # use cosine rule to get r_jk
     c = torch.sqrt(a**2 + b**2 - 2 * a * b * torch.cos(rad_theta))
     assert_close(r_ik[2], c)
     # use sine rule to get angle
@@ -106,6 +107,76 @@ def test_angle_measures():
     # and a range of bond lengths
     for length in torch.linspace(0.5, 2, 10):
         check_angle_measures(1.0, length.item(), 123)
+
+
+def check_lengths(a: float, b: float, theta: float):
+    #  (2)            create a molecule with atoms at
+    #   |                  (1) at [0, 0, 0]
+    #   |                  (2) at [a, 0, 0]
+    #   | a                (3) at [b * cos(theta), b * sin(theta), 0]
+    #   |
+    #   |
+    #  (1) theta
+    #    \
+    #     \ b
+    #      \
+    #       \
+    #        (3)
+
+    a = float(a)
+    b = float(b)
+
+    rad_theta = torch.deg2rad(torch.tensor(theta))
+    R = torch.tensor(
+        [
+            [0, 0, 0],
+            [a, 0, 0],
+            [torch.cos(rad_theta) * b, torch.sin(rad_theta) * b, 0],
+        ]
+    )
+
+    graph = AtomicGraph.from_ase(molecule("H2O"))._replace(R=R)
+
+    i, j, k, r_ij, r_ik, r_jk = triplet_edges(graph, three_body_cutoff=5)
+
+    assert (
+        i.shape
+        == j.shape
+        == k.shape
+        == r_ij.shape
+        == r_ik.shape
+        == r_jk.shape
+        == (6,)
+    )
+
+    # check ordering
+    triplets = [
+        [0, 1, 2],
+        [0, 2, 1],
+        [1, 0, 2],
+        [1, 2, 0],
+        [2, 0, 1],
+        [2, 1, 0],
+    ]
+    torch.testing.assert_close(i, torch.tensor(triplets)[:, 0])
+    torch.testing.assert_close(j, torch.tensor(triplets)[:, 1])
+    torch.testing.assert_close(k, torch.tensor(triplets)[:, 2])
+
+    # check lengths
+    assert torch.allclose(r_ij[0], torch.tensor(a))
+    assert torch.allclose(r_ik[0], torch.tensor(b))
+    c = torch.sqrt(a**2 + b**2 - 2 * a * b * torch.cos(rad_theta))
+    assert torch.allclose(r_jk[0], c)
+
+
+def test_lengths():
+    # test a range of angles
+    for angle in torch.linspace(10, 180, 10):
+        check_lengths(1, 1, angle.item())
+
+    # and a range of bond lengths
+    for length in torch.linspace(0.5, 2, 10):
+        check_lengths(1.0, length.item(), 123)
 
 
 def test_triplets_on_isolated_atoms():
