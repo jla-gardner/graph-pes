@@ -125,10 +125,14 @@ def triplet_edge_pairs(
     if three_body_cutoff > graph.cutoff + 1e-6:
         raise ValueError(
             "Three-body cutoff is greater than the graph cutoff. "
-            "This is not allowed."
+            "This is not currently supported."
         )
 
     # check if already cached, using old .format to be torchscript compatible
+    # NB this gets added in the to_batch function, which is called on the worker
+    #    threads. Since this function is slow, this speeds up training, but
+    #    should not be used for MD/inference. Hence we don't cache any results
+    #    to the graph within this function.
     key = "__threebody-{:.3f}".format(three_body_cutoff)  # noqa: UP032
     if key in graph.other:
         v = graph.other.get(key)
@@ -162,11 +166,7 @@ def triplet_edge_pairs(
             pairs_for_i = masked_edge_indexes[_idx]
             edge_pairs.append(pairs_for_i)
 
-        edge_pairs_t: torch.Tensor = torch.cat(edge_pairs)
-
-        graph.other[key] = edge_pairs_t
-
-        return edge_pairs_t
+        return torch.cat(edge_pairs)
 
 
 def triplet_edges(

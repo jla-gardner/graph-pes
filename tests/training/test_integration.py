@@ -74,7 +74,7 @@ def test_integration(model: GraphPESModel):
             early_stopping=None,
             early_stopping_patience=None,
         ),
-        optimizer=Optimizer("Adam", lr=3e-3),
+        optimizer=Optimizer("Adam", lr=3e-4),
     )
 
     after = get_train_loss()

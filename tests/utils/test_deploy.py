@@ -22,7 +22,7 @@ from .. import helpers
 @pytest.mark.filterwarnings("ignore:.*No energy data found in training data.*")
 @helpers.parameterise_all_models(expected_elements=["C", "H", "O"])
 def test_deploy(model: GraphPESModel, tmp_path: Path):
-    dummy_graph = AtomicGraph.from_ase(molecule("CH3CH2OH"), cutoff=1.5)
+    dummy_graph = AtomicGraph.from_ase(molecule("CH3CH2OH"), cutoff=5.0)
     # required by some models before making predictions
     model.pre_fit_all_components([dummy_graph])
 

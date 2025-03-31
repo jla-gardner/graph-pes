@@ -818,11 +818,21 @@ def to_batch(
         else:
             batched_graph.other[key] = torch.vstack(values)
 
-    if three_body_cutoff is not None and three_body_cutoff > 0:
+    # cache three body edge pair calculations when training
+    worker_info = torch.utils.data.get_worker_info()
+    if (
+        three_body_cutoff is not None
+        and three_body_cutoff > 0
+        and worker_info is not None
+    ):
         from graph_pes.utils.threebody import triplet_edge_pairs
 
-        # cache these on the graph
-        triplet_edge_pairs(batched_graph, three_body_cutoff)
+        # calculate the edge pairs on the worker thread
+        edge_pairs = triplet_edge_pairs(batched_graph, three_body_cutoff)
+
+        # and cache these on the batch
+        key = f"__threebody-{three_body_cutoff:.3f}"
+        batched_graph.other[key] = edge_pairs
 
     return batched_graph
 
