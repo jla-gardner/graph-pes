@@ -222,6 +222,8 @@ class EDDP(GraphPESModel):
         The width of the MLP (i.e. number of neurons in each hidden layer).
     mlp_layers:
         The number of hidden layers in the MLP.
+    activation:
+        The activation function to use in the MLP.
     three_body_cutoff:
         The radial cutoff for three body interactions. If ``None``, the
         same as ``cutoff``.
@@ -231,6 +233,9 @@ class EDDP(GraphPESModel):
     three_body_max_power:
         The maximum power of the interaction expansion for three body terms.
         If ``None``, the same as for the two body terms.
+    learnable_powers:
+        If ``True``, the powers of the interaction expansion are learnable.
+        If ``False``, the powers are fixed to the values given by ``max_power``.  
     """  # noqa: E501
 
     def __init__(
