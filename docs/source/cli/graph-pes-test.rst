@@ -9,10 +9,42 @@ allows you more fine-grained control over the testing process.
 Usage
 -----
 
+Simplest possible usage - test the model at ``path/to/model.pth`` on the datasets
+found in ``path/to/model.pt/../training-config.yaml``.
+
 .. code-block:: bash
+
+    graph-pes-test model_path=path/to/model.pth
+
+
+Alternatively, to test on new data, pass a path to a new config file that specifies
+a :class:`~graph_pes.config.testing.TestingConfig` object:
+
+.. code-block:: yaml
 
     graph-pes-test test-config.yaml model_path=path/to/model.pth
 
+Where ``test-config.yaml`` contains e.g.:
+
+.. code-block:: yaml
+
+    data:
+        dimers:
+            +file_dataset:
+                path: path/to/dimers.xyz
+                cutoff: 5.0
+        amorphous:
+            +file_dataset:
+                path: path/to/amorphous.xyz
+                cutoff: 5.0
+
+    accelerator: gpu
+
+    loader_kwargs:
+        batch_size: 64
+        num_workers: 4
+
+Complete usage:
 
 .. code-block:: bash
 
@@ -35,28 +67,6 @@ Usage
 
     optional arguments:
     -h, --help  show this help message and exit
-
-
-Example
--------
-
-.. code-block:: yaml
-
-    data:
-        dimers:
-            +file_dataset:
-                path: path/to/dimers.xyz
-                cutoff: 5.0
-        amorphous:
-            +file_dataset:
-                path: path/to/amorphous.xyz
-                cutoff: 5.0
-
-    accelerator: gpu
-
-    loader_kwargs:
-        batch_size: 64
-        num_workers: 4
 
 
 Config

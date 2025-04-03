@@ -194,7 +194,7 @@ Output for this training run can be found at:
         model,
         test_datasets,
         loader_kwargs=config.fitting.loader_kwargs,
-        logging_prefix="best_model",
+        logging_prefix="test",
         user_eval_metrics=[],
     )
     update_summary(tester.logger, output_dir / "summary.yaml")

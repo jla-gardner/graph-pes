@@ -4,7 +4,9 @@ from abc import ABC, abstractmethod
 from typing import Callable, Literal, NamedTuple, Sequence
 
 import torch
+import torchmetrics
 from torch import Tensor, nn
+from torchmetrics import Metric as TorchMetric
 
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey, divide_per_atom
 from graph_pes.graph_pes_model import GraphPESModel
@@ -45,13 +47,20 @@ class Loss(nn.Module, ABC):
     Parameters
     ----------
     weight
-        A scalar multiplier for weighting the value returned by
+        a scalar multiplier for weighting the value returned by
         :meth:`forward` as part of a :class:`TotalLoss`.
+    is_per_atom
+        whether this loss returns a value that is normalised per atom, or not.
+        For instance, some metric that acts on ``"forces"`` is naturally
+        per-atom, while a metric that acts on ``"energy"``, or the model etc.,
+        is not. Specifying this correctly ensures that the effective batch size
+        is chosen correctly when averaging over batches.
     """
 
-    def __init__(self, weight):
+    def __init__(self, weight, is_per_atom: bool = False):
         super().__init__()
         self.weight = weight
+        self.is_per_atom = is_per_atom
 
     @abstractmethod
     def forward(
@@ -59,9 +68,13 @@ class Loss(nn.Module, ABC):
         model: GraphPESModel,
         graph: AtomicGraph,
         predictions: dict[PropertyKey, torch.Tensor],
-    ) -> torch.Tensor:
+    ) -> torch.Tensor | TorchMetric:
         r"""
         Compute the unweighted loss value.
+
+        Note that only :class:`Loss`\ s that return a tensor can be used
+        for training: we reserve the use of :class:`TorchMetric`\ s for
+        evaluation metrics only.
 
         :class:`Loss`\ s can act on any of:
 
@@ -105,7 +118,7 @@ class Loss(nn.Module, ABC):
         model: GraphPESModel,
         graph: AtomicGraph,
         predictions: dict[PropertyKey, torch.Tensor],
-    ) -> torch.Tensor:
+    ) -> torch.Tensor | TorchMetric:
         return super().__call__(model, graph, predictions)
 
 
@@ -137,10 +150,13 @@ class PropertyLoss(Loss):
     def __init__(
         self,
         property: PropertyKey,
-        metric: Metric | MetricName = "RMSE",
+        metric: Metric | MetricName | TorchMetric = "RMSE",
         weight: float = 1.0,
     ):
-        super().__init__(weight)
+        super().__init__(
+            weight,
+            is_per_atom=property in ("forces", "local_energies"),
+        )
         self.property: PropertyKey = property
         self.metric = parse_metric(metric)
 
@@ -149,7 +165,7 @@ class PropertyLoss(Loss):
         model: GraphPESModel,
         graph: AtomicGraph,
         predictions: dict[PropertyKey, torch.Tensor],
-    ) -> torch.Tensor:
+    ) -> torch.Tensor | TorchMetric:
         """
         Computes the loss value.
 
@@ -158,6 +174,13 @@ class PropertyLoss(Loss):
         predictions
             The predictions from the ``model`` for the given ``graph``.
         """
+
+        if isinstance(self.metric, torchmetrics.Metric):
+            self.metric.update(
+                predictions[self.property],
+                graph.properties[self.property],
+            )
+            return self.metric
 
         return self.metric(
             predictions[self.property],
@@ -184,6 +207,7 @@ class PropertyLoss(Loss):
 class SubLossPair(NamedTuple):
     loss_value: torch.Tensor
     weighted_loss_value: torch.Tensor
+    is_per_atom: bool
 
 
 class TotalLossResult(NamedTuple):
@@ -238,8 +262,19 @@ class TotalLoss(torch.nn.Module):
             loss_value = loss(model, graph, predictions)
             weighted_loss_value = loss_value * loss.weight
 
+            if not isinstance(loss_value, torch.Tensor):
+                raise ValueError(
+                    f"Total losses can only be used alongside metrics that "
+                    f"return a tensor. Instead, loss {loss.name} returned "
+                    f"{type(loss_value)}."
+                )
+
             total_loss += weighted_loss_value
-            components[loss.name] = SubLossPair(loss_value, weighted_loss_value)
+            components[loss.name] = SubLossPair(
+                loss_value,
+                weighted_loss_value,
+                loss.is_per_atom,
+            )
 
         return TotalLossResult(total_loss, components)
 
@@ -284,7 +319,7 @@ class PerAtomEnergyLoss(PropertyLoss):
 
     def __init__(
         self,
-        metric: Metric | MetricName = "RMSE",
+        metric: Metric | MetricName | TorchMetric = "RMSE",
         weight: float = 1.0,
     ):
         super().__init__("energy", metric, weight)
@@ -294,7 +329,14 @@ class PerAtomEnergyLoss(PropertyLoss):
         model: GraphPESModel,
         graph: AtomicGraph,
         predictions: dict[PropertyKey, torch.Tensor],
-    ) -> torch.Tensor:
+    ) -> torch.Tensor | TorchMetric:
+        if isinstance(self.metric, torchmetrics.Metric):
+            self.metric.update(
+                divide_per_atom(predictions["energy"], graph),
+                divide_per_atom(graph.properties["energy"], graph),
+            )
+            return self.metric
+
         return self.metric(
             divide_per_atom(predictions["energy"], graph),
             divide_per_atom(graph.properties["energy"], graph),
@@ -318,7 +360,7 @@ class ForceRMSE(PropertyLoss):
 ## METRICS ##
 
 
-def parse_metric(metric: Metric | MetricName | None) -> Metric:
+def parse_metric(metric: Metric | MetricName | TorchMetric | None) -> Metric:
     if isinstance(metric, str):
         return {"MAE": MAE(), "RMSE": RMSE(), "MSE": MSE()}[metric]
 
@@ -343,12 +385,27 @@ class RMSE(torch.nn.MSELoss):
 
     .. math::
         \sqrt{ \frac{1}{N} \sum_i^N \left( \hat{P}_i - P_i \right)^2 }
+
+    .. note::
+
+        Metrics are computed per-batch in the Lightning Trainer.
+        When aggregating this metric across multiple batches, we therefore
+        get the mean of the per-batch RMSEs, which is not the same as the
+        RMSE between all predictions and targets from all batches.
+
+        ``graph-pes`` avoids this issue for all RMSE-based metrics logged as
+        ``"{valid|test}/metrics/..._rmse"`` by using a different,
+        ``torchmetrics`` based implementation.
     """
 
     def forward(
         self, input: torch.Tensor, target: torch.Tensor
     ) -> torch.Tensor:
         return (super().forward(input, target)).sqrt()
+
+    @property
+    def name(self) -> str:
+        return "rmse_batchwise"
 
 
 class MAE(torch.nn.L1Loss):
@@ -361,10 +418,15 @@ class MAE(torch.nn.L1Loss):
 
 
 def _get_metric_name(metric: Metric) -> str:
+    if hasattr(metric, "name"):
+        return metric.name  # type: ignore
+
+    if isinstance(metric, torchmetrics.MeanSquaredError):
+        return "mse" if metric.squared else "rmse"
+
     # if metric is a function, we want the function's name, otherwise
     # we want the metric's class name, all lowercased
     # and without the word "loss" in it
-
     return (
         getattr(
             metric,

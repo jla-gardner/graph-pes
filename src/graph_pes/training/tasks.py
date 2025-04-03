@@ -6,11 +6,13 @@ from typing import Iterable, Literal
 
 import pytorch_lightning as pl
 import torch
+import torchmetrics
 from pytorch_lightning.utilities.types import OptimizerLRSchedulerConfig
 
 from graph_pes.atomic_graph import (
     AtomicGraph,
     PropertyKey,
+    number_of_atoms,
     number_of_structures,
     to_batch,
 )
@@ -20,7 +22,6 @@ from graph_pes.data.loader import GraphDataLoader
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.training.loss import (
     MAE,
-    RMSE,
     Loss,
     PerAtomEnergyLoss,
     PropertyLoss,
@@ -33,7 +34,7 @@ from graph_pes.training.utils import (
     sanity_check,
 )
 from graph_pes.utils.logger import logger
-from graph_pes.utils.nn import PerElementParameter
+from graph_pes.utils.nn import PerElementParameter, UniformModuleList
 from graph_pes.utils.sampling import SequenceSampler
 
 
@@ -153,6 +154,13 @@ class TrainingTask(pl.LightningModule):
                 set(), *[set(m.required_properties) for m in eval_metrics]
             )
         )
+        self._torchmetrics = UniformModuleList(
+            [
+                m
+                for m in self.eval_metrics
+                if isinstance(m.metric, torchmetrics.Metric)
+            ]
+        )
 
     def forward(self, graphs: AtomicGraph) -> torch.Tensor:
         """Get the energy"""
@@ -191,7 +199,11 @@ class TrainingTask(pl.LightningModule):
             The total loss for the step.
         """
 
-        def log(name: str, value: torch.Tensor | float):
+        def log(
+            name: str,
+            value: torch.Tensor | float | torchmetrics.Metric,
+            per_atom: bool = False,
+        ):
             if isinstance(value, torch.Tensor):
                 value = value.item()
 
@@ -204,7 +216,11 @@ class TrainingTask(pl.LightningModule):
                 on_step=not validating,
                 on_epoch=validating,
                 sync_dist=validating,
-                batch_size=number_of_structures(graph),
+                batch_size=(
+                    number_of_atoms(graph)
+                    if per_atom
+                    else number_of_structures(graph)
+                ),
             )
 
         # generate prediction:
@@ -221,30 +237,34 @@ class TrainingTask(pl.LightningModule):
         # log
         log("loss/total", total_loss_result.loss_value)
         for name, loss_pair in total_loss_result.components.items():
-            log(f"metrics/{name}", loss_pair.loss_value)
-            log(f"loss/{name}_weighted", loss_pair.weighted_loss_value)
+            log(f"metrics/{name}", loss_pair.loss_value, loss_pair.is_per_atom)
+            log(
+                f"loss/{name}_weighted",
+                loss_pair.weighted_loss_value,
+                loss_pair.is_per_atom,
+            )
 
         # log additional values during validation
         if mode == "valid":
-            for metric in self.eval_metrics:
-                if metric.name in total_loss_result.components:
+            for eval in self.eval_metrics:
+                if eval.name in total_loss_result.components:
                     # don't double log
                     continue
+
                 if any(
-                    p not in graph.properties
-                    for p in metric.required_properties
+                    p not in graph.properties for p in eval.required_properties
                 ):
                     warnings.warn(
-                        f"Metric {metric.name} requires properties "
-                        f"{metric.required_properties} that are "
+                        f"Metric {eval.name} requires properties "
+                        f"{eval.required_properties} that are "
                         "not present in the graph: "
                         f"{list(graph.properties.keys())}. We won't log this "
                         "in this batch",
                         stacklevel=2,
                     )
                     continue
-                value = metric(self.model, graph, predictions)
-                log(f"metrics/{metric.name}", value)
+                value = eval(self.model, graph, predictions)
+                log(f"metrics/{eval.name}", value, eval.is_per_atom)
 
         return total_loss_result.loss_value
 
@@ -377,6 +397,15 @@ class TestingTask(pl.LightningModule):
                 set(), *[set(m.required_properties) for m in eval_metrics]
             )
         )
+        self.logging_prefix = logging_prefix
+
+        self._torchmetrics = UniformModuleList(
+            [
+                m
+                for m in self.eval_metrics
+                if isinstance(m.metric, torchmetrics.Metric)
+            ]
+        )
 
     def test_step(
         self, structure: AtomicGraph, batch_idx: int, dataloader_idx: int = 0
@@ -386,9 +415,9 @@ class TestingTask(pl.LightningModule):
         )
         test_name = self.test_names[dataloader_idx]
         if test_name == "test" and len(self.test_names) == 1:
-            prefix = "test"
+            prefix = self.logging_prefix
         else:
-            prefix = f"test/{test_name}"
+            prefix = f"{self.logging_prefix}/{test_name}"
 
         for metric in self.eval_metrics:
             if not all(
@@ -421,20 +450,26 @@ class TestingTask(pl.LightningModule):
 def get_eval_metrics_for(dataset: GraphDataset) -> list[Loss]:
     evals = []
 
+    # we use the torchmetrics RMSE implementation to allow
+    # for correct accumulation of the RMSE over multiple batches
+    # but also keep the batchwise RMSE for historic reasons
+    def tm_RMSE():
+        return torchmetrics.MeanSquaredError(squared=False)
+
     if "energy" in dataset.properties:
-        evals.append(PerAtomEnergyLoss(metric=RMSE()))
+        evals.append(PerAtomEnergyLoss(metric=tm_RMSE()))
         evals.append(PerAtomEnergyLoss(metric=MAE()))
-        evals.append(PropertyLoss("energy", RMSE()))
+        evals.append(PropertyLoss("energy", tm_RMSE()))
         evals.append(PropertyLoss("energy", MAE()))
     if "forces" in dataset.properties:
-        # Force MAE is not invariant wrt. rotations, so we don't log it
-        # see "How to validate machine-learned interatomic potentials"
-        #      -> https://doi.org/10.1063/5.0139611
-        evals.append(PropertyLoss("forces", RMSE()))
+        evals.append(PropertyLoss("forces", tm_RMSE()))
+        evals.append(PropertyLoss("forces", MAE()))
     if "stress" in dataset.properties:
-        evals.append(PropertyLoss("stress", RMSE()))
+        evals.append(PropertyLoss("stress", tm_RMSE()))
+        evals.append(PropertyLoss("stress", MAE()))
     if "virial" in dataset.properties:
-        evals.append(PropertyLoss("virial", RMSE()))
+        evals.append(PropertyLoss("virial", tm_RMSE()))
+        evals.append(PropertyLoss("virial", MAE()))
 
     return evals
 

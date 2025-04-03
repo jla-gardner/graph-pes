@@ -7,8 +7,9 @@ from typing import Any, Literal, Union
 import yaml
 from pytorch_lightning.loggers import CSVLogger, Logger
 
-from graph_pes.config.shared import TorchConfig
+from graph_pes.config.shared import TorchConfig, instantiate_config_from_dict
 from graph_pes.data import GraphDataset
+from graph_pes.data.datasets import DatasetCollection
 from graph_pes.training.callbacks import WandbLogger
 
 
@@ -19,7 +20,7 @@ class TestingConfig:
     model_path: str
     """The path to the ``model.pt`` file."""
 
-    data: Union[GraphDataset, dict[str, GraphDataset]]  # noqa: UP007
+    data: Union[GraphDataset, dict[str, GraphDataset], None]  # noqa: UP007
     """
     Either:
 
@@ -28,6 +29,8 @@ class TestingConfig:
     - a mapping from names to datasets. Results will be logged as
       ``"<prefix>/<dataset-name>/<metric>"``, allowing for testing on multiple 
       datasets.
+    - ``None``, in which case we will attempt to load the datasets specified
+      during training from the ``<model_path>/../train-config.yaml`` file.
     """
 
     loader_kwargs: dict[str, Any]
@@ -67,7 +70,7 @@ class TestingConfig:
     accelerator: str = "auto"
     """The accelerator to use for testing."""
 
-    prefix: str = "testing"
+    prefix: str = "test"
     """The prefix to use for logging. Individual metrics will be logged as
     ``<prefix>/<dataset_name>/<metric>``.
     """
@@ -100,9 +103,52 @@ class TestingConfig:
 
         return WandbLogger(output_dir=root_dir, log_epoch=False, **logger_data)
 
+    def get_datasets(self) -> dict[str, GraphDataset]:
+        if self.data is None:
+            # try to find the data object from the training config
+            # this is a bit of a hack, but it works:
+            # 1. load the config file
+            # 2. create a dummy config class
+            # 3. instantiate the config from the dict
+            # 4. extract the data object in the correct format
+
+            root_dir = Path(self.model_path).parent
+            train_config_path = root_dir / "train-config.yaml"
+            with open(train_config_path) as f:
+                train_config = yaml.safe_load(f)
+
+            @dataclass
+            class DummyConfig:
+                data: DatasetCollection
+
+                @classmethod
+                def defaults(cls) -> dict:
+                    return {}
+
+            data_collection = instantiate_config_from_dict(
+                {"data": train_config.get("data", {})}, DummyConfig
+            )[1].data
+            data = {
+                "train": data_collection.train,
+                "valid": data_collection.valid,
+            }
+            if data_collection.test is not None:
+                if isinstance(data_collection.test, dict):
+                    data.update(data_collection.test)
+                else:
+                    data["test"] = data_collection.test
+
+            return data
+
+        elif isinstance(self.data, GraphDataset):
+            return {"test": self.data}
+        else:
+            return self.data
+
     @classmethod
     def defaults(cls) -> dict:
         return {
             "torch": {"float32_matmul_precision": "high", "dtype": "float32"},
             "loader_kwargs": {"batch_size": 2, "num_workers": 0},
+            "data": None,
         }
