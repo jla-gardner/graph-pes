@@ -73,6 +73,7 @@ nitpick_ignore = [
     ("py:class", "pytorch_lightning.Trainer"),
     ("py:class", "pytorch_lightning.callbacks.Callback"),
     ("py:class", "pytorch_lightning.callbacks.callback.Callback"),
+    ("py:class", "TorchMetric"),
 ]
 
 # override the default css to match the furo theme

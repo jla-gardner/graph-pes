@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Changed the way RMSE values are logged to ensure that they are correctly accumulated when validating (minor changes to final values).
+
 ## [0.0.29] - 2025-04-01
 
 Add the `EDDP` architecture.
