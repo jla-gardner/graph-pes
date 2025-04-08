@@ -114,6 +114,7 @@ def train_with_lightning(
     # - train the model
     logger.info("Starting fit...")
     try:
+        trainer.validate(task, valid_loader)
         trainer.fit(task, train_loader, valid_loader)
     except Exception as e:
         logger.error(f"Training failed: {e}")
