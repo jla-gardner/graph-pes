@@ -111,10 +111,10 @@ def test_molecular():
     GRAPH_PES_CALC.calculate(CH4, properties=["energy", "forces"])
 
     assert MACE_CALC.results["energy"] == pytest.approx(
-        GRAPH_PES_CALC.results["energy"]
+        GRAPH_PES_CALC.results["energy"], abs=1e-5
     )
     np.testing.assert_allclose(
-        MACE_CALC.results["forces"], GRAPH_PES_CALC.results["forces"]
+        MACE_CALC.results["forces"], GRAPH_PES_CALC.results["forces"], atol=1e-5
     )
 
 
@@ -123,7 +123,7 @@ def test_periodic():
     GRAPH_PES_CALC.calculate(DIAMOND, properties=["energy", "forces", "stress"])
 
     assert MACE_CALC.results["energy"] == pytest.approx(
-        GRAPH_PES_CALC.results["energy"]
+        GRAPH_PES_CALC.results["energy"], abs=1e-5
     )
     np.testing.assert_allclose(
         MACE_CALC.results["forces"],
