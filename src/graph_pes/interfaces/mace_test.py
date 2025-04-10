@@ -67,7 +67,7 @@ def create_default_scaleshift_mace(
         interaction_cls_first=interaction_cls_first,
         gate=gate,
         # Optional parameters with defaults
-        pair_repulsion=False,
+        pair_repulsion=True,
         distance_transform="None",
         radial_MLP=[64, 64, 64],
         radial_type="bessel",
@@ -87,7 +87,7 @@ DIAMOND = ase.build.bulk("C", "diamond", a=3.5668)
 # Pre-configured calculators
 MACE_CALC = MACECalculator(models=MACE_MODEL)
 GRAPH_PES_MODEL = MACEWrapper(MACE_MODEL)
-GRAPH_PES_CALC = GraphPESCalculator(GRAPH_PES_MODEL)
+GRAPH_PES_CALC = GRAPH_PES_MODEL.ase_calculator(skin=0.0)
 
 
 def test_output_shapes():
@@ -107,23 +107,14 @@ def test_output_shapes():
 
 
 def test_molecular():
-    MACE_CALC.calculate(CH4, properties=["energy", "forces", "stress"])
-    GRAPH_PES_CALC.calculate(CH4, properties=["energy", "forces", "stress"])
+    MACE_CALC.calculate(CH4, properties=["energy", "forces"])
+    GRAPH_PES_CALC.calculate(CH4, properties=["energy", "forces"])
 
     assert MACE_CALC.results["energy"] == pytest.approx(
         GRAPH_PES_CALC.results["energy"]
     )
     np.testing.assert_allclose(
-        MACE_CALC.results["forces"],
-        GRAPH_PES_CALC.results["forces"],
-        atol=1e-4,
-        rtol=100,
-    )
-    np.testing.assert_allclose(
-        MACE_CALC.results["stress"],
-        GRAPH_PES_CALC.results["stress"],
-        atol=1e-4,
-        rtol=100,
+        MACE_CALC.results["forces"], GRAPH_PES_CALC.results["forces"]
     )
 
 
@@ -132,19 +123,17 @@ def test_periodic():
     GRAPH_PES_CALC.calculate(DIAMOND, properties=["energy", "forces", "stress"])
 
     assert MACE_CALC.results["energy"] == pytest.approx(
-        GRAPH_PES_CALC.results["energy"], abs=1e-4
+        GRAPH_PES_CALC.results["energy"]
     )
     np.testing.assert_allclose(
         MACE_CALC.results["forces"],
         GRAPH_PES_CALC.results["forces"],
-        atol=1e-4,
-        rtol=100,
+        atol=1e-5,
     )
     np.testing.assert_allclose(
         MACE_CALC.results["stress"].flatten(),
         GRAPH_PES_CALC.results["stress"].flatten(),
-        atol=1e-4,
-        rtol=100,
+        atol=1e-5,
     )
 
 
@@ -155,7 +144,7 @@ def test_mace_mp():
 
     # check that forces on central atom are roughly zero
     calc.calculate(CH4, properties=["energy", "forces"])
-    assert np.abs(calc.results["forces"][0]).max() < 1e-4
+    assert np.abs(calc.results["forces"][0]).max() < 1e-5
 
 
 def test_mace_off():
@@ -164,7 +153,7 @@ def test_mace_off():
 
     # check that forces on central atom are roughly zero
     calc.calculate(CH4, properties=["energy", "forces"])
-    assert np.abs(calc.results["forces"][0]).max() < 1e-4
+    assert np.abs(calc.results["forces"][0]).max() < 1e-5
 
 
 def test_go_mace_23():
@@ -172,4 +161,4 @@ def test_go_mace_23():
     calc = GraphPESCalculator(base_model)
 
     calc.calculate(CH4, properties=["energy", "forces"])
-    assert np.abs(calc.results["forces"][0]).max() < 1e-4
+    assert np.abs(calc.results["forces"][0]).max() < 1e-5

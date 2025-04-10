@@ -113,7 +113,7 @@ class GraphPESCalculator(Calculator):
             cell_changes = numpy.linalg.norm(
                 new_cell - self._cached_cell, axis=-1
             )
-            # cache hit
+            # cache hit?
             if numpy.all(changes < self.skin / 2) and numpy.all(
                 cell_changes < self.skin / 2
             ):

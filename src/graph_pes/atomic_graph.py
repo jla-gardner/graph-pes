@@ -1074,18 +1074,11 @@ def trim_edges(graph: AtomicGraph, cutoff: float) -> AtomicGraph:
     neighbour_list = graph.neighbour_list[:, mask]
     neighbour_cell_offsets = graph.neighbour_cell_offsets[mask, :]
 
-    # can't use _replace here due to TorchScript
-    return AtomicGraph(
-        Z=graph.Z,
-        R=graph.R,
-        cell=graph.cell,
+    return replace(
+        graph,
         neighbour_list=neighbour_list,
         neighbour_cell_offsets=neighbour_cell_offsets,
-        properties=graph.properties,
-        other=graph.other,
         cutoff=cutoff,
-        batch=graph.batch,
-        ptr=graph.ptr,
     )
 
 
