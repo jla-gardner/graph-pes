@@ -1,18 +1,30 @@
 import numpy
+import pytest
 from ase.build import bulk, molecule
 
-from graph_pes.atomic_graph import PropertyKey
+from graph_pes.atomic_graph import AtomicGraph, PropertyKey
 from graph_pes.models import LennardJones
-from graph_pes.utils.calculator import GraphPESCalculator, merge_predictions
+from graph_pes.utils.calculator import merge_predictions
 
 
 def test_calc():
-    calc = GraphPESCalculator(LennardJones())
+    model = LennardJones()
+    calc = model.ase_calculator(skin=0.0)
     ethanol = molecule("CH3CH2OH")
     ethanol.calc = calc
 
+    # ensure right shapes
     assert isinstance(ethanol.get_potential_energy(), float)
     assert ethanol.get_forces().shape == (9, 3)
+
+    # ensure correctness
+    g = AtomicGraph.from_ase(ethanol, model.cutoff.item())
+    assert ethanol.get_potential_energy() == pytest.approx(
+        model.predict_energy(g).item()
+    )
+    numpy.testing.assert_allclose(
+        ethanol.get_forces(), model.predict_forces(g).numpy()
+    )
 
     copper = bulk("Cu")
     copper.calc = calc
@@ -20,10 +32,18 @@ def test_calc():
     assert copper.get_forces().shape == (1, 3)
     assert copper.get_stress().shape == (6,)
 
+    g = AtomicGraph.from_ase(copper, model.cutoff.item())
+    assert copper.get_potential_energy() == pytest.approx(
+        model.predict_energy(g).item()
+    )
+    numpy.testing.assert_allclose(
+        copper.get_forces(), model.predict_forces(g).numpy()
+    )
+
 
 def test_calc_all():
     calc = LennardJones().ase_calculator()
-    molecules = [molecule(s) for s in "CH4 H2O CH3CH2OH C2H6".split()]
+    molecules = [molecule(s) for s in ["CH4", "H2O", "CH3CH2OH", "C2H6"]]
 
     # add cell info so we can test stresses
     for m in molecules:

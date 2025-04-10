@@ -21,7 +21,6 @@ from graph_pes.interfaces._mattersim import (
     count_number_of_triplets_per_leading_edge,
     mattersim,
 )
-from graph_pes.utils.calculator import GraphPESCalculator
 from graph_pes.utils.lammps import deploy_model
 from graph_pes.utils.threebody import (
     triplet_edge_pairs,
@@ -71,11 +70,11 @@ def test_raw_model_agreement(structure: ase.Atoms):
     batch_dict = batch_to_dict(batch)
     them = MATTERSIM_MODEL(batch_dict)
 
-    assert us.item() == pytest.approx(them.item(), abs=1e-4)
+    assert us.item() == pytest.approx(them.item(), abs=1e-5)
 
 
 def test_calculator_agreement():
-    our_calc = GraphPESCalculator(GRAPH_PES_MODEL)
+    our_calc = GRAPH_PES_MODEL.ase_calculator(skin=0.0)
     our_calc.calculate(DIAMOND, properties=["energy", "forces", "stress"])
     our_results = our_calc.results
 
@@ -88,13 +87,13 @@ def test_calculator_agreement():
     ms_calc.calculate(DIAMOND, properties=["energy", "forces", "stress"])
     their_results = ms_calc.results
     np.testing.assert_allclose(
-        our_results["energy"], their_results["energy"], atol=1e-4
+        our_results["energy"], their_results["energy"], atol=1e-5
     )
     np.testing.assert_allclose(
-        our_results["forces"], their_results["forces"], atol=1e-4
+        our_results["forces"], their_results["forces"], atol=1e-5
     )
     np.testing.assert_allclose(
-        our_results["stress"], their_results["stress"], atol=1e-4
+        our_results["stress"], their_results["stress"], atol=1e-5
     )
 
 
