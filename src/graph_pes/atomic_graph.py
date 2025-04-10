@@ -998,6 +998,24 @@ def structure_sizes(batch: AtomicGraph) -> torch.Tensor:
     return graph_ptr[1:] - graph_ptr[:-1]
 
 
+def edges_per_graph(graph: AtomicGraph) -> torch.Tensor:
+    """
+    Get the number of edges in each structure in the ``batch``, of shape
+    ``(S,)`` where ``S`` is the number of structures.
+    """
+    if not is_batch(graph):
+        return torch.tensor([number_of_edges(graph)])
+
+    assert graph.ptr is not None
+
+    edges = []
+    central_atoms = graph.neighbour_list[0]
+    for left, right in zip(graph.ptr[:-1], graph.ptr[1:]):
+        edges.append(((central_atoms >= left) & (central_atoms < right)).sum())
+
+    return torch.tensor(edges)
+
+
 def number_of_neighbours(
     graph: AtomicGraph,
     include_central_atom: bool = True,
