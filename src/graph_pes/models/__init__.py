@@ -93,18 +93,7 @@ def load_model(path: str | pathlib.Path) -> GraphPESModel:
             +load_model:
                 path: path/to/model.pt
 
-    To account for some new energy offset in your training data, you could do
-    something like this:
-    (see also :func:`~graph_pes.models.load_model_component`)
-
-    .. code-block:: yaml
-
-        model:
-            # add an offset to an existing model before fine-tuning
-            offset: +LearnableOffset()
-            many-body:
-                +load_model:
-                    path: path/to/model.pt
+    See :doc:`fine-tuning <../quickstart/fine-tuning>` for more details.
     """
     path = pathlib.Path(path)
     if not path.exists():
@@ -150,20 +139,6 @@ def load_model_component(
     -------
     GraphPESModel
         The component.
-
-    Examples
-    --------
-
-    Train on data with a new energy offset:
-
-    .. code-block:: yaml
-
-        model:
-            offset: +LearnableOffset()
-            many-body:
-                +load_model_component:
-                    path: path/to/model.pt
-                    key: many-body
     """
 
     base_model = load_model(path)
@@ -249,8 +224,6 @@ def freeze_any_matching(model: T, patterns: list[str]) -> T:
     -------
     T
         The model.
-
-
     """
     for pattern in patterns:
         freeze_matching(model, pattern)

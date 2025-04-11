@@ -1,0 +1,31 @@
+
+data:
+    train:
+        +file_dataset: 
+            path: train.xyz
+            cutoff: 6.0
+    valid:
+        +file_dataset: 
+            path: valid.xyz
+            cutoff: 6.0
+
+loss:
+    - +PerAtomEnergyLoss()
+    - +ForceRMSE()
+
+fitting:
+    trainer_kwargs:
+        max_epochs: 20
+        accelerator: cpu
+
+    optimizer:
+        +Optimizer:
+            name: Adam
+            lr: 0.0001
+
+    auto_fit_reference_energies: true              
+
+wandb: null
+general:
+    progress: logged
+    run_id: mp0-fine-tune

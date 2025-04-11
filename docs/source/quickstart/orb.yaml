@@ -1,0 +1,10 @@
+
+model:
+    +freeze_all_except:
+        model:
+            +orb_model:
+                name: orb-d3-xs-v2
+        pattern: _orb\.heads.*
+
+general:
+    run_id: orb-fine-tune
