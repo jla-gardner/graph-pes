@@ -49,7 +49,8 @@ the `mattersim <https://github.com/microsoft/mattersim/tree/main>`__ package. We
 
    conda create -n graph-pes-mattersim python=3.9
    conda activate graph-pes-mattersim
-   pip install mattersim graph-pes
+   pip install graph-pes
+   pip install --upgrade mattersim
 
 
 Interface

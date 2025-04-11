@@ -67,9 +67,7 @@ def from_graph_pes_to_orb_batch(
         "atomic_numbers_embedding": torch.nn.functional.one_hot(
             graph.Z, num_classes=118
         ),
-        "atom_identity": torch.arange(number_of_atoms(graph))
-        .long()
-        .to(graph.R.device),
+        "atom_identity": torch.arange(number_of_atoms(graph)).long(),
     }
 
     edge_features = {
@@ -108,10 +106,20 @@ def from_graph_pes_to_orb_batch(
         radius=cutoff,
         max_num_neighbors=torch.tensor([max_neighbours]),
         system_id=None,
-    )
+    ).to(device=graph.R.device, dtype=graph.R.dtype)
 
 
 class OrbWrapper(GraphPESModel):
+    """
+    A wrapper around an ``orb-models`` model that converts it into a
+    :class:`~graph_pes.GraphPESModel`.
+
+    Parameters
+    ----------
+    orb
+        The ``orb-models`` model to wrap.
+    """
+
     def __init__(self, orb: torch.nn.Module):
         from orb_models.forcefield.conservative_regressor import (
             ConservativeForcefieldRegressor,
@@ -160,6 +168,33 @@ class OrbWrapper(GraphPESModel):
 
 
 def orb_model(name: str = "orb-v3-direct-20-omat") -> OrbWrapper:
+    """
+    Load a pre-trained Orb model, and convert it into a
+    :class:`~graph_pes.GraphPESModel`.
+
+    See the `orb-models <https://github.com/orbital-materials/orb-models>`_
+    repository for more information on the available models.
+    As of 2025-04-11, the following are available:
+
+    * ``"orb-v3-conservative-20-omat"``
+    * ``"orb-v3-conservative-inf-omat"``
+    * ``"orb-v3-direct-20-omat"``
+    * ``"orb-v3-direct-inf-omat"``
+    * ``"orb-v3-conservative-20-mpa"``
+    * ``"orb-v3-conservative-inf-mpa"``
+    * ``"orb-v3-direct-20-mpa"``
+    * ``"orb-v3-direct-inf-mpa"``
+    * ``"orb-v2"``
+    * ``"orb-d3-v2"``
+    * ``"orb-d3-sm-v2"``
+    * ``"orb-d3-xs-v2"``
+    * ``"orb-mptraj-only-v2"``
+
+    Parameters
+    ----------
+    name: str
+        The name of the model to load.
+    """
     from orb_models.forcefield import pretrained
 
     orb = pretrained.ORB_PRETRAINED_MODELS[name](device="cpu")

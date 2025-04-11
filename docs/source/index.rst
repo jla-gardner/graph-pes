@@ -34,6 +34,7 @@
 
     interfaces/mace
     interfaces/mattersim
+    interfaces/orb
     
 .. toctree::
     :maxdepth: 2
