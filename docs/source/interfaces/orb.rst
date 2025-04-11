@@ -78,3 +78,4 @@ Interface
 .. autofunction:: graph_pes.interfaces.orb_model
 
 .. autoclass:: graph_pes.interfaces._orb.OrbWrapper
+   :members: orb_model

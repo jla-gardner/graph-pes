@@ -164,6 +164,14 @@ class OrbWrapper(GraphPESModel):
     def orb_model(
         self,
     ) -> "DirectForcefieldRegressor | ConservativeForcefieldRegressor":
+        r"""
+        Access the underlying ``orb-models`` model.
+
+        One use case of this is to to use ``graph-pes``\ 's fine-tuning
+        functionality to adapt an existing ``orb-models`` model to a new
+        dataset. You can then re-extract the underlying ``orb-models`` model
+        using this property and use it in other ``orb-models`` workflows.
+        """
         return self._orb
 
 
