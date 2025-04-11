@@ -120,9 +120,8 @@ different level of theory),
 we recommend setting `config.fitting.auto_fit_reference_energies` to `False`
 and manually specifying a `LearnableOffset` component of your model.
 
-See the "Fine-tuning foundation models" quickstart notebook in the docs
-for more information: 
-https://jla-gardner.github.io/graph-pes/quickstart/foundation-models.html""")
+See the "Fine-tuning" tutorial in the docs for more information: 
+https://jla-gardner.github.io/graph-pes/quickstart/fine-tuning.html""")
 
     graphs = [
         AtomicGraph.from_ase(s, model.cutoff.item())

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Literal
 
 import ase
 import matplotlib.axes
@@ -15,7 +15,7 @@ from torch import Tensor
 from graph_pes.utils.calculator import GraphPESCalculator, merge_predictions
 from graph_pes.utils.misc import voigt_6_to_full_3x3
 
-from ..atomic_graph import AtomicGraph, PropertyKey, to_batch
+from ..atomic_graph import AtomicGraph, PropertyKey, divide_per_atom, to_batch
 from ..graph_pes_model import GraphPESModel
 
 Transform = Callable[[Tensor, AtomicGraph], Tensor]
@@ -69,7 +69,7 @@ def move_axes(ax: matplotlib.axes.Axes | None = None):  # type: ignore
 def parity_plot(
     model: GraphPESModel | GraphPESCalculator,
     structures: Iterable[AtomicGraph] | Iterable[ase.Atoms],
-    property: PropertyKey = "energy",
+    property: PropertyKey | Literal["energy_per_atom"] = "energy",
     transform: Transform | None = None,
     units: str | None = None,
     ax: matplotlib.axes.Axes | None = None,  # type: ignore
@@ -154,6 +154,10 @@ def parity_plot(
     ]
 
     # get the predictions
+    if property == "energy_per_atom":
+        property = "energy"
+        transform = divide_per_atom
+
     per_struct_predictions = calc.calculate_all(graphs, [property], batch_size)
     if any(property not in g.properties for g in graphs):
         raise ValueError(
@@ -262,10 +266,10 @@ def dimer_curve(
     rs = np.linspace(rmin, rmax, 200)
     dimers = [ase.Atoms(system, positions=[[0, 0, 0], [r, 0, 0]]) for r in rs]
     graphs = [AtomicGraph.from_ase(d, cutoff=rmax + 0.1) for d in dimers]
-    batch = to_batch(graphs)
+    batch = to_batch(graphs).to(model.device)
 
     with torch.no_grad():
-        energy = model.predict_energy(batch).numpy()
+        energy = model.predict_energy(batch).cpu().numpy()
 
     if set_to_zero:
         energy -= energy[-1]

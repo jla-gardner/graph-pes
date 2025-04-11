@@ -1,5 +1,7 @@
+# define a radial cutoff to use throughout the config
+CUTOFF: 3.7  # in Å
+
 general:
-    run_id: quickstart-cgap17
     progress: logged
 
 # train a lightweight NequIP model ...
@@ -11,7 +13,7 @@ model:
     many-body:
         +NequIP:
             elements: [C]
-            cutoff: 3.7 # radial cutoff in Å
+            cutoff: =/CUTOFF  # reference the radial cutoff defined above
             layers: 2
             features:
                 channels: [16, 8, 4]
@@ -24,18 +26,22 @@ data:
     train:
         +file_dataset:
             path: train-cgap17.xyz
-            cutoff: 3.7
+            cutoff: =/CUTOFF
             n: 1280
             shuffle: false
     valid:
         +file_dataset:
             path: val-cgap17.xyz
-            cutoff: 3.7
+            cutoff: =/CUTOFF
+    test:
+        +file_dataset:
+            path: test-cgap17.xyz
+            cutoff: =/CUTOFF
 
 # ... on both energy and forces (weighted 1:1) ...
 loss:
     - +PerAtomEnergyLoss()
-    - +PropertyLoss: { property: forces, metric: RMSE }
+    - +ForceRMSE()
 
 # ... with the following settings ...
 fitting:

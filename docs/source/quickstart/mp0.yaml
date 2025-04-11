@@ -1,0 +1,7 @@
+
+model:
+    +mace_mp:
+        model: small
+
+general:
+    run_id: mp0-fine-tune

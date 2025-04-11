@@ -14,6 +14,7 @@ Sampling
 .. autoclass:: graph_pes.utils.sampling.T
 
 .. autoclass:: graph_pes.utils.sampling.SequenceSampler
+    :members:
 
 Useful Types and Aliases
 ------------------------
