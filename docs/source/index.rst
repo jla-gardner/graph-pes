@@ -69,135 +69,78 @@ graph-pes
 .. raw:: html
     :file: hide-title.html
 
-``graph-pes`` is a set of tools designed to accelerate the development of machine-learned potential energy surfaces (ML-PESs) that act on graph representations of atomic structures. 
+**Date:** |today| - **Author:** `John Gardner <https://jla-gardner.github.io>`__ - **Version:** |release|
 
-A 3-in-1 toolset:
-=================
+``graph-pes`` is a package designed to accelerate the development of machine-learned potential energy surfaces (ML-PESs) that act on graph representations of atomic structures. 
 
-.. dropdown:: ``graph_pes``: a Python library of components for building ML-PESs
 
-   This includes:
+The core component of ``graph-pes`` is the :class:`~graph_pes.GraphPESModel`. 
+You can take **any** model that inherits from this class and:
 
-   - a data pipeline for turning :class:`ase.Atoms` objects into :class:`~graph_pes.AtomicGraph` objects
-   - a set of operations for common tasks on :class:`~graph_pes.AtomicGraph` objects, including :func:`edge-trimming <graph_pes.atomic_graph.trim_edges>`, :func:`neighbour indexing <graph_pes.atomic_graph.index_over_neighbours>`, :func:`summations <graph_pes.atomic_graph.sum_over_neighbours>`, and :func:`batching <graph_pes.atomic_graph.to_batch>`,
-   - a base class for all model of the potential energy surface (:class:`~graph_pes.GraphPESModel`) that automatically infers force and stress predictions if these are not provided by the model's implementation
-   - reference implementations of popular models, including :class:`~graph_pes.models.NequIP`, :class:`~graph_pes.models.PaiNN`, :class:`~graph_pes.models.MACE` and :class:`~graph_pes.models.TensorNet`
-   - interfaces to popular foundation models, including :class:`~graph_pes.interfaces.mace_mp`, :class:`~graph_pes.interfaces.mace_off`, and :class:`~graph_pes.interfaces.mattersim`
-   
-   ``graph_pes`` is written in vanilla ``PyTorch`` that is 100% compatible with ``TorchScript`` compilation for use within LAMMPS
+* train and/or fine-tune it on your own data using the ``graph-pes-train`` command line tool
+* use it to drive MD simulations via :doc:`LAMMPS <tools/lammps>` or :doc:`ASE <tools/ase>`
 
-.. dropdown:: ``graph-pes-train``: a command line tool for training ML-PESs
+Many :class:`~graph_pes.GraphPESModel` are provided, including:
 
-   - get up and running quickly with sensible defaults to train new models from scratch
-   - fine-tune existing models on new datasets
-   - easily configure advanced features such as :ref:`distributed training <multi-GPU training>`, :ref:`learning rate scheduling <learning rate scheduler>`, :ref:`stochastic weight averaging <swa>`, and logging to `Weights & Biases <https://wandb.ai>`__
+* re-implementations of popular architectures, including :class:`~graph_pes.models.NequIP`, :class:`~graph_pes.models.PaiNN`, :class:`~graph_pes.models.MACE` and :class:`~graph_pes.models.TensorNet`
+* wrappers for other popular ML-PES frameworks, including :doc:`mace-torch <interfaces/mace>`, :doc:`mattersim <interfaces/mattersim>`, and :doc:`orb-models <interfaces/orb>`, that convert their models into ``graph-pes`` compatible :class:`~graph_pes.GraphPESModel` instances
 
-.. dropdown:: ``pair_style graph_pes``: a LAMMPS pair style for GPU-accelerated MD
+Use ``graph-pes`` to train models from scratch, experiment with new architectures, write architecture-agnostic validation pipelines, and try out different foundation models with minimal code changes.
 
-   - use this to drive GPU-accelerated molecular dynamics (MD) simulations with any model that inherits from :class:`~graph_pes.GraphPESModel` (i.e. both ones we've implemented and also your own)
-   - we've included helper scripts to automate the `LAMMPS <https://docs.lammps.org/Manual.html>`__ build process for you
+Get stuck in instantly by running this `Colab notebook <https://colab.research.google.com/github/jla-gardner/graph-pes/blob/main/docs/source/quickstart/quickstart.ipynb>`__.
 
-Quick-start
-===========
 
-.. code-block:: bash
-
-    pip install graph-pes
-    wget https://tinyurl.com/graph-pes-minimal-config -O config.yaml
-    graph-pes-train config.yaml
-
-Alternatively, open any of these notebooks to get started. Install ``graph-pes`` to follow along locally, or run the code in the cloud using `Google Colab <https://colab.research.google.com/github/jla-gardner/graph-pes/blob/main/docs/source/quickstart/quickstart.ipynb>`__.
+**Useful links**:
 
 .. grid:: 1 2 3 3
-    :gutter: 2
+    :gutter: 3
 
-    .. grid-item-card::
+
+
+    .. grid-item-card:: 🔥 Train
+        :link: quickstart/quickstart
+        :link-type: doc
         :text-align: center
 
-        .. button-link:: quickstart/quickstart.html#Train-a-model
-            :click-parent:
+        Train an existing architecture from scratch
 
-            Train a model
-    
-    .. grid-item-card::
+    .. grid-item-card:: 🔍 Analyse
+        :link: https://jla-gardner.github.io/graph-pes/quickstart/quickstart.html#Model-analysis
         :text-align: center
 
-        .. button-link:: quickstart/quickstart.html#Model-analysis
-            :click-parent:
+        Analyse a trained model
 
-            Analyse a model
-
-    .. grid-item-card::
+    .. grid-item-card:: 🔧 Fine-tune
+        :link: quickstart/fine-tuning
+        :link-type: doc
         :text-align: center
 
-        .. button-link:: quickstart/quickstart.html#Fine-tuning
-            :click-parent:
+        Fine-tune a foundation model on your data
 
-            Fine-tune a model
-
-    .. grid-item-card::
+    .. grid-item-card:: 🎓 Learn
+        :link: theory
+        :link-type: doc
         :text-align: center
 
-        .. button-ref:: quickstart/implement-a-model
-            :ref-type: doc
-            :click-parent:
+        How does ``graph-pes`` work under the hood?
 
-            Implement your own model
-
-    .. grid-item-card::
+    .. grid-item-card:: 🔨 Build
+        :link: quickstart/implement-a-model
+        :link-type: doc
         :text-align: center
 
-        .. button-ref:: quickstart/custom-training-loop
-            :ref-type: doc
-            :click-parent:
-
-            Implement your own training loop
-    
-    .. grid-item-card::
-        :text-align: center
-
-        .. button-ref:: quickstart/foundation-models
-            :ref-type: doc
-            :click-parent:
-
-            Fine-tune foundation models
-
-    .. grid-item-card::
-        :text-align: center
-
-        .. button-ref:: tools/lammps
-            :ref-type: doc
-            :click-parent:
-
-            Run LAMMPS MD
+        Implement your own ML-PES architecture
 
 
-    .. grid-item-card::
-        :text-align: center
 
-        .. button-ref:: tools/ase
-            :ref-type: doc
-            :click-parent:
+**Installation:**
 
-            Use graph-pes models in ASE
-
-
-Installation
-============
-
-We recommend installing ``graph-pes`` in a new environment, e.g. using `conda <https://conda.io/projects/conda/en/latest/user-guide/getting-started.html>`_:
+Install ``graph-pes`` using pip. We recommend doing this in a new environment (e.g. using conda):
 
 .. code-block:: bash
 
     conda create -n graph-pes python=3.10 -y
     conda activate graph-pes
-
-Install ``graph-pes`` from PyPI using pip (installs all dependencies):
-
-.. code-block:: bash
-
     pip install graph-pes
 
-
-Please see the `GitHub repository <https://github.com/jla-gardner/graph-pes>`__ for the source code.
-
+Please see the `GitHub repository <https://github.com/jla-gardner/graph-pes>`__ for the source code and to report issues.

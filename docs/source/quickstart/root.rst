@@ -1,5 +1,5 @@
-Quickstart
-==========
+Tutorials
+=========
 
 Run each of these notebooks locally, or use the Google Colab links to follow along with no installation required.
 
@@ -7,8 +7,8 @@ Run each of these notebooks locally, or use the Google Colab links to follow alo
     :maxdepth: 1
 
     quickstart
+    fine-tuning
     implement-a-model
     custom-training-loop
-    foundation-models
 
 

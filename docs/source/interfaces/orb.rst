@@ -4,7 +4,7 @@
 
 ``graph-pes`` supports the conversion of arbitrary ``orb-models`` models to :class:`~graph_pes.GraphPESModel` objects via the :class:`~graph_pes.interfaces._orb.OrbWrapper` class.
 
-Use the :func:`~graph_pes.interfaces.orb_model` function to load a pre-trained ``orb-models`` model and convert it into a :class:`~graph_pes.GraphPESModel`. You can then use this model in the same way as any other :class:`~graph_pes.GraphPESModel`, for instance by :doc:`fine-tuning it <../quickstart/foundation-models>` or using it to run MD via :doc:`ASE <../tools/ase>` or :doc:`LAMMPS <../tools/lammps>`:
+Use the :func:`~graph_pes.interfaces.orb_model` function to load a pre-trained ``orb-models`` model and convert it into a :class:`~graph_pes.GraphPESModel`. You can then use this model in the same way as any other :class:`~graph_pes.GraphPESModel`, for instance by :doc:`fine-tuning it <../quickstart/fine-tuning>` or using it to run MD via :doc:`ASE <../tools/ase>` or :doc:`LAMMPS <../tools/lammps>`:
 
 .. code-block:: python
 
