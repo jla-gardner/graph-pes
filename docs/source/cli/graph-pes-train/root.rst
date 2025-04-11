@@ -24,7 +24,7 @@
     optional arguments:
     -h, --help  show this help message and exit
 
-    Copyright 2023-24, John Gardner
+    Copyright 2023-25, John Gardner
 
 
 .. toctree::

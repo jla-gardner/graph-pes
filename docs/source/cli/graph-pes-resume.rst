@@ -18,7 +18,7 @@
     optional arguments:
     -h, --help       show this help message and exit
 
-    Copyright 2024, John Gardner
+    Copyright 2023-35, John Gardner
 
 
 Usage

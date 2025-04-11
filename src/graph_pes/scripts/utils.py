@@ -27,7 +27,7 @@ from graph_pes.utils.misc import (
 def extract_config_dict_from_command_line(description: str) -> dict:
     parser = argparse.ArgumentParser(
         description=description,
-        epilog="Copyright 2023-24, John Gardner",
+        epilog="Copyright 2023-25, John Gardner",
     )
     parser.add_argument(
         "args",

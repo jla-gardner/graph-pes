@@ -223,7 +223,9 @@ class TrainingTask(pl.LightningModule):
             return self.log(
                 f"{mode}/{name}",
                 value,
-                prog_bar=validating and "metric" in name,
+                prog_bar=(
+                    validating and "metric" in name and "batchwise" not in name
+                ),
                 on_step=not validating,
                 on_epoch=validating,
                 sync_dist=validating,

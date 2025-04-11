@@ -1,54 +1,52 @@
+CUTOFF: 3.7
+
 general:
-    run_id: finetune-cgap20u
     progress: logged
 
 # finetune a pre-trained NequIP model ...
 model:
-    +load_model_component:
-        path: <insert path to model>
-        key: many-body
+    +load_model:
+        path: # insert path to model when using this script
 
 # ... on structures from local files ...
 data:
     train:
         +file_dataset:
-            # take the first 1280 structures from train-cgap20u.xyz
             path: train-cgap20u.xyz
-            cutoff: 3.7
+            cutoff: =/CUTOFF
             n: 1280
             shuffle: false
     valid:
         +file_dataset:
-            # use all structures from val-cgap20u.xyz
             path: val-cgap20u.xyz
-            cutoff: 3.7
+            cutoff: =/CUTOFF
+    test:
+        +file_dataset:
+            path: test-cgap20u.xyz
+            cutoff: =/CUTOFF
 
 # ... on both energy and forces ...
 loss:
     - +PerAtomEnergyLoss()
-    - +PropertyLoss: { property: forces, metric: RMSE }
+    - +ForceRMSE()
 
 # ... with the following settings ...
 fitting:
-    trainer_kwargs:
-        max_epochs: 150
-        accelerator: auto
+    # important config option to automatically align the model's
+    # energy predictions to the new dataset
+    auto_fit_reference_energies: true
 
-    pre_fit_model: false
+    trainer_kwargs:
+        max_epochs: 25
+        accelerator: auto
 
     optimizer:
         +Optimizer:
             name: AdamW
-            lr: 0.003
-
-    scheduler:
-        +LRScheduler:
-            name: ReduceLROnPlateau
-            factor: 0.5
-            patience: 10
+            lr: 0.0001
 
     loader_kwargs:
-        batch_size: 64
+        batch_size: 16
 
 # ... and log to Weights & Biases
 wandb:

@@ -20,7 +20,7 @@ from graph_pes.utils.logger import logger
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Resume a `graph-pes-train` training run.",
-        epilog="Copyright 2024, John Gardner",
+        epilog="Copyright 2023-25, John Gardner",
     )
     parser.add_argument(
         "train_directory",
