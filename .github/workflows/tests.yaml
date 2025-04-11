@@ -116,11 +116,11 @@ jobs:
         run: uv pip install --system --upgrade ${{ matrix.interface.extra-deps }}
 
       - name: Run tests
-        run: uv run pytest src/graph_pes/interfaces/${{ matrix.interface.test-file }} -vvv
+        run: pytest src/graph_pes/interfaces/${{ matrix.interface.test-file }} -vvv
 
       - name: Run a small training run
         run: |
-          uv run graph-pes-train src/graph_pes/interfaces/quick.yaml \
+          graph-pes-train src/graph_pes/interfaces/quick.yaml \
               ${{ matrix.interface.model_kwargs }}
 
   docs:
