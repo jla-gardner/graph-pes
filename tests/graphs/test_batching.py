@@ -189,6 +189,8 @@ def test_edges_per_graph():
     assert number_of_edges(_2_egde) == 2
     assert number_of_edges(_6_edge) == 6
 
+    assert edges_per_graph(_6_edge).tolist() == [6]
+
     batch = to_batch([_0_edge, _2_egde, _6_edge])
     assert edges_per_graph(batch).tolist() == [0, 2, 6]
     assert number_of_edges(batch) == 8
