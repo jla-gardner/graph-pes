@@ -51,7 +51,7 @@ def train_with_lightning(
     optimizer: Optimizer,
     user_eval_metrics: list[Loss] | None = None,
     scheduler: LRScheduler | None = None,
-):
+) -> GraphPESModel:
     # - prepare the data
     if trainer.global_rank == 0:
         logger.info("Preparing data")
@@ -132,6 +132,8 @@ def train_with_lightning(
             task.load_best_weights(model, trainer)
         except Exception as e:
             logger.error(f"Failed to load best weights: {e}")
+
+    return model
 
 
 class TrainingTask(pl.LightningModule):

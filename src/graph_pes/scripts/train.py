@@ -157,7 +157,7 @@ Output for this training run can be found at:
     total_loss = parse_loss(config.loss)
     logger.debug(f"Total loss:\n{total_loss}")
 
-    train_with_lightning(
+    model = train_with_lightning(
         trainer,
         model,
         data,
