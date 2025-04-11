@@ -12,7 +12,7 @@ from graph_pes.utils.misc import full_3x3_to_voigt_6
 
 @pytest.fixture
 def wrapped_orb():
-    return orb_model()
+    return orb_model("orb-d3-xs-v2")
 
 
 def test_single_batch_orb(wrapped_orb):
