@@ -3,12 +3,12 @@ CUTOFF: 3.7
 general:
     progress: logged
 
-# finetune a pre-trained NequIP model ...
 model:
     +load_model:
-        path: # insert path to model when using this script
+        path: graph-pes-results/train-nequip/model.pt
+        # you would need to change ^this path if you wanted to
+        # fine-tune a different model
 
-# ... on structures from local files ...
 data:
     train:
         +file_dataset:
@@ -25,12 +25,10 @@ data:
             path: test-cgap20u.xyz
             cutoff: =/CUTOFF
 
-# ... on both energy and forces ...
 loss:
     - +PerAtomEnergyLoss()
     - +ForceRMSE()
 
-# ... with the following settings ...
 fitting:
     # important config option to automatically align the model's
     # energy predictions to the new dataset
@@ -48,6 +46,5 @@ fitting:
     loader_kwargs:
         batch_size: 16
 
-# ... and log to Weights & Biases
 wandb:
     project: graph-pes-quickstart

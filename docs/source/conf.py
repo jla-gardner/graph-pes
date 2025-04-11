@@ -76,6 +76,7 @@ nitpick_ignore = [
     ("py:class", "TorchMetric"),
     ("py:class", "DirectForcefieldRegressor"),
     ("py:class", "ConservativeForcefieldRegressor"),
+    ("ipython3", "Lexing literal_block"),
 ]
 
 # override the default css to match the furo theme
@@ -111,6 +112,13 @@ nbsphinx_prolog = """
 
     </style>
 """
+
+
+# Add warning filter for specific lexing warning
+import warnings
+
+warnings.filterwarnings("ignore", r'.*Lexing literal_block.*as "ipython3".*')
+
 nbsphinx_prompt_width = "0"
 
 pygments_style = "friendly"
