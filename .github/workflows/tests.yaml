@@ -85,7 +85,7 @@ jobs:
             python-version: "3.10"
             test-file: "mace_test.py"
             extra-deps: "mace-torch"
-            model_kwargs: "model/+mace_mp()"
+            model_kwargs: model="+mace_mp()"
           - name: mattersim
             python-version: "3.9"
             test-file: "mattersim_test.py"
