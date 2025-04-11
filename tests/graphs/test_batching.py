@@ -7,6 +7,7 @@ from ase import Atoms
 
 from graph_pes.atomic_graph import (
     AtomicGraph,
+    edges_per_graph,
     neighbour_distances,
     neighbour_vectors,
     number_of_atoms,
@@ -169,3 +170,25 @@ def test_automatic_batching():
     assert batch.other["local_property"].dtype == torch.float
     assert batch.other["global_property"].shape == (2, 5)
     assert batch.other["global_property"].dtype == torch.bool
+
+
+def test_edges_per_graph():
+    _0_edge = AtomicGraph.from_ase(
+        Atoms("H", positions=[(0, 0, 0)], pbc=False),
+        cutoff=5.0,
+    )
+    _2_egde = AtomicGraph.from_ase(
+        Atoms("H2", positions=[(0, 0, 0), (0, 0, 1)], pbc=False),
+        cutoff=5.0,
+    )
+    _6_edge = AtomicGraph.from_ase(
+        Atoms("H3", positions=[(0, 0, 0), (0, 0, 1), (0, 0, 2)], pbc=False),
+        cutoff=5.0,
+    )
+    assert number_of_edges(_0_edge) == 0
+    assert number_of_edges(_2_egde) == 2
+    assert number_of_edges(_6_edge) == 6
+
+    batch = to_batch([_0_edge, _2_egde, _6_edge])
+    assert edges_per_graph(batch).tolist() == [0, 2, 6]
+    assert number_of_edges(batch) == 8
