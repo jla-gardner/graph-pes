@@ -150,8 +150,6 @@ class OrbWrapper(GraphPESModel):
             graph.Z.device
         )
 
-        print(self.training, preds["energy"].shape)
-
         return preds
 
     @property

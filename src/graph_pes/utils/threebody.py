@@ -133,7 +133,7 @@ def triplet_edge_pairs(
     #    threads. Since this function is slow, this speeds up training, but
     #    should not be used for MD/inference. Hence we don't cache any results
     #    to the graph within this function.
-    key = "__threebody-{:.3f}".format(three_body_cutoff)  # noqa: UP032
+    key = "__threebody-{:.3f}-{:.3f}".format(three_body_cutoff, graph.cutoff)  # noqa: UP032
     if key in graph.other:
         v = graph.other.get(key)
         if v is not None:

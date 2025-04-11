@@ -157,6 +157,21 @@ Output for this training run can be found at:
     total_loss = parse_loss(config.loss)
     logger.debug(f"Total loss:\n{total_loss}")
 
+    if (
+        abs(model.cutoff.item() - data.train[0].cutoff) > 1e-4
+        and model.three_body_cutoff.item() > 0
+    ):
+        logger.warning(
+            f"""You are using a model with 3 body contributions, but there is a cutoff mismatch:
+   Model cutoff: {model.cutoff.item():.4f}
+   Data cutoff: {data.train[0].cutoff:.4f}
+   
+This mismatch prevents efficient caching of three-body neighborlists during training,
+which will significantly slow down your training process.
+
+To fix: Ensure your model cutoff matches your dataset cutoff."""  # noqa: E501
+        )
+
     model = train_with_lightning(
         trainer,
         model,
