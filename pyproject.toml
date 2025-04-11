@@ -46,7 +46,9 @@ docs = [
 ]
 publish = ["build", "twine"]
 macetorch = ["mace-torch"]
-mattersim = ["mattersim"]
+mattersim = [
+    "mattersim",
+] # Note: requires e3nn>=0.5.0 - use --upgrade when installing
 orb = ["orb-models"]
 
 [project.scripts]
