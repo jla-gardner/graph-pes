@@ -79,7 +79,9 @@ def from_graph_pes_to_orb_batch(
 
     lattices = []
     for cell in graph.cell:
-        lattices.append(torch.from_numpy(cell_to_cellpar(cell.cpu().numpy())))
+        lattices.append(
+            torch.from_numpy(cell_to_cellpar(cell.cpu().numpy())).float()
+        )
     lattice = torch.vstack(lattices).to(graph.R.device)
 
     graph_features = {
@@ -143,6 +145,12 @@ class OrbWrapper(GraphPESModel):
 
         if not is_batch(graph):
             preds["energy"] = preds["energy"][0]
+
+        preds["local_energies"] = torch.zeros(number_of_atoms(graph)).to(
+            graph.Z.device
+        )
+
+        print(self.training, preds["energy"].shape)
 
         return preds
 

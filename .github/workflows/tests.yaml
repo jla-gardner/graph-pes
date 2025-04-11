@@ -30,7 +30,7 @@ jobs:
           - 3.11
     name: test - ${{ matrix.python-version }}
     steps:
-      ### SETUP ###
+      ### SETUP ###
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
@@ -75,10 +75,52 @@ jobs:
               data/+file_dataset/path=tests/helpers/test.xyz \
               data/+file_dataset/cutoff=5.0
 
+  interface-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        interface:
+          - name: mace-torch
+            python-version: "3.10"
+            test-file: "mace_test.py"
+            model_kwargs: model="mace_mp()"
+          - name: mattersim
+            python-version: "3.9"
+            test-file: "mattersim_test.py"
+            model_kwargs: model="mattersim()"
+          - name: orb
+            python-version: "3.10"
+            test-file: "orb_test.py"
+            model_kwargs: model="orb_model()"
+    name: ${{ matrix.interface.name }} interface test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.interface.python-version }}
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install graph-pes and required dependencies
+        run: uv pip install --system --upgrade ".[test,${{ matrix.interface.name }}]"
+
+      - name: Run tests
+        run: uv run pytest src/graph_pes/interfaces/${{ matrix.interface.test-file }} -vvv
+
+      - name: Run a small training run
+        run: |
+          uv run graph-pes-train src/graph_pes/interfaces/quick.yaml \
+              ${{ matrix.interface.model_kwargs }}
+
   docs:
     runs-on: ubuntu-latest
     steps:
-      ### SETUP ###
+      ### SETUP ###
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
@@ -110,49 +152,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs/build/
           force_orphan: true
-
-  mace-torch-interface:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Install graph-pes and required dependencies
-        run: uv pip install --system --upgrade ".[test]"
-
-      - name: Install mace-torch
-        run: uv pip install --system mace-torch torch==2.5 # TODO: unfix this version
-
-      - name: Run tests
-        run: uv run pytest src/graph_pes/interfaces/mace_test.py -vvv
-
-  mattersim-interface:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.9"
-
-      - uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-
-      - name: Install graph-pes and required dependencies
-        run: uv pip install --system --upgrade ".[test]"
-
-      - name: Install mattersim
-        run: uv pip install --system mattersim==1.0.0
-
-      - name: Run tests
-        run: uv run pytest src/graph_pes/interfaces/mattersim_test.py -vvv

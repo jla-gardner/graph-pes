@@ -45,6 +45,9 @@ docs = [
     "sphinx-design",
 ]
 publish = ["build", "twine"]
+macetorch = ["mace-torch"]
+mattersim = ["mattersim"]
+orb = ["orb-models"]
 
 [project.scripts]
 graph-pes-train = "graph_pes.scripts.train:main"

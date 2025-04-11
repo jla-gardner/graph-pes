@@ -1,0 +1,23 @@
+# use this config as graph-pes-train quick.yaml model/...=...
+model:
+
+data:
+  +load_atoms_dataset:
+    id: QM7
+    n_train: 10
+    n_valid: 2
+    cutoff: 6.0
+
+fitting:
+  trainer_kwargs:
+    max_epochs: 2
+    accelerator: cpu
+
+  auto_fit_reference_energies: true
+
+  loader_kwargs:
+    batch_size: 1
+
+loss: +PerAtomEnergyLoss()
+
+wandb: null

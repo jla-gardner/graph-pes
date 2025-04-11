@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 import torch
 from ase.build import bulk, molecule
@@ -34,31 +35,29 @@ def test_single_batch_orb(wrapped_orb):
 
 
 def test_batch_orb(wrapped_orb):
-    atoms = bulk("Cu")
+    atoms = bulk("Cu").repeat(2)
+    rng = np.random.RandomState(42)
+    atoms.positions += rng.uniform(-0.1, 0.1, atoms.positions.shape)
+
+    N = len(atoms)
+    B = 2
 
     g = AtomicGraph.from_ase(atoms, cutoff=wrapped_orb.cutoff.item())
-    batch = to_batch([g, g])
+    batch = to_batch([g] * B)
     our_preds = wrapped_orb.forward(batch)
 
-    assert our_preds["energy"].shape == (2,)
-    assert our_preds["forces"].shape == (2, 3)
-    assert our_preds["stress"].shape == (2, 3, 3)
+    assert our_preds["energy"].shape == (B,)
+    assert our_preds["forces"].shape == (B * N, 3)
+    assert our_preds["stress"].shape == (B, 3, 3)
 
     orb_g = atomic_system.ase_atoms_to_atom_graphs(
         atoms, wrapped_orb.orb_model.system_config
     )
-    orb_g = batch_graphs([orb_g, orb_g])
+    orb_g = batch_graphs([orb_g] * B)
     orb_preds = wrapped_orb.orb_model.predict(orb_g)
 
+    torch.testing.assert_close(our_preds["energy"], orb_preds["energy"])
+    torch.testing.assert_close(our_preds["forces"], orb_preds["forces"])
     torch.testing.assert_close(
-        our_preds["energy"], orb_preds["energy"], atol=3e-5, rtol=1e-5
-    )
-    torch.testing.assert_close(
-        our_preds["forces"], orb_preds["forces"], atol=3e-5, rtol=1e-5
-    )
-    torch.testing.assert_close(
-        full_3x3_to_voigt_6(our_preds["stress"]),
-        orb_preds["stress"],
-        atol=3e-5,
-        rtol=1e-5,
+        full_3x3_to_voigt_6(our_preds["stress"]), orb_preds["stress"]
     )
