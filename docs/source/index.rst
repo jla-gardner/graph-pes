@@ -51,7 +51,6 @@
     :caption: About
     :hidden:
 
-    under-the-hood
     theory
     development
 
@@ -93,8 +92,6 @@ Use ``graph-pes`` to train models from scratch, experiment with new architecture
 .. grid:: 1 2 3 3
     :gutter: 3
 
-
-
     .. grid-item-card:: 🔥 Train
         :link: quickstart/quickstart
         :link-type: doc
@@ -115,19 +112,26 @@ Use ``graph-pes`` to train models from scratch, experiment with new architecture
 
         Fine-tune a foundation model on your data
 
-    .. grid-item-card:: 🎓 Learn
-        :link: theory
-        :link-type: doc
-        :text-align: center
-
-        How does ``graph-pes`` work under the hood?
-
     .. grid-item-card:: 🔨 Build
         :link: quickstart/implement-a-model
         :link-type: doc
         :text-align: center
 
         Implement your own ML-PES architecture
+
+    .. grid-item-card:: 🧪 Experiment
+        :link: quickstart/custom-training-loop
+        :link-type: doc
+        :text-align: center
+
+        Define a custom training loop
+
+    .. grid-item-card:: 🎓 Learn
+        :link: theory
+        :link-type: doc
+        :text-align: center
+
+        Learn more about the properties of PESs
 
 
 

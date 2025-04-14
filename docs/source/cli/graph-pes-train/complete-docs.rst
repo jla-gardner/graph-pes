@@ -302,6 +302,20 @@ To set the maximum number of graphs to use for :ref:`pre-fitting <pre-fit-model>
     fitting:
         max_n_pre_fit: 1000
 
+Reference energies
+++++++++++++++++++
+
+If you know the reference energies for your dataset, you can construct an :class:`~graph_pes.models.AdditionModel` with a :class:`~graph_pes.models.FixedOffset` component (see e.g. `here <https://jla-gardner.github.io/graph-pes/cli/graph-pes-train/examples.html#realistic-config>`__).
+
+If, however, you want `graph-pes` to make an educated guess at the mean energy per element in your training data, you can pass the following option:
+
+.. code-block:: yaml
+
+    fitting:
+        auto_fit_reference_energies: true
+
+See the :doc:`fine-tuning guide </quickstart/fine-tuning>` for more details.
+
 Early stopping
 +++++++++++++++
 
