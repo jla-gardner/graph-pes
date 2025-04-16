@@ -6,6 +6,7 @@ Many Body Models
 .. toctree::
     :maxdepth: 1
 
+    stillinger-weber
     eddp
     schnet
     painn

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import os
 from pathlib import Path
 from typing import Callable
@@ -83,9 +84,16 @@ def all_model_factories(
     def _model_factory(
         model_klass: type[GraphPESModel],
     ) -> Callable[[], GraphPESModel]:
-        return lambda: model_klass(
-            **required_kwargs.get(model_klass, {}), cutoff=cutoff
-        )
+        # inspect for if cutoff is a required argument
+        requires_cutoff = False
+        for arg in inspect.signature(model_klass.__init__).parameters.values():
+            if arg.name == "cutoff":
+                requires_cutoff = True
+                break
+        kwargs = required_kwargs.get(model_klass, {})
+        if requires_cutoff:
+            kwargs["cutoff"] = cutoff
+        return lambda: model_klass(**kwargs)
 
     names = [model.__name__ for model in ALL_MODELS]
     factories = [_model_factory(model) for model in ALL_MODELS]

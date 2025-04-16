@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 import torch
 from ase import Atoms
+from ase.build import bulk
 
 import graph_pes
 from graph_pes import AtomicGraph, GraphPESModel
@@ -23,6 +24,7 @@ from graph_pes.models import (
     load_model_component,
 )
 from graph_pes.models.addition import AdditionModel
+from graph_pes.models.stillinger_weber import StillingerWeber
 
 from .. import helpers
 
@@ -224,3 +226,16 @@ def test_load_model_component(tmp_path: Path):
     torch.save(LennardJones(), path)
     with pytest.raises(ValueError, match="Expected to load an AdditionModel"):
         load_model_component(path, "str")
+
+
+def test_stillinger_weber():
+    # the default parameters should give the SW potential
+    # for Si: this should give the energy of bulk diamond Si
+    # as -4.3364 eV/atom according to
+    # https://openkim.org/id/SW_StillingerWeber_1985_Si__MO_405512056662_005
+
+    sw = StillingerWeber().ase_calculator()
+    si = bulk("Si", "diamond", a=5.43)
+    assert sw.get_potential_energy(si) / len(si) == pytest.approx(  # type: ignore
+        -4.3364, abs=1e-4
+    )

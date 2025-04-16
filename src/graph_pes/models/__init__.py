@@ -32,6 +32,7 @@ from .pairwise import (
     ZBLCoreRepulsion,
 )
 from .schnet import SchNet
+from .stillinger_weber import StillingerWeber
 from .tensornet import TensorNet
 
 __all__ = [
@@ -52,6 +53,7 @@ __all__ = [
     "ZBLCoreRepulsion",
     "ZEmbeddingMACE",
     "ZEmbeddingNequIP",
+    "StillingerWeber",
 ]
 
 MODEL_EXCLUSIONS = {
