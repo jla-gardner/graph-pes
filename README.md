@@ -39,3 +39,8 @@ Alternatively, for a 0-install quickstart experience, please see [this Google Co
 ## Contributing
 
 Contributions are welcome! If you find any issues or have suggestions for new features, please open an issue or submit a pull request on the [GitHub repository](https://github.com/jla-gardner/graph-pes).
+
+## Citing `graph-pes`
+
+We kindly ask that you cite `graph-pes` in your work if it has been useful to you. 
+A manuscript is currently in preparation - in the meantime, please cite the Zenodo DOI found in the [CITATION.cff](CITATION.cff) file.
