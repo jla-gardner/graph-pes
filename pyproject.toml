@@ -64,6 +64,12 @@ tag = true
 push = false
 
 [tool.bumpver.file_patterns]
+"pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
+"src/graph_pes/__init__.py" = ["{version}"]
+"docs/source/conf.py" = ['release = "{version}"']
+"src/graph_pes/graph_pes_model.py" = [
+    'self._GRAPH_PES_VERSION: Final\[str\] = "{version}"',
+]
 "CITATION.cff" = ['^version: {version}$']
 
 [tool.ruff]
@@ -127,9 +133,3 @@ norecursedirs = "tests/helpers"
 
 [dependency-groups]
 dev = ["bumpver>=2024.1130", "notebook>=7.3.2", "ruff", "sphinx-autobuild"]
-"pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
-"src/graph_pes/__init__.py" = ["{version}"]
-"docs/source/conf.py" = ['release = "{version}"']
-"src/graph_pes/graph_pes_model.py" = [
-    'self._GRAPH_PES_VERSION: Final\[str\] = "{version}"',
-]
