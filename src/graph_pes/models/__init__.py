@@ -34,6 +34,7 @@ from .pairwise import (
 from .schnet import SchNet
 from .stillinger_weber import StillingerWeber
 from .tensornet import TensorNet
+from .unit_converter import UnitConverter
 
 __all__ = [
     "AdditionModel",
@@ -54,6 +55,7 @@ __all__ = [
     "ZEmbeddingMACE",
     "ZEmbeddingNequIP",
     "StillingerWeber",
+    "UnitConverter",
 ]
 
 MODEL_EXCLUSIONS = {
@@ -62,6 +64,7 @@ MODEL_EXCLUSIONS = {
     "AdditionModel",
     "PairPotential",
     "SmoothedPairPotential",
+    "UnitConverter",
 }
 
 ALL_MODELS: list[type[GraphPESModel]] = [

@@ -24,5 +24,7 @@ coverage.xml
 .vscode
 .isort.cfg
 .DS_Store
+*.h5md
+*.traj
 
 **.cache

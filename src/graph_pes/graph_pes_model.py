@@ -597,3 +597,49 @@ class GraphPESModel(nn.Module, ABC):
         from graph_pes.utils.calculator import GraphPESCalculator
 
         return GraphPESCalculator(self, device=device, skin=skin)
+
+    @torch.jit.unused
+    def torch_sim_model(
+        self,
+        device: torch.device | None = None,
+        dtype: torch.dtype = torch.float64,
+        *,
+        compute_forces: bool = True,
+        compute_stress: bool = True,
+    ):
+        """
+        Return a model suitable for use with the `torch_sim <>`__ package.
+
+        Internally, we set this model to evaluation mode, and wrap it in a
+        class that is suitable for use with the ``torch_sim`` package.
+
+        Parameters
+        ----------
+        device
+            The device to use for the model. If ``None``, the model will be
+            placed on the best device available.
+        dtype
+            The dtype to use for the model.
+        compute_forces
+            Whether to compute forces. Set this to ``False`` if you only need
+            to generate energies within the ``torch_sim`` integrator.
+        compute_stress
+            Whether to compute stress. Set this to ``False`` if you don't
+            need stress information from the model within the ``torch_sim``
+            integrator.
+        """
+        try:
+            from torch_sim.models import GraphPESWrapper
+        except ImportError as e:
+            raise ImportError(
+                "torch_sim is not installed. Please install it using "
+                "pip install torch-sim"
+            ) from e
+
+        return GraphPESWrapper(
+            self.eval(),
+            device=device,
+            dtype=dtype,
+            compute_forces=compute_forces,
+            compute_stress=compute_stress,
+        )

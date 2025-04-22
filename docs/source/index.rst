@@ -41,6 +41,7 @@
     :caption: Tools
     :hidden:
 
+    tools/torch-sim
     tools/ase
     tools/lammps
     tools/analysis
@@ -53,7 +54,7 @@
 
     theory
     development
-
+    
 .. image:: _static/logo-text.svg
     :align: center
     :alt: graph-pes logo

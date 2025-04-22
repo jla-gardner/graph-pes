@@ -39,4 +39,10 @@ Available Models
    offsets
    pairwise
    many-body/root
-   
+
+
+Unit Conversion
+===============
+
+.. autoclass:: graph_pes.models.UnitConverter
+   :show-inheritance:
