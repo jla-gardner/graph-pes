@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Added a `UnitConverter` model for converting between different unit systems.
+
+Added native support for `torch-sim` integration, together with documentation and a tutorial.
+
 ## [0.0.36] - 2025-04-16
 
 Added the `StillingerWeber` empirical potential.
