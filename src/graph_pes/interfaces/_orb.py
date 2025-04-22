@@ -76,7 +76,7 @@ def from_graph_pes_to_orb_batch(
     }
 
     lattices = []
-    for cell in graph.cell:
+    for cell in graph.cell.clone().detach():
         lattices.append(
             torch.from_numpy(cell_to_cellpar(cell.cpu().numpy())).float()
         )
@@ -149,8 +149,17 @@ class OrbWrapper(GraphPESModel):
             self._orb.system_config.max_num_neighbors,
         )
         preds: dict[PropertyKey, torch.Tensor] = self._orb.predict(orb_graph)  # type: ignore
-        preds["stress"] = voigt_6_to_full_3x3(preds["stress"])
 
+        if "grad_forces" in preds:
+            preds["forces"] = preds.pop("grad_forces")  # type: ignore
+        if "grad_stress" in preds:
+            preds["stress"] = preds.pop("grad_stress")  # type: ignore
+
+        if "stress" in preds:
+            preds["stress"] = voigt_6_to_full_3x3(preds["stress"])
+
+        # underlying orb model returns things in batched format.
+        # we want to de-batch things if only a single graph is provided.
         if not is_batch(graph):
             preds["energy"] = preds["energy"][0]
 
@@ -203,7 +212,10 @@ def orb_model(name: str = "orb-v3-direct-20-omat") -> OrbWrapper:
     name: str
         The name of the model to load.
     """
+    import torch._functorch.config
     from orb_models.forcefield import pretrained
+
+    torch._functorch.config.donated_buffer = False
 
     orb = pretrained.ORB_PRETRAINED_MODELS[name](device="cpu")
     for param in orb.parameters():

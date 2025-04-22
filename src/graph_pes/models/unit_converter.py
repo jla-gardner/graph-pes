@@ -39,11 +39,11 @@ class UnitConverter(GraphPESModel):
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         predictions = self._model(graph)
         for key in predictions:
-            if key in ["energy", "stress"]:
+            if key in ["energy", "virial"]:
                 predictions[key] *= self._energy_to_eV
             elif key == "forces":
                 predictions[key] *= self._energy_to_eV / self._length_to_A
-            elif key == "virial":
+            elif key == "stress":
                 predictions[key] *= self._energy_to_eV / self._length_to_A**3
 
         return predictions
