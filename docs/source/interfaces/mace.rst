@@ -6,6 +6,23 @@
 
 We also provide two convenience functions to the recently trained ``MACE-MP`` and ``MACE-OFF`` "foundation" models, as well as the ``GO-MACE-23`` model.
 
+You can use all of these models in the same way as any other :class:`~graph_pes.GraphPESModel`, either via the Python API:
+
+.. code-block:: python
+
+   from graph_pes.interfaces import mace_mp
+   model = mace_mp("medium-0b3")
+   model.predict_energy(graph)
+
+
+or within a ``graph-pes-train`` configuration file:
+
+.. code-block:: yaml
+
+   model:
+      +mace_off:
+         model: small
+
 If you use any ``mace-torch`` models in your work, please visit the `mace-torch <https://github.com/ACEsuit/mace>`__ repository and cite the following:
 
 .. code-block:: bibtex

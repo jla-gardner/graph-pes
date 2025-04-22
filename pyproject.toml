@@ -58,7 +58,7 @@ Homepage = "https://github.com/jla-gardner/graph-pes"
 [tool.bumpver]
 current_version = "0.0.36"
 version_pattern = "MAJOR.MINOR.PATCH"
-commit_message = "bump {old_version} -> {new_version}"
+commit_message = "{old_version} -> {new_version}"
 commit = true
 tag = true
 push = false
