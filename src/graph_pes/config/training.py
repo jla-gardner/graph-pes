@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Literal, Union
 import yaml
 from pytorch_lightning import Callback
 
-from graph_pes.config.shared import TorchConfig
+from graph_pes.config.shared import TorchConfig, parse_dataset_collection
 from graph_pes.data.datasets import DatasetCollection
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.training.callbacks import VerboseSWACallback
@@ -137,7 +137,7 @@ class TrainingConfig:
     """
 
     model: Union[GraphPESModel, Dict[str, GraphPESModel]]
-    data: DatasetCollection
+    data: Union[DatasetCollection, Dict[str, Any]]
     loss: Union[Loss, TotalLoss, Dict[str, Loss], List[Loss]]
     fitting: FittingConfig
     general: GeneralConfig
@@ -145,18 +145,8 @@ class TrainingConfig:
 
     ### Methods ###
 
-    def get_data(self) -> DatasetCollection:
-        if isinstance(self.data, DatasetCollection):
-            return self.data
-        elif isinstance(self.data, dict):
-            return DatasetCollection(**self.data)
-
-        raise ValueError(
-            "Expected to be able to parse a DatasetCollection instance or a "
-            "dictionary mapping 'train' and 'valid' keys to GraphDataset "
-            "instances from the data config, but got something else: "
-            f"{self.data}"
-        )
+    def get_data(self, model: GraphPESModel) -> DatasetCollection:
+        return parse_dataset_collection(self.data, model)
 
     @classmethod
     def defaults(cls) -> dict:

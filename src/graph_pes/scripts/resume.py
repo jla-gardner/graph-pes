@@ -75,7 +75,7 @@ def main():
         logger.info(f"Resuming training at {now_ms}")
 
     # resume training
-    data = config.get_data()
+    data = config.get_data(task.model)
     loader_kwargs = {**config.fitting.loader_kwargs}
     loader_kwargs["shuffle"] = True
     train_loader = GraphDataLoader(data.train, **loader_kwargs)

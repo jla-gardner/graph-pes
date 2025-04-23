@@ -7,9 +7,15 @@ from typing import Any, Literal, Union
 import yaml
 from pytorch_lightning.loggers import CSVLogger, Logger
 
-from graph_pes.config.shared import TorchConfig, instantiate_config_from_dict
+from graph_pes.config.shared import (
+    TorchConfig,
+    instantiate_config_from_dict,
+    parse_dataset_collection,
+    parse_single_dataset,
+)
 from graph_pes.data import GraphDataset
 from graph_pes.data.datasets import DatasetCollection
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.training.callbacks import WandbLogger
 
 
@@ -20,7 +26,7 @@ class TestingConfig:
     model_path: str
     """The path to the ``model.pt`` file."""
 
-    data: Union[GraphDataset, dict[str, GraphDataset], None]  # noqa: UP007
+    data: Union[GraphDataset, dict[str, GraphDataset], dict[str, Any], None]  # noqa: UP007
     """
     Either:
 
@@ -103,7 +109,7 @@ class TestingConfig:
 
         return WandbLogger(output_dir=root_dir, log_epoch=False, **logger_data)
 
-    def get_datasets(self) -> dict[str, GraphDataset]:
+    def get_datasets(self, model: GraphPESModel) -> dict[str, GraphDataset]:
         if self.data is None:
             # try to find the data object from the training config
             # this is a bit of a hack, but it works:
@@ -125,25 +131,43 @@ class TestingConfig:
                 def defaults(cls) -> dict:
                     return {}
 
-            data_collection = instantiate_config_from_dict(
+            raw_data = instantiate_config_from_dict(
                 {"data": train_config.get("data", {})}, DummyConfig
             )[1].data
+            collection = parse_dataset_collection(raw_data, model)
             data = {
-                "train": data_collection.train,
-                "valid": data_collection.valid,
+                "train": collection.train,
+                "valid": collection.valid,
             }
-            if data_collection.test is not None:
-                if isinstance(data_collection.test, dict):
-                    data.update(data_collection.test)
+            if collection.test is not None:
+                if isinstance(collection.test, dict):
+                    data.update(collection.test)
                 else:
-                    data["test"] = data_collection.test
+                    data["test"] = collection.test
 
             return data
 
-        elif isinstance(self.data, GraphDataset):
+        if isinstance(self.data, GraphDataset):
             return {"test": self.data}
-        else:
-            return self.data
+
+        prev_exc = None
+        try:
+            return {"test": parse_single_dataset(self.data, model)}
+        except FileNotFoundError:
+            raise
+        except Exception as e:
+            prev_exc = e
+
+        try:
+            return {
+                k: parse_single_dataset(v, model) for k, v in self.data.items()
+            }
+        except Exception as e:
+            raise Exception(
+                "Failed to parse test sets. We encountered the following "
+                f"errors:\n{prev_exc}\nand\n{e}\n"
+                "Please check your test set configuration and try again."
+            ) from e
 
     @classmethod
     def defaults(cls) -> dict:

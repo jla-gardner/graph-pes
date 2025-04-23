@@ -24,19 +24,11 @@ model:
 # ... on structures from local files ...
 data:
     train:
-        +file_dataset:
-            path: train-cgap17.xyz
-            cutoff: =/CUTOFF
-            n: 1280
-            shuffle: false
-    valid:
-        +file_dataset:
-            path: val-cgap17.xyz
-            cutoff: =/CUTOFF
-    test:
-        +file_dataset:
-            path: test-cgap17.xyz
-            cutoff: =/CUTOFF
+        path: train-cgap17.xyz
+        n: 1280
+        shuffle: false
+    valid: val-cgap17.xyz
+    test: test-cgap17.xyz
 
 # ... on both energy and forces (weighted 1:1) ...
 loss:

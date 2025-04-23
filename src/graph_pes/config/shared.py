@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import contextlib
 from dataclasses import dataclass, fields
-from typing import Literal, Protocol, TypeVar
+from typing import Any, Literal, Protocol, TypeVar
 
 import dacite
 import data2objects
 
+from graph_pes.data.datasets import (
+    DatasetCollection,
+    GraphDataset,
+    file_dataset,
+)
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models import AdditionModel
 from graph_pes.training.loss import Loss, TotalLoss
@@ -149,3 +155,60 @@ def parse_loss(
         "the loss config, but got something else:\n"
         f"{loss}"
     )
+
+
+def parse_single_dataset(value: Any, model: GraphPESModel) -> GraphDataset:
+    if isinstance(value, GraphDataset):
+        return value
+    elif isinstance(value, (str, dict)):
+        kwargs: dict[str, Any] = {"cutoff": model.cutoff.item()}
+        if isinstance(value, str):
+            kwargs["path"] = value
+        else:
+            kwargs.update(value)
+        return file_dataset(**kwargs)
+    else:
+        raise ValueError(
+            "Expected a GraphDataset or a dict to pass to file_dataset, "
+            f"but got {value}"
+        )
+
+
+def parse_dataset_collection(
+    raw_data: DatasetCollection | dict[str, Any],
+    model: GraphPESModel,
+) -> DatasetCollection:
+    if isinstance(raw_data, DatasetCollection):
+        return raw_data
+
+    if "train" not in raw_data or "valid" not in raw_data:
+        raise ValueError(
+            "Expected to parse a DatasetCollection instance or a "
+            "dictionary mapping 'train' and 'valid' keys to GraphDataset "
+            "instances from the data config, but got something else: "
+            f"{raw_data}"
+        )
+
+    collection = {}
+    for key in ["train", "valid"]:
+        value = raw_data[key]
+        collection[key] = parse_single_dataset(value, model)
+
+    if "test" in raw_data:
+        if isinstance(raw_data["test"], (str, GraphDataset)):
+            collection["test"] = parse_single_dataset(raw_data["test"], model)
+        elif isinstance(raw_data["test"], dict):
+            # could either be a simple dict specifying a single test set:
+            with contextlib.suppress(Exception):
+                collection["test"] = parse_single_dataset(
+                    raw_data["test"], model
+                )
+
+            # or a dict of test sets:
+            if "test" not in collection:
+                collection["test"] = {
+                    _key: parse_single_dataset(_value, model)
+                    for _key, _value in raw_data["test"].items()
+                }
+
+    return DatasetCollection(**collection)

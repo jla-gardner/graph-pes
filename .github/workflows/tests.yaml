@@ -72,8 +72,7 @@ jobs:
       - name: Run a very small testing run
         run: |
           uv run graph-pes-test model_path=results/test-run/model.pt \
-              data/+file_dataset/path=tests/helpers/test.xyz \
-              data/+file_dataset/cutoff=5.0
+              data=tests/helpers/test.xyz
 
   interface-tests:
     runs-on: ubuntu-latest

@@ -1,12 +1,6 @@
 data:
-    train:
-        +file_dataset:
-            path: train.xyz
-            cutoff: 6.0
-    valid:
-        +file_dataset:
-            path: valid.xyz
-            cutoff: 6.0
+    train: train.xyz
+    valid: valid.xyz
 
 loss:
     - +PerAtomEnergyLoss()

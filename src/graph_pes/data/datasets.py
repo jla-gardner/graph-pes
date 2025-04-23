@@ -427,7 +427,20 @@ def file_dataset(
     ...     property_map={"U0": "energy"},
     ... )
 
-    Use this to specify e.g. a training dataset in a YAML configuration file:
+    By default, this function gets called on any collection of arguments
+    specified in a YAML configuration file:
+
+    .. code-block:: yaml
+
+        data:
+            train:
+                path: training_data.xyz
+                n: 1000
+                cutoff: 5.0
+                property_map:
+                    U0: energy
+
+    is equivalent to:
 
     .. code-block:: yaml
 
@@ -437,7 +450,7 @@ def file_dataset(
                     path: training_data.xyz
                     cutoff: 5.0
                     property_map:
-                    U0: energy
+                        U0: energy
 
     Parameters
     ----------

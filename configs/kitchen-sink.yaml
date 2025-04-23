@@ -17,20 +17,19 @@ model:
 
 data:
     train:
-        +file_dataset:
-            path: training_data.xyz
-            cutoff: =/CUTOFF
-            n: 1000
-            shuffle: true
-            seed: 42
-    valid:
-        +file_dataset:
-            path: validation_data.xyz
-            cutoff: =/CUTOFF
+        path: training_data.xyz
+        n: 1000
+        shuffle: true
+        seed: 42
+    valid: validation_data.xyz
     test:
-        +file_dataset:
-            path: test_data.xyz
-            cutoff: =/CUTOFF
+        bulk:
+            +my_module.bulk_test_set:
+                cutoff: =/CUTOFF
+        slab:
+            +my_module.slab_test_set:
+                n: 100
+                cutoff: =/CUTOFF
 
 loss:
     energy: +PerAtomEnergyLoss()

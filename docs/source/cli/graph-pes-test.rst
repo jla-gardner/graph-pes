@@ -29,14 +29,8 @@ Where ``test-config.yaml`` contains e.g.:
 .. code-block:: yaml
 
     data:
-        dimers:
-            +file_dataset:
-                path: path/to/dimers.xyz
-                cutoff: 5.0
-        amorphous:
-            +file_dataset:
-                path: path/to/amorphous.xyz
-                cutoff: 5.0
+        dimers: path/to/dimers.xyz
+        amorphous: path/to/amorphous.xyz
 
     accelerator: gpu
 

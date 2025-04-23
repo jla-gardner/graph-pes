@@ -27,7 +27,7 @@ def test(config: TestingConfig) -> None:
     logger.info("Loaded model.")
     logger.debug(f"Model: {model}")
 
-    datasets = config.get_datasets()
+    datasets = config.get_datasets(model)
 
     for dataset in datasets.values():
         if distributed.IS_RANK_0:
