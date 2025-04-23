@@ -21,6 +21,7 @@ from .addition import AdditionModel
 from .e3nn.mace import MACE, ZEmbeddingMACE
 from .e3nn.nequip import NequIP, ZEmbeddingNequIP
 from .eddp import EDDP
+from .m3gnet import M3GNet
 from .offsets import FixedOffset, LearnableOffset
 from .painn import PaiNN
 from .pairwise import (
@@ -43,6 +44,7 @@ __all__ = [
     "LearnableOffset",
     "LennardJones",
     "LennardJonesMixture",
+    "M3GNet",
     "MACE",
     "Morse",
     "NequIP",
@@ -108,8 +110,7 @@ def load_model(path: str | pathlib.Path) -> GraphPESModel:
 
     if not isinstance(model, GraphPESModel):
         raise ValueError(
-            "Expected the loaded object to be a GraphPESModel "
-            f"but got {type(model)}"
+            "Expected the loaded object to be a GraphPESModel " f"but got {type(model)}"
         )
 
     import graph_pes
@@ -148,9 +149,7 @@ def load_model_component(
 
     base_model = load_model(path)
     if not isinstance(base_model, AdditionModel):
-        raise ValueError(
-            f"Expected to load an AdditionModel, got {type(base_model)}"
-        )
+        raise ValueError(f"Expected to load an AdditionModel, got {type(base_model)}")
 
     return base_model[key]
 
