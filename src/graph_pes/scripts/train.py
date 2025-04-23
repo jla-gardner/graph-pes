@@ -150,7 +150,7 @@ Output for this training run can be found at:
     optimizer = config.fitting.get_optimizer()
     logger.debug(f"Optimizer:\n{optimizer}")
 
-    scheduler = config.fitting.scheduler
+    scheduler = config.fitting.get_scheduler()
     _scheduler_str = scheduler if scheduler is not None else "No LR scheduler."
     logger.debug(f"Scheduler:\n{_scheduler_str}")
 

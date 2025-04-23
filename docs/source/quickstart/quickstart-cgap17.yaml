@@ -55,10 +55,9 @@ fitting:
         lr: 0.01
 
     scheduler:
-        +LRScheduler:
-            name: ReduceLROnPlateau
-            factor: 0.5
-            patience: 10
+        name: ReduceLROnPlateau
+        factor: 0.5
+        patience: 10
 
     loader_kwargs:
         batch_size: 64

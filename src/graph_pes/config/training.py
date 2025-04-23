@@ -95,7 +95,7 @@ class FittingConfig(FittingOptions):
 
     trainer_kwargs: Dict[str, Any]
     optimizer: Union[Optimizer, Dict[str, Any], None] = None
-    scheduler: Union[LRScheduler, None] = None
+    scheduler: Union[LRScheduler, Dict[str, Any], None] = None
     swa: Union[SWAConfig, None] = None
     callbacks: List[Callback] = field(default_factory=list)
 
@@ -106,6 +106,15 @@ class FittingConfig(FittingOptions):
         kwargs = {"name": "Adam", "lr": 1e-3}
         kwargs.update(self.optimizer or {})
         return Optimizer(**kwargs)
+
+    def get_scheduler(self) -> LRScheduler | None:
+        if isinstance(self.scheduler, LRScheduler):
+            return self.scheduler
+
+        if self.scheduler is None:
+            return None
+
+        return LRScheduler(**self.scheduler)
 
 
 @dataclass

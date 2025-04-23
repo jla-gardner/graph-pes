@@ -263,18 +263,15 @@ or by pointing to something that instantiates a :class:`~graph_pes.training.opt.
 Learning rate scheduler
 +++++++++++++++++++++++
 
-Configure the learning rate scheduler to use to train the model by pointing to something that instantiates a :class:`~graph_pes.training.opt.LRScheduler`.
-
-For instance:
+Configure the learning rate scheduler to use to train the model by specifying a dictionary of keyword arguments to the :class:`~graph_pes.training.opt.LRScheduler` constructor:
 
 .. code-block:: yaml
 
     fitting:
         scheduler:
-            +LRScheduler:
-                name: ReduceLROnPlateau
-                factor: 0.5
-                patience: 10
+            name: ReduceLROnPlateau
+            factor: 0.5
+            patience: 10
 
 By default, no learning rate scheduler is used if you don't specify one, or if you specify ``null``:
 

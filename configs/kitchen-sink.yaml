@@ -64,10 +64,9 @@ fitting:
         amsgrad: true
 
     scheduler:
-        +LRScheduler:
-            name: ReduceLROnPlateau
-            patience: 10
-            factor: 0.8
+        name: ReduceLROnPlateau
+        patience: 10
+        factor: 0.8
 
     swa:
         lr: 0.001
