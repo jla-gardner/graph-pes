@@ -94,10 +94,18 @@ class FittingConfig(FittingOptions):
     """Configuration for the fitting process."""
 
     trainer_kwargs: Dict[str, Any]
-    optimizer: Optimizer = Optimizer(name="AdamW", lr=1e-3, amsgrad=False)
+    optimizer: Union[Optimizer, Dict[str, Any], None] = None
     scheduler: Union[LRScheduler, None] = None
     swa: Union[SWAConfig, None] = None
     callbacks: List[Callback] = field(default_factory=list)
+
+    def get_optimizer(self) -> Optimizer:
+        if isinstance(self.optimizer, Optimizer):
+            return self.optimizer
+
+        kwargs = {"name": "Adam", "lr": 1e-3}
+        kwargs.update(self.optimizer or {})
+        return Optimizer(**kwargs)
 
 
 @dataclass

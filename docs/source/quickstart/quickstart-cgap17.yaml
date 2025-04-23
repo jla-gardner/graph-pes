@@ -1,5 +1,5 @@
 # define a radial cutoff to use throughout the config
-CUTOFF: 3.7  # in Å
+CUTOFF: 3.7 # in Å
 
 general:
     progress: logged
@@ -13,7 +13,7 @@ model:
     many-body:
         +NequIP:
             elements: [C]
-            cutoff: =/CUTOFF  # reference the radial cutoff defined above
+            cutoff: =/CUTOFF # reference the radial cutoff defined above
             layers: 2
             features:
                 channels: [16, 8, 4]
@@ -51,9 +51,8 @@ fitting:
         check_val_every_n_epoch: 5
 
     optimizer:
-        +Optimizer:
-            name: AdamW
-            lr: 0.01
+        name: AdamW
+        lr: 0.01
 
     scheduler:
         +LRScheduler:

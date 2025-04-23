@@ -64,7 +64,7 @@ def main():
         checkpoint_path,
         model=parse_model(config.model),
         loss=parse_loss(config.loss),
-        optimizer=config.fitting.optimizer,
+        optimizer=config.fitting.get_optimizer(),
         scheduler=config.fitting.scheduler,
     )
 

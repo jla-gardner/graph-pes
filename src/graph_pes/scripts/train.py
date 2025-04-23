@@ -147,7 +147,7 @@ Output for this training run can be found at:
     data = config.get_data()
     logger.debug(f"Data:\n{data}")
 
-    optimizer = config.fitting.optimizer
+    optimizer = config.fitting.get_optimizer()
     logger.debug(f"Optimizer:\n{optimizer}")
 
     scheduler = config.fitting.scheduler

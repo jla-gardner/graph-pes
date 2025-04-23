@@ -238,21 +238,19 @@ The ``fitting`` section of the config is used to specify various hyperparameters
 Optimizer
 +++++++++
 
-Configure the optimizer to use to train the model by pointing to something that instantiates a :class:`~graph_pes.training.opt.Optimizer`.
-
-The default is:
+Configure the optimizer used to train the model, either by providing a dictionary of keyword arguments to the :class:`~graph_pes.training.opt.Optimizer` constructor:
 
 .. code-block:: yaml
 
     fitting:        
         optimizer:
-            +Optimizer:
-                name: Adam
-                lr: 3e-3
-                weight_decay: 0.0
-                amsgrad: false
+            # these are the default values
+            name: Adam
+            lr: 3e-3
+            weight_decay: 0.0
+            amsgrad: false
 
-but you could also point to your own custom optimizer:
+or by pointing to something that instantiates a :class:`~graph_pes.training.opt.Optimizer`, for instance using your own code:
 
 .. code-block:: yaml
 

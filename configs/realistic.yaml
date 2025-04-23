@@ -46,9 +46,8 @@ fitting:
         patience: 50
 
     optimizer:
-        +Optimizer:
-            name: AdamW
-            lr: 0.003
+        name: AdamW
+        lr: 0.003
 
     scheduler:
         +LRScheduler:

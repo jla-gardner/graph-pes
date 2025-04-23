@@ -83,15 +83,14 @@ def test_optimizer():
     user_data = yaml.safe_load("""
     fitting:
         optimizer:
-            +Optimizer:
-                name: Adam
-                lr: 0.001
+            name: Adam
+            lr: 0.001
     """)
     actual_data = nested_merge(dummy_data, user_data)
     _, config = instantiate_config_from_dict(actual_data, TrainingConfig)
 
     dummy_model = SchNet()
-    optimizer_instance = config.fitting.optimizer(dummy_model)
+    optimizer_instance = config.fitting.get_optimizer()(dummy_model)
     assert optimizer_instance.param_groups[0]["lr"] == 0.001
 
 

@@ -58,11 +58,10 @@ fitting:
         val_check_interval: 0.25
 
     optimizer:
-        +Optimizer:
-            name: AdamW
-            lr: 0.003
-            weight_decay: 0.01
-            amsgrad: true
+        name: AdamW
+        lr: 0.003
+        weight_decay: 0.01
+        amsgrad: true
 
     scheduler:
         +LRScheduler:
