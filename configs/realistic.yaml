@@ -19,13 +19,13 @@ model:
             self_connection: true
 
 data:
-    train:
-        path: data/train.xyz
-        n: 5000
-    valid: data/valid.xyz
-    test:
-        bulk: data/bulk-test.xyz
-        slab: data/slab-test.xyz
+    +load_atoms_dataset:
+        id: C-GAP-20U
+        cutoff: =/CUTOFF
+        n_train: 5000
+        n_valid: 100
+        n_test: 500
+        split: random
 
 loss:
     energy: +PerAtomEnergyLoss()
