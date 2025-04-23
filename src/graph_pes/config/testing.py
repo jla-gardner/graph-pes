@@ -26,7 +26,9 @@ class TestingConfig:
     model_path: str
     """The path to the ``model.pt`` file."""
 
-    data: Union[GraphDataset, dict[str, GraphDataset], dict[str, Any], None]  # noqa: UP007
+    data: Union[  # noqa: UP007
+        GraphDataset, dict[str, GraphDataset], dict[str, Any], str, None
+    ]
     """
     Either:
 
@@ -160,7 +162,8 @@ class TestingConfig:
 
         try:
             return {
-                k: parse_single_dataset(v, model) for k, v in self.data.items()
+                k: parse_single_dataset(v, model)
+                for k, v in self.data.items()  # type: ignore
             }
         except Exception as e:
             raise Exception(

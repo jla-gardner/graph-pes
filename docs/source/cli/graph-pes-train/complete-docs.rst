@@ -139,7 +139,7 @@ You can achieve more-fine grained control by instead providing a dictionary of k
 
     The files can be any plain-text file that can be read by :func:`ase.io.read`, e.g. an ``.xyz`` file, or a ``.db`` file containing a SQLite database of :class:`ase.Atoms` objects that is readable as an `ASE database <https://wiki.fysik.dtu.dk/ase/ase/db/db.html>`__.
 
-Alternatively, you are able to point to any python function that returns a :class:`~graph_pes.datasets.GraphDataset` instance:
+Alternatively, you are able to point to any python function that returns a :class:`~graph_pes.data.GraphDataset` instance:
 
 .. code-block:: yaml
 
