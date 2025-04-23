@@ -91,7 +91,10 @@ def test_parse_dataset_collection(tmp_path: pathlib.Path):
         "valid": str(tmp_path / "test.xyz"),
         "test": {
             "bulk": str(tmp_path / "test.xyz"),
-            "surface": str(tmp_path / "test.xyz"),
+            "surface": {
+                "path": str(tmp_path / "test.xyz"),
+                "n": 1,
+            },
         },
     }
     collection = parse_dataset_collection(config, model)
@@ -103,8 +106,35 @@ def test_parse_dataset_collection(tmp_path: pathlib.Path):
     assert len(collection.test) == 2
     assert isinstance(collection.test["bulk"], GraphDataset)
     assert isinstance(collection.test["surface"], GraphDataset)
+    assert len(collection.test["surface"]) == 1
 
     # test that a DatasetCollection instance is returned unchanged
     raw_collection = collection
     new_collection = parse_dataset_collection(raw_collection, model)
     assert new_collection == collection
+
+    # no train or valid keys should raise an error
+    with pytest.raises(ValueError):
+        parse_dataset_collection({"test": str(tmp_path / "test.xyz")}, model)
+
+    # file not found for test set should raise an error
+    with pytest.raises(FileNotFoundError):
+        parse_dataset_collection(
+            {
+                "train": str(tmp_path / "test.xyz"),
+                "valid": str(tmp_path / "test.xyz"),
+                "test": "bogus/path.xyz",
+            },
+            model,
+        )
+
+    # not a valid dict
+    with pytest.raises(ValueError):
+        parse_dataset_collection(
+            {
+                "train": str(tmp_path / "test.xyz"),
+                "valid": str(tmp_path / "test.xyz"),
+                "test": {"bulk": 1},
+            },
+            model,
+        )

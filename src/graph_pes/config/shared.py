@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 from dataclasses import dataclass, fields
 from typing import Any, Literal, Protocol, TypeVar
 
@@ -199,16 +198,28 @@ def parse_dataset_collection(
             collection["test"] = parse_single_dataset(raw_data["test"], model)
         elif isinstance(raw_data["test"], dict):
             # could either be a simple dict specifying a single test set:
-            with contextlib.suppress(Exception):
+            exception = None
+            try:
                 collection["test"] = parse_single_dataset(
                     raw_data["test"], model
                 )
+            except FileNotFoundError:
+                raise
+            except Exception as e:
+                exception = e
 
             # or a dict of test sets:
-            if "test" not in collection:
-                collection["test"] = {
-                    _key: parse_single_dataset(_value, model)
-                    for _key, _value in raw_data["test"].items()
-                }
+            try:
+                if "test" not in collection:
+                    collection["test"] = {
+                        _key: parse_single_dataset(_value, model)
+                        for _key, _value in raw_data["test"].items()
+                    }
+            except Exception as e:
+                raise ValueError(
+                    "Failed to parse test sets. We encountered the following "
+                    f"errors:\n{exception}\nand\n{e}\n"
+                    "Please check your test set configuration and try again."
+                ) from e
 
     return DatasetCollection(**collection)
