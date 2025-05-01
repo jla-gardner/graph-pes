@@ -16,11 +16,6 @@ class ScriptedModel(GraphPESModel):
         )
         self.scripted_model = scripted_model
 
-    def predict(
-        self, graph: AtomicGraph, properties: list[PropertyKey]
-    ) -> dict[PropertyKey, torch.Tensor]:
-        return self.scripted_model.predict(graph, properties)
-
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         return self.scripted_model(graph)
 
