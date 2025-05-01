@@ -1,19 +1,17 @@
 # train a SchNet model...
 model:
-    +egret()
-    # +SchNet()
-    # +SchNet:
-    # layers: 3
-    #     channels: 64
-    #     cutoff: =/CUTOFF
+    +SchNet:
+        layers: 3
+        channels: 64
+        cutoff: =/CUTOFF
 
 # ...using some of the QM7 structures...
 data:
     +load_atoms_dataset:
         id: QM7
         cutoff: =/CUTOFF
-        n_train: 50
-        n_valid: 10
+        n_train: 5_000
+        n_valid: 100
 
 # ...training on energy labels...
 loss: +PerAtomEnergyLoss()
@@ -21,6 +19,3 @@ loss: +PerAtomEnergyLoss()
 # ...using a cutoff of 5.0 Å
 #    (referenced above)
 CUTOFF: 5.0
-
-fitting:
-    auto_fit_reference_energies: true
