@@ -32,6 +32,7 @@ from .pairwise import (
     ZBLCoreRepulsion,
 )
 from .schnet import SchNet
+from .scripted import ScriptedModel
 from .stillinger_weber import StillingerWeber
 from .tensornet import TensorNet
 from .unit_converter import UnitConverter
@@ -105,6 +106,9 @@ def load_model(path: str | pathlib.Path) -> GraphPESModel:
         raise FileNotFoundError(f"Could not find model at {path}")
 
     model = torch.load(path, weights_only=False)
+
+    if isinstance(model, torch.jit.ScriptModule):
+        model = ScriptedModel(model)
 
     if not isinstance(model, GraphPESModel):
         raise ValueError(

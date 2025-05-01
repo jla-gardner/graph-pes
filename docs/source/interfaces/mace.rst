@@ -4,7 +4,7 @@
 
 ``graph-pes`` supports the conversion of arbitrary ``mace-torch`` models to :class:`~graph_pes.GraphPESModel` objects via the :class:`~graph_pes.interfaces._mace.MACEWrapper` class.
 
-We also provide two convenience functions to the recently trained ``MACE-MP`` and ``MACE-OFF`` "foundation" models, as well as the ``GO-MACE-23`` model.
+We also provide convenience functions to access the recently trained ``MACE-MP`` and ``MACE-OFF`` "foundation" models, as well as the ``GO-MACE-23`` and ``Egret-1`` series of models.
 
 You can use all of these models in the same way as any other :class:`~graph_pes.GraphPESModel`, either via the Python API:
 
@@ -68,5 +68,6 @@ Interface
 .. autofunction:: graph_pes.interfaces.mace_mp
 .. autofunction:: graph_pes.interfaces.mace_off
 .. autofunction:: graph_pes.interfaces.go_mace_23
+.. autofunction:: graph_pes.interfaces.egret
 
 .. autoclass:: graph_pes.interfaces._mace.MACEWrapper

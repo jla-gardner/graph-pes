@@ -4,22 +4,14 @@ import warnings
 from contextlib import redirect_stdout
 from itertools import chain
 from pathlib import Path
-from typing import Callable, Literal
+from typing import Literal
 
 import requests
 import torch
 
 from graph_pes import AtomicGraph, GraphPESModel
-from graph_pes.atomic_graph import PropertyKey, is_batch, to_batch
+from graph_pes.atomic_graph import PropertyKey, is_batch
 from graph_pes.utils.misc import MAX_Z
-
-MACE_KEY_MAPPING: dict[str, PropertyKey] = {
-    "node_energy": "local_energies",
-    "energy": "energy",
-    "forces": "forces",
-    "stress": "stress",
-    "virials": "virial",
-}
 
 
 class ZToOneHot(torch.nn.Module):
@@ -37,29 +29,31 @@ class ZToOneHot(torch.nn.Module):
 
 def _atomic_graph_to_mace_input(
     graph: AtomicGraph,
-    z_to_one_hot: Callable[[torch.Tensor], torch.Tensor],
+    z_to_one_hot: ZToOneHot,
 ) -> dict[str, torch.Tensor]:
-    if not is_batch(graph):
-        graph = to_batch([graph])
+    batch = graph.batch
+    if batch is None:
+        batch = torch.zeros_like(graph.Z)
 
-    assert graph.batch is not None
-    assert graph.ptr is not None
+    ptr = graph.ptr
+    if ptr is None:
+        ptr = torch.tensor([0, graph.Z.shape[0]])
 
-    _cell_per_edge = graph.cell[
-        graph.batch[graph.neighbour_list[0]]
-    ]  # (E, 3, 3)
+    cell = graph.cell.unsqueeze(0) if not is_batch(graph) else graph.cell
+
+    _cell_per_edge = cell[batch[graph.neighbour_list[0]]]  # (E, 3, 3)
     _shifts = torch.einsum(
         "kl,klm->km", graph.neighbour_cell_offsets, _cell_per_edge
     )  # (E, 3)
     data = {
-        "node_attrs": z_to_one_hot(graph.Z).to(torch.get_default_dtype()),
-        "positions": graph.R,
-        "cell": graph.cell,
+        "node_attrs": z_to_one_hot.forward(graph.Z).to(graph.R.dtype),
+        "positions": graph.R.clone().detach(),
+        "cell": cell.clone().detach(),
         "edge_index": graph.neighbour_list,
         "unit_shifts": graph.neighbour_cell_offsets,
         "shifts": _shifts,
-        "batch": graph.batch,
-        "ptr": graph.ptr,
+        "batch": batch,
+        "ptr": ptr,
     }
     return {k: v.to(graph.Z.device) for k, v in data.items()}
 
@@ -92,7 +86,7 @@ class MACEWrapper(GraphPESModel):
 
     def __init__(self, model: torch.nn.Module):
         super().__init__(
-            model.r_max.item(),
+            model.r_max.item(),  # type: ignore
             implemented_properties=[
                 "local_energies",
                 "energy",
@@ -102,18 +96,31 @@ class MACEWrapper(GraphPESModel):
             ],
         )
         self.model = model
-        self.z_to_one_hot = ZToOneHot(self.model.atomic_numbers.tolist())
+        self.z_to_one_hot = ZToOneHot(self.model.atomic_numbers.tolist())  # type: ignore
 
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
-        return self.predict(
-            graph, ["local_energies", "energy", "forces", "stress", "virial"]
-        )
+        properties: list[PropertyKey] = [
+            "local_energies",
+            "energy",
+            "forces",
+            "stress",
+            "virial",
+        ]
+        return self.predict(graph, properties)
 
     def predict(
         self,
         graph: AtomicGraph,
         properties: list[PropertyKey],
     ) -> dict[PropertyKey, torch.Tensor]:
+        MACE_KEY_MAPPING: dict[str, PropertyKey] = {
+            "node_energy": "local_energies",
+            "energy": "energy",
+            "forces": "forces",
+            "stress": "stress",
+            "virials": "virial",
+        }
+
         raw_predictions = self.model.forward(
             _atomic_graph_to_mace_input(graph, self.z_to_one_hot),
             training=self.training,
@@ -122,16 +129,19 @@ class MACEWrapper(GraphPESModel):
             compute_virials="virial" in properties,
         )
 
-        predictions: dict[PropertyKey, torch.Tensor] = {
-            MACE_KEY_MAPPING[key]: value
-            for key, value in raw_predictions.items()
-            if key in MACE_KEY_MAPPING
-        }
+        predictions: dict[PropertyKey, torch.Tensor] = {}
+        for key, value in raw_predictions.items():
+            if key in MACE_KEY_MAPPING:
+                property_key = MACE_KEY_MAPPING[key]
+                if property_key in properties and value is not None:
+                    predictions[property_key] = value
+
         if not is_batch(graph):
             for p in ["energy", "stress", "virial"]:
                 if p in properties:
                     predictions[p] = predictions[p].squeeze()
-        return {k: v for k, v in predictions.items() if k in properties}
+
+        return {k: v for k, v in predictions.items()}
 
 
 def _fix_dtype(model: torch.nn.Module, dtype: torch.dtype) -> None:
@@ -267,21 +277,95 @@ def go_mace_23(
 
     """  # noqa: E501
 
-    dtype = _get_dtype(precision)
+    return _mace_from_url(
+        "https://github.com/zakmachachi/GO-MACE-23/raw/refs/heads/main/models/fitting/potential/iter-12-final-model/go-mace-23.pt",
+        "GO-MACE-23",
+        precision,
+    )
 
-    url = "https://github.com/zakmachachi/GO-MACE-23/raw/refs/heads/main/models/fitting/potential/iter-12-final-model/go-mace-23.pt"
-    save_path = Path.home() / ".graph-pes" / "go-mace-23.pt"
+
+def egret(
+    model: Literal["egret-1", "egret-1t", "egret-1e"] = "egret-1",
+) -> MACEWrapper:
+    """
+    Download an `Egret <https://arxiv.org/abs/2504.20955>`__ model
+    and convert it for use with ``graph-pes``.
+
+    Use the ``egret-1`` model via the Python API:
+
+    .. code-block:: python
+
+        from graph_pes.interfaces._mace import egret
+        model = egret("egret-1")
+
+    or :doc:`fine-tune <../quickstart/fine-tuning>` it on your own data using
+    the :doc:`graph-pes-train <../cli/graph-pes-train/root>` command:
+
+    .. code-block:: yaml
+
+        model:
+            +egret: {model: "egret-1e"}
+
+        data:
+            ...
+        # etc.
+
+    If you use this model, please cite the following:
+
+    .. code-block:: bibtex
+
+        @misc{Mann-25-04,
+            title = {
+                Egret-1: {{Pretrained Neural Network
+                Potentials For Efficient}} and
+                {{Accurate Bioorganic Simulation}}
+            },
+            author = {
+                Mann, Elias L. and Wagen, Corin C.
+                and Vandezande, Jonathon E. and Wagen, Arien M.
+                and Schneider, Spencer C.
+            },
+            year = {2025},
+            number = {arXiv:2504.20955},
+            doi = {10.48550/arXiv.2504.20955},
+        }
+
+    As of 1st May 2025, the following models are available: ``["egret-1", "egret-1t", "egret-1e"]``
+    Parameters
+    ----------
+    model
+        The model to download.
+    """  # noqa: E501
+
+    urls = {
+        "egret-1": "https://github.com/rowansci/egret-public/raw/b1b4c1261315b38f0dd3f6ec0fce891a9119ffe0/compiled_models/EGRET_1.model",
+        "egret-1t": "https://github.com/rowansci/egret-public/raw/b1b4c1261315b38f0dd3f6ec0fce891a9119ffe0/compiled_models/EGRET_1T.model",
+        "egret-1e": "https://github.com/rowansci/egret-public/raw/b1b4c1261315b38f0dd3f6ec0fce891a9119ffe0/compiled_models/EGRET_1E.model",
+    }
+
+    return _mace_from_url(urls[model], model)
+
+
+def _mace_from_url(
+    url: str,
+    model_name: str,
+    precision: Literal["float32", "float64"] | None = None,
+) -> MACEWrapper:
+    dtype = _get_dtype(precision)
+    file_name = f"{model_name.replace(' ', '-')}.pt"
+
+    save_path = Path.home() / ".graph-pes" / file_name
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
     if not save_path.exists():
-        print(f"Downloading GO-MACE-23 model to {save_path}")
+        print(f"Downloading {model_name} model to {save_path}")
         response = requests.get(url)
         response.raise_for_status()  # Raise an exception for bad status codes
 
         with open(save_path, "wb") as file:
             file.write(response.content)
 
-    print(f"Loading GO-MACE-23 model from {save_path}")
+    print(f"Loading {model_name} model from {save_path}")
     mace_torch_model = torch.load(
         save_path, weights_only=False, map_location=torch.device("cpu")
     )

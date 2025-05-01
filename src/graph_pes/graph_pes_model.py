@@ -193,6 +193,13 @@ class GraphPESModel(nn.Module, ABC):
         # before anything, remove unnecessary edges:
         graph = trim_edges(graph, self.cutoff.item())
 
+        # and prevent altering the original graph
+        graph = replace(
+            graph,
+            R=graph.R.clone().detach(),
+            cell=graph.cell.clone().detach(),
+        )
+
         # check to see if we need to infer any properties
         infer_forces = (
             "forces" in properties
@@ -213,9 +220,6 @@ class GraphPESModel(nn.Module, ABC):
             or "energy" not in self.implemented_properties
         )
 
-        existing_positions = graph.R
-        existing_cell = graph.cell
-
         # inference specific set up
         if infer_stress_information:
             # See About>Theory in the graph-pes for an explanation of the
@@ -229,14 +233,12 @@ class GraphPESModel(nn.Module, ABC):
             # derivatives and stress tensor components for numeric atom-centered
             # orbitals. Computer Physics Communications 190, 33–50 (2015).
 
-            change_to_cell = torch.zeros_like(existing_cell)
+            change_to_cell = torch.zeros_like(graph.cell)
             change_to_cell.requires_grad_(True)
             symmetric_change = 0.5 * (
                 change_to_cell + change_to_cell.transpose(-1, -2)
             )  # (n_structures, 3, 3) if batched, else (3, 3)
-            scaling = (
-                torch.eye(3, device=existing_cell.device) + symmetric_change
-            )
+            scaling = torch.eye(3, device=graph.cell.device) + symmetric_change
 
             # torchscript annoying-ness:
             graph_batch = graph.batch
@@ -253,12 +255,12 @@ class GraphPESModel(nn.Module, ABC):
                     graph.R.unsqueeze(-2) @ scaling_per_atom
                 ).squeeze()
                 # (M, 3, 3) @ (M, 3, 3) -> (M, 3, 3)
-                new_cell = existing_cell @ scaling
+                new_cell = graph.cell @ scaling
 
             else:
                 # (N, 3) @ (3, 3) -> (N, 3)
                 new_positions = graph.R @ scaling
-                new_cell = existing_cell @ scaling
+                new_cell = graph.cell @ scaling
 
             # change to positions will be a tensor of all 0's, but will allow
             # gradients to flow backwards through the energy calculation
@@ -336,9 +338,6 @@ class GraphPESModel(nn.Module, ABC):
                 and "virial" not in self.implemented_properties
             ):
                 predictions["virial"] = -predictions["stress"] * cell_volume
-
-        # put things back to how they were before
-        graph = replace(graph, R=existing_positions, cell=existing_cell)
 
         # make sure we don't leave auxiliary predictions
         # e.g. local_energies if we only asked for energy

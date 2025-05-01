@@ -256,7 +256,15 @@ class SaveBestModel(GraphPESCallback):
                     "lammps_model_path": lammps_model_path,
                 }
             )
-            torch.save(cpu_model, model_path)
+            try:
+                torch.save(cpu_model, model_path)
+            except Exception as e1:
+                try:
+                    torch.jit.script(cpu_model).save(model_path)
+                except Exception as e2:
+                    logger.warning(
+                        f"Failed to save model to {model_path}: {e1} or {e2}"
+                    )
             logger.debug(f"Model saved to {model_path}")
 
             if self.try_to_deploy:

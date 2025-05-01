@@ -224,7 +224,10 @@ class GraphPESCalculator(Calculator):
         # Batched prediction
         tensor_results: list[dict[PropertyKey, torch.Tensor]] = []
         for batch in map(to_batch, groups_of(batch_size, graphs)):
-            predictions = self.model.predict(batch, properties)
+            predictions: dict[PropertyKey, torch.Tensor] = {
+                k: v.detach().cpu()
+                for k, v in self.model.predict(batch, properties).items()
+            }
             separated = _seperate(predictions, batch)
             tensor_results.extend(separated)
 

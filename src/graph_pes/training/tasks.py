@@ -20,6 +20,7 @@ from graph_pes.config.training import FittingOptions
 from graph_pes.data.datasets import DatasetCollection, GraphDataset
 from graph_pes.data.loader import GraphDataLoader
 from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.models import AdditionModel, LearnableOffset
 from graph_pes.training.loss import (
     MAE,
     Loss,
@@ -118,7 +119,9 @@ def train_with_lightning(
     sanity_check(model, next(iter(train_loader)))
 
     # - create the task (a pytorch lightning module)
-    task = TrainingTask(model, loss, optimizer, scheduler, eval_metrics)
+    task = TrainingTask(
+        model, loss, optimizer, scheduler, eval_metrics, fit_config
+    )
 
     # - train the model
     logger.info("Starting fit...")
@@ -144,12 +147,14 @@ class TrainingTask(pl.LightningModule):
         optimizer: Optimizer,
         scheduler: LRScheduler | None,
         eval_metrics: list[Loss],
+        fit_config: FittingOptions | None = None,
     ):
         super().__init__()
         self.model = model
         self.optimizer_factory = optimizer
         self.scheduler_factory = scheduler
         self.total_loss = loss
+        self.fit_config = fit_config
         self.train_properties: list[PropertyKey] = list(
             set.union(
                 set(),
@@ -290,6 +295,37 @@ class TrainingTask(pl.LightningModule):
     def configure_optimizers(
         self,
     ) -> torch.optim.Optimizer | OptimizerLRSchedulerConfig:
+        # Find and enable gradients for auto_offset before creating optimizer
+        if self.fit_config and self.fit_config.auto_fit_reference_energies:
+            auto_offset_model = None
+            if isinstance(self.model, LearnableOffset):
+                auto_offset_model = self.model
+            elif (
+                isinstance(self.model, AdditionModel)
+                and "auto_offset" in self.model.models
+            ):
+                if isinstance(
+                    self.model.models["auto_offset"], LearnableOffset
+                ):
+                    auto_offset_model = self.model.models["auto_offset"]
+
+            if auto_offset_model is not None:
+                if not auto_offset_model._offsets.requires_grad:
+                    logger.info(
+                        "Setting requires_grad=True for auto-detected offsets "
+                        "in configure_optimizers."
+                    )
+                    auto_offset_model._offsets.requires_grad_(True)
+                else:
+                    # If already True, it means configure_optimizers might be called again
+                    # (e.g. after failure/resume), which is fine.
+                    pass
+            else:
+                logger.warning(
+                    "auto_fit_reference_energies was True, but could not find "
+                    "'auto_offset' model component in configure_optimizers."
+                )
+
         opt = self.optimizer_factory(self.model)
         if self.scheduler_factory is None:
             return opt
