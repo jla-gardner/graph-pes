@@ -67,9 +67,7 @@ class DumpModel(GraphPESCallback):
     def __init__(self, every_n_val_checks: int = 10):
         self.every_n_val_checks = every_n_val_checks
 
-    def on_validation_epoch_end(
-        self, trainer: Trainer, pl_module: LightningModule
-    ):
+    def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule):
         if not trainer.is_global_zero:
             return
 
@@ -86,18 +84,13 @@ def log_offset(model: GraphPESModel, logger: Logger):
     if not isinstance(model, AdditionModel):
         return
 
-    offsets = [
-        c for c in model.models.values() if isinstance(c, LearnableOffset)
-    ]
+    offsets = [c for c in model.models.values() if isinstance(c, LearnableOffset)]
     if not offsets:
         return
 
     Zs = offsets[0]._offsets._accessed_Zs
     logger.log_metrics(
-        {
-            f"offset/{chemical_symbols[Z]}": offsets[0]._offsets[Z].item()
-            for Z in Zs
-        }
+        {f"offset/{chemical_symbols[Z]}": offsets[0]._offsets[Z].item() for Z in Zs}
     )
 
 
@@ -107,9 +100,7 @@ class OffsetLogger(GraphPESCallback):
     end of each validation epoch.
     """
 
-    def on_validation_epoch_end(
-        self, trainer: Trainer, pl_module: LightningModule
-    ):
+    def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule):
         if not trainer.is_global_zero:
             return
 
@@ -146,9 +137,7 @@ class ScalesLogger(GraphPESCallback):
     end of each validation epoch.
     """
 
-    def on_validation_epoch_end(
-        self, trainer: Trainer, pl_module: LightningModule
-    ):
+    def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule):
         if not trainer.is_global_zero:
             return
 
@@ -181,9 +170,7 @@ class EarlyStoppingWithLogging(EarlyStopping, GraphPESCallback):
             "total_checks": 0,
         }
 
-    def on_validation_epoch_end(
-        self, trainer: Trainer, pl_module: LightningModule
-    ):
+    def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule):
         super().on_validation_epoch_end(trainer, pl_module)
 
         if not trainer.is_global_zero or not trainer.logger:
@@ -271,13 +258,10 @@ class SaveBestModel(GraphPESCallback):
                 try:
                     deploy_model(cpu_model, path=lammps_model_path)
                     logger.debug(
-                        f"Deployed model for use with LAMMPS to "
-                        f"{lammps_model_path}"
+                        f"Deployed model for use with LAMMPS to " f"{lammps_model_path}"
                     )
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to deploy model for use with LAMMPS: {e}"
-                    )
+                    logger.warning(f"Failed to deploy model for use with LAMMPS: {e}")
                     self.try_to_deploy = False
 
 
@@ -289,9 +273,7 @@ class ModelTimer(pl.Callback):
     def start(self):
         self.tick_ms = time.time_ns() // 1_000_000
 
-    def stop(
-        self, pl_module: pl.LightningModule, stage: Literal["train", "valid"]
-    ):
+    def stop(self, pl_module: pl.LightningModule, stage: Literal["train", "valid"]):
         assert self.tick_ms is not None
         duration_ms = max((time.time_ns() // 1_000_000) - self.tick_ms, 1)
         self.tick_ms = None
@@ -364,9 +346,7 @@ class LoggedProgressBar(ProgressBar):
         self._widths: dict[str, int] = {}
 
     @override
-    def on_train_start(
-        self, trainer: pl.Trainer, pl_module: pl.LightningModule
-    ):
+    def on_train_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
         self._start_time = time.time()
 
     @override
@@ -408,9 +388,7 @@ class LoggedProgressBar(ProgressBar):
                 header: max(len(line) for line in lines)
                 for header, lines in zip(headers, split_headers)
             }
-            content_widths = {
-                header: len(metrics[header]) for header in headers
-            }
+            content_widths = {header: len(metrics[header]) for header in headers}
             self._widths = {
                 header: max(header_widths[header], content_widths[header])
                 + (6 if header == "time" else 3)
@@ -418,9 +396,7 @@ class LoggedProgressBar(ProgressBar):
             }
 
             # print the headers
-            first_row = [
-                "" if len(lines) == 1 else lines[0] for lines in split_headers
-            ]
+            first_row = ["" if len(lines) == 1 else lines[0] for lines in split_headers]
             second_row = [lines[-1] for lines in split_headers]
 
             print(
@@ -480,9 +456,7 @@ class WandbLogger(PTLWandbLogger):
         self._kwargs = kwargs
         self._log_epoch = log_epoch
 
-    def log_metrics(
-        self, metrics: Mapping[str, float], step: int | None = None
-    ):
+    def log_metrics(self, metrics: Mapping[str, float], step: int | None = None):
         if not self._log_epoch:
             metrics = {k: v for k, v in metrics.items() if k != "epoch"}
         return super().log_metrics(metrics, step)

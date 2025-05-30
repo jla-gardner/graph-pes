@@ -11,7 +11,7 @@ from graph_pes.data.datasets import (
     GraphDataset,
     file_dataset,
 )
-from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_pes_model import GraphPESModel, GeneralPropertyGraphModel
 from graph_pes.models import AdditionModel
 from graph_pes.training.loss import Loss, TotalLoss
 from graph_pes.utils.misc import nested_merge
@@ -22,9 +22,7 @@ T = TypeVar("T")
 def _nice_dict_repr(d: dict) -> str:
     def _print_dict(d: dict, indent: int = 0) -> str:
         nice = {
-            k: v
-            if not isinstance(v, dict)
-            else "\n" + _print_dict(v, indent + 1)
+            k: v if not isinstance(v, dict) else "\n" + _print_dict(v, indent + 1)
             for k, v in d.items()
         }
         return "\n".join([f"{'  ' * indent}{k}: {v}" for k, v in nice.items()])
@@ -72,9 +70,7 @@ def instantiate_config_from_dict(
     )
     field_names = {f.name for f in fields(config_class)}  # type: ignore
     object_dict = {
-        k: v
-        for k, v in object_dict.items()
-        if k in field_names  # type: ignore
+        k: v for k, v in object_dict.items() if k in field_names  # type: ignore
     }
 
     try:
@@ -115,24 +111,24 @@ class TorchConfig:
 
 
 def parse_model(
-    model: GraphPESModel | dict[str, GraphPESModel],
-) -> GraphPESModel:
-    if isinstance(model, GraphPESModel):
+    model: GeneralPropertyGraphModel | dict[str, GeneralPropertyGraphModel],
+) -> GeneralPropertyGraphModel:
+    if isinstance(model, GeneralPropertyGraphModel):
         return model
     elif isinstance(model, dict):
-        if not all(isinstance(m, GraphPESModel) for m in model.values()):
+        if not all(isinstance(m, GeneralPropertyGraphModel) for m in model.values()):
             _types = {k: type(v) for k, v in model.items()}
 
             raise ValueError(
                 "Expected all values in the model dictionary to be "
-                "GraphPESModel instances, but got something else: "
+                "GeneralPropertyGraphModel instances, but got something else: "
                 f"types: {_types}\n"
                 f"values: {model}\n"
             )
         return AdditionModel(**model)
     raise ValueError(
-        "Expected to be able to parse a GraphPESModel or a "
-        "dictionary of named GraphPESModels from the model config, "
+        "Expected to be able to parse a GeneralPropertyGraphModel or a "
+        "dictionary of named GeneralPropertyGraphModel from the model config, "
         f"but got something else: {model}"
     )
 
@@ -156,11 +152,11 @@ def parse_loss(
     )
 
 
-def parse_single_dataset(value: Any, model: GraphPESModel) -> GraphDataset:
+def parse_single_dataset(value: Any, model: GeneralPropertyGraphModel) -> GraphDataset:
     if isinstance(value, GraphDataset):
         return value
     elif isinstance(value, (str, dict)):
-        kwargs: dict[str, Any] = {"cutoff": model.cutoff.item()}
+        kwargs: dict[str, Any] = {"cutoff": model.cutoff}
         if isinstance(value, str):
             kwargs["path"] = value
         else:
@@ -175,7 +171,7 @@ def parse_single_dataset(value: Any, model: GraphPESModel) -> GraphDataset:
 
 def parse_dataset_collection(
     raw_data: DatasetCollection | dict[str, Any],
-    model: GraphPESModel,
+    model: GeneralPropertyGraphModel,
 ) -> DatasetCollection:
     if isinstance(raw_data, DatasetCollection):
         return raw_data
@@ -200,9 +196,7 @@ def parse_dataset_collection(
             # could either be a simple dict specifying a single test set:
             exception = None
             try:
-                collection["test"] = parse_single_dataset(
-                    raw_data["test"], model
-                )
+                collection["test"] = parse_single_dataset(raw_data["test"], model)
             except FileNotFoundError:
                 raise
             except Exception as e:
