@@ -159,17 +159,12 @@ class MLP(torch.nn.Module):
         super().__init__()
 
         self.activation = (
-            parse_activation(activation)
-            if isinstance(activation, str)
-            else activation
+            parse_activation(activation) if isinstance(activation, str) else activation
         )
         self.activate_last = activate_last
 
         self.linear_layers = torch.nn.ModuleList(
-            [
-                torch.nn.Linear(_in, _out, bias=bias)
-                for _in, _out in pairs(layers)
-            ]
+            [torch.nn.Linear(_in, _out, bias=bias) for _in, _out in pairs(layers)]
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -306,9 +301,7 @@ class PerElementParameter(torch.nn.Parameter):
     :meth:`register_elements` yourself.
     """  # noqa: E501
 
-    def __new__(
-        cls, data: Tensor, requires_grad: bool = True
-    ) -> PerElementParameter:
+    def __new__(cls, data: Tensor, requires_grad: bool = True) -> PerElementParameter:
         pep = super().__new__(cls, data, requires_grad=requires_grad)
         pep._is_per_element_param = True  # type: ignore
         return pep  # type: ignore
@@ -392,8 +385,8 @@ class PerElementParameter(torch.nn.Parameter):
         **values: float,
     ) -> PerElementParameter:
         """
-        Create a :class:`PerElementParameter` containing a single value for
-        each element in the periodic table from a dictionary of values.
+        Create a :class:`PerElementParameter` containing a single value or
+        a list of values for each element in the periodic table from a dictionary of values.
 
         Parameters
         ----------
@@ -418,14 +411,20 @@ class PerElementParameter(torch.nn.Parameter):
         >>> pep
         PerElementParameter({'H': 1.0, 'C': 0.0, 'O': 2.0}, trainable=True)
         """
+        length = 1
+        offset_value = [values[k] for k in values]
+        if offset_value and isinstance(offset_value[0], list):
+            lengths = [len(values[v]) for v in values]
+            if len(lengths) > 0:
+                length = lengths[0]
         pep = PerElementParameter.of_length(
-            1, requires_grad=requires_grad, default_value=default_value
+            length, requires_grad=requires_grad, default_value=default_value
         )
         for element_symbol, value in values.items():
             if element_symbol not in chemical_symbols:
                 raise ValueError(f"Unknown element: {element_symbol}")
             Z = chemical_symbols.index(element_symbol)
-            pep[Z] = value
+            pep[Z] = torch.tensor(value)
 
         pep.register_elements(atomic_numbers[v] for v in values)
 
@@ -514,10 +513,7 @@ class PerElementParameter(torch.nn.Parameter):
                 return string[:-2] + ")"
 
             elif len(self.shape) == 2:
-                d = {
-                    chemical_symbols[Z]: self[Z].tolist()
-                    for Z in self._accessed_Zs
-                }
+                d = {chemical_symbols[Z]: self[Z].tolist() for Z in self._accessed_Zs}
                 string = f"{alias}({str(d)}, "
                 for k, v in more_info.items():
                     string += f"{k}={v}, "
@@ -525,15 +521,11 @@ class PerElementParameter(torch.nn.Parameter):
 
         if self._index_dims == 2 and self.shape[2] == 1:
             columns = []
-            columns.append(
-                ["Z"] + [chemical_symbols[Z] for Z in self._accessed_Zs]
-            )
+            columns.append(["Z"] + [chemical_symbols[Z] for Z in self._accessed_Zs])
             for col_Z in self._accessed_Zs:
                 row: list[str | float] = [chemical_symbols[col_Z]]
                 for row_Z in self._accessed_Zs:
-                    row.append(
-                        to_significant_figures(self[col_Z, row_Z].item())
-                    )
+                    row.append(to_significant_figures(self[col_Z, row_Z].item()))
                 columns.append(row)
 
             widths = [max(len(str(x)) for x in col) for col in zip(*columns)]
@@ -626,9 +618,7 @@ class PerElementEmbedding(torch.nn.Module):
 
 
 class HaddamardProduct(torch.nn.Module):
-    def __init__(
-        self, *components: torch.nn.Module, left_aligned: bool = False
-    ):
+    def __init__(self, *components: torch.nn.Module, left_aligned: bool = False):
         super().__init__()
         self.components: list[torch.nn.Module] = torch.nn.ModuleList(components)  # type: ignore
         self.left_aligned = left_aligned
@@ -686,9 +676,7 @@ class AtomicOneHot(torch.nn.Module):
                     f"Expected one of {self.elements}"
                 )
 
-        return torch.nn.functional.one_hot(
-            internal_idx, self.n_elements
-        ).float()
+        return torch.nn.functional.one_hot(internal_idx, self.n_elements).float()
 
     def __repr__(self):
         return uniform_repr(

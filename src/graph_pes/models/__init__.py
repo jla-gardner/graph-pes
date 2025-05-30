@@ -14,14 +14,19 @@ import pathlib
 
 import torch
 
-from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_pes_model import GeneralPropertyGraphModel
 from graph_pes.utils.logger import logger
 
 from .addition import AdditionModel
-from .e3nn.mace import MACE, ZEmbeddingMACE
-from .e3nn.nequip import NequIP, ZEmbeddingNequIP
+from .e3nn.mace import MACE, ZEmbeddingMACE, TensorMACE, ZEmbeddingTensorMACE
+from .e3nn.nequip import NequIP, ZEmbeddingNequIP, TensorNequIP, ZEmbeddingTensorNequIP
 from .eddp import EDDP
-from .offsets import FixedOffset, LearnableOffset
+from .offsets import (
+    FixedOffset,
+    LearnableOffset,
+    FixedTensorOffset,
+    LearnableTensorOffset,
+)
 from .painn import PaiNN
 from .pairwise import (
     LennardJones,
@@ -42,6 +47,8 @@ __all__ = [
     "EDDP",
     "FixedOffset",
     "LearnableOffset",
+    "FixedTensorOffset",
+    "LearnableTensorOffset",
     "LennardJones",
     "LennardJonesMixture",
     "MACE",
@@ -57,23 +64,29 @@ __all__ = [
     "ZEmbeddingNequIP",
     "StillingerWeber",
     "UnitConverter",
+    "TensorNequIP",
+    "TensorMACE",
+    "ZEmbeddingTensorMACE",
+    "ZEmbeddingTensorNequIP",
 ]
 
 MODEL_EXCLUSIONS = {
     "FixedOffset",
     "LearnableOffset",
+    "FixedTensorOffset",
+    "LearnableTensorOffset",
     "AdditionModel",
     "PairPotential",
     "SmoothedPairPotential",
     "UnitConverter",
 }
 
-ALL_MODELS: list[type[GraphPESModel]] = [
+ALL_MODELS: list[type[GeneralPropertyGraphModel]] = [
     globals()[model] for model in __all__ if model not in MODEL_EXCLUSIONS
 ]
 
 
-def load_model(path: str | pathlib.Path) -> GraphPESModel:
+def load_model(path: str | pathlib.Path) -> GeneralPropertyGraphModel:
     """
     Load a model from a file.
 
@@ -110,10 +123,9 @@ def load_model(path: str | pathlib.Path) -> GraphPESModel:
     if isinstance(model, torch.jit.ScriptModule):
         model = ScriptedModel(model)
 
-    if not isinstance(model, GraphPESModel):
+    if not isinstance(model, GeneralPropertyGraphModel):
         raise ValueError(
-            "Expected the loaded object to be a GraphPESModel "
-            f"but got {type(model)}"
+            "Expected the loaded object to be a GraphPESModel " f"but got {type(model)}"
         )
 
     import graph_pes
@@ -133,7 +145,7 @@ def load_model(path: str | pathlib.Path) -> GraphPESModel:
 def load_model_component(
     path: str | pathlib.Path,
     key: str,
-) -> GraphPESModel:
+) -> GeneralPropertyGraphModel:
     """
     Load a component from an :class:`~graph_pes.models.AdditionModel`.
 
@@ -152,9 +164,7 @@ def load_model_component(
 
     base_model = load_model(path)
     if not isinstance(base_model, AdditionModel):
-        raise ValueError(
-            f"Expected to load an AdditionModel, got {type(base_model)}"
-        )
+        raise ValueError(f"Expected to load an AdditionModel, got {type(base_model)}")
 
     return base_model[key]
 
