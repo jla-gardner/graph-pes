@@ -28,9 +28,9 @@ class ZToOneHot(torch.nn.Module):
         indices = self.z_to_index[Z]
         if (indices < 0).any():
             raise ValueError(
-                "ZToOneHot received an atomic number that is not in the model's "
-                f"element list: {Z[indices < 0]}. Please ensure the model was trained "
-                "with all elements present in the input graph."
+                "ZToOneHot received an atomic number that is not in the model's"
+                f" element list: {Z[indices < 0]}. Please ensure the model was "
+                "trained with all elements present in the input graph."
             )
         return torch.nn.functional.one_hot(indices, self.num_classes)
 
