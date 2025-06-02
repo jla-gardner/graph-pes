@@ -164,5 +164,5 @@ def test_go_mace_23():
     assert np.abs(calc.results["forces"][0]).max() < 1e-5
 
 def test_z_to_onehot_raises_error():
-    with pytest.raises(ValueError, match="Atomic number 0 is not supported"):
+    with pytest.raises(ValueError, match="ZToOneHot received an atomic number"):
         MACEWrapper(MACE_MODEL).z_to_one_hot(torch.tensor([0, 1, 6, 8]))
