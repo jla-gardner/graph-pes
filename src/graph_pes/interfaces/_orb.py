@@ -171,7 +171,7 @@ class OrbWrapper(InterfaceModel):
             preds["stress"] = voigt_6_to_full_3x3(preds["stress"])
 
         # underlying orb model returns things in batched format.
-        # we want to de-batch things if only a single graph is provid
+        # we want to de-batch things if only a single graph is provided
         if not is_batched:
             preds["energy"] = preds["energy"][0]
             preds["stress"] = preds["stress"].squeeze()
