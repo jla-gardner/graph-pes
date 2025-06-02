@@ -9,14 +9,16 @@ from typing import Literal
 import requests
 import torch
 
-from graph_pes import AtomicGraph, GraphPESModel
+from graph_pes import AtomicGraph
 from graph_pes.atomic_graph import PropertyKey, is_batch
+from graph_pes.interfaces.base import InterfaceModel
 from graph_pes.utils.misc import MAX_Z
 
 
 class ZToOneHot(torch.nn.Module):
     def __init__(self, elements: list[int]):
         super().__init__()
+        self.z_to_index: torch.Tensor
         self.register_buffer("z_to_index", torch.full((MAX_Z + 1,), -1))
         for i, z in enumerate(elements):
             self.z_to_index[z] = i
@@ -58,7 +60,7 @@ def _atomic_graph_to_mace_input(
     return {k: v.to(graph.Z.device) for k, v in data.items()}
 
 
-class MACEWrapper(GraphPESModel):
+class MACEWrapper(InterfaceModel):
     """
     Converts any MACE model from the `mace-torch <https://github.com/ACEsuit/mace-torch>`__
     package into a :class:`~graph_pes.GraphPESModel`.
@@ -98,19 +100,13 @@ class MACEWrapper(GraphPESModel):
         self.model = model
         self.z_to_one_hot = ZToOneHot(self.model.atomic_numbers.tolist())  # type: ignore
 
-    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
-        properties: list[PropertyKey] = [
-            "local_energies",
-            "energy",
-            "forces",
-            "stress",
-            "virial",
-        ]
-        return self.predict(graph, properties)
+    def convert_to_underlying_input(self, graph: AtomicGraph):
+        return _atomic_graph_to_mace_input(graph, self.z_to_one_hot)
 
-    def predict(
+    def raw_forward_pass(
         self,
-        graph: AtomicGraph,
+        input,
+        is_batched: bool,
         properties: list[PropertyKey],
     ) -> dict[PropertyKey, torch.Tensor]:
         MACE_KEY_MAPPING: dict[str, PropertyKey] = {
@@ -122,7 +118,7 @@ class MACEWrapper(GraphPESModel):
         }
 
         raw_predictions = self.model.forward(
-            _atomic_graph_to_mace_input(graph, self.z_to_one_hot),
+            input,
             training=self.training,
             compute_force="forces" in properties,
             compute_stress="stress" in properties,
@@ -136,12 +132,23 @@ class MACEWrapper(GraphPESModel):
                 if property_key in properties and value is not None:
                     predictions[property_key] = value
 
-        if not is_batch(graph):
+        if not is_batched:
             for p in ["energy", "stress", "virial"]:
                 if p in properties:
                     predictions[p] = predictions[p].squeeze()
 
-        return {k: v for k, v in predictions.items()}
+        return predictions
+
+    def predict(
+        self,
+        graph: AtomicGraph,
+        properties: list[PropertyKey],
+    ) -> dict[PropertyKey, torch.Tensor]:
+        # override this predict property to use the underlying
+        # mace-torch mechanisms for calculating forces etc.
+        input = self.convert_to_underlying_input(graph)
+        is_batched = is_batch(graph)
+        return self.raw_forward_pass(input, is_batched, properties)
 
 
 def _fix_dtype(model: torch.nn.Module, dtype: torch.dtype) -> None:

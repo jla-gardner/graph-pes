@@ -17,7 +17,7 @@ from graph_pes.atomic_graph import (
     to_batch,
     trim_edges,
 )
-from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.interfaces.base import InterfaceModel
 from graph_pes.utils.misc import voigt_6_to_full_3x3
 
 if TYPE_CHECKING:
@@ -109,7 +109,7 @@ def from_graph_pes_to_orb_batch(
     ).to(device=graph.R.device, dtype=graph.R.dtype)
 
 
-class OrbWrapper(GraphPESModel):
+class OrbWrapper(InterfaceModel):
     """
     A wrapper around an ``orb-models`` model that converts it into a
     :class:`~graph_pes.GraphPESModel`.
@@ -142,30 +142,37 @@ class OrbWrapper(GraphPESModel):
         )
         self._orb = orb
 
-    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
-        orb_graph = from_graph_pes_to_orb_batch(
+    def convert_to_underlying_input(self, graph: AtomicGraph):
+        return from_graph_pes_to_orb_batch(
             graph,
             self._orb.system_config.radius,
             self._orb.system_config.max_num_neighbors,
         )
-        preds: dict[PropertyKey, torch.Tensor] = self._orb.predict(orb_graph)  # type: ignore
 
+    def raw_forward_pass(
+        self,
+        input,
+        is_batched: bool,
+        properties: list[PropertyKey],
+    ) -> dict[PropertyKey, torch.Tensor]:
+        preds: dict[PropertyKey, torch.Tensor] = self._orb.predict(input)  # type: ignore
+
+        # no easy access to these, but required by the interface, so set to 0
+        preds["local_energies"] = torch.zeros(number_of_atoms(input))
+
+        # handle some of the outputs
         if "grad_forces" in preds:
             preds["forces"] = preds.pop("grad_forces")  # type: ignore
         if "grad_stress" in preds:
             preds["stress"] = preds.pop("grad_stress")  # type: ignore
-
         if "stress" in preds:
             preds["stress"] = voigt_6_to_full_3x3(preds["stress"])
 
         # underlying orb model returns things in batched format.
-        # we want to de-batch things if only a single graph is provided.
-        if not is_batch(graph):
+        # we want to de-batch things if only a single graph is provid
+        if not is_batched:
             preds["energy"] = preds["energy"][0]
-
-        preds["local_energies"] = torch.zeros(number_of_atoms(graph)).to(
-            graph.Z.device
-        )
+            preds["stress"] = preds["stress"].squeeze()
 
         return preds
 
