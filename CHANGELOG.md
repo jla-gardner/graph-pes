@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Extracted a base class for all interface models.
+
 ## [0.1.1] - 2025-05-01
 
 Added the `egret` series of foundation models.
