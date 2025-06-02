@@ -158,7 +158,9 @@ class OrbWrapper(InterfaceModel):
         preds: dict[PropertyKey, torch.Tensor] = self._orb.predict(input)  # type: ignore
 
         # no easy access to these, but required by the interface, so set to 0
-        preds["local_energies"] = torch.zeros(number_of_atoms(input))
+        preds["local_energies"] = torch.zeros_like(
+            input.node_features["atomic_numbers"]
+        ).float()
 
         # handle some of the outputs
         if "grad_forces" in preds:
