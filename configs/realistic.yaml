@@ -28,10 +28,14 @@ data:
         split: random
 
 loss:
-    energy: +PerAtomEnergyLoss()
-    forces:
-        +ForceRMSE:
+    energy:
+        +PerAtomEnergyLoss:
+            # weight to balance energy and force loss
             weight: 10.0
+            metric:
+            # huber loss for smoothness
+                +Huber: { delta: 0.01 }
+    forces: +ForceRMSE()
 
 fitting:
     trainer_kwargs:
