@@ -115,4 +115,4 @@ def test_batched(wrapped_orb):
 
 
 def test_single_atom(wrapped_orb):
-    wrapped_orb.ase_calculator.calculate(ase.Atoms("H"))
+    wrapped_orb.ase_calculator().calculate(ase.Atoms("H"))
