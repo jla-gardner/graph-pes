@@ -1,3 +1,4 @@
+import ase
 import numpy as np
 import pytest
 import torch
@@ -111,3 +112,7 @@ def test_batched(wrapped_orb):
         if "stress" in orb_preds
         else orb_preds["grad_stress"],
     )
+
+
+def test_single_atom(wrapped_orb):
+    wrapped_orb.ase_calculator.calculate(ase.Atoms("H"))
