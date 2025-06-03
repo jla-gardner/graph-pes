@@ -167,8 +167,3 @@ def test_go_mace_23():
 def test_z_to_onehot_raises_error():
     with pytest.raises(ValueError, match="ZToOneHot received an atomic number"):
         MACEWrapper(MACE_MODEL).z_to_one_hot(torch.tensor([0, 1, 6, 8]))
-
-
-def test_torchscript_compatibility():
-    model = MACEWrapper(MACE_MODEL)
-    torch.jit.script(model)

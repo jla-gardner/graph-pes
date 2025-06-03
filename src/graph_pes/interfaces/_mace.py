@@ -106,12 +106,14 @@ class MACEWrapper(InterfaceModel):
         self.model = model
         self.z_to_one_hot = ZToOneHot(self.model.atomic_numbers.tolist())  # type: ignore
 
-    def convert_to_underlying_input(self, graph: AtomicGraph):
+    def convert_to_underlying_input(
+        self, graph: AtomicGraph
+    ) -> dict[str, torch.Tensor]:
         return _atomic_graph_to_mace_input(graph, self.z_to_one_hot)
 
     def raw_forward_pass(
         self,
-        input,
+        input: dict[str, torch.Tensor],
         is_batched: bool,
         properties: list[PropertyKey],
     ) -> dict[PropertyKey, torch.Tensor]:
