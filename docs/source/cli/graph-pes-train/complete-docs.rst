@@ -284,6 +284,16 @@ By default, no learning rate scheduler is used if you don't specify one, or if y
     fitting:
         scheduler: null
 
+If you want to use a learning rate warm up, you can do so by specifying the number of training steps over which to warm up the learning rate:
+
+.. code-block:: yaml
+
+    fitting:
+        lr_warmup_steps: 1000
+
+This is compatible with specifying any other learning rate scheduler in the ``scheduler`` field: once the warmup is complete, the original scheduler is restored and used.
+By default, no warmup is used.
+
 Model pre-fitting
 ++++++++++++++++++
 

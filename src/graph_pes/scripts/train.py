@@ -29,6 +29,7 @@ from graph_pes.training.callbacks import (
     EarlyStoppingWithLogging,
     GraphPESCallback,
     LoggedProgressBar,
+    LRWarmup,
     ModelTimer,
     OffsetLogger,
     SaveBestModel,
@@ -239,6 +240,9 @@ def trainer_from_config(
     # set up the callbacks
     callbacks = trainer_kwargs.pop("callbacks", [])
     callbacks.extend(config.fitting.callbacks)
+
+    if config.fitting.lr_warmup_steps is not None:
+        callbacks.append(LRWarmup(warmup_steps=config.fitting.lr_warmup_steps))
 
     for klass in [OffsetLogger, ScalesLogger, ModelTimer, SaveBestModel]:
         if not any(isinstance(cb, klass) for cb in callbacks):

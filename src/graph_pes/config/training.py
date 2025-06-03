@@ -98,6 +98,7 @@ class FittingConfig(FittingOptions):
     scheduler: Union[LRScheduler, Dict[str, Any], None] = None
     swa: Union[SWAConfig, None] = None
     callbacks: List[Callback] = field(default_factory=list)
+    lr_warmup_steps: Union[int, None] = None
 
     def get_optimizer(self) -> Optimizer:
         if isinstance(self.optimizer, Optimizer):

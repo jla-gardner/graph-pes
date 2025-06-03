@@ -14,6 +14,7 @@ from pytorch_lightning.callbacks import ProgressBar, StochasticWeightAveraging
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.loggers import Logger
 from pytorch_lightning.loggers import WandbLogger as PTLWandbLogger
+from pytorch_lightning.utilities.types import LRSchedulerConfig
 from typing_extensions import override
 
 from graph_pes.graph_pes_model import GraphPESModel
@@ -489,3 +490,75 @@ class WandbLogger(PTLWandbLogger):
 
     def __repr__(self):
         return uniform_repr(self.__class__.__name__, **self._kwargs)
+
+
+class LRWarmup(pl.Callback):
+    """
+    Hot swaps any existing learning rate scheduler
+    with a new one that linearly warms up the learning rate
+    from 0 to the original learning rate over a given number of steps.
+
+    Once the warmup is complete, the original scheduler is restored.
+
+    Parameters
+    ----------
+    warmup_steps: int
+        The number of steps over which to warm up the learning rate.
+    """
+
+    def __init__(self, warmup_steps: int = 250):
+        self.warmup_steps = warmup_steps
+        self._sched_config: LRSchedulerConfig | None = None
+        self._initialized = False
+        self._expired = False
+        self._steps = 0
+
+    def on_train_start(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
+    ):
+        if self._expired:
+            return
+
+        if not self._initialized:
+            if trainer.lr_scheduler_configs:
+                assert len(trainer.lr_scheduler_configs) == 1
+                self._sched_config = trainer.lr_scheduler_configs[0]
+            else:
+                self._sched_config = None
+
+            assert len(trainer.optimizers) == 1
+            optimizer = trainer.optimizers[0]
+            assert isinstance(optimizer, torch.optim.Optimizer)
+
+            configs = trainer.lr_scheduler_configs
+            configs.clear()
+            configs.append(
+                LRSchedulerConfig(
+                    scheduler=torch.optim.lr_scheduler.LambdaLR(
+                        optimizer, lambda x: x / self.warmup_steps
+                    ),
+                    interval="step",
+                )
+            )
+            self._initialized = True
+
+    def on_train_batch_start(
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        batch: Any,
+        batch_idx: int,
+    ):
+        if self._expired:
+            return
+
+        assert self._initialized
+
+        self._steps += 1
+
+        if self._steps > self.warmup_steps:
+            configs = trainer.lr_scheduler_configs
+            configs.clear()
+            if self._sched_config is not None:
+                configs.append(self._sched_config)
+            self._expired = True

@@ -30,6 +30,7 @@ fitting:
     swa: null
     early_stopping: null
     auto_fit_reference_energies: false
+    lr_warmup_steps: null
 
     # this is deprecated, use `early_stopping` instead
     early_stopping_patience: null
