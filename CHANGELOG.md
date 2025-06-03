@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Add learning rate warm up and HuberLoss options.
+
 Small improvements to the GraphPESCalculator and OrbWrapper classes.
 
 # [0.1.3] - 2025-06-02
