@@ -56,10 +56,11 @@ def from_graph_pes_to_orb_batch(
             new_nl.append(graph.neighbour_list[:, mask][:, topk.indices])
             new_offsets.append(graph.neighbour_cell_offsets[mask][topk.indices])
 
-    graph = graph._replace(
-        neighbour_list=torch.hstack(new_nl),
-        neighbour_cell_offsets=torch.vstack(new_offsets),
-    )
+    if new_nl:
+        graph = graph._replace(
+            neighbour_list=torch.hstack(new_nl),
+            neighbour_cell_offsets=torch.vstack(new_offsets),
+        )
 
     node_features = {
         "atomic_numbers": graph.Z.long(),
