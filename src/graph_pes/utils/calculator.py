@@ -15,6 +15,21 @@ from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.utils.misc import groups_of, pairs, uniform_repr
 
 
+def iterate_over_batches(
+    structures: Iterable[AtomicGraph | ase.Atoms],
+    batch_size: int,
+    model: GraphPESModel,
+) -> Iterable[AtomicGraph]:
+    for group in groups_of(batch_size, structures):
+        graphs = [
+            AtomicGraph.from_ase(s, model.cutoff.item() + 0.001)
+            if isinstance(s, ase.Atoms)
+            else s
+            for s in group
+        ]
+        yield to_batch(graphs).to(model.device)
+
+
 class GraphPESCalculator(Calculator):
     """
     ASE calculator wrapping any :class:`~graph_pes.GraphPESModel`.
@@ -208,22 +223,12 @@ class GraphPESCalculator(Calculator):
             The number of structures to predict at once.
         """
         # Convert structures to graphs and handle defaults
-        graphs = [
-            AtomicGraph.from_ase(s, self.model.cutoff.item() + 0.001)
-            if isinstance(s, ase.Atoms)
-            else s
-            for s in structures
-        ]
-        graphs = [g.to(self.model.device) for g in graphs]
-
         if properties is None:
             properties = ["energy", "forces"]
-            if all(map(has_cell, graphs)):
-                properties.extend(["stress", "virial"])
 
         # Batched prediction
         tensor_results: list[dict[PropertyKey, torch.Tensor]] = []
-        for batch in map(to_batch, groups_of(batch_size, graphs)):
+        for batch in iterate_over_batches(structures, batch_size, self.model):
             predictions: dict[PropertyKey, torch.Tensor] = {
                 k: v.detach().cpu()
                 for k, v in self.model.predict(batch, properties).items()
