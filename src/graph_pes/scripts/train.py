@@ -88,36 +88,39 @@ def train_from_config(config_data: dict):
     # generate / look up the output directory for this training run
     # and handle the case where there is an ID collision by incrementing
     # the version number
-    if distributed.IS_RANK_0:
-        # set up directory structure
-        if config.general.run_id is None:
-            output_dir = random_dir(Path(config.general.root_dir))
-        else:
-            output_dir = Path(config.general.root_dir) / config.general.run_id
-            version = 0
-            while output_dir.exists():
-                version += 1
+    with distributed.Communication("OUTPUT_DIR", timeout_s=10) as comm:
+        if distributed.IS_RANK_0:
+            # set up directory structure
+            if config.general.run_id is None:
+                output_dir = random_dir(Path(config.general.root_dir))
+            else:
                 output_dir = (
-                    Path(config.general.root_dir)
-                    / f"{config.general.run_id}-{version}"
+                    Path(config.general.root_dir) / config.general.run_id
                 )
+                version = 0
+                while output_dir.exists():
+                    version += 1
+                    output_dir = (
+                        Path(config.general.root_dir)
+                        / f"{config.general.run_id}-{version}"
+                    )
 
-            if version > 0:
-                logger.warning(
-                    f'Specified run ID "{config.general.run_id}" already '
-                    f"exists. Using {output_dir.name} instead."
-                )
+                if version > 0:
+                    logger.warning(
+                        f'Specified run ID "{config.general.run_id}" already '
+                        f"exists. Using {output_dir.name} instead."
+                    )
 
-        output_dir.mkdir(parents=True)
-        with open(output_dir / "train-config.yaml", "w") as f:
-            yaml.dump(config_data, f)
+            output_dir.mkdir(parents=True)
+            with open(output_dir / "train-config.yaml", "w") as f:
+                yaml.dump(config_data, f)
 
-        # communicate the output directory to other ranks
-        distributed.send_to_other_ranks("OUTPUT_DIR", str(output_dir))
+            # communicate the output directory to other ranks
+            comm.send_to_other_ranks(str(output_dir))
 
-    else:
-        # get the output directory from rank 0
-        output_dir = Path(distributed.receive_from_rank_0("OUTPUT_DIR"))
+        else:
+            # get the output directory from rank 0
+            output_dir = Path(comm.receive_from_rank_0())
 
     log_to_file(output_dir)
     # use the updated output_dir to extract the actual run ID:

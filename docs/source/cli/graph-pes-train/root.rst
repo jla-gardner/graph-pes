@@ -56,6 +56,22 @@ The ``graph-pes-train`` command supports multi-GPU out of the box, relying on Py
     $ graph-pes-train config.yaml
 
 
+If you are running ``graph-pes-train`` on a SLURM-managed cluster, you can use the ``srun`` command to run the training job.
+If you are requesting 4 GPUs, use a config similar to this:
+
+.. code-block:: bash
+
+    #!/bin/bash
+    #SBATCH --nodes=1
+    #SBATCH --tasks-per-node=4
+    #SBATCH --gpus-per-node=4
+    #SBATCH --cpus-per-task=8
+    #SBATCH --mem=256gb
+    #SBATCH ... (more config options relevant to your job)
+
+    srun graph-pes-train config.yaml fitting/trainer_kwargs/devices=4
+
+
 Non-interactive jobs
 --------------------
 
