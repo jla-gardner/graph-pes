@@ -2,8 +2,6 @@
 title: 'graph-pes: graph-based machine-learning models for potential-energy surfaces'
 tags:
   - Python
-  - C++
-  <! -- where do we use C++? may be obvious to experts but interesting to mention in the text briefly for non-experts? -->
   - machine learning
   - force fields
   - molecular dynamics
