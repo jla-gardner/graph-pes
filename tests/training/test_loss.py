@@ -6,9 +6,9 @@ import torch
 from graph_pes.training.loss import (
     MAE,
     RMSE,
-    WeightedLoss,
     Huber,
     ScaleFreeHuber,
+    WeightedLoss,
 )
 
 
