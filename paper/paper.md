@@ -38,8 +38,8 @@ We present `graph-pes`, an open-source toolkit for accelerating the development,
 
 # Statement of need
 
-In recent years, machine-learned PES models, commonly referred to as machine-learned interatomic potentials (MLIPs), have become central tools for computational chemistry and materials science. 
-<!-- cite Adv. Mater. 2019 -->
+In recent years, machine-learned PES models, commonly referred to as machine-learned interatomic potentials (MLIPs), have become central tools for computational chemistry and materials science. [@Deringer-19-11]
+
 These models are trained on quantum-mechanical data, but scale much more favourably with system size, and so they make it possible to simulate the dynamics of large systems (millions of atoms and more) over extended timescales. In this way, MLIPs are facilitating the study of complex chemical phenomena at the atomic scale, in turn driving the generation of novel insight and understanding. 
 
 Many "flavours" of ML-PES exist, and with them have arisen a variety of software packages that are tailored to training specific architectures (see below). Given their unique specialisations, these individual software implementations do not normally conform to a common interface, making it difficult for practitioners to migrate their training and validation pipelines between different model architectures.
@@ -51,32 +51,28 @@ Many "flavours" of ML-PES exist, and with them have arisen a variety of software
 
 [^1]: assuming that the structure is isolated, uncharged, and in its electronic ground state. Defining a periodic structure requires the trivial addition of a unit cell and periodic boundary conditions.
 
-- **Transferable training and validation pipelines.** The unified interface of the `graph_pes.GraphPESModel` class and the `graph-pes-train` CLI tool allow researchers to easily transfer their training and validation pipelines between different model architectures. For convenience, we have implemented several popular model architectures out of the box (including PaiNN [@Schutt-21-06], EDDP [@Pickard-22-07], NequIP [@Batzner-22-05], MACE [@Batatia-23-01] and TensorNet [@Simeon-23-06]). 
-<!-- can we make clear here that this is a full new implementation based on e3nn, not just an interface -->
+- **Transferable training and validation pipelines.** The unified interface of the `graph_pes.GraphPESModel` class and the `graph-pes-train` CLI tool allow researchers to easily transfer their training and validation pipelines between different model architectures. For convenience, we have re-implemented several popular model architectures from scratch (including PaiNN [@Schutt-21-06], EDDP [@Pickard-22-07], NequIP [@Batzner-22-05], MACE [@Batatia-23-01] and TensorNet [@Simeon-23-06]). 
 Training scripts require as little as 1 line of code to swap between model architecture, while LAMMPS input scripts, ASE calculators, and `torch-sim` simulations require no changes other than pointing to the new model's file.
 
-- **Accelerated MLIP development.** `graph-pes` provides all the functionality required to quickly adapt MLIP architectures and even design new ones from scratch, including common and well-documented: data manipulations, message passing operations and model building blocks such as distance expansions and neighbour summations. 
-<!-- unclear here - language-wise it sounds like the "common and well-documented" refers to the architectures, but that sounds wrong -->
+- **Accelerated MLIP development.** `graph-pes` provides all the functionality required to quickly adapt existing MLIP architectures and also to design new ones from scratch. We include common and well-documented: data manipulations, message passing operations and model building blocks such as distance expansions and neighbour summations. 
 By inheriting from the `graph_pes.GraphPESModel` class, these new architectures can instantly be trained using the `graph-pes-train` CLI tool, and used to drive MD and other tasks, for example, using the `pair style graph_pes` command in LAMMPS.
 
 Research in the field of MLIPs is not just limited to the development of new model architectures. Among other important research topics, `graph-pes` provides salient features that are relevant to the following research directions:
 
 
 - **Customised training procedures.** The `graph-pes-train` CLI tool supports user-defined optimisers, loss functions, and datasets through the flexible plugin system provided by the `data2objects` package. [@data2objects] Beyond this, we provide well-documented examples of how to implement custom, architecture-agnostic training procedures in simple Python scripts.
-<!-- re-ordering slightly. I think customised training is more closely related to the earlier part, and it might flow better this way, but feel free to revert -->
 
-- **Model fine-tuning.** Various pre-training/fine-tuning strategies have been proposed for improving the accuracy and robustness of MLIPs. 
+- **Model fine-tuning.** Various pre-training/fine-tuning strategies have been proposed for improving the accuracy and robustness of MLIPs. [@Gardner-24-01]
 <!-- cite MLST 2024, one other? --> 
 Model fine-tuning in `graph-pes` can be performed using the `graph-pes-train` CLI tool, where users can optionally specify which of the model's parameters should be frozen during training, and easily account for changes in the level of theory used to label the training data.
 <!-- also mention FT is critically important for foundational models? -->
 
 
-- **Universal or foundational MLIPs.** A topical and recent area of research is the development of universal force-fields that can be used to describe the potential energy surface of a wide range of systems. `graph-pes` integrates directly with the `mace-torch`, `mattersim` and `orb-models` packages to provide access to, among others, the `MACE-OFF`, `MACE-MP`, `GO-MACE`, `Egret-v1`, `MatterSim`, `orb-v2`, and `orb-v3` families of models. [@Kovacs-25-01, @Batatia-24-03, @El-Machachi-24, @Mann-25-05, @Yang-24-05, @Neumann-24-10, @Rhodes-25-04] Each of these integrations generates `GraphPESModels` that are directly compatible with all `graph-pes` features, including fine-tuning, validation pipelines, and MD simulations.
+- **Universal or foundational MLIPs.** A topical and recent area of research is the development of universal force-fields that can be used to describe the potential energy surface of a wide range of systems. `graph-pes` integrates directly with the `mace-torch`, `mattersim` and `orb-models` packages to provide access to, among others, the `MACE-OFF`[@Kovacs-25-01], `MACE-MP`[@Batatia-24-03], `GO-MACE`[@El-Machachi-24], `Egret-v1`[@Mann-25-05], `MatterSim`[@Yang-24-05], `orb-v2`[@Neumann-24-10], and `orb-v3`[@Rhodes-25-04] families of models. Each of these integrations generates `GraphPESModels` that are directly compatible with all `graph-pes` features, including fine-tuning, validation pipelines, and MD simulations.
 <!-- this looks quite bulky with their citation style and doesn't directly map names of architectures onto papers. is it worth having a table with model names and references (if easyt to do)? -->
 
 
-- **Beyond numerical validation.** While it is common to benchmark ML-PES models using numerical validation metrics (such as energy and force RMSEs), more extensive and physically motivated validation routines are important before an MLIP model can be confidently used in practice. 
-<!-- cite JCP tutorial -->
+- **Beyond numerical validation.** While it is common to benchmark ML-PES models using numerical validation metrics (such as energy and force RMSEs), more extensive and physically motivated validation routines are important before an MLIP model can be confidently used in practice. [@Morrow-23-03]
 The *unified*, *varied*, 
 <!-- unclear what is meant by varied here -->
 and *architecture-agnostic* functionalities that `graph-pes` provides allow researchers to define a validation procedure once, and then use it for all their MLIP architectures and specific models, and to share this validation procedure with the wider community.
