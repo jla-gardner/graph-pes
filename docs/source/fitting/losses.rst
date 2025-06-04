@@ -39,6 +39,8 @@ Metrics
 .. autoclass:: graph_pes.training.loss.RMSE()
 .. autoclass:: graph_pes.training.loss.MAE()
 .. autoclass:: graph_pes.training.loss.MSE()
+.. autoclass:: graph_pes.training.loss.Huber()
+.. autoclass:: graph_pes.training.loss.ScaleFreeHuber()
 
 
 
