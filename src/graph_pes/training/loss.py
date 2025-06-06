@@ -438,18 +438,21 @@ class Huber(torch.nn.HuberLoss):
 
 class ScaleFreeHuber(Huber):
     r"""
-    A scaled version of the :class:`Huber` loss metric, such that
-    the value of the loss when :math:`|y - \hat{y}| = \delta` is 1.
+    A scaled version of the :class:`Huber` loss metric, such that,
+    beyond :math:`|y - \hat{y}| = \delta`, the loss is independent of
+    :math:`\delta`: this makes tuning the :math:`\delta` value
+    easier when several loss components are being used (no need to also
+    change the relative weighting of the loss components).
 
     .. math::
         \mathcal{L}_{\delta}(y, \hat{y}) =
-        \frac{2}{\delta^2} \text{Huber}_\delta(y, \hat{y})
+        \frac{1}{\delta} \text{Huber}_\delta(y, \hat{y})
     """
 
     def forward(
         self, input: torch.Tensor, target: torch.Tensor
     ) -> torch.Tensor:
-        return super().forward(input, target) * (2 / self.delta**2)
+        return super().forward(input, target) / self.delta
 
     @property
     def name(self) -> str:
