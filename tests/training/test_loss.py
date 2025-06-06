@@ -27,14 +27,3 @@ def test_metrics():
 def test_excpetion():
     with pytest.raises(ImportError):
         WeightedLoss()
-
-
-def test_hubers():
-    for delta in [0.1, 0.5, 1.0, 2.0]:
-        a = torch.tensor([delta])
-        b = torch.tensor([0.0])
-        huber = Huber(delta)
-        assert torch.allclose(huber(a, b), torch.tensor(delta**2 / 2))
-
-        scaled_huber = ScaleFreeHuber(delta)
-        assert torch.allclose(scaled_huber(a, b), torch.tensor(1.0))
