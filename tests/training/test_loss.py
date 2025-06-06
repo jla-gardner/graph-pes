@@ -3,13 +3,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-from graph_pes.training.loss import (
-    MAE,
-    RMSE,
-    Huber,
-    ScaleFreeHuber,
-    WeightedLoss,
-)
+from graph_pes.training.loss import MAE, RMSE, WeightedLoss
 
 
 def test_metrics():
