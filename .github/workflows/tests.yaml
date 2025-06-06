@@ -90,7 +90,7 @@ jobs:
           - name: mace-torch
             python-version: "3.10"
             test-file: "mace_test.py"
-            extra-deps: "mace-torch"
+            extra-deps: "mace-torch e3nn==0.4.4"
             model_kwargs: model="+mace_mp()"
           - name: mattersim
             python-version: "3.9"
