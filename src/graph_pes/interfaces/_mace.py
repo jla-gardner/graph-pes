@@ -25,13 +25,23 @@ class ZToOneHot(torch.nn.Module):
         self.num_classes = len(elements)
 
     def forward(self, Z: torch.Tensor) -> torch.Tensor:
+        if (Z > 118).any():
+            not_allowed: list[int] = torch.unique(Z[Z > 118]).tolist()
+            raise ValueError(
+                "ZToOneHot received an atomic number is too large: "
+                f"{not_allowed}."
+            )
+
         indices = self.z_to_index[Z]
+
         if (indices < 0).any():
+            not_allowed: list[int] = torch.unique(Z[indices < 0]).tolist()
             raise ValueError(
                 "ZToOneHot received an atomic number that is not in the model's"
-                f" element list: {Z[indices < 0]}. Please ensure the model was "
+                f" element list: {not_allowed}. Please ensure the model was "
                 "trained with all elements present in the input graph."
             )
+
         return torch.nn.functional.one_hot(indices, self.num_classes)
 
 
