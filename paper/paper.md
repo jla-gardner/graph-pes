@@ -3,10 +3,13 @@ title: 'graph-pes: graph-based machine-learning models for potential-energy surf
 tags:
   - Python
   - machine learning
+  - graphs
+  - interatomic potentials
   - force fields
   - molecular dynamics
-  - graphs
   - chemistry
+  - materials science
+  - foundation models
 authors:
   - name: John L. A. Gardner
     orcid: 0009-0006-7377-7146
@@ -34,29 +37,35 @@ We present `graph-pes`, an open-source toolkit for accelerating the development,
 3. **Molecular-dynamics drivers** for popular MD engines that allow any ML-PES model that has been defined and trained using `graph_pes` to be used in GPU-accelerated MD simulations. These drivers currently include a `pair style` for use in LAMMPS, [@Thompson-22-02] a `GraphPESCalculator` for use in ASE, [@Larsen-17-06] and an integration with the `torch-sim` package. [@torch-sim]
 
 
+For an extended overview of the `graph-pes` framework, please see the [documentation](https://jla-gardner.github.io/graph-pes/).
+
 # Statement of need
 
 In recent years, machine-learned PES models, commonly referred to as machine-learned interatomic potentials (MLIPs), have become central tools for computational chemistry and materials science. [@Deringer-19-11]
 
 These models are trained on quantum-mechanical data, but scale much more favourably with system size, and so they make it possible to simulate the dynamics of large systems (millions of atoms and more) over extended timescales. In this way, MLIPs are facilitating the study of complex chemical phenomena at the atomic scale, in turn driving the generation of novel insight and understanding. 
 
-Many "flavours" of ML-PES exist, and with them have arisen a variety of software packages that are tailored to training specific architectures (see below). Given their unique specialisations, these individual software implementations do not normally conform to a common interface, making it difficult for practitioners to migrate their training and validation pipelines between different model architectures.
+Many flavours of MLIPs exist, and with them have arisen a variety of software packages that are typically tailored to training specific architectures (see examples below). Given their unique specialisations, these individual software implementations do not normally conform to a common interface, making it difficult for practitioners to migrate their training and validation pipelines between different model architectures.
+
+
+## The `graph-pes` framework
 
 `graph_pes` provides a **unified interface and software framework** for defining, training, and  working with all ML-PES models that act on graph-based representations of atomic structures. This unified interface has several advantages:
+
+<!-- for the first part: the graph representation is an advantage of the approach itself, I think here you are talking about the advantages of having a unified interface. Does this work better turned around, e.g. it benefits from the fact that chemical structure can be defined by graphs / is structured to allow flexible *software* development? (contrast this with the third bullet point which is about new MLIP science I think) -->
 
 - **Completely general graph representations.** A chemical structure is completely defined by the positions of its atoms ($\mathbf{R}$), and their chemical identities ($Z$).[^1] A graph representation of the atomic structure incorporates this complete description, together with a neighbour list ($\mathbf{N}$) indicating which atoms are within the local environment of others (defined, for instance, using a fixed cut-off radius). The resulting graph, $G = \{\mathbf{R}, Z, \mathbf{N}\}$, is thus an extremely general representation of chemical structure that does not impose any constraints on the architecture of the ML-PES model while easily facilitating the implementation of both local and non-local models.
 <!-- I think this needs brief explanation, i.e. what do we mean by non-local?-->
 
 [^1]: assuming that the structure is isolated, uncharged, and in its electronic ground state. Defining a periodic structure requires the trivial addition of a unit cell and periodic boundary conditions.
 
-- **Transferable training and validation pipelines.** The unified interface of the `graph_pes.GraphPESModel` class and the `graph-pes-train` CLI tool allow researchers to easily transfer their training and validation pipelines between different model architectures. For convenience, we have re-implemented several popular model architectures from scratch (including PaiNN [@Schutt-21-06], EDDP [@Pickard-22-07], NequIP [@Batzner-22-05], MACE [@Batatia-23-01] and TensorNet [@Simeon-23-06]). 
-Training scripts require as little as 1 line of code to swap between model architecture, while LAMMPS input scripts, ASE calculators, and `torch-sim` simulations require no changes other than pointing to the new model's file.
+- **Transferable training and validation pipelines.** The unified interface of the `GraphPESModel` class and the `graph-pes-train` CLI tool allow researchers to easily transfer their training and validation pipelines between different model architectures. For convenience, we have independently implemented several popular model architectures from scratch (including PaiNN [@Schutt-21-06], EDDP [@Pickard-22-07], NequIP [@Batzner-22-05], MACE [@Batatia-23-01] and TensorNet [@Simeon-23-06]). 
+Training scripts require as little as 1 line of code to swap between model architecture, while `LAMMPS` input scripts, `ASE` calculators, and `torch-sim` simulations require no changes other than pointing to the new model's file.
 
 - **Accelerated MLIP development.** `graph-pes` provides all the functionality required to quickly adapt existing MLIP architectures and also to design new ones from scratch. We include common and well-documented: data manipulations, message passing operations and model building blocks such as distance expansions and neighbour summations. 
-By inheriting from the `graph_pes.GraphPESModel` class, these new architectures can instantly be trained using the `graph-pes-train` CLI tool, and used to drive MD and other tasks, for example, using the `pair style graph_pes` command in LAMMPS.
+By inheriting from the `GraphPESModel` class, these new architectures can instantly be trained using the `graph-pes-train` CLI tool, and used to drive MD and other tasks, for example, using the `pair style graph_pes` command in LAMMPS.
 
-Research in the field of MLIPs is not just limited to the development of new model architectures. Among other important research topics, `graph-pes` provides salient features that are relevant to the following research directions:
-
+The development of new model architectures, as described above, is one of multiple research directions in the field of MLIPs. More generally, `graph-pes` provides salient features:
 
 - **Customised training procedures.** The `graph-pes-train` CLI tool supports user-defined optimisers, loss functions, and datasets through the flexible plugin system provided by the `data2objects` package. [@data2objects] Beyond this, we provide well-documented examples of how to implement custom, architecture-agnostic training procedures in simple Python scripts.
 
@@ -67,9 +76,8 @@ Model fine-tuning in `graph-pes` can be performed using the `graph-pes-train` CL
 
 
 - **Universal or foundational MLIPs.** A topical and recent area of research is the development of universal force-fields that can be used to describe the potential energy surface of a wide range of systems. `graph-pes` integrates directly with the `mace-torch`, `mattersim` and `orb-models` packages to provide access to, among others, the `MACE-OFF` [@Kovacs-25-01], `MACE-MP` [@Batatia-24-03], `GO-MACE` [@El-Machachi-24], `Egret-v1` [@Mann-25-05], `MatterSim` [@Yang-24-05], `orb-v2` [@Neumann-24-10], and `orb-v3` [@Rhodes-25-04] families of models. Each of these integrations generates `GraphPESModels` that are directly compatible with all `graph-pes` features, including fine-tuning, validation pipelines, and MD simulations.
-<!-- this looks quite bulky with their citation style and doesn't directly map names of architectures onto papers. is it worth having a table with model names and references (if easyt to do)? -->
 
-
+<!-- Can the "numerical validation" be merged with the "transferable training and validation pipelines" above? Or alternatively talk only about training above, and about validation only here? It seems like a (partial) repetition otherwise -->
 - **Beyond numerical validation.** While it is common to benchmark ML-PES models using numerical validation metrics (such as energy and force RMSEs), more extensive and physically motivated validation routines are important before an MLIP model can be confidently used in practice. [@Morrow-23-03]
 The *unified*, *varied*, 
 <!-- unclear what is meant by varied here -->
@@ -84,7 +92,7 @@ The core functionality of `graph-pes` builds upon several existing, open-source 
 We use the `ase` [@HjorthLarsen-17-06] package for reading serialised atomic structures from disc, and for converting them into graph representations. We use the `LAMMPS` [@Thompson-22-02] framework for creating the `pair style graph_pes` command for driving MD simulations.
 We also use the `e3nn` [@Geiger-22-07] package for implementing the `NequIP` [@Batzner-22-05] and `MACE` [@Batatia-23-01] architectures.
 
-Relevant packages that offer training and validation functionaltiy for specific ML-PES architectures include: `nequip` [@Batzner-22-05], `mace-torch` [@Batatia-23-01], `deepmd-kit` [@Wang-18-07; @Zeng-23-08], `schnetpack` [@schutt2019schnetpack; @schutt2023schnetpack] and `torchmd-net` [@TorchMDNet].
+Relevant packages that offer training and validation functionaltiy for _specific_ ML-PES architectures include: `nequip` [@Batzner-22-05], `mace-torch` [@Batatia-23-01], `deepmd-kit` [@Wang-18-07; @Zeng-23-08], `schnetpack` [@schutt2019schnetpack; @schutt2023schnetpack] and `torchmd-net` [@TorchMDNet].
 <!-- I wonder if the previous two paragraphs should go under a different heading -- e.g. the first paragraph could be a "Future Directions" like section (if JOSS style allows)? The last part in fact I think is the one where we should compare/contrast -->
 
 
