@@ -93,6 +93,10 @@ By using the `data2objects` package [@data2objects] to parse configuration files
 
 Because all models conform to the same interface, all training features can be used with any model architecture. Similarly, all downstream model uses can be written in an architecture agnostic manner, allowing for MD, relaxations, and other scripts to be written once, and then used with any model architecture for extended validation beyond simple error metrics. [@Morrow-23-03]
 
+## Foundation model access
+
+A topical and recent area of research is the development of universal force-fields that can be used to describe the potential energy surface of a wide range of systems. `graph-pes` integrates directly with the `mace-torch`, `mattersim` and `orb-models` packages to provide access to, among others, the `MACE-OFF` [@Kovacs-25-01], `MACE-MP` [@Batatia-24-03], `GO-MACE` [@El-Machachi-24], `Egret-v1` [@Mann-25-05], `MatterSim` [@Yang-24-05], `orb-v2` [@Neumann-24-10], and `orb-v3` [@Rhodes-25-04] families of models. Each of these integrations generates `GraphPESModels` that are directly compatible with all `graph-pes` features, including fine-tuning, validation pipelines, and MD simulations.
+
 # Related work
 
 `graph-pes` is beginning to drive a substantial number of projects within our research group, and we hope that it will be useful to many others. In recent preprints, we have described the use of `graph-pes` for fitting NequIP models to datasets created using the `autoplex` software [@Liu-24-12], and for assessing the zero-shot performance of different graph-network MLIP models [@Mahmoud-25-02].
