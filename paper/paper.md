@@ -72,7 +72,7 @@ These models take an (optionally batched) `AtomicGraph` as input, and are able t
 Implementations need only define a forward pass that returns a local energy for each atom in the graph, or a total energy for the entire structure; we use the functionality from `torch.autograd` to automatically calculate force and stress tensors in a conservative manner [@Paszke-19].
 For faster modelling, we also fully support models that return direct force and stress tensor predictions (e.g., `TensorNet` or `orb-v3-*` with their optional direct force readout heads).
 
-Building on the `GraphPESModel` class, we provide independent (re-) implementations of popular MLIP architectures, including `PaiNN` [@Schutt-21-06], `EDDP` [@Pickard-22-07], `NequIP` [@Batzner-22-05], `MACE` [@Batatia-23-01], and `TensorNet` [@Simeon-23-06]. We use building blocks provided by the `e3nn` [@Geiger-22-07] package to implement models that act on spherical harmonic representations of the atomic environment.
+Building on the `GraphPESModel` class, we provide independent (re-) implementations of popular MLIP architectures, including `PaiNN` [@Schutt-21-06], `EDDP` [@Pickard-22-07], `NequIP` [@Batzner-22-05], `MACE` [@Batatia-23-01], and `TensorNet` [@Simeon-23-06]. We use building blocks provided by the `e3nn` [@Geiger-22-07] package to implement models that act on spherical tensor decompositions.
 
 In addition, we provide an `AdditionModel` implementation, which makes energy, force and stress predictions as a sum over several independent models. 
 This allows `graph-pes` to add the following features onto any other model architecture:
@@ -98,7 +98,7 @@ A topical and recent area of research is the development of universal or "founda
 
 # Related work
 
-`graph-pes` is beginning to drive a substantial number of projects within our research group, and we hope that it will be useful to many others. In recent preprints, we have described the use of `graph-pes` for fitting NequIP models to datasets created using the `autoplex` software [@Liu-24-12], and for assessing the zero-shot performance of different graph-network MLIP models [@Mahmoud-25-02].
+`graph-pes` is beginning to drive a substantial number of projects within our research group, and we hope that it will be useful to many others. In recent preprints, we have described the use of `graph-pes` for fitting NequIP models to datasets created using the `autoplex` software [@Liu-24-12], for assessing the zero-shot performance of different graph-network MLIP models [@Mahmoud-25-02], and for fine-tuning and distilling atomistic foundation models [@Gardner-25-06].
 
 Relevant alternative packages that offer training and validation functionaltiy for _specific_ ML-PES architectures include: `schnetpack` [@schutt2019schnetpack; @schutt2023schnetpack], `deepmd-kit` [@Wang-18-07; @Zeng-23-08], `nequip` [@Batzner-22-05], `mace-torch` [@Batatia-23-01], `torchmd-net` [@TorchMDNet], and `fairchem` [@fairchem]. The `MatterTune` package [@Kong-25-04] provides a unified interface for fine-tuning atomistic foundation models, but does not create models with a common interface, or allow for training arbitrary MLIP architectures from scratch.
 
