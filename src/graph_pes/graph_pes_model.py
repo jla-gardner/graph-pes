@@ -294,7 +294,6 @@ class GraphPESModel(GeneralPropertyGraphModel):
             implemented_properties=implemented_properties,
             three_body_cutoff=three_body_cutoff,
         )
-
         # self._GRAPH_PES_VERSION: Final[str] = "0.1.1"
 
         self.implemented_properties = implemented_properties

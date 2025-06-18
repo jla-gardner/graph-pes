@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "graph-pes"
-version = "0.1.1"
+version = "0.1.7"
 description = "Potential Energy Surfaces on Graphs"
 readme = "README.md"
 authors = [{ name = "John Gardner", email = "gardner.john97@gmail.com" }]
@@ -28,7 +28,6 @@ dependencies = [
     "load-atoms>=0.3.9",
     "wandb",
     "data2objects>=0.1.0",
-    "pyright>=1.1.394",
     "vesin>=0.3.2",
 ]
 requires-python = ">=3.9"
@@ -56,7 +55,7 @@ graph-pes-id = "graph_pes.scripts.id:main"
 Homepage = "https://github.com/jla-gardner/graph-pes"
 
 [tool.bumpver]
-current_version = "0.1.1"
+current_version = "0.1.7"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "{old_version} -> {new_version}"
 commit = true

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+# [0.1.6] - 2025-06-03
+
+Added a ScaledHuberLoss
+
+Added documentation for intergrating with SLURM
+
+# [0.1.5] - 2025-06-03
+
+Add learning rate warm up and HuberLoss options.
+
+Small improvements to the GraphPESCalculator and OrbWrapper classes.
+
+# [0.1.3] - 2025-06-02
+
+Add explicit checking for unsupported elements in MACE interface.
+
+## [0.1.2] - 2025-06-02
+
+Extracted a base class for all interface models.
+
 ## [0.1.1] - 2025-05-01
 
 Added the `egret` series of foundation models.

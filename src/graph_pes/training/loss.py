@@ -414,6 +414,48 @@ class MAE(torch.nn.L1Loss):
     """
 
 
+class Huber(torch.nn.HuberLoss):
+    r"""
+    Huber loss metric:
+
+    .. math::
+        L_\delta(y, \hat{y}) = \begin{cases}
+            \frac{1}{2}(y - \hat{y})^2 & \text{if } |y - \hat{y}| \leq \delta \\
+            \delta (|y - \hat{y}| - \frac{1}{2}\delta) & \text{otherwise}
+        \end{cases}
+    """
+
+    def __init__(self, delta: float = 0.5):
+        super().__init__(delta=delta)
+
+    @property
+    def name(self) -> str:
+        return f"huber_{self.delta}"
+
+
+class ScaleFreeHuber(Huber):
+    r"""
+    A scaled version of the :class:`Huber` loss metric, such that,
+    beyond :math:`|y - \hat{y}| = \delta`, the loss is independent of
+    :math:`\delta`: this makes tuning the :math:`\delta` value
+    easier when several loss components are being used (no need to also
+    change the relative weighting of the loss components).
+
+    .. math::
+        \mathcal{L}_{\delta}(y, \hat{y}) =
+        \frac{1}{\delta} \text{Huber}_\delta(y, \hat{y})
+    """
+
+    def forward(
+        self, input: torch.Tensor, target: torch.Tensor
+    ) -> torch.Tensor:
+        return super().forward(input, target) / self.delta
+
+    @property
+    def name(self) -> str:
+        return f"scaled_huber_{self.delta}"
+
+
 def _get_metric_name(metric: Metric) -> str:
     if hasattr(metric, "name"):
         return metric.name  # type: ignore
