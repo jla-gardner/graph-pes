@@ -774,7 +774,8 @@ def to_batch(
 
     properties: dict[PropertyKey, torch.Tensor] = {}
     # - per structure labels are concatenated along a new batch axis (0)
-    for key in ["energy", "stress", "virial", "tensor"]:
+    # for now we only support atomic tensors
+    for key in ["energy", "stress", "virial"]:
         key = cast(PropertyKey, key)
         if all(key in g.properties for g in graphs):
             properties[key] = torch.stack([g.properties[key] for g in graphs])
