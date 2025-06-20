@@ -19,7 +19,7 @@ from graph_pes.atomic_graph import (
 from graph_pes.config.training import FittingOptions
 from graph_pes.data.datasets import DatasetCollection, GraphDataset
 from graph_pes.data.loader import GraphDataLoader
-from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_pes_model import GraphPESModel, GeneralPropertyGraphModel
 from graph_pes.training.loss import (
     MAE,
     Loss,
@@ -44,14 +44,14 @@ from graph_pes.utils.shift_and_scale import add_auto_offset
 
 def train_with_lightning(
     trainer: pl.Trainer,
-    model: GraphPESModel,
+    model: GeneralPropertyGraphModel,
     data: DatasetCollection,
     loss: TotalLoss,
     fit_config: FittingOptions,
     optimizer: Optimizer,
     user_eval_metrics: list[Loss] | None = None,
     scheduler: LRScheduler | None = None,
-) -> GraphPESModel:
+) -> GeneralPropertyGraphModel:
     # - prepare the data
     if trainer.global_rank == 0:
         logger.info("Preparing data")
@@ -77,9 +77,7 @@ def train_with_lightning(
         three_body_cutoff=model.three_body_cutoff.item() or None,
     )
 
-    eval_metrics = get_all_eval_metrics(
-        [data.train, data.valid], user_eval_metrics
-    )
+    eval_metrics = get_all_eval_metrics([data.train, data.valid], user_eval_metrics)
 
     # - do some pre-fitting
     pre_fit_graphs = SequenceSampler(data.train.graphs)
@@ -101,9 +99,7 @@ def train_with_lightning(
     # always register the elements in the training set
     for param in model.parameters():
         if isinstance(param, PerElementParameter):
-            param.register_elements(
-                torch.unique(to_batch(pre_fit_graphs).Z).tolist()
-            )
+            param.register_elements(torch.unique(to_batch(pre_fit_graphs).Z).tolist())
 
     # always pre-fit the losses
     for subloss in loss.losses:
@@ -139,7 +135,7 @@ def train_with_lightning(
 class TrainingTask(pl.LightningModule):
     def __init__(
         self,
-        model: GraphPESModel,
+        model: GeneralPropertyGraphModel,
         loss: TotalLoss,
         optimizer: Optimizer,
         scheduler: LRScheduler | None,
@@ -153,24 +149,15 @@ class TrainingTask(pl.LightningModule):
         self.train_properties: list[PropertyKey] = list(
             set.union(
                 set(),
-                *[
-                    set(loss.required_properties)
-                    for loss in self.total_loss.losses
-                ],
+                *[set(loss.required_properties) for loss in self.total_loss.losses],
             )
         )
         self.eval_metrics = eval_metrics
         self.validation_properties = list(
-            set.union(
-                set(), *[set(m.required_properties) for m in eval_metrics]
-            )
+            set.union(set(), *[set(m.required_properties) for m in eval_metrics])
         )
         self._torchmetrics = UniformModuleList(
-            [
-                m
-                for m in self.eval_metrics
-                if isinstance(m.metric, torchmetrics.Metric)
-            ]
+            [m for m in self.eval_metrics if isinstance(m.metric, torchmetrics.Metric)]
         )
 
     def forward(self, graphs: AtomicGraph) -> torch.Tensor:
@@ -223,16 +210,12 @@ class TrainingTask(pl.LightningModule):
             return self.log(
                 f"{mode}/{name}",
                 value,
-                prog_bar=(
-                    validating and "metric" in name and "batchwise" not in name
-                ),
+                prog_bar=(validating and "metric" in name and "batchwise" not in name),
                 on_step=not validating,
                 on_epoch=validating,
                 sync_dist=validating,
                 batch_size=(
-                    number_of_atoms(graph)
-                    if per_atom
-                    else number_of_structures(graph)
+                    number_of_atoms(graph) if per_atom else number_of_structures(graph)
                 ),
             )
 
@@ -241,7 +224,6 @@ class TrainingTask(pl.LightningModule):
             desired_properties = self.train_properties
         else:
             desired_properties = list(graph.properties.keys())
-
         predictions = self.model.predict(graph, properties=desired_properties)
 
         # compute the loss and its sub-components
@@ -264,9 +246,7 @@ class TrainingTask(pl.LightningModule):
                     # don't double log
                     continue
 
-                if any(
-                    p not in graph.properties for p in eval.required_properties
-                ):
+                if any(p not in graph.properties for p in eval.required_properties):
                     warnings.warn(
                         f"Metric {eval.name} requires properties "
                         f"{eval.required_properties} that are "
@@ -352,9 +332,7 @@ class TrainingTask(pl.LightningModule):
         checkpoint_path: Path | str | None = None,
     ):
         if checkpoint_path is None and trainer is None:
-            raise ValueError(
-                "Either trainer or checkpoint_path must be provided"
-            )
+            raise ValueError("Either trainer or checkpoint_path must be provided")
         if checkpoint_path is None:
             path = trainer.checkpoint_callback.best_model_path  # type: ignore
         else:
@@ -406,26 +384,18 @@ class TestingTask(pl.LightningModule):
         self.test_names = test_names
         self.eval_metrics = eval_metrics
         self.test_properties = list(
-            set.union(
-                set(), *[set(m.required_properties) for m in eval_metrics]
-            )
+            set.union(set(), *[set(m.required_properties) for m in eval_metrics])
         )
         self.logging_prefix = logging_prefix
 
         self._torchmetrics = UniformModuleList(
-            [
-                m
-                for m in self.eval_metrics
-                if isinstance(m.metric, torchmetrics.Metric)
-            ]
+            [m for m in self.eval_metrics if isinstance(m.metric, torchmetrics.Metric)]
         )
 
     def test_step(
         self, structure: AtomicGraph, batch_idx: int, dataloader_idx: int = 0
     ):
-        predictions = self.model.predict(
-            structure, properties=self.test_properties
-        )
+        predictions = self.model.predict(structure, properties=self.test_properties)
         test_name = self.test_names[dataloader_idx]
         if test_name == "test" and len(self.test_names) == 1:
             prefix = self.logging_prefix
@@ -433,9 +403,7 @@ class TestingTask(pl.LightningModule):
             prefix = f"{self.logging_prefix}/{test_name}"
 
         for metric in self.eval_metrics:
-            if not all(
-                p in structure.properties for p in metric.required_properties
-            ):
+            if not all(p in structure.properties for p in metric.required_properties):
                 continue
 
             value = metric(self.model, structure, predictions)
@@ -498,9 +466,7 @@ def get_all_eval_metrics(
     # de-duplicate based on the name of the metric
     de_duped_metrics = {}
     for data_source in data_sources:
-        de_duped_metrics.update(
-            {m.name: m for m in get_eval_metrics_for(data_source)}
-        )
+        de_duped_metrics.update({m.name: m for m in get_eval_metrics_for(data_source)})
     de_duped_metrics.update({m.name: m for m in user_specified_metrics})
 
     return list(de_duped_metrics.values())

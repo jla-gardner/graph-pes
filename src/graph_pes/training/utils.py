@@ -7,7 +7,11 @@ from graph_pes.atomic_graph import (
     number_of_atoms,
     number_of_structures,
 )
-from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_pes_model import (
+    GraphPESModel,
+    GeneralPropertyGraphModel,
+    GraphTensorModel,
+)
 from graph_pes.models.addition import AdditionModel
 from graph_pes.utils.logger import logger
 from graph_pes.utils.nn import learnable_parameters
@@ -27,8 +31,7 @@ def log_model_info(
             for given_name, component in model.models.items()
         ]
         params = [
-            learnable_parameters(component)
-            for component in model.models.values()
+            learnable_parameters(component) for component in model.models.values()
         ]
         width = max(len(name) for name in model_names)
         info_str = "Number of learnable params:"
@@ -37,9 +40,7 @@ def log_model_info(
         logger.info(info_str)
 
     else:
-        logger.info(
-            f"Number of learnable params : {learnable_parameters(model):,}"
-        )
+        logger.info(f"Number of learnable params : {learnable_parameters(model):,}")
 
     if ptl_logger is not None:
         all_params = sum(p.numel() for p in model.parameters())
@@ -52,40 +53,64 @@ def log_model_info(
         )
 
 
-def sanity_check(model: GraphPESModel, batch: AtomicGraph) -> None:
-    outputs = model.get_all_PES_predictions(batch)
+def sanity_check(model: GeneralPropertyGraphModel, batch: AtomicGraph) -> None:
 
-    N = number_of_atoms(batch)
-    S = number_of_structures(batch)
-    expected_shapes = {
-        "local_energies": (N,),
-        "forces": (N, 3),
-        "energy": (S,),
-        "stress": (S, 3, 3),
-        "virial": (S, 3, 3),
-    }
+    if isinstance(model, GraphPESModel):
+        outputs = model.get_all_PES_predictions(batch)
 
-    incorrect = []
-    for key, value in outputs.items():
-        if value.shape != expected_shapes[key]:
-            incorrect.append((key, value.shape, expected_shapes[key]))
+        N = number_of_atoms(batch)
+        S = number_of_structures(batch)
+        expected_shapes = {
+            "local_energies": (N,),
+            "forces": (N, 3),
+            "energy": (S,),
+            "stress": (S, 3, 3),
+            "virial": (S, 3, 3),
+        }
 
-    if len(incorrect) > 0:
-        raise ValueError(
-            "Sanity check failed for the following outputs:\n"
-            + "\n".join(
-                f"{key}: {value} != {expected}"
-                for key, value, expected in incorrect
+        incorrect = []
+        for key, value in outputs.items():
+            if value.shape != expected_shapes[key]:
+                incorrect.append((key, value.shape, expected_shapes[key]))
+
+        if len(incorrect) > 0:
+            raise ValueError(
+                "Sanity check failed for the following outputs:\n"
+                + "\n".join(
+                    f"{key}: {value} != {expected}"
+                    for key, value, expected in incorrect
+                )
             )
-        )
 
-    if batch.cutoff < model.cutoff:
-        logger.error(
-            "Sanity check failed: you appear to be training on data "
-            f"composed of graphs with a cutoff ({batch.cutoff}) that is "
-            f"smaller than the cutoff used in the model ({model.cutoff}). "
-            "This is almost certainly not what you want to do?",
-        )
+        if batch.cutoff < model.cutoff:
+            logger.error(
+                "Sanity check failed: you appear to be training on data "
+                f"composed of graphs with a cutoff ({batch.cutoff}) that is "
+                f"smaller than the cutoff used in the model ({model.cutoff}). "
+                "This is almost certainly not what you want to do?",
+            )
+    elif isinstance(model, GraphTensorModel):
+        outputs = model.predict(batch, ["tensor"])
+
+        N = number_of_atoms(batch)
+        expected_shapes = {
+            "tensor": (
+                N,
+                9,
+            ),  # TODO: we need to make this dynamic so it matches the rank of arbitrary tensors
+        }
+        incorrect = []
+        for key, value in outputs.items():
+            if value.shape != expected_shapes[key]:
+                incorrect.append((key, value.shape, expected_shapes[key]))
+        if len(incorrect) > 0:
+            raise ValueError(
+                "Sanity check failed for the following outputs:\n"
+                + "\n".join(
+                    f"{key}: {value} != {expected}"
+                    for key, value, expected in incorrect
+                )
+            )
 
 
 VALIDATION_LOSS_KEY = "valid/loss/total"
