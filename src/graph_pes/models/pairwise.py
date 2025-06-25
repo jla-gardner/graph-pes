@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional
 
 import torch
 from torch import Tensor
@@ -221,8 +220,8 @@ class LennardJones(PairPotential):
     def interaction(
         self,
         r: torch.Tensor,
-        Z_i: Optional[torch.Tensor] = None,  # noqa: UP007
-        Z_j: Optional[torch.Tensor] = None,  # noqa: UP007
+        Z_i: torch.Tensor | None = None,
+        Z_j: torch.Tensor | None = None,
     ):
         v_lj = self.V_LJ(r)
         if self._shift.item():
@@ -340,8 +339,8 @@ class Morse(PairPotential):
     def interaction(
         self,
         r: torch.Tensor,
-        Z_i: Optional[torch.Tensor] = None,  # noqa: UP007
-        Z_j: Optional[torch.Tensor] = None,  # noqa: UP007
+        Z_i: torch.Tensor | None = None,
+        Z_j: torch.Tensor | None = None,
     ):
         """
         Evaluate the pair potential.
