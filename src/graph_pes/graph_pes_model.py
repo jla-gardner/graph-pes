@@ -629,12 +629,13 @@ class GraphPESModel(nn.Module, ABC):
             integrator.
         """
         try:
-            from torch_sim.models import GraphPESWrapper
+            import torch_sim
         except ImportError as e:
             raise ImportError(
                 "torch_sim is not installed. Please install it using "
-                "pip install torch-sim"
+                "pip install torch-sim-atomistic"
             ) from e
+        from torch_sim.models.graphpes import GraphPESWrapper
 
         return GraphPESWrapper(
             self.eval(),
