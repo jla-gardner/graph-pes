@@ -628,13 +628,14 @@ class GraphPESModel(nn.Module, ABC):
             need stress information from the model within the ``torch_sim``
             integrator.
         """
-        try:
-            from torch_sim.models import GraphPESWrapper
-        except ImportError as e:
+        import importlib.util
+
+        if importlib.util.find_spec("torch_sim") is None:
             raise ImportError(
                 "torch_sim is not installed. Please install it using "
-                "pip install torch-sim"
-            ) from e
+                "pip install torch-sim-atomistic"
+            )
+        from torch_sim.models.graphpes import GraphPESWrapper
 
         return GraphPESWrapper(
             self.eval(),

@@ -65,8 +65,8 @@ def _atomic_graph_to_mace_input(
     )  # (E, 3)
     data = {
         "node_attrs": z_to_one_hot.forward(graph.Z).to(graph.R.dtype),
-        "positions": graph.R.clone().detach(),
-        "cell": cell.clone().detach(),
+        "positions": graph.R.clone(),
+        "cell": cell.clone(),
         "edge_index": graph.neighbour_list,
         "unit_shifts": graph.neighbour_cell_offsets,
         "shifts": _shifts,
@@ -394,8 +394,7 @@ def _mace_from_url(
     mace_torch_model = torch.load(
         save_path, weights_only=False, map_location=torch.device("cpu")
     )
-    for p in mace_torch_model.parameters():
-        p.data = p.data.to(dtype)
+    _fix_dtype(mace_torch_model, dtype)
     model = MACEWrapper(mace_torch_model)
 
     return model

@@ -127,7 +127,7 @@ def load_model(path: str | pathlib.Path) -> GraphPESModel:
             stacklevel=2,
         )
 
-    return model
+    return model.to("cpu")
 
 
 def load_model_component(
