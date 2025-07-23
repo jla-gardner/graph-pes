@@ -1,7 +1,18 @@
+from typing import Literal
+
 import torch
 from torch import Tensor
 
-from graph_pes.atomic_graph import AtomicGraph, PropertyKey, neighbour_vectors
+from graph_pes.atomic_graph import (
+    DEFAULT_CUTOFF,
+    AtomicGraph,
+    PropertyKey,
+    edge_wise_softmax,
+    neighbour_distances,
+    neighbour_vectors,
+    remove_mean_and_net_torque,
+    sum_over_central_atom_index,
+)
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.components.distances import Bessel, PolynomialEnvelope
 from graph_pes.models.components.scaling import LocalEnergiesScaler
@@ -16,9 +27,25 @@ from .e3nn.utils import SphericalHarmonics
 
 # TODO: penalise rotational grad
 # TODO: rotational augmentations
+# TODO: maximum neighbours
+
+
+NormType = Literal["layer", "rms"]
+AttentionGate = Literal["sigmoid", "softmax"]
+
+
+def get_norm(norm_type: NormType):
+    if norm_type == "layer":
+        return torch.nn.LayerNorm
+    elif norm_type == "rms":
+        return torch.nn.RMSNorm
+    else:
+        raise ValueError(f"Unknown norm type: {norm_type}")
 
 
 class OrbEncoder(torch.nn.Module):
+    """Generates node and edge features embeddings for an atomic graph."""
+
     def __init__(
         self,
         cutoff: float,
@@ -28,6 +55,8 @@ class OrbEncoder(torch.nn.Module):
         edge_outer_product: bool,
         mlp_layers: int,
         mlp_hidden_dim: int,
+        activation: str,
+        norm_type: NormType,
     ):
         super().__init__()
         self.cutoff = cutoff
@@ -54,9 +83,9 @@ class OrbEncoder(torch.nn.Module):
         )
         self.edge_mlp = MLP(
             [self.edge_dim] + [mlp_hidden_dim] * mlp_layers + [channels],
-            activation=ShiftedSoftplus(),
+            activation,
         )
-        self.edge_layer_norm = torch.nn.LayerNorm(channels)
+        self.edge_layer_norm = get_norm(norm_type)(channels)
 
     def forward(self, graph: AtomicGraph) -> tuple[Tensor, Tensor]:
         node_emb = self.Z_layer_norm(self.Z_embedding(graph.Z))
@@ -87,28 +116,120 @@ class OrbEncoder(torch.nn.Module):
 
 
 class OrbMessagePassingLayer(torch.nn.Module):
-    def __init__(self, channels: int):
+    def __init__(
+        self,
+        cutoff: float,
+        channels: int,
+        mlp_layers: int,
+        mlp_hidden_dim: int,
+        activation: str,
+        norm_type: NormType,
+        attention_gate: AttentionGate,
+        distance_smoothing: bool,
+    ):
         super().__init__()
-        self.channels = channels
+
+        self.node_mlp = torch.nn.Sequential(
+            MLP(
+                [channels * 3] + [mlp_hidden_dim] * mlp_layers + [channels],
+                activation,
+            ),
+            get_norm(norm_type)(channels),
+        )
+
+        self.edge_mlp = torch.nn.Sequential(
+            MLP(
+                [channels * 3] + [mlp_hidden_dim] * mlp_layers + [channels],
+                activation,
+            ),
+            get_norm(norm_type)(channels),
+        )
+
+        self.receive_attn = torch.nn.Linear(channels, 1)
+        self.send_attn = torch.nn.Linear(channels, 1)
+
+        self.attention_gate = attention_gate
+
+        if distance_smoothing:
+            self.envelope = PolynomialEnvelope(p=4, cutoff=cutoff)
+        else:
+            self.envelope = None
 
     def forward(
-        self, node_emb: Tensor, edge_emb: Tensor, graph: AtomicGraph
+        self,
+        node_emb: Tensor,  # (N, C)
+        edge_emb: Tensor,  # (E, C)
+        graph: AtomicGraph,
     ) -> tuple[Tensor, Tensor]:
+        # calculate per-edge attention weights based on both
+        # senders and receivers
+        if self.attention_gate == "softmax":
+            receive_attn_weights = edge_wise_softmax(
+                self.receive_attn(edge_emb), graph, aggregation="receivers"
+            )
+            send_attn_weights = edge_wise_softmax(
+                self.send_attn(edge_emb), graph, aggregation="senders"
+            )
+        elif self.attention_gate == "sigmoid":
+            receive_attn_weights = torch.sigmoid(self.receive_attn(edge_emb))
+            send_attn_weights = torch.sigmoid(self.send_attn(edge_emb))
+        else:
+            raise ValueError(f"Unknown attention gate: {self.attention_gate}")
+
+        # optionally decay these weights near the cutoff
+        if self.envelope is not None:
+            envelope = self.envelope(neighbour_distances(graph)).unsqueeze(-1)
+            receive_attn_weights = receive_attn_weights * envelope
+            send_attn_weights = send_attn_weights * envelope
+
+        # generate new edge features
+        new_edge_features = torch.cat(
+            [
+                edge_emb,
+                node_emb[graph.neighbour_list[0]],
+                node_emb[graph.neighbour_list[1]],
+            ],
+            dim=1,
+        )
+        new_edge_features = self.edge_mlp(new_edge_features)
+
+        #  generate new node features from attention weights
+        senders, receivers = graph.neighbour_list[0], graph.neighbour_list[1]
+        sent_total_message = sum_over_central_atom_index(  # (N, C)
+            new_edge_features * send_attn_weights, senders, graph
+        )
+        received_total_message = sum_over_central_atom_index(  # (N, C)
+            new_edge_features * receive_attn_weights, receivers, graph
+        )
+        new_node_features = torch.cat(
+            [node_emb, sent_total_message, received_total_message],
+            dim=1,
+        )
+        new_node_features = self.node_mlp(new_node_features)
+
+        # residual connection
+        node_emb = node_emb + new_node_features
+        edge_emb = edge_emb + new_edge_features
+
         return node_emb, edge_emb
 
 
 class Orb(GraphPESModel):
     def __init__(
         self,
-        cutoff: float,
+        cutoff: float = DEFAULT_CUTOFF,
         conservative: bool = False,
-        channels: int = 128,
+        channels: int = 256,
         layers: int = 5,
         radial_features: int = 8,
         mlp_layers: int = 2,
-        mlp_hidden_dim: int = 128,
+        mlp_hidden_dim: int = 1024,
         l_max: int = 3,
         edge_outer_product: bool = True,
+        activation: str = "silu",
+        norm_type: NormType = "layer",
+        attention_gate: AttentionGate = "sigmoid",
+        distance_smoothing: bool = True,
     ):
         props: list[PropertyKey] = (
             ["local_energies"] if conservative else ["local_energies", "forces"]
@@ -117,16 +238,30 @@ class Orb(GraphPESModel):
 
         # backbone
         self._encoder = OrbEncoder(
-            cutoff,
-            channels,
-            radial_features,
-            l_max,
-            edge_outer_product,
-            mlp_layers,
-            mlp_hidden_dim,
+            cutoff=cutoff,
+            channels=channels,
+            radial_features=radial_features,
+            l_max=l_max,
+            edge_outer_product=edge_outer_product,
+            mlp_layers=mlp_layers,
+            mlp_hidden_dim=mlp_hidden_dim,
+            activation=activation,
+            norm_type=norm_type,
         )
         self._gnn_layers = UniformModuleList(
-            [OrbMessagePassingLayer(channels) for _ in range(layers)]
+            [
+                OrbMessagePassingLayer(
+                    channels=channels,
+                    mlp_layers=mlp_layers,
+                    mlp_hidden_dim=mlp_hidden_dim,
+                    activation=activation,
+                    norm_type=norm_type,
+                    attention_gate=attention_gate,
+                    distance_smoothing=distance_smoothing,
+                    cutoff=cutoff,
+                )
+                for _ in range(layers)
+            ]
         )
 
         # readouts

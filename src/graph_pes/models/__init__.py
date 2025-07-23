@@ -22,6 +22,7 @@ from .e3nn.mace import MACE, ZEmbeddingMACE
 from .e3nn.nequip import NequIP, ZEmbeddingNequIP
 from .eddp import EDDP
 from .offsets import FixedOffset, LearnableOffset
+from .orb import Orb
 from .painn import PaiNN
 from .pairwise import (
     LennardJones,
@@ -47,6 +48,7 @@ __all__ = [
     "MACE",
     "Morse",
     "NequIP",
+    "Orb",
     "PaiNN",
     "PairPotential",
     "SchNet",

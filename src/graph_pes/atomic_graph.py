@@ -1265,7 +1265,8 @@ def sum_per_structure(x: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:
     if graph_batch is not None:
         shape = (number_of_structures(graph),) + x.shape[1:]
         zeros = torch.zeros(shape, dtype=x.dtype, device=x.device)
-        return zeros.scatter_add(0, graph_batch, x)
+        index = left_aligned_mul(torch.ones_like(x), graph_batch).long()
+        return zeros.scatter_add(0, index, x)
     else:
         return x.sum(dim=0)
 
@@ -1295,3 +1296,91 @@ def divide_per_atom(x: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:
     * :math:`N` is the number of atoms
     """
     return left_aligned_div(x, structure_sizes(graph))
+
+
+def edge_wise_softmax(
+    l: torch.Tensor,  # (E, 1)
+    graph: AtomicGraph,
+    aggregation: str = "senders",
+) -> torch.Tensor:  # (E, 1)
+    r"""
+    Generate a softmax score for each directed edge from per-edge logits.
+
+    For ``aggregation="senders"``, the softmax score is computed over the
+    sending atoms of each edge:
+
+    .. math::
+
+        s_{i \rightarrow j} = \frac
+            {e^{l_{i \rightarrow j}}}
+            {\sum_{k \in \mathcal{N}_i} e^{l_{i \rightarrow k}}}
+
+    where :math:`\mathcal{N}_i` is the set of neighbours of atom :math:`i`.
+
+    For ``aggregation="receivers"``, the softmax score is computed over the
+    receiving atoms of each edge:
+
+    .. math::
+
+        s_{i \rightarrow j} = \frac
+            {e^{l_{i \rightarrow j}}}
+            {\sum_{k \in \mathcal{N}_j} e^{l_{k \rightarrow j}}}
+
+    Parameters
+    ----------
+    l
+        The per-edge logits, of shape ``(E,)``.
+    graph
+        The graph to compute the softmax for.
+
+    Returns
+    -------
+    s
+        The per-edge softmax scores, of shape ``(E,)``.
+    """
+
+    # TODO: subtract max logit for each sender/receiver for numerical stability
+
+    if aggregation == "senders":
+        edge_index = graph.neighbour_list[0]
+    elif aggregation == "receivers":
+        edge_index = graph.neighbour_list[1]
+    else:
+        raise ValueError(f"Invalid aggregation: {aggregation}")
+
+    exp = torch.exp(l)  # (E, 1)
+    per_atom_denom = sum_over_central_atom_index(  # (N, 1)
+        exp, edge_index, graph
+    )
+    per_edge_denom = per_atom_denom[edge_index]  # (E, 1)
+    return exp / per_edge_denom  # (E, 1)
+
+
+def remove_mean_and_net_torque(
+    v: torch.Tensor,  # (N, 3)
+    graph: AtomicGraph,
+) -> torch.Tensor:  # (N, 3)
+    """
+    Remove the mean and net torque per (optionally batched) structure
+    from a collection of per-node vectors, ``v``
+    """
+
+    if not is_batch(graph):
+        v = v - v.mean(dim=0, keepdim=True)
+
+    else:
+        batch = graph.batch
+        assert isinstance(batch, torch.Tensor)
+
+        _sum = sum_per_structure(v, graph)  # (S, 3)
+        mean = _sum / structure_sizes(graph).unsqueeze(-1)  # (S, 3)
+        v = v - mean[batch]  # (N, 3)
+
+    # torch script annoying-ness:
+    pbc = graph.pbc
+    if pbc is not None:  # noqa: SIM102
+        if not torch.any(pbc):
+            return v
+
+    # TODO: remove net torque
+    return v
