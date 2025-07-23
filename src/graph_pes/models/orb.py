@@ -8,6 +8,7 @@ from graph_pes.atomic_graph import (
     AtomicGraph,
     PropertyKey,
     edge_wise_softmax,
+    keep_at_most_k_neighbours,
     neighbour_distances,
     neighbour_vectors,
     remove_mean_and_net_torque,
@@ -26,8 +27,6 @@ from graph_pes.utils.nn import (
 from .e3nn.utils import SphericalHarmonics
 
 # TODO: penalise rotational grad
-# TODO: rotational augmentations
-# TODO: maximum neighbours
 
 
 NormType = Literal["layer", "rms"]
@@ -230,11 +229,14 @@ class Orb(GraphPESModel):
         norm_type: NormType = "layer",
         attention_gate: AttentionGate = "sigmoid",
         distance_smoothing: bool = True,
+        max_neighbours: int | None = None,
     ):
         props: list[PropertyKey] = (
             ["local_energies"] if conservative else ["local_energies", "forces"]
         )
         super().__init__(implemented_properties=props, cutoff=cutoff)
+
+        self.max_neighbours = max_neighbours
 
         # backbone
         self._encoder = OrbEncoder(
@@ -280,6 +282,9 @@ class Orb(GraphPESModel):
             )
 
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, Tensor]:
+        if self.max_neighbours is not None:
+            graph = keep_at_most_k_neighbours(graph, self.max_neighbours)
+
         # embed the graph
         node_emb, edge_emb = self._encoder(graph)
 

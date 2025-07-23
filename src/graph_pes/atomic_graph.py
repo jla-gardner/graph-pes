@@ -1384,3 +1384,46 @@ def remove_mean_and_net_torque(
 
     # TODO: remove net torque
     return v
+
+
+@torch.jit.script  # scripted for improved performance over the for loop
+def keep_at_most_k_neighbours(
+    graph: AtomicGraph,
+    k: int,
+) -> AtomicGraph:
+    """
+    Prune the graph by only keeping the edges corresponding to the
+    ``k`` nearest neighbours of each atom.
+
+    Parameters
+    ----------
+    graph
+        The graph to prune.
+    k
+        The maximum number of neighbours to keep for each atom.
+    """
+
+    distances = neighbour_distances(graph)
+
+    new_nl, new_offsets = [], []
+    for i in range(number_of_atoms(graph)):
+        mask = graph.neighbour_list[0] == i
+        d = distances[mask]
+        if d.numel() == 0:
+            continue
+        elif d.numel() < k:
+            new_nl.append(graph.neighbour_list[:, mask])
+            new_offsets.append(graph.neighbour_cell_offsets[mask])
+        else:
+            topk = torch.topk(d, k=k, largest=False)
+            new_nl.append(graph.neighbour_list[:, mask][:, topk.indices])
+            new_offsets.append(graph.neighbour_cell_offsets[mask][topk.indices])
+
+    new_nl = torch.cat(new_nl, dim=1)
+    new_offsets = torch.cat(new_offsets, dim=0)
+
+    return replace(
+        graph,
+        neighbour_list=new_nl,
+        neighbour_cell_offsets=new_offsets,
+    )
