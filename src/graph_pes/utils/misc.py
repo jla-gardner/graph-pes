@@ -540,3 +540,12 @@ class MultiSequence(Sequence[T]):
             return MultiSequence(self.sequences, self.indices[index])
 
         raise NotImplementedError(f"Index {index} is not supported")
+
+
+def random_rotation_matrix() -> torch.Tensor:  # (3, 3)
+    """Generate a 3x3 random rotation matrix."""
+    rand = torch.randn(3, 3)
+    Q, _ = torch.linalg.qr(rand)
+    if torch.linalg.det(Q) < 0:
+        Q[:, 0] *= -1
+    return Q
