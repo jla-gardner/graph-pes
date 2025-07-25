@@ -285,6 +285,8 @@ def _seperate(
             preds["stress"] = batched_prediction["stress"][idx]
         if "virial" in batched_prediction:
             preds["virial"] = batched_prediction["virial"][idx]
+        if "equigrad" in batched_prediction:
+            preds["equigrad"] = batched_prediction["equigrad"][idx]
 
         # per-atom properties
         if "forces" in batched_prediction:

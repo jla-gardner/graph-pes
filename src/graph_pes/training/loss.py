@@ -357,6 +357,29 @@ class ForceRMSE(PropertyLoss):
         super().__init__("forces", RMSE(), weight)
 
 
+class EquigradRMSE(Loss):
+    """Minimise the mean absolute value of the equigrad"""
+
+    def __init__(self, weight: float = 1.0):
+        super().__init__(weight, is_per_atom=False)
+
+    def forward(
+        self,
+        model: GraphPESModel,
+        graph: AtomicGraph,
+        predictions: dict[PropertyKey, torch.Tensor],
+    ) -> torch.Tensor:
+        return predictions["equigrad"].abs().mean()
+
+    @property
+    def name(self) -> str:
+        return "mean_abs_equigrad"
+
+    @property
+    def required_properties(self) -> list[PropertyKey]:
+        return ["equigrad"]
+
+
 ## METRICS ##
 
 

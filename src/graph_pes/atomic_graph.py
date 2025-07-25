@@ -37,7 +37,7 @@ DEFAULT_CUTOFF: Final[float] = 5.0
 
 
 PropertyKey: TypeAlias = Literal[
-    "local_energies", "forces", "energy", "stress", "virial"
+    "local_energies", "forces", "energy", "stress", "virial", "equigrad"
 ]
 ALL_PROPERTY_KEYS: Final[List[PropertyKey]] = [
     "local_energies",
@@ -45,6 +45,7 @@ ALL_PROPERTY_KEYS: Final[List[PropertyKey]] = [
     "energy",
     "stress",
     "virial",
+    "equigrad",
 ]
 
 if not TYPE_CHECKING and not is_being_documented():
