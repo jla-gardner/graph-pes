@@ -828,11 +828,16 @@ def to_batch(
         from graph_pes.utils.threebody import triplet_edge_pairs
 
         # calculate the edge pairs on the worker thread
-        edge_pairs = triplet_edge_pairs(batched_graph, three_body_cutoff)
+        ij, S_ij, ik, S_ik = triplet_edge_pairs(
+            batched_graph, three_body_cutoff
+        )
 
         # and cache these on the batch
         key = f"__threebody-{three_body_cutoff:.3f}"
-        batched_graph.other[key] = edge_pairs
+        batched_graph.other[key + "-ij"] = ij
+        batched_graph.other[key + "-Sij"] = S_ij
+        batched_graph.other[key + "-ik"] = ik
+        batched_graph.other[key + "-Sik"] = S_ik
 
     return batched_graph
 
