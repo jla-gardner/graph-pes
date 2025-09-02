@@ -20,7 +20,7 @@ extensions = [
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
-    "ase": ("https://wiki.fysik.dtu.dk/ase/", None),
+    "ase": ("https://ase-lib.org", None),
     "e3nn": ("https://docs.e3nn.org/en/latest/", None),
     "pytorch_lightning": ("https://lightning.ai/docs/pytorch/stable/", None),
     "matplotlib": ("https://matplotlib.org/stable/", None),

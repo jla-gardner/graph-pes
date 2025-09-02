@@ -186,8 +186,11 @@ def test_triplets_on_isolated_atoms():
     )
     assert graph.neighbour_list.shape == (2, 0)
 
-    triplets = triplet_edge_pairs(graph, graph.cutoff)
-    assert triplets.shape == (0, 2)
+    ij, S_ij, ik, S_ik = triplet_edge_pairs(graph, graph.cutoff)
+    assert ij.shape == (2, 0)
+    assert S_ij.shape == (0, 3)
+    assert ik.shape == (2, 0)
+    assert S_ik.shape == (0, 3)
 
     _, angles, r_ij, r_ik = triplet_bond_descriptors(graph)
     assert angles.shape == (0,)
@@ -205,8 +208,11 @@ def test_triplets_on_isolated_atoms():
     # (up, [down, left, right, front, back]),
     # (down, [up, left, right, front, back]),
     # etc.
-    triplets = triplet_edge_pairs(graph, graph.cutoff)
-    assert triplets.shape == (30, 2)
+    ij, S_ij, ik, S_ik = triplet_edge_pairs(graph, graph.cutoff)
+    assert ij.shape == (2, 30)
+    assert S_ij.shape == (30, 3)
+    assert ik.shape == (2, 30)
+    assert S_ik.shape == (30, 3)
 
-    triplets = triplet_edge_pairs(graph, 0.5)
-    assert triplets.shape == (0, 2)
+    ij, *_ = triplet_edge_pairs(graph, 0.5)
+    assert ij.shape == (2, 0)
