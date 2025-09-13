@@ -102,10 +102,15 @@ def test_sum_per_structure():
     assert sum_per_structure(x, batch).tolist() == [3, 12]
 
     # and also for general sizes
-
     x = torch.ones(2, 3, 4)
     result = sum_per_structure(x, graphs[0])
     assert result.shape == (3, 4)
+
+    x = torch.ones(5, 4, 3)
+    result = sum_per_structure(x, batch)
+    assert result.shape == (2, 4, 3)
+    assert result[0].sum() == 2 * 4 * 3
+    assert result[1].sum() == 3 * 4 * 3
 
 
 def test_data_loader():

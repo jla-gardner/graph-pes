@@ -21,7 +21,7 @@ from graph_pes.atomic_graph import (
 from graph_pes.data.datasets import GraphDataset
 from graph_pes.utils.logger import logger
 
-from .utils.misc import differentiate, differentiate_all
+from .utils.misc import differentiate_all
 from .utils.nn import PerElementParameter
 
 if TYPE_CHECKING:
@@ -147,21 +147,19 @@ class GraphPESModel(nn.Module, ABC):
     @abstractmethod
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         """
-        The model's forward pass. Generate all properties for the given graph
+        The model's forward pass. Generates all properties for the given graph
         that are in this model's ``implemented_properties`` list.
 
         Parameters
         ----------
         graph
-            The graph representation of the structure/s.
+            The graph representation of the (optionally batched) structure(/s).
 
         Returns
         -------
         dict[PropertyKey, torch.Tensor]
             A dictionary mapping each implemented property to a tensor of
-            predictions (see above for the expected shapes). Use
-            :func:`~graph_pes.atomic_graph.is_batch` to check if the
-            graph is batched in the forward pass.
+            predictions (see above for the expected shapes).
         """
         ...
 
@@ -171,8 +169,8 @@ class GraphPESModel(nn.Module, ABC):
         properties: list[PropertyKey],
     ) -> dict[PropertyKey, torch.Tensor]:
         """
-        Generate (optionally batched) predictions for the given
-        ``properties`` and  ``graph``.
+        Generate (optionally batched) predictions of
+        ``properties`` for the given ``graph``.
 
         This method returns a dictionary mapping each requested
         ``property`` to a tensor of predictions, relying on the model's
@@ -186,170 +184,192 @@ class GraphPESModel(nn.Module, ABC):
             The graph representation of the structure/s.
         properties
             The properties to predict. Can be any combination of
-            ``"energy"``, ``"forces"``, ``"stress"``, ``"virial"``, and
-            ``"local_energies"``.
+            ``"energy"``, ``"forces"``, ``"stress"``, ``"virial"``,
+            ``"local_energies"``, and ``"equigrad"``.
         """
 
         # before anything, remove unnecessary edges:
         graph = trim_edges(graph, self.cutoff.item())
 
-        # and prevent altering the original graph
-        graph = replace(
-            graph,
-            R=graph.R.clone().detach(),
-            cell=graph.cell.clone().detach(),
-        )
-
-        # check to see if we need to infer any properties
-        infer_forces = (
-            "forces" in properties
-            and "forces" not in self.implemented_properties
-        )
-        infer_stress_information = (
-            # we need to infer stress information if we're asking for
-            # the stress or the virial and the model doesn't
-            # implement either of them direct
-            ("stress" in properties or "virial" in properties)
-            and "stress" not in self.implemented_properties
-            and "virial" not in self.implemented_properties
-        )
-        if infer_stress_information and not has_cell(graph):
-            raise ValueError("Can't predict stress without cell information.")
-        infer_energy = (
-            any([infer_stress_information, infer_forces])
-            or "energy" not in self.implemented_properties
-        )
-
-        # inference specific set up
-        if infer_stress_information:
-            # See About>Theory in the graph-pes for an explanation of the
-            # maths behind this.
-            #
-            # The stress tensor is the gradient of the total energy wrt
-            # a symmetric expansion of the structure (i.e. that acts on
-            # both the cell and the atomic positions).
-            #
-            # F. Knuth et al. All-electron formalism for total energy strain
-            # derivatives and stress tensor components for numeric atom-centered
-            # orbitals. Computer Physics Communications 190, 33–50 (2015).
-
-            change_to_cell = torch.zeros_like(graph.cell)
-            change_to_cell.requires_grad_(True)
-            symmetric_change = 0.5 * (
-                change_to_cell + change_to_cell.transpose(-1, -2)
-            )  # (n_structures, 3, 3) if batched, else (3, 3)
-            scaling = torch.eye(3, device=graph.cell.device) + symmetric_change
-
-            # torchscript annoying-ness:
-            graph_batch = graph.batch
-            if graph_batch is not None:
-                scaling_per_atom = torch.index_select(
-                    scaling,
-                    dim=0,
-                    index=graph_batch,
-                )  # (n_atoms, 3, 3)
-
-                # to go from (N, 3) @ (N, 3, 3) -> (N, 3), we need un/squeeze:
-                # (N, 1, 3) @ (N, 3, 3) -> (N, 1, 3) -> (N, 3)
-                new_positions = (
-                    graph.R.unsqueeze(-2) @ scaling_per_atom
-                ).squeeze()
-                # (M, 3, 3) @ (M, 3, 3) -> (M, 3, 3)
-                new_cell = graph.cell @ scaling
-
-            else:
-                # (N, 3) @ (3, 3) -> (N, 3)
-                new_positions = graph.R @ scaling
-                new_cell = graph.cell @ scaling
-
-            # change to positions will be a tensor of all 0's, but will allow
-            # gradients to flow backwards through the energy calculation
-            # and allow us to calculate the stress tensor as the gradient
-            # of the energy wrt the change in cell.
-
-            graph = replace(graph, R=new_positions, cell=new_cell)
-
-        else:
-            change_to_cell = torch.zeros_like(graph.cell)
-
-        if infer_forces:
-            graph.R.requires_grad_(True)
-
-        # get the implemented properties
-        predictions = self(graph)
-
-        if infer_energy:
-            if "local_energies" not in predictions:
-                raise ValueError("Can't infer energy without local energies.")
-
-            predictions["energy"] = sum_per_structure(
-                predictions["local_energies"],
-                graph,
-            )
-
-        # use the autograd machinery to auto-magically
-        # calculate forces and stress from the energy
-
         cell_volume = torch.det(graph.cell)
         if is_batch(graph):
             cell_volume = cell_volume.view(-1, 1, 1)
 
-        # ugly triple if loops to be efficient with autograd
-        # while also Torchscript compatible
-        if infer_forces and infer_stress_information:
-            assert "energy" in predictions
-            dE_dR, dE_dC = differentiate_all(
-                predictions["energy"],
-                [graph.R, change_to_cell],
-                keep_graph=self.training,
-            )
-            predictions["forces"] = -dE_dR
-            predictions["virial"] = -dE_dC
-            predictions["stress"] = dE_dC / cell_volume
+        # check to see whether we need to infer any information via autograd
+        need_autograd = "equigrad" in properties
+        if (
+            "forces" in properties
+            and "forces" not in self.implemented_properties
+        ):
+            need_autograd = True
 
-        elif infer_forces:
-            assert "energy" in predictions
-            dE_dR = differentiate(
-                predictions["energy"],
-                graph.R,
-                keep_graph=self.training,
-            )
-            predictions["forces"] = -dE_dR
-        elif infer_stress_information:
-            assert "energy" in predictions
-            dE_dC = differentiate(
-                predictions["energy"],
-                change_to_cell,
-                keep_graph=self.training,
-            )
-            predictions["virial"] = -dE_dC
-            predictions["stress"] = dE_dC / cell_volume
+        can_predict_stress_or_virial = (
+            "stress" in self.implemented_properties
+            or "virial" in self.implemented_properties
+        )
+        if (
+            "stress" in properties or "virial" in properties
+        ) and not can_predict_stress_or_virial:
+            need_autograd = True
 
-        # finally, we might not have needed autograd to infer stress/virial
-        # if the other was implemented on the base class:
-        if not infer_stress_information:
+        # easy case
+        if not need_autograd:
+            preds = self(graph)
+            if "energy" not in preds and "energy" in properties:
+                if "local_energies" not in preds:
+                    raise ValueError(
+                        "Can't infer energy without local energies."
+                    )
+                preds["energy"] = sum_per_structure(
+                    preds["local_energies"], graph
+                )
+
             if (
                 "stress" in properties
                 and "stress" not in self.implemented_properties
             ):
-                predictions["stress"] = -predictions["virial"] / cell_volume
+                assert "virial" in preds
+                preds["stress"] = -preds["virial"] / cell_volume
             if (
                 "virial" in properties
                 and "virial" not in self.implemented_properties
             ):
-                predictions["virial"] = -predictions["stress"] * cell_volume
+                assert "stress" in preds
+                preds["virial"] = -preds["stress"] * cell_volume
 
-        # make sure we don't leave auxiliary predictions
-        # e.g. local_energies if we only asked for energy
-        #      or energy if we only asked for forces
-        predictions = {prop: predictions[prop] for prop in properties}
+            # keep only requested properties and remove grads if not training
+            final_preds: dict[PropertyKey, torch.Tensor] = {}
+            for k in properties:
+                final_preds[k] = (
+                    preds[k].detach() if not self.training else preds[k]
+                )
 
-        # tidy up if in eval mode
-        if not self.training:
-            predictions = {k: v.detach() for k, v in predictions.items()}
+            return final_preds
 
-        # return the output
-        return predictions  # type: ignore
+        # more involved case: we want to infer properties via autograd
+        # in which case, we just infer everything we can (adds almost 0
+        # overhead cost) and then keep the inferred properties we need
+
+        R_required_grad = graph.R.requires_grad
+
+        #######################
+        ###### 1. forces ######
+        #######################
+        original_R = graph.R
+        original_R.requires_grad_(True)
+
+        #######################
+        ###### 2. stress ######
+        #######################
+
+        # See About>Theory in the graph-pes docs for an explanation of the
+        # maths behind this.
+        #
+        # The stress tensor is the gradient of the total energy wrt
+        # a symmetric expansion of the structure (i.e. that acts on
+        # both the cell and the atomic positions).
+        #
+        # F. Knuth et al. All-electron formalism for total energy strain
+        # derivatives and stress tensor components for numeric atom-centered
+        # orbitals. Computer Physics Communications 190, 33–50 (2015).
+
+        change_to_cell = torch.zeros_like(graph.cell)
+        change_to_cell.requires_grad_(True)
+        symmetric_change = 0.5 * (
+            change_to_cell + change_to_cell.transpose(-1, -2)
+        )  # (n_structures, 3, 3) if batched, else (3, 3)
+        scaling = torch.eye(3, device=graph.cell.device) + symmetric_change
+
+        # torchscript annoying-ness:
+        graph_batch = graph.batch
+        if graph_batch is not None:
+            scaling_per_atom = torch.index_select(
+                scaling,
+                dim=0,
+                index=graph_batch,
+            )  # (n_atoms, 3, 3)
+
+            # to go from (N, 3) @ (N, 3, 3) -> (N, 3), we need un/squeeze:
+            # (N, 1, 3) @ (N, 3, 3) -> (N, 1, 3) -> (N, 3)
+            new_positions = (graph.R.unsqueeze(-2) @ scaling_per_atom).squeeze()
+            # (M, 3, 3) @ (M, 3, 3) -> (M, 3, 3)
+            new_cell = graph.cell @ scaling
+
+        else:
+            # (N, 3) @ (3, 3) -> (N, 3)
+            new_positions = graph.R @ scaling
+            new_cell = graph.cell @ scaling
+
+        #######################
+        ##### 3. equigrad #####
+        #######################
+        generator = torch.zeros_like(graph.cell)  # (B, 3, 3) or (3, 3)
+        generator.requires_grad_(True)
+        identity_rotation = torch.matrix_exp(
+            generator - torch.transpose(generator, dim0=-2, dim1=-1)
+        )  # (B, 3, 3) or (3, 3)
+        if graph_batch is not None:
+            new_positions = torch.einsum(
+                "bj, bjk -> bk",
+                new_positions,
+                identity_rotation[graph_batch],
+            )
+            new_cell = torch.einsum(
+                "bij, bjk -> bik",
+                new_cell,
+                identity_rotation[graph_batch],
+            )
+
+            # new_positions = torch.bmm(
+            # new_positions.unsqueeze(1),
+            # identity_rotation[graph_batch],
+            # ).squeeze(1)
+            # new_cell = torch.bmm(new_cell, identity_rotation)
+        else:
+            new_positions = new_positions @ identity_rotation
+            new_cell = new_cell @ identity_rotation
+
+        graph = replace(graph, R=new_positions, cell=new_cell)
+
+        # get the implemented properties
+        predictions = self(graph)
+
+        if "energy" not in predictions:
+            if "local_energies" not in predictions:
+                raise ValueError("Can't infer energy without local energies.")
+            predictions["energy"] = sum_per_structure(
+                predictions["local_energies"], graph
+            )
+
+        dE_dR, dE_dC, dE_dG = differentiate_all(
+            predictions["energy"],
+            [original_R, change_to_cell, generator],
+            keep_graph=self.training,
+        )
+        if "forces" not in predictions:
+            predictions["forces"] = -dE_dR
+        if "virial" not in predictions:
+            predictions["virial"] = -dE_dC
+        if "stress" not in predictions:
+            predictions["stress"] = dE_dC / cell_volume
+        if "equigrad" not in predictions:
+            # dE_dG is (B, 3, 3) or (3, 3)
+            if is_batch(graph):
+                predictions["equigrad"] = dE_dG.abs().sum(dim=(-1, -2))
+            else:
+                predictions["equigrad"] = dE_dG.abs().sum()
+
+        # keep only requested properties and remove grads if not training
+        final_preds: dict[PropertyKey, torch.Tensor] = {}
+        for k in properties:
+            final_preds[k] = (
+                predictions[k].detach() if not self.training else predictions[k]
+            )
+
+        # put things back to the way we found them
+        original_R.requires_grad_(R_required_grad)
+
+        return final_preds
 
     @torch.no_grad()
     def pre_fit_all_components(
@@ -421,7 +441,11 @@ class GraphPESModel(nn.Module, ABC):
             self.pre_fit(graph_batch)
             # pre-fit any sub-module with a pre_fit method
             for module in self.modules():
-                if hasattr(module, "pre_fit") and module is not self:
+                if (
+                    hasattr(module, "pre_fit")
+                    and module is not self
+                    and callable(module.pre_fit)
+                ):
                     module.pre_fit(graph_batch)
 
             self._has_been_pre_fit = torch.tensor(1)
@@ -459,7 +483,9 @@ class GraphPESModel(nn.Module, ABC):
         for module in self.modules():
             if module is self:
                 continue
-            if hasattr(module, "non_decayable_parameters"):
+            if hasattr(module, "non_decayable_parameters") and callable(
+                module.non_decayable_parameters
+            ):
                 found.extend(module.non_decayable_parameters())
         return found
 
@@ -635,7 +661,7 @@ class GraphPESModel(nn.Module, ABC):
                 "torch_sim is not installed. Please install it using "
                 "pip install torch-sim-atomistic"
             )
-        from torch_sim.models.graphpes import GraphPESWrapper
+        from torch_sim.models.graphpes import GraphPESWrapper  # type: ignore
 
         return GraphPESWrapper(
             self.eval(),

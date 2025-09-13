@@ -4,6 +4,7 @@ import torch
 from ase.build import molecule
 
 from graph_pes import AtomicGraph, GraphPESModel
+from graph_pes.models import Orb
 
 from .. import helpers
 
@@ -12,6 +13,10 @@ CUTOFF = 1.2  # bond length of methane is ~1.09 Å
 
 @helpers.parameterise_all_models(expected_elements=["H", "C"], cutoff=CUTOFF)
 def test_equivariance(model: GraphPESModel):
+    if isinstance(model, Orb):
+        # orb is not equivariant to rotation
+        return
+
     methane = molecule("CH4")
     og_graph = AtomicGraph.from_ase(methane, cutoff=CUTOFF)
     og_predictions = model.get_all_PES_predictions(og_graph)

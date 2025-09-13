@@ -38,10 +38,6 @@ def test_predictions():
     for key in "energy", "forces", "local_energies":
         assert predictions[key].shape == expected_shapes[key]
 
-    # if we ask for stress, we get an error:
-    with pytest.raises(ValueError):
-        model.predict(no_pbc, properties=["stress"])
-
     # with pbc structures, we should get all predictions
     predictions = model.get_all_PES_predictions(pbc)
     assert set(predictions.keys()) == {
