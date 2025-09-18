@@ -11,6 +11,8 @@ from mace.modules import ScaleShiftMACE, gate_dict, interaction_classes
 from graph_pes.atomic_graph import AtomicGraph, to_batch
 from graph_pes.interfaces._mace import (
     MACEWrapper,
+    _fix_dtype,
+    _get_dtype,
     go_mace_23,
     mace_mp,
     mace_off,
@@ -163,6 +165,15 @@ def test_go_mace_23():
     calc.calculate(CH4, properties=["energy", "forces"])
     assert np.abs(calc.results["forces"][0]).max() < 1e-5
 
+def test_mace_omol():
+    from mace.calculators import mace_omol
+    dtype = _get_dtype(None)
+    model = mace_omol(device="cpu", return_raw_model=True)
+    _fix_dtype(model, dtype)
+    wrapper = MACEWrapper(model)
+    calc = wrapper.ase_calculator()
+    calc.calculate(CH4, properties=["energy", "forces"])
+    assert np.abs(calc.results["forces"][0]).max() < 1e-5
 
 def test_z_to_onehot_raises_error():
     with pytest.raises(ValueError, match="ZToOneHot received an atomic number"):

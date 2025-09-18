@@ -37,7 +37,11 @@ DEFAULT_CUTOFF: Final[float] = 5.0
 
 
 PropertyKey: TypeAlias = Literal[
-    "local_energies", "forces", "energy", "stress", "virial"
+    "local_energies",
+    "forces",
+    "energy",
+    "stress",
+    "virial",
 ]
 ALL_PROPERTY_KEYS: Final[List[PropertyKey]] = [
     "local_energies",
@@ -415,11 +419,16 @@ class AtomicGraph(NamedTuple):
             all_keys = set(structure.info) | set(structure.arrays)
             property_mapping = {
                 k: cast(PropertyKey, k)
-                for k in ["energy", "forces", "stress", "virial"]
+                for k in [
+                    "energy",
+                    "forces",
+                    "stress",
+                    "virial",
+                ]
                 if k in all_keys
             }
         if others_to_include is None:
-            others_to_include = []
+            others_to_include = ["total_charge", "total_spin"]
 
         def to_tensor(value):
             t = torch.tensor(value)
@@ -427,20 +436,19 @@ class AtomicGraph(NamedTuple):
                 t = t.to(_float)
             return t
 
-        for key, value in list(structure.info.items()) + list(
-            structure.arrays.items()
-        ):
+        for key, value in list(structure.info.items()) + list(structure.arrays.items()):
             if key in property_mapping:
                 property = property_mapping[key]
                 # ensure stress is always 3x3, not voigt notation
-                if property in ["stress", "virial"] and value.reshape(
-                    -1
-                ).shape == (6,):
+                if property in ["stress", "virial"] and value.reshape(-1).shape == (6,):
                     value = voigt_6_to_full_3x3_stress(value)
                 properties[property] = to_tensor(value)
 
             elif key in others_to_include:
                 other[key] = to_tensor(value)
+
+        for key, default in [("total_charge", 0.0), ("total_spin", 1.0)]:
+            other.setdefault(key, torch.tensor(default, dtype=_float))
 
         missing = set(
             structure_key
@@ -574,9 +582,7 @@ class AtomicGraph(NamedTuple):
             atoms.info[key] = value.detach().cpu().numpy()
 
         if "energy" in self.properties:
-            atoms.info["energy"] = (
-                self.properties["energy"].detach().cpu().item()
-            )
+            atoms.info["energy"] = self.properties["energy"].detach().cpu().item()
 
         for key in ["stress", "virial"]:
             if key in self.properties:
@@ -610,12 +616,14 @@ def replace(
         Z=Z if Z is not None else graph.Z,
         R=R if R is not None else graph.R,
         cell=cell if cell is not None else graph.cell,
-        neighbour_list=neighbour_list
-        if neighbour_list is not None
-        else graph.neighbour_list,
-        neighbour_cell_offsets=neighbour_cell_offsets
-        if neighbour_cell_offsets is not None
-        else graph.neighbour_cell_offsets,
+        neighbour_list=(
+            neighbour_list if neighbour_list is not None else graph.neighbour_list
+        ),
+        neighbour_cell_offsets=(
+            neighbour_cell_offsets
+            if neighbour_cell_offsets is not None
+            else graph.neighbour_cell_offsets
+        ),
         properties=properties if properties is not None else graph.properties,
         other=other if other is not None else graph.other,
         cutoff=cutoff if cutoff is not None else graph.cutoff,
@@ -629,9 +637,7 @@ def replace(
 
 
 class CustomPropertyBatcher(Protocol):
-    def __call__(
-        self, batch: AtomicGraph, values: list[torch.Tensor]
-    ) -> torch.Tensor:
+    def __call__(self, batch: AtomicGraph, values: list[torch.Tensor]) -> torch.Tensor:
         """
         Batch the given values.
 
@@ -828,9 +834,7 @@ def to_batch(
         from graph_pes.utils.threebody import triplet_edge_pairs
 
         # calculate the edge pairs on the worker thread
-        ij, S_ij, ik, S_ik = triplet_edge_pairs(
-            batched_graph, three_body_cutoff
-        )
+        ij, S_ij, ik, S_ik = triplet_edge_pairs(batched_graph, three_body_cutoff)
 
         # and cache these on the batch
         key = f"__threebody-{three_body_cutoff:.3f}"

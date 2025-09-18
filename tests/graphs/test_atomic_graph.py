@@ -27,7 +27,13 @@ RANDOM_STRUCTURE = Atoms(
     pbc=True,
     cell=np.eye(3),
 )
-STRUCTURES = [ISOLATED_ATOM, PERIODIC_ATOM, DIMER, RANDOM_STRUCTURE]
+CHARGED_STRUCTURE = Atoms(
+    "H",
+    positions=[(0, 0, 0)],
+    pbc=False,
+    info={"total_charge": 1,},
+)
+STRUCTURES = [ISOLATED_ATOM, PERIODIC_ATOM, DIMER, RANDOM_STRUCTURE, CHARGED_STRUCTURE]
 GRAPHS = [AtomicGraph.from_ase(s, cutoff=1.0) for s in STRUCTURES]
 
 
@@ -39,6 +45,7 @@ def test_general(structure: Atoms, graph: AtomicGraph):
     assert n_edges == graph.neighbour_list.shape[1]
     assert n_edges == neighbour_vectors(graph).shape[0]
     assert n_edges == neighbour_distances(graph).shape[0]
+    assert graph.other["total_spin"].item() == 1.0
 
 
 def test_iso_atom():
@@ -61,6 +68,12 @@ def test_random_structure(cutoff: int):
     assert number_of_atoms(graph) == 8
 
     assert neighbour_distances(graph).max() <= cutoff
+
+def test_charged_structure():
+    graph = AtomicGraph.from_ase(CHARGED_STRUCTURE, cutoff=1.0)
+    assert number_of_atoms(graph) == 1
+    assert number_of_edges(graph) == 0
+    assert graph.other["total_charge"].item() == 1.0
 
 
 def test_get_labels():
