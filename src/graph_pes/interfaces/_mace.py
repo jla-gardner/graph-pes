@@ -65,10 +65,12 @@ def _atomic_graph_to_mace_input(
     )  # (E, 3)
     data = {
         "node_attrs": z_to_one_hot.forward(graph.Z).to(graph.R.dtype),
-        "positions": graph.R.clone(),
+        "positions": graph.R.clone().requires_grad_(True),
         "cell": cell.clone(),
         "edge_index": graph.neighbour_list,
         "unit_shifts": graph.neighbour_cell_offsets,
+        "total_charge": torch.atleast_1d(graph.other["total_charge"]),
+        "total_spin": torch.atleast_1d(graph.other["total_spin"]),
         "shifts": _shifts,
         "batch": batch,
         "ptr": ptr,
@@ -134,7 +136,6 @@ class MACEWrapper(InterfaceModel):
             "stress": "stress",
             "virials": "virial",
         }
-
         raw_predictions = self.model.forward(
             input,
             training=self.training,
@@ -142,7 +143,6 @@ class MACEWrapper(InterfaceModel):
             compute_stress="stress" in properties,
             compute_virials="virial" in properties,
         )
-
         predictions: dict[PropertyKey, torch.Tensor] = {}
         for key, value in raw_predictions.items():
             if key in MACE_KEY_MAPPING:
