@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Avoid directly overriding `numel` method for `PerElementParameter`s.
+
 Fixed a bug where the threebody edge pairs were not being cached correctly.
 
 # [0.1.6] - 2025-06-03

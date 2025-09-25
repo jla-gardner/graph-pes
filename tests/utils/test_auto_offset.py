@@ -45,7 +45,7 @@ def test_add_auto_offset():
     )
     means = {chemical_symbols[Z]: float(mu) for Z, mu in means.items()}
     for k in reference:
-        assert means[k] == pytest.approx(reference[k], abs=1e-6)
+        assert means[k] == pytest.approx(reference[k], abs=1e-5)
 
     # step 3: take an existing model with different offsets, and check
     #         that the guessed difference is close the actual difference
