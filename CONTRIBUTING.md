@@ -33,7 +33,8 @@ uv run pre-commit install
 
 **If you're making changes to the code:**
 
-Now make your changes. Make sure to include additional tests if necessary.
+Now make your changes. 
+Make sure to include additional tests if necessary.
 
 Next verify the tests all pass:
 
