@@ -41,6 +41,12 @@ Next verify the tests all pass:
 uv run pytest tests/
 ```
 
+Alternatively, run a specific test with:
+
+```bash
+uv run pytest tests/<test_name>.py
+```
+
 Then push your changes back to your fork of the repository:
 
 ```bash
