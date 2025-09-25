@@ -38,7 +38,7 @@ Alternatively, for a 0-install quickstart experience, please see [this Google Co
 
 ## Contributing
 
-Contributions are welcome! If you find any issues or have suggestions for new features, please open an issue or submit a pull request on the [GitHub repository](https://github.com/jla-gardner/graph-pes).
+Contributions are welcome! If you find any issues or have suggestions for new features, please open an issue or submit a pull request on the [GitHub repository](https://github.com/jla-gardner/graph-pes). Please see our [CONTRIBUTING.md](CONTRIBUTING.md) file for more details.
 
 ## Citing `graph-pes`
 
