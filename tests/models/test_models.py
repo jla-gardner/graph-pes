@@ -25,6 +25,7 @@ from graph_pes.models import (
 )
 from graph_pes.models.addition import AdditionModel
 from graph_pes.models.stillinger_weber import StillingerWeber
+from graph_pes.utils.nn import count_used_parameters
 
 from .. import helpers
 
@@ -38,7 +39,7 @@ def test_model():
     model = LennardJones(cutoff=3.0)
     model.pre_fit_all_components(graphs[:2])
 
-    assert sum(p.numel() for p in model.parameters()) == 2
+    assert count_used_parameters(model) == 2
 
     predictions = model.get_all_PES_predictions(to_batch(graphs))
     assert "energy" in predictions

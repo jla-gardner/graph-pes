@@ -12,7 +12,7 @@ from graph_pes.models import (
     SchNet,
 )
 from graph_pes.models.addition import AdditionModel
-from graph_pes.utils.nn import PerElementParameter
+from graph_pes.utils.nn import PerElementParameter, count_used_parameters
 
 from ..helpers import DoesNothingModel
 
@@ -36,7 +36,7 @@ def test_fixed():
     assert len(params) == 1
 
     # there should be 2 values, since we passed 2 offset energies
-    assert params[0].numel() == 2
+    assert params[0].num_used_el() == 2  # type: ignore
 
 
 def test_scaling():
@@ -47,12 +47,12 @@ def test_scaling():
     assert params[0] is model.scaler.per_element_scaling
 
     # there should be no countable values in this parameter
-    assert params[0].numel() == 0
+    assert params[0].num_used_el() == 0  # type: ignore
 
     model.pre_fit_all_components(graphs)
     # now the model has seen info about 2 elements:
     # there should be 2 countable elements on the model
-    assert params[0].numel() == 2
+    assert params[0].num_used_el() == 2  # type: ignore
 
 
 def test_counting():
@@ -62,7 +62,7 @@ def test_counting():
         schnet=SchNet(channels=_schnet_dim),
     )
 
-    non_pre_fit_params = sum(p.numel() for p in model.parameters())
+    non_pre_fit_params = count_used_parameters(model)
 
     # 3 per-element parameters:
     #   1. the offsets in LearnableOffset
@@ -75,7 +75,7 @@ def test_counting():
 
     model.pre_fit_all_components(graphs)
 
-    post_fit_params = sum(p.numel() for p in model.parameters())
+    post_fit_params = count_used_parameters(model)
 
     # seen 2 elements (C and H), leading to a total of:
     #   1. 2 countable elements in the offsets
@@ -87,7 +87,7 @@ def test_counting():
 def test_lj():
     lj = LennardJones()
     # lj has two parameters: epsilon and sigma
-    assert sum(p.numel() for p in lj.parameters()) == 2
+    assert count_used_parameters(lj) == 2
 
 
 def test_lj_mixture():
@@ -100,4 +100,4 @@ def test_lj_mixture():
     # nu and zeta term for each ordered pair of elements
     expected_params += 2 * 2 * 2
 
-    assert sum(p.numel() for p in lj_mixture.parameters()) == expected_params
+    assert count_used_parameters(lj_mixture) == expected_params
