@@ -1,27 +1,32 @@
 # Contributing
 
-Contributions to `graph-pes` via pull requests are very welcome! Here's how to get started.
+Contributions to `graph-pes` via pull requests are very welcome! H
+ere's how to get started.
 
 ---
 
 **Getting started**
 
-First fork the library on GitHub.
-
-Then clone and install the library in development mode:
+Fork the repo on GitHub, and clone it to your local machine.
 
 ```bash
 git clone https://github.com/<your-username-here>/graph-pes.git
 cd graph-pes
-pip install -e ".[dev]"
 ```
 
-Alternatively, you can use [`uv`](https://docs.astral.sh/uv/):
+Development on `graph-pes` makes use of the `uv` package/project manager. 
+You can find more information about `uv` [here](https://docs.astral.sh/uv/). 
+To install the `graph-pes` dependencies, run:
 
 ```bash
-git clone https://github.com/<your-username-here>/graph-pes.git
-cd graph-pes
 uv sync --all-extras
+```
+
+Finally, install the pre-commit hooks. 
+This will ensure that any code you commit is formatted in a manner consistent with the rest of the codebase.
+
+```bash
+uv run pre-commit install
 ```
 
 ---
@@ -33,8 +38,7 @@ Now make your changes. Make sure to include additional tests if necessary.
 Next verify the tests all pass:
 
 ```bash
-pip install pytest
-pytest tests/  # or uv run pytest tests/
+uv run pytest tests/
 ```
 
 Then push your changes back to your fork of the repository:
@@ -52,8 +56,7 @@ Finally, open a pull request on GitHub!
 Make your changes. You can then build the documentation by doing
 
 ```bash
-pip install -e ".[docs]"  # or uv sync --extra docs
-sphinx-autobuild docs/source docs/build
+uv run sphinx-autobuild docs/source docs/build
 ```
 
 You can then see your local copy of the documentation by navigating to `localhost:8000` in a web browser.
