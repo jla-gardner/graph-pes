@@ -25,16 +25,16 @@ def test_per_element_parameter(tmp_path):
 
     # no elements have been registered, so there should (appear to) be no
     # trainable parameters
-    assert pep.numel() == 0
+    assert pep.num_used_el() == 0
 
     # register the parameter for use with hydrogen
     pep.register_elements([1])
-    assert pep.numel() == 5
+    assert pep.num_used_el() == 5
 
     # test save and loading
     torch.save(pep, tmp_path / "pep.pt")
     pep_loaded = torch.load(tmp_path / "pep.pt", weights_only=False)
-    assert pep_loaded.numel() == 5
+    assert pep_loaded.num_used_el() == 5
     assert pep.data.allclose(pep_loaded.data)
     assert pep.requires_grad == pep_loaded.requires_grad
     assert pep._accessed_Zs == pep_loaded._accessed_Zs
@@ -59,7 +59,7 @@ def test_per_element_embedding():
     embedding._embeddings.register_elements([1, 2, 3, 4, 5])
     Z = torch.tensor([1, 2, 3, 4, 5])
     assert embedding(Z).shape == (5, 10)
-    assert embedding.parameters().__next__().numel() == 50
+    assert embedding.parameters().__next__().num_used_el() == 50  # type: ignore
 
 
 def test_mlp():

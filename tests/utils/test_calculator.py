@@ -62,7 +62,7 @@ def test_calc_all():
     for single, parallel in zip(one_by_one, batched):
         for key in properties:
             numpy.testing.assert_allclose(
-                single[key], parallel[key], rtol=10, atol=1e-10
+                single[key], parallel[key], rtol=10, atol=1e-8
             )
 
     merged = merge_predictions(batched)

@@ -131,4 +131,10 @@ filterwarnings = [
 norecursedirs = "tests/helpers"
 
 [dependency-groups]
-dev = ["bumpver>=2024.1130", "notebook>=7.3.2", "ruff", "sphinx-autobuild"]
+dev = [
+    "bumpver>=2024.1130",
+ "notebook>=7.3.2",
+ "pre-commit>=4.3.0",
+ "ruff",
+ "sphinx-autobuild",
+]

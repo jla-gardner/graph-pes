@@ -849,7 +849,13 @@ def to_batch(
         )
 
         # and cache these on the batch
-        key = f"__threebody-{three_body_cutoff:.3f}"
+        # stupidly verbose to make torchscript happy
+        cutoff_str = str(
+            torch.round(
+                torch.tensor(float(three_body_cutoff)), decimals=3
+            ).item()
+        )
+        key = "__threebody-" + cutoff_str
         batched_graph.other[key + "-ij"] = ij
         batched_graph.other[key + "-Sij"] = S_ij
         batched_graph.other[key + "-ik"] = ik
