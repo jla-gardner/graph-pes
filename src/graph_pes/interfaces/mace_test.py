@@ -14,6 +14,7 @@ from graph_pes.interfaces._mace import (
     go_mace_23,
     mace_mp,
     mace_off,
+    mace_omol,
 )
 from graph_pes.utils.calculator import GraphPESCalculator
 
@@ -160,6 +161,14 @@ def test_go_mace_23():
     base_model = go_mace_23()
     calc = GraphPESCalculator(base_model)
 
+    calc.calculate(CH4, properties=["energy", "forces"])
+    assert np.abs(calc.results["forces"][0]).max() < 1e-5
+
+
+def test_mace_omol():
+    base_model = mace_omol()
+    calc = GraphPESCalculator(base_model)
+    
     calc.calculate(CH4, properties=["energy", "forces"])
     assert np.abs(calc.results["forces"][0]).max() < 1e-5
 
