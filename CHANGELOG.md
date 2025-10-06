@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Added default spin and charge states in the atomic graph.
+This allows using model's which use the above as input features to the model, e.g. MACE-OMOL.
+
+Also added a MACE-OMOL convenience function.
+
+## [Unreleased]
+
 Fixed a bug where the threebody edge pairs were not being cached correctly.
 
 # [0.1.6] - 2025-06-03

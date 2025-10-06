@@ -31,9 +31,17 @@ CHARGED_STRUCTURE = Atoms(
     "H",
     positions=[(0, 0, 0)],
     pbc=False,
-    info={"total_charge": 1,},
+    info={
+        "total_charge": 1,
+    },
 )
-STRUCTURES = [ISOLATED_ATOM, PERIODIC_ATOM, DIMER, RANDOM_STRUCTURE, CHARGED_STRUCTURE]
+STRUCTURES = [
+    ISOLATED_ATOM,
+    PERIODIC_ATOM,
+    DIMER,
+    RANDOM_STRUCTURE,
+    CHARGED_STRUCTURE,
+]
 GRAPHS = [AtomicGraph.from_ase(s, cutoff=1.0) for s in STRUCTURES]
 
 
@@ -68,6 +76,7 @@ def test_random_structure(cutoff: int):
     assert number_of_atoms(graph) == 8
 
     assert neighbour_distances(graph).max() <= cutoff
+
 
 def test_charged_structure():
     graph = AtomicGraph.from_ase(CHARGED_STRUCTURE, cutoff=1.0)

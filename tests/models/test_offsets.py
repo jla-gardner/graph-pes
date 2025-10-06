@@ -27,13 +27,13 @@ graphs = [
 def test_offset_behaviour(offset_model: EnergyOffset, trainable: bool):
     assert offset_model._offsets.requires_grad == trainable
     total_parameters = sum(p.numel() for p in offset_model.parameters())
-    assert (
-        total_parameters == 2
-    ), "expected 2 parameters (energy offsets for He and Cu)"
+    assert total_parameters == 2, (
+        "expected 2 parameters (energy offsets for He and Cu)"
+    )
 
-    assert (
-        offset_model._offsets[2] == 1
-    ), "expected offset for He to be as specified"
+    assert offset_model._offsets[2] == 1, (
+        "expected offset for He to be as specified"
+    )
 
     graph = graphs[0]
     n = number_of_atoms(graph)

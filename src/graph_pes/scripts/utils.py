@@ -54,7 +54,7 @@ def get_data_from_cli_arg(arg: str) -> dict:
                 return yaml.safe_load(f)
         except Exception as e:
             logger.error(
-                f"You specified a config file ({arg}) " "that we couldn't load."
+                f"You specified a config file ({arg}) that we couldn't load."
             )
             raise e
 

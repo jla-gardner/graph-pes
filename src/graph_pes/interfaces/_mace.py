@@ -371,6 +371,45 @@ def egret(
     return _mace_from_url(urls[model], model)
 
 
+def mace_omol(
+    model: Literal["extra_-large"] = "extra_large",
+    precision: Literal["float32", "float64"] | None = None,
+) -> MACEWrapper:
+    """
+    Download a MACE-OMOL model and convert it for use with ``graph-pes``.
+    Note, the model is currently still in active development and requires use of
+    development branches from the `mace-torch <https://github.com/ACEsuit/mace-torch>`__
+    package.
+
+    Publication supporting the model is in preparation.
+
+    Parameters
+    ----------
+    model
+        The size of the MACE-OMOL model to download. Currently, only
+        ``extra_large`` is available.
+    precision
+        The precision of the model.
+    """
+    from mace.calculators import mace_omol
+
+    dtype = _get_dtype(precision)
+    precision_str = {torch.float32: "float32", torch.float64: "float64"}[dtype]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=FutureWarning)
+        with redirect_stdout(None):
+            mace_torch_model = mace_omol(
+                model,
+                device="cpu",
+                default_dtype=precision_str,
+                return_raw_model=True,
+            )
+
+    assert isinstance(mace_torch_model, torch.nn.Module)
+    _fix_dtype(mace_torch_model, dtype)
+    return MACEWrapper(mace_torch_model)
+
+
 def _mace_from_url(
     url: str,
     model_name: str,

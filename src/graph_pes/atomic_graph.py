@@ -436,11 +436,15 @@ class AtomicGraph(NamedTuple):
                 t = t.to(_float)
             return t
 
-        for key, value in list(structure.info.items()) + list(structure.arrays.items()):
+        for key, value in list(structure.info.items()) + list(
+            structure.arrays.items()
+        ):
             if key in property_mapping:
                 property = property_mapping[key]
                 # ensure stress is always 3x3, not voigt notation
-                if property in ["stress", "virial"] and value.reshape(-1).shape == (6,):
+                if property in ["stress", "virial"] and value.reshape(
+                    -1
+                ).shape == (6,):
                     value = voigt_6_to_full_3x3_stress(value)
                 properties[property] = to_tensor(value)
 
@@ -582,7 +586,9 @@ class AtomicGraph(NamedTuple):
             atoms.info[key] = value.detach().cpu().numpy()
 
         if "energy" in self.properties:
-            atoms.info["energy"] = self.properties["energy"].detach().cpu().item()
+            atoms.info["energy"] = (
+                self.properties["energy"].detach().cpu().item()
+            )
 
         for key in ["stress", "virial"]:
             if key in self.properties:
@@ -617,7 +623,9 @@ def replace(
         R=R if R is not None else graph.R,
         cell=cell if cell is not None else graph.cell,
         neighbour_list=(
-            neighbour_list if neighbour_list is not None else graph.neighbour_list
+            neighbour_list
+            if neighbour_list is not None
+            else graph.neighbour_list
         ),
         neighbour_cell_offsets=(
             neighbour_cell_offsets
@@ -637,7 +645,9 @@ def replace(
 
 
 class CustomPropertyBatcher(Protocol):
-    def __call__(self, batch: AtomicGraph, values: list[torch.Tensor]) -> torch.Tensor:
+    def __call__(
+        self, batch: AtomicGraph, values: list[torch.Tensor]
+    ) -> torch.Tensor:
         """
         Batch the given values.
 
@@ -834,7 +844,9 @@ def to_batch(
         from graph_pes.utils.threebody import triplet_edge_pairs
 
         # calculate the edge pairs on the worker thread
-        ij, S_ij, ik, S_ik = triplet_edge_pairs(batched_graph, three_body_cutoff)
+        ij, S_ij, ik, S_ik = triplet_edge_pairs(
+            batched_graph, three_body_cutoff
+        )
 
         # and cache these on the batch
         key = f"__threebody-{three_body_cutoff:.3f}"

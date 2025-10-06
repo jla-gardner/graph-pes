@@ -131,14 +131,17 @@ class GraphPESModel(nn.Module, ABC):
         self.cutoff: torch.Tensor
         self.register_buffer("cutoff", torch.tensor(cutoff))
         self.three_body_cutoff: torch.Tensor
-        self.register_buffer("three_body_cutoff", torch.tensor(three_body_cutoff or 0))
+        self.register_buffer(
+            "three_body_cutoff", torch.tensor(three_body_cutoff or 0)
+        )
         self._has_been_pre_fit: torch.Tensor
         self.register_buffer("_has_been_pre_fit", torch.tensor(0))
 
         self.implemented_properties = implemented_properties
         if "local_energies" not in implemented_properties:
             raise ValueError(
-                'All GraphPESModel\'s must implement a "local_energies" ' "prediction."
+                'All GraphPESModel\'s must implement a "local_energies" '
+                "prediction."
             )
 
     @abstractmethod
@@ -199,7 +202,8 @@ class GraphPESModel(nn.Module, ABC):
 
         # check to see if we need to infer any properties
         infer_forces = (
-            "forces" in properties and "forces" not in self.implemented_properties
+            "forces" in properties
+            and "forces" not in self.implemented_properties
         )
         infer_stress_information = (
             # we need to infer stress information if we're asking for
@@ -247,7 +251,9 @@ class GraphPESModel(nn.Module, ABC):
 
                 # to go from (N, 3) @ (N, 3, 3) -> (N, 3), we need un/squeeze:
                 # (N, 1, 3) @ (N, 3, 3) -> (N, 1, 3) -> (N, 3)
-                new_positions = (graph.R.unsqueeze(-2) @ scaling_per_atom).squeeze()
+                new_positions = (
+                    graph.R.unsqueeze(-2) @ scaling_per_atom
+                ).squeeze()
                 # (M, 3, 3) @ (M, 3, 3) -> (M, 3, 3)
                 new_cell = graph.cell @ scaling
 
@@ -322,9 +328,15 @@ class GraphPESModel(nn.Module, ABC):
         # finally, we might not have needed autograd to infer stress/virial
         # if the other was implemented on the base class:
         if not infer_stress_information:
-            if "stress" in properties and "stress" not in self.implemented_properties:
+            if (
+                "stress" in properties
+                and "stress" not in self.implemented_properties
+            ):
                 predictions["stress"] = -predictions["virial"] / cell_volume
-            if "virial" in properties and "virial" not in self.implemented_properties:
+            if (
+                "virial" in properties
+                and "virial" not in self.implemented_properties
+            ):
                 predictions["virial"] = -predictions["stress"] * cell_volume
 
         # make sure we don't leave auxiliary predictions
