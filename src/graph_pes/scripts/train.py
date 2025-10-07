@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import shutil
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -19,7 +21,7 @@ from graph_pes.config.shared import (
     parse_loss,
     parse_model,
 )
-from graph_pes.config.training import EarlyStoppingConfig, TrainingConfig
+from graph_pes.config.training import TrainingConfig
 from graph_pes.scripts.utils import (
     configure_general_options,
     extract_config_dict_from_command_line,
@@ -55,6 +57,7 @@ def train_from_config(config_data: dict):
     config
         The configuration data.
     """
+    print("HELLO FROM TRAIN.PY", distributed.GLOBAL_RANK, distributed.IS_RANK_0)
     # If we are running in a single process setting, we are always rank 0.
     # This script will run from top to bottom as normal.
     #
@@ -79,65 +82,60 @@ def train_from_config(config_data: dict):
     logger.info(f"Started `graph-pes-train` at {now_ms}")
 
     logger.debug("Parsing config...")
-
     config_data, config = instantiate_config_from_dict(
         config_data, TrainingConfig
     )
     logger.info("Successfully parsed config.")
 
+    # general options
+    configure_general_options(config.general.torch, config.general.seed)
+
     # generate / look up the output directory for this training run
     # and handle the case where there is an ID collision by incrementing
     # the version number
-    with distributed.Communication("OUTPUT_DIR", timeout_s=10) as comm:
-        if distributed.IS_RANK_0:
-            # set up directory structure
-            if config.general.run_id is None:
-                output_dir = random_dir(Path(config.general.root_dir))
-            else:
-                output_dir = (
-                    Path(config.general.root_dir) / config.general.run_id
-                )
-                version = 0
-                while output_dir.exists():
-                    version += 1
-                    output_dir = (
-                        Path(config.general.root_dir)
-                        / f"{config.general.run_id}-{version}"
-                    )
-
-                if version > 0:
-                    logger.warning(
-                        f'Specified run ID "{config.general.run_id}" already '
-                        f"exists. Using {output_dir.name} instead."
-                    )
-
-            output_dir.mkdir(parents=True)
-            with open(output_dir / "train-config.yaml", "w") as f:
-                yaml.dump(config_data, f)
-
-            # communicate the output directory to other ranks
-            comm.send_to_other_ranks(str(output_dir))
-
+    if distributed.IS_RANK_0:
+        # set up directory structure
+        if config.general.run_id is None:
+            output_dir = random_dir(Path(config.general.root_dir))
         else:
-            # get the output directory from rank 0
-            output_dir = Path(comm.receive_from_rank_0())
+            output_dir = Path(config.general.root_dir) / config.general.run_id
+            version = 0
+            while output_dir.exists():
+                version += 1
+                output_dir = (
+                    Path(config.general.root_dir)
+                    / f"{config.general.run_id}-{version}"
+                )
 
-    log_to_file(output_dir)
-    # use the updated output_dir to extract the actual run ID:
-    config_data["general"]["run_id"] = output_dir.name
-    config.general.run_id = output_dir.name
-    logger.info(f"ID for this training run: {config.general.run_id}")
-    logger.info(f"""\
-Output for this training run can be found at:
-   └─ {output_dir}
-      ├─ rank-0.log         # find a verbose log here
-      ├─ model.pt           # the best model (according to valid/loss/total)
-      ├─ lammps_model.pt    # the best model deployed to LAMMPS
-      ├─ train-config.yaml  # the complete config used for this run
-      └─ summary.yaml       # the summary of the training run
-""")
+            if version > 0:
+                logger.warning(
+                    f'Specified run ID "{config.general.run_id}" already '
+                    f"exists. Using {output_dir.name} instead."
+                )
 
-    configure_general_options(config.general.torch, config.general.seed)
+        output_dir.mkdir(parents=True)
+        with open(output_dir / "train-config.yaml", "w") as f:
+            yaml.dump(config_data, f)
+
+        log_to_file(output_dir)
+        # use the updated output_dir to extract the actual run ID:
+        config_data["general"]["run_id"] = output_dir.name
+        config.general.run_id = output_dir.name
+        logger.info(f"ID for this training run: {config.general.run_id}")
+        logger.info(f"""\
+    Output for this training run can be found at:
+    └─ {output_dir}
+        ├─ rank-0.log         # find a verbose log here
+        ├─ model.pt           # the best model (according to valid/loss/total)
+        ├─ lammps_model.pt    # the best model deployed to LAMMPS
+        ├─ train-config.yaml  # the complete config used for this run
+        └─ summary.yaml       # the summary of the training run
+    """)
+        clean_up_temp_dir = False
+
+    else:
+        output_dir = Path(tempfile.mkdtemp())
+        clean_up_temp_dir = True
 
     trainer = trainer_from_config(config, output_dir)
 
@@ -204,6 +202,7 @@ To fix: Ensure your model cutoff matches your dataset cutoff."""  # noqa: E501
         trainer.logger._log_epoch = False
 
     tester = pl.Trainer(
+        devices=1,
         logger=trainer.logger,
         accelerator=trainer.accelerator,
         inference_mode=False,
@@ -220,6 +219,9 @@ To fix: Ensure your model cutoff matches your dataset cutoff."""  # noqa: E501
 
     logger.info("Testing complete.")
     logger.info("Awaiting final Lightning and W&B shutdown...")
+
+    if clean_up_temp_dir:
+        shutil.rmtree(output_dir)
 
 
 def trainer_from_config(
@@ -261,28 +263,15 @@ def trainer_from_config(
     if not any(isinstance(c, LearningRateMonitor) for c in callbacks):
         callbacks.append(LearningRateMonitor(logging_interval="epoch"))
 
-    early_stopping_config = None
-    # TODO: remove this at a later date
-    if config.fitting.early_stopping_patience is not None:
-        logger.warning(
-            "`early_stopping_patience` is deprecated. Use the `early_stopping` "
-            "config option instead.",
-        )
-        early_stopping_config = EarlyStoppingConfig(
-            patience=config.fitting.early_stopping_patience,
-            min_delta=1e-6,
-            monitor=VALIDATION_LOSS_KEY,
-        )
     if config.fitting.early_stopping is not None:
-        early_stopping_config = config.fitting.early_stopping
+        c = config.fitting.early_stopping
 
-    if early_stopping_config is not None:
         callbacks.append(
             EarlyStoppingWithLogging(
-                monitor=early_stopping_config.monitor,
-                patience=early_stopping_config.patience,
+                monitor=c.monitor,
+                patience=c.patience,
                 mode="min",
-                min_delta=early_stopping_config.min_delta,
+                min_delta=c.min_delta,
             )
         )
 
