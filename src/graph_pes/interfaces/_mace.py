@@ -69,8 +69,8 @@ def _atomic_graph_to_mace_input(
         "cell": cell.clone(),
         "edge_index": graph.neighbour_list,
         "unit_shifts": graph.neighbour_cell_offsets,
-        "total_charge": torch.atleast_1d(graph.other["total_charge"]),
-        "total_spin": torch.atleast_1d(graph.other["total_spin"]),
+        "total_charge": torch.atleast_1d(graph.other["total_charge"]).view(-1),
+        "total_spin": torch.atleast_1d(graph.other["total_spin"]).view(-1),
         "shifts": _shifts,
         "batch": batch,
         "ptr": ptr,
@@ -372,7 +372,6 @@ def egret(
 
 
 def mace_omol(
-    model: Literal["extra_-large"] = "extra_large",
     precision: Literal["float32", "float64"] | None = None,
 ) -> MACEWrapper:
     """
@@ -399,7 +398,7 @@ def mace_omol(
         warnings.simplefilter("ignore", category=FutureWarning)
         with redirect_stdout(None):
             mace_torch_model = mace_omol(
-                model,
+                "extra_large",
                 device="cpu",
                 default_dtype=precision_str,
                 return_raw_model=True,
