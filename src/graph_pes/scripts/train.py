@@ -57,7 +57,6 @@ def train_from_config(config_data: dict):
     config
         The configuration data.
     """
-    print("HELLO FROM TRAIN.PY", distributed.GLOBAL_RANK, distributed.IS_RANK_0)
     # If we are running in a single process setting, we are always rank 0.
     # This script will run from top to bottom as normal.
     #
@@ -187,40 +186,42 @@ To fix: Ensure your model cutoff matches your dataset cutoff."""  # noqa: E501
     update_summary(trainer.logger, output_dir / "summary.yaml")
     logger.info("Training complete.")
 
-    logger.info("Testing best model...")
-    test_datasets = {
-        "train": data.train,
-        "valid": data.valid,
-    }
-    if data.test is not None:
-        if isinstance(data.test, dict):
-            test_datasets.update(data.test)
-        else:
-            test_datasets["test"] = data.test
+    if distributed.IS_RANK_0:
+        logger.info("Testing best model...")
+        test_datasets = {
+            "train": data.train,
+            "valid": data.valid,
+        }
+        if data.test is not None:
+            if isinstance(data.test, dict):
+                test_datasets.update(data.test)
+            else:
+                test_datasets["test"] = data.test
 
-    if isinstance(trainer.logger, WandbLogger):
-        trainer.logger._log_epoch = False
+        if isinstance(trainer.logger, WandbLogger):
+            trainer.logger._log_epoch = False
 
-    tester = pl.Trainer(
-        devices=1,
-        logger=trainer.logger,
-        accelerator=trainer.accelerator,
-        inference_mode=False,
-    )
-    test_with_lightning(
-        tester,
-        model,
-        test_datasets,
-        loader_kwargs=config.fitting.loader_kwargs,
-        logging_prefix="test",
-        user_eval_metrics=[],
-    )
-    update_summary(tester.logger, output_dir / "summary.yaml")
+        tester = pl.Trainer(
+            devices=1,
+            logger=trainer.logger,
+            accelerator=trainer.accelerator,
+            inference_mode=False,
+        )
+        test_with_lightning(
+            tester,
+            model,
+            test_datasets,
+            loader_kwargs=config.fitting.loader_kwargs,
+            logging_prefix="test",
+            user_eval_metrics=[],
+        )
+        update_summary(tester.logger, output_dir / "summary.yaml")
 
-    logger.info("Testing complete.")
-    logger.info("Awaiting final Lightning and W&B shutdown...")
+        logger.info("Testing complete.")
+        logger.info("Awaiting final Lightning and W&B shutdown...")
 
-    if clean_up_temp_dir:
+    else:
+        assert clean_up_temp_dir
         shutil.rmtree(output_dir)
 
 
