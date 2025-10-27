@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Final, cast, Literal
+from typing import Callable, Final, Literal, cast
 
 import torch
 from e3nn import o3
@@ -24,7 +24,10 @@ from graph_pes.models.components.distances import (
     PolynomialEnvelope,
     get_distance_expansion,
 )
-from graph_pes.models.components.scaling import LocalEnergiesScaler, LocalTensorScaler
+from graph_pes.models.components.scaling import (
+    LocalEnergiesScaler,
+    LocalTensorScaler,
+)
 from graph_pes.models.e3nn.mace_utils import (
     Contraction,
     ContractionConfig,
@@ -33,12 +36,11 @@ from graph_pes.models.e3nn.mace_utils import (
 )
 from graph_pes.models.e3nn.utils import (
     LinearReadOut,
+    LinearTPReadOut,
     NonLinearReadOut,
+    NonLinearTPReadOut,
     ReadOut,
     SphericalHarmonics,
-    UnrestrictedLinearReadOut,
-    LinearTPReadOut,
-    NonLinearTPReadOut,
     as_irreps,
     build_limited_tensor_product,
     to_full_irreps,
@@ -101,7 +103,9 @@ class MACEInteraction(torch.nn.Module):
             bias=False,
         )
 
-        features_out = as_irreps([(nodes.channels, ir) for (_, ir) in sph_harmonics])
+        features_out = as_irreps(
+            [(nodes.channels, ir) for (_, ir) in sph_harmonics]
+        )
         self.post_linear = o3.Linear(
             mid_features,
             features_out,
@@ -138,7 +142,9 @@ class MACEInteraction(torch.nn.Module):
         node_features = self.pre_linear(node_features)  # (N, a)
 
         # tensor product: mix node and edge features
-        neighbour_features = index_over_neighbours(node_features, graph)  # (E, a)
+        neighbour_features = index_over_neighbours(
+            node_features, graph
+        )  # (E, a)
         weights = self.weight_generator(radial_basis)  # (E, b)
         messages = self.tp(
             neighbour_features,
@@ -351,7 +357,9 @@ class _BaseMACE(GraphPESModel):
         if isinstance(radial_expansion, str):
             radial_expansion = get_distance_expansion(radial_expansion)
         self.radial_expansion = HaddamardProduct(
-            radial_expansion(n_features=n_radial, cutoff=cutoff, trainable=True),
+            radial_expansion(
+                n_features=n_radial, cutoff=cutoff, trainable=True
+            ),
             PolynomialEnvelope(cutoff=cutoff, p=5),
         )
 
@@ -384,7 +392,11 @@ class _BaseMACE(GraphPESModel):
 
         self.readouts: UniformModuleList[ReadOut] = UniformModuleList(
             [LinearReadOut(nodes.hidden_irreps()) for _ in range(layers - 1)]
-            + [NonLinearReadOut(self.layers[-1].irreps_out, hidden_dim=readout_width)],
+            + [
+                NonLinearReadOut(
+                    self.layers[-1].irreps_out, hidden_dim=readout_width
+                )
+            ],
         )
 
         self.scaler = LocalEnergiesScaler()
@@ -393,7 +405,9 @@ class _BaseMACE(GraphPESModel):
         # pre-compute some things
         vectors = neighbour_vectors(graph)
         sph_harmonics = self.spherical_harmonics(vectors)
-        edge_features = self.radial_expansion(neighbour_distances(graph).view(-1, 1))
+        edge_features = self.radial_expansion(
+            neighbour_distances(graph).view(-1, 1)
+        )
         node_attributes = self.node_attribute_generator(graph.Z)
 
         # generate initial node features
@@ -412,7 +426,9 @@ class _BaseMACE(GraphPESModel):
             per_atom_energies.append(readout(node_features))
 
         # sum up the per-atom energies
-        local_energies = torch.sum(torch.stack(per_atom_energies), dim=0).squeeze()
+        local_energies = torch.sum(
+            torch.stack(per_atom_energies), dim=0
+        ).squeeze()
 
         # return scaled local energy predictions
         return {"local_energies": self.scaler(local_energies, graph)}
@@ -440,10 +456,12 @@ class _BaseTensorMACE(GraphTensorModel):
         # tensor related stuff
         target_method: Literal["direct", "tensor_product"],
         number_of_tps: int | None = None,
-        target_tensor_irreps: o3.Irreps = o3.Irreps("0e"),
+        target_tensor_irreps: o3.Irreps | None = None,
         irrep_tp: str | None = None,
         props: str = "tensor",
     ):
+        if target_tensor_irreps is None:
+            target_tensor_irreps = o3.Irreps("0e")
         super().__init__(
             cutoff=cutoff,
             implemented_properties=props,
@@ -466,7 +484,9 @@ class _BaseTensorMACE(GraphTensorModel):
         if isinstance(radial_expansion, str):
             radial_expansion = get_distance_expansion(radial_expansion)
         self.radial_expansion = HaddamardProduct(
-            radial_expansion(n_features=n_radial, cutoff=cutoff, trainable=True),
+            radial_expansion(
+                n_features=n_radial, cutoff=cutoff, trainable=True
+            ),
             PolynomialEnvelope(cutoff=cutoff, p=5),
         )
 
@@ -527,7 +547,9 @@ class _BaseTensorMACE(GraphTensorModel):
         # pre-compute some things
         vectors = neighbour_vectors(graph)
         sph_harmonics = self.spherical_harmonics(vectors)
-        edge_features = self.radial_expansion(neighbour_distances(graph).view(-1, 1))
+        edge_features = self.radial_expansion(
+            neighbour_distances(graph).view(-1, 1)
+        )
         node_attributes = self.node_attribute_generator(graph.Z)
 
         # generate initial node features
@@ -545,9 +567,10 @@ class _BaseTensorMACE(GraphTensorModel):
             )
             per_atom_tensors.append(readout(node_features).squeeze(-1))
 
-        # sum up the per-atom energies
-        # local_energies = torch.sum(torch.stack(per_atom_energies), dim=0).squeeze()
-        atomic_tensors = torch.sum(torch.stack(per_atom_tensors, dim=-1), dim=-1)
+        # stack the per-atom atomic tensors
+        atomic_tensors = torch.sum(
+            torch.stack(per_atom_tensors, dim=-1), dim=-1
+        )
         atomic_tensors = self.scaler(atomic_tensors, graph)
 
         preds: dict[PropertyKey, torch.Tensor] = {
@@ -861,7 +884,7 @@ class TensorMACE(_BaseTensorMACE):
         props: str = "tensor",
         target_method: str = "tensor_product",
         number_of_tps=None,
-        target_tensor_irreps=o3.Irreps("0e"),
+        target_tensor_irreps=None,
         irrep_tp="1o",
     ):
         Z_embedding = AtomicOneHot(elements)
@@ -1032,7 +1055,7 @@ class ZEmbeddingTensorMACE(_BaseTensorMACE):
         props: str = "tensor",
         target_method: str = "tensor_product",
         number_of_tps=None,
-        target_tensor_irreps=o3.Irreps("0e"),
+        target_tensor_irreps=None,
         irrep_tp="1o",
     ):
         Z_embedding = PerElementEmbedding(z_embed_dim)

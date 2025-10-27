@@ -8,8 +8,8 @@ from graph_pes.atomic_graph import (
     number_of_structures,
 )
 from graph_pes.graph_pes_model import (
-    GraphPESModel,
     GeneralPropertyGraphModel,
+    GraphPESModel,
     GraphTensorModel,
 )
 from graph_pes.models.addition import AdditionModel
@@ -56,7 +56,6 @@ def log_model_info(
 
 
 def sanity_check(model: GeneralPropertyGraphModel, batch: AtomicGraph) -> None:
-
     if isinstance(model, GraphPESModel):
         outputs = model.get_all_PES_predictions(batch)
 
@@ -99,7 +98,8 @@ def sanity_check(model: GeneralPropertyGraphModel, batch: AtomicGraph) -> None:
             "tensor": (
                 N,
                 9,
-            ),  # TODO: we need to make this dynamic so it matches the rank of arbitrary tensors
+            ),  # TODO: we need to make this dynamic so it matches the rank
+            # of arbitrary tensors
         }
         incorrect = []
         for key, value in outputs.items():

@@ -25,7 +25,10 @@ from graph_pes.models.components.aggregation import (
     NeighbourAggregation,
     NeighbourAggregationMode,
 )
-from graph_pes.models.components.scaling import LocalEnergiesScaler, LocalTensorScaler
+from graph_pes.models.components.scaling import (
+    LocalEnergiesScaler,
+    LocalTensorScaler,
+)
 from graph_pes.models.e3nn.utils import (
     LinearReadOut,
     SphericalHarmonics,
@@ -72,10 +75,16 @@ def build_gate(output_irreps: o3.Irreps):
     }
 
     # separate scalar and higher order irreps
-    scalar_inputs = o3.Irreps(irreps for irreps in output_irreps if irreps.ir.l == 0)
-    scalar_activations = [parity_to_activations[irrep.ir.p] for irrep in scalar_inputs]
+    scalar_inputs = o3.Irreps(
+        irreps for irreps in output_irreps if irreps.ir.l == 0
+    )
+    scalar_activations = [
+        parity_to_activations[irrep.ir.p] for irrep in scalar_inputs
+    ]
 
-    higher_inputs = o3.Irreps(irreps for irreps in output_irreps if irreps.ir.l > 0)
+    higher_inputs = o3.Irreps(
+        irreps for irreps in output_irreps if irreps.ir.l > 0
+    )
 
     # work out the the `irrep_gates` scalars to be used
     gate_irrep = "0e" if "0e" in output_irreps else "0o"
@@ -83,7 +92,9 @@ def build_gate(output_irreps: o3.Irreps):
     gate_value_irreps = o3.Irreps(
         (channels, gate_irrep) for (channels, _) in higher_inputs
     )
-    gate_activations = [parity_to_activations[gate_parity] for _ in higher_inputs]
+    gate_activations = [
+        parity_to_activations[gate_parity] for _ in higher_inputs
+    ]
 
     return e3nn.nn.Gate(
         irreps_scalars=scalar_inputs,
@@ -167,7 +178,9 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         # 5. Apply a non-linearity to the new central atom embeddings
 
         # 1. Message creation
-        self.pre_message_linear = o3.Linear(input_node_irreps, input_node_irreps)
+        self.pre_message_linear = o3.Linear(
+            input_node_irreps, input_node_irreps
+        )
         self.message_tensor_product = build_limited_tensor_product(
             node_embedding_irreps=input_node_irreps,
             edge_embedding_irreps=edge_features,
@@ -186,7 +199,9 @@ class NequIPMessagePassingLayer(torch.nn.Module):
         )
 
         # 2. Message aggregation
-        self.aggregation = NeighbourAggregation.parse(mode=neighbour_aggregation)
+        self.aggregation = NeighbourAggregation.parse(
+            mode=neighbour_aggregation
+        )
 
         # 5. Non-linearity
         # NB we initialise this first so we can work out how many irreps
@@ -206,7 +221,8 @@ class NequIPMessagePassingLayer(torch.nn.Module):
                 if ir in prune_output_to:
                     irreps.append((target_multiplicities[ir], ir))
             desired_output_irreps = o3.Irreps(irreps)
-        # TODO: build_gate gives weird output when prune_last_layer is True and the target_tensor_irreps does not contain "0e"
+        # TODO: build_gate gives weird output when prune_last_layer is True
+        # and the target_tensor_irreps does not contain "0e"
         self.non_linearity = build_gate(desired_output_irreps)  # type: ignore
 
         # 3. Post-message linear
@@ -387,7 +403,9 @@ class _BaseNequIP(GraphPESModel):
         local_energies = self.energy_readout(node_embed).squeeze()
         local_energies = self.scaler(local_energies, graph)
 
-        preds: dict[PropertyKey, torch.Tensor] = {"local_energies": local_energies}
+        preds: dict[PropertyKey, torch.Tensor] = {
+            "local_energies": local_energies
+        }
         if self.force_readout is not None:
             preds["forces"] = self.force_readout(node_embed).squeeze()
 
@@ -415,10 +433,12 @@ class _BaseTensorNequIP(GraphTensorModel):
         # tensor related stuff
         target_method: Literal["direct", "tensor_product"],
         number_of_tps: int | None = None,
-        target_tensor_irreps: o3.Irreps = o3.Irreps("0e"),
+        target_tensor_irreps: o3.Irreps | None = None,
         irrep_tp: str | None = None,
         props: str = "tensor",
     ):
+        if target_tensor_irreps is None:
+            target_tensor_irreps = o3.Irreps("0e")
         super().__init__(
             cutoff=cutoff,
             implemented_properties=props,
@@ -473,7 +493,9 @@ class _BaseTensorNequIP(GraphTensorModel):
             )
 
             # prepare for the TPs and divide the output into two sets for TPs
-            self.tp_out_irreps = o3.Irreps(f"{self.number_of_tps//2}x{irrep_tp}")
+            self.tp_out_irreps = o3.Irreps(
+                f"{self.number_of_tps // 2}x{irrep_tp}"
+            )
             # self.layers.append(self.pre_tensor_readout)
             self.tensor_readout = o3.FullyConnectedTensorProduct(
                 self.tp_out_irreps,
@@ -826,7 +848,8 @@ class NequIP(_BaseNequIP):
         cutoff: float = DEFAULT_CUTOFF,
         layers: int = 3,
         features: SimpleIrrepSpec | CompleteIrrepSpec = DEFAULT_FEATURES,
-        self_interaction: Literal["linear", "tensor_product"] | None = "tensor_product",
+        self_interaction: Literal["linear", "tensor_product"]
+        | None = "tensor_product",
         prune_last_layer: bool = True,
         neighbour_aggregation: NeighbourAggregationMode = "sum",
         radial_features: int = 8,
@@ -991,14 +1014,15 @@ class TensorNequIP(_BaseTensorNequIP):
         cutoff: float = DEFAULT_CUTOFF,
         layers: int = 3,
         features: SimpleIrrepSpec | CompleteIrrepSpec = DEFAULT_FEATURES,
-        self_interaction: Literal["linear", "tensor_product"] | None = "tensor_product",
+        self_interaction: Literal["linear", "tensor_product"]
+        | None = "tensor_product",
         prune_last_layer: bool = True,
         neighbour_aggregation: NeighbourAggregationMode = "sum",
         radial_features: int = 8,
         props: str = "tensor",
         target_method: str = "direct",
         number_of_tps=None,
-        target_tensor_irreps=o3.Irreps("0e"),
+        target_tensor_irreps=None,
         irrep_tp="1o",
     ):
         assert len(set(elements)) == len(elements), "Found duplicate elements"
@@ -1053,7 +1077,8 @@ class ZEmbeddingNequIP(_BaseNequIP):
         Z_embed_dim: int = 8,
         features: SimpleIrrepSpec | CompleteIrrepSpec = DEFAULT_FEATURES,
         layers: int = 3,
-        self_interaction: Literal["linear", "tensor_product"] | None = "tensor_product",
+        self_interaction: Literal["linear", "tensor_product"]
+        | None = "tensor_product",
         prune_last_layer: bool = True,
         neighbour_aggregation: NeighbourAggregationMode = "sum",
         radial_features: int = 8,
@@ -1078,7 +1103,8 @@ class ZEmbeddingNequIP(_BaseNequIP):
 @e3nn.util.jit.compile_mode("script")
 class ZEmbeddingTensorNequIP(_BaseTensorNequIP):
     r"""
-    A modified version of the :class:`~graph_pes.models.TensorNequIP` architecture
+    A modified version of the
+    :class:`~graph_pes.models.TensorNequIP` architecture
     that embeds atomic numbers into a learnable embedding rather than using an
     atomic one-hot encoding.
 
@@ -1122,8 +1148,8 @@ class ZEmbeddingTensorNequIP(_BaseTensorNequIP):
                 Graph-neural-network predictions of solid-state NMR parameters
                   from spherical tensor decomposition
                 },
-            author = {Ben Mahmoud, Chiheb and Rosset, Louise and Yates, Jonatha and
-                      Deringer, Volker
+            author = {Ben Mahmoud, Chiheb and Rosset, Louise and
+                      Yates, Jonathan and Deringer, Volker
                 },
             year = {2024},
             doi = {10.48550/arXiv.2412.15063},
@@ -1137,14 +1163,15 @@ class ZEmbeddingTensorNequIP(_BaseTensorNequIP):
         Z_embed_dim: int = 8,
         features: SimpleIrrepSpec | CompleteIrrepSpec = DEFAULT_FEATURES,
         layers: int = 3,
-        self_interaction: Literal["linear", "tensor_product"] | None = "tensor_product",
+        self_interaction: Literal["linear", "tensor_product"]
+        | None = "tensor_product",
         prune_last_layer: bool = True,
         neighbour_aggregation: NeighbourAggregationMode = "sum",
         radial_features: int = 8,
         props: str = "tensor",
         target_method: str = "direct",
         number_of_tps=None,
-        target_tensor_irreps=o3.Irreps("0e"),
+        target_tensor_irreps=None,
         irrep_tp="1o",
     ):
         Z_embedding = PerElementEmbedding(Z_embed_dim)

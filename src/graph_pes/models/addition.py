@@ -12,7 +12,7 @@ from graph_pes.atomic_graph import (
     number_of_atoms,
     number_of_structures,
 )
-from graph_pes.graph_pes_model import GraphPESModel, GeneralPropertyGraphModel
+from graph_pes.graph_pes_model import GeneralPropertyGraphModel
 from graph_pes.utils.misc import all_equal, uniform_repr
 from graph_pes.utils.nn import UniformModuleDict
 
@@ -75,7 +75,9 @@ class AdditionModel(GeneralPropertyGraphModel):
         self.register_buffer(
             "_all_models_same_properties",
             torch.tensor(
-                all_equal([set(m.implemented_properties) for m in models.values()])
+                all_equal(
+                    [set(m.implemented_properties) for m in models.values()]
+                )
             ),
         )
 
@@ -113,7 +115,9 @@ class AdditionModel(GeneralPropertyGraphModel):
             for key, value in preds.items():
                 # move initialization in the case of "tensor" property here
                 if key not in final_predictions:
-                    final_predictions[key] = torch.zeros_like(value, device=device)
+                    final_predictions[key] = torch.zeros_like(
+                        value, device=device
+                    )
                 final_predictions[key] += value
 
         return final_predictions

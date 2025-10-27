@@ -71,7 +71,9 @@ class UnrestrictedLinearReadOut(o3.Linear):
     LinearReadOut(16x0e+16x1o+16x2e -> 1x1o | 16 weights)
     """
 
-    def __init__(self, input_irreps: str | o3.Irreps, output_irreps: str = "0e"):
+    def __init__(
+        self, input_irreps: str | o3.Irreps, output_irreps: str = "0e"
+    ):
         super().__init__(input_irreps, output_irreps)
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
@@ -120,7 +122,7 @@ class LinearTPReadOut(torch.nn.Module):
             input_irreps=input_irreps, output_irreps=self.tp_out_irreps
         )
         self.target_tensor_irreps = o3.Irreps(output_irreps)
-        self.tp_out_irreps = o3.Irreps(f"{self.number_of_tps//2}x{tp_target}")
+        self.tp_out_irreps = o3.Irreps(f"{self.number_of_tps // 2}x{tp_target}")
         self.tp = o3.FullyConnectedTensorProduct(
             self.tp_out_irreps,
             self.tp_out_irreps,
@@ -230,7 +232,8 @@ class NonLinearTPReadOut(torch.nn.Module):
     followed by an activation function and another linear layer to produce
     the final scalar output.
 
-    Chiheb: do the nonlinear readout and then apply the same tp as the linear case
+    Chiheb: do the nonlinear readout and then apply the same tp as
+    the linear case
 
     Parameters
     ----------
@@ -280,7 +283,6 @@ class NonLinearTPReadOut(torch.nn.Module):
         tp_target: str = "1o",
         output_irreps: str = "0e+1e+2e",
     ):
-
         super().__init__()
 
         if activation is None:
@@ -298,7 +300,7 @@ class NonLinearTPReadOut(torch.nn.Module):
 
         self.hidden_irreps = o3.Irreps(f"{hidden_dim}x{tp_target}")
         self.lin_out_irreps = o3.Irreps(f"{number_of_tps}x{tp_target}")
-        self.tp_in_irreps = o3.Irreps(f"{number_of_tps//2}x{tp_target}")
+        self.tp_in_irreps = o3.Irreps(f"{number_of_tps // 2}x{tp_target}")
 
         self.linear1 = o3.Linear(input_irreps, self.hidden_irreps)
         self.activation = activation

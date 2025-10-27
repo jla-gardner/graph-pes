@@ -208,7 +208,9 @@ class LearnableOffset(EnergyOffset):
 
         # use ridge regression to estimate the mean energy contribution
         # from each atomic species
-        offsets, _ = guess_per_element_mean_and_var(graphs.properties["energy"], graphs)
+        offsets, _ = guess_per_element_mean_and_var(
+            graphs.properties["energy"], graphs
+        )
         for z, offset in offsets.items():
             if torch.any(self._pre_specified_Zs == z):
                 continue
@@ -277,8 +279,8 @@ class LearnableTensorOffset(TensorOffset):
     @torch.no_grad()
     def pre_fit(self, graphs: AtomicGraph) -> None:
         """
-        Calculate the **mean** per element tensor offsets per element from the training data
-        using linear regression.
+        Calculate the **mean** per element tensor offsets per element from
+        the training data using linear regression.
 
         **Note**: this will lead to a lack of physicality in the model, since
         there is now no guarantee that the tensor of an isolated atom, or the

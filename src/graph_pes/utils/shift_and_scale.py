@@ -93,7 +93,8 @@ compositions in the training set.
     var_Z = ridge.coef_
     # avoid negative variances by clipping to min value
     variances = {
-        int(Z): max(float(var), min_variance) for Z, var in zip(unique_Zs, var_Z)
+        int(Z): max(float(var), min_variance)
+        for Z, var in zip(unique_Zs, var_Z)
     }
 
     logger.debug(f"Per-element means: {means}")
@@ -207,7 +208,9 @@ https://jla-gardner.github.io/graph-pes/quickstart/fine-tuning.html"""
     )
 
     graphs = [
-        AtomicGraph.from_ase(s, model.cutoff.item()) if isinstance(s, ase.Atoms) else s
+        AtomicGraph.from_ase(s, model.cutoff.item())
+        if isinstance(s, ase.Atoms)
+        else s
         for s in structures
     ]
 

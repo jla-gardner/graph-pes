@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Final, Sequence, final, Literal
+from typing import TYPE_CHECKING, Any, Final, Literal, Sequence, final
 
 import torch
 from ase.data import chemical_symbols
@@ -50,7 +50,9 @@ class GeneralPropertyGraphModel(nn.Module, ABC):
         self.register_buffer("_has_been_pre_fit", torch.tensor(0))
 
         self.three_body_cutoff: torch.Tensor
-        self.register_buffer("three_body_cutoff", torch.tensor(three_body_cutoff or 0))
+        self.register_buffer(
+            "three_body_cutoff", torch.tensor(three_body_cutoff or 0)
+        )
 
         self.implemented_properties = implemented_properties
 
@@ -301,7 +303,8 @@ class GraphPESModel(GeneralPropertyGraphModel):
         self.implemented_properties = implemented_properties
         if "local_energies" not in implemented_properties:
             raise ValueError(
-                'All GraphPESModel\'s must implement a "local_energies" ' "prediction."
+                'All GraphPESModel\'s must implement a "local_energies" '
+                "prediction."
             )
 
     @abstractmethod
@@ -362,7 +365,8 @@ class GraphPESModel(GeneralPropertyGraphModel):
 
         # check to see if we need to infer any properties
         infer_forces = (
-            "forces" in properties and "forces" not in self.implemented_properties
+            "forces" in properties
+            and "forces" not in self.implemented_properties
         )
         infer_stress_information = (
             # we need to infer stress information if we're asking for
@@ -410,7 +414,9 @@ class GraphPESModel(GeneralPropertyGraphModel):
 
                 # to go from (N, 3) @ (N, 3, 3) -> (N, 3), we need un/squeeze:
                 # (N, 1, 3) @ (N, 3, 3) -> (N, 1, 3) -> (N, 3)
-                new_positions = (graph.R.unsqueeze(-2) @ scaling_per_atom).squeeze()
+                new_positions = (
+                    graph.R.unsqueeze(-2) @ scaling_per_atom
+                ).squeeze()
                 # (M, 3, 3) @ (M, 3, 3) -> (M, 3, 3)
                 new_cell = graph.cell @ scaling
 
@@ -485,9 +491,15 @@ class GraphPESModel(GeneralPropertyGraphModel):
         # finally, we might not have needed autograd to infer stress/virial
         # if the other was implemented on the base class:
         if not infer_stress_information:
-            if "stress" in properties and "stress" not in self.implemented_properties:
+            if (
+                "stress" in properties
+                and "stress" not in self.implemented_properties
+            ):
                 predictions["stress"] = -predictions["virial"] / cell_volume
-            if "virial" in properties and "virial" not in self.implemented_properties:
+            if (
+                "virial" in properties
+                and "virial" not in self.implemented_properties
+            ):
                 predictions["virial"] = -predictions["stress"] * cell_volume
 
         # make sure we don't leave auxiliary predictions
@@ -720,13 +732,16 @@ class GraphTensorModel(GeneralPropertyGraphModel):
         The property predictions that the model implements in the forward pass.
         Must include ``"tensor"``.
     target_tensor_irreps
-        The irreps (in `e3nn` notations) of the spherical tensors targeted by the model
+        The irreps (in `e3nn` notations) of the spherical tensors targeted
+        by the model
     target_method
         The method used to map the target tensors
     number_of_tps:
-        The number of the number of tensor products if taget_method is ``"tensor_product"``
+        The number of the number of tensor products if taget_method
+        is ``"tensor_product"``
     irrep_tp:
-        The irrep (in `e3nn` notations) of the tensors involved in the ``"tensor_product"`` method
+        The irrep (in `e3nn` notations) of the tensors involved
+        in the ``"tensor_product"`` method
     """
 
     def __init__(
