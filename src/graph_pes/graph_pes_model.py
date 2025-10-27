@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Final, Sequence, final
+from typing import TYPE_CHECKING, Any, Final, Literal, Sequence, final
 
 import torch
 from ase.data import chemical_symbols
@@ -27,8 +27,176 @@ from .utils.nn import PerElementParameter
 if TYPE_CHECKING:
     from graph_pes.utils.calculator import GraphPESCalculator
 
+GRAPH_PES_VERSION = "0.1.1"
 
-class GraphPESModel(nn.Module, ABC):
+
+class GeneralPropertyGraphModel(nn.Module, ABC):
+    """General model for predicting arbitrary propoerties from graph input"""
+
+    def __init__(
+        self,
+        cutoff: float,
+        implemented_properties: list[PropertyKey],
+        three_body_cutoff: float | None,
+    ):
+        super().__init__()
+
+        self._GRAPH_PES_VERSION: Final[str] = "0.2.2"
+
+        self.cutoff: torch.Tensor
+        self.register_buffer("cutoff", torch.tensor(cutoff))
+
+        self._has_been_pre_fit: torch.Tensor
+        self.register_buffer("_has_been_pre_fit", torch.tensor(0))
+
+        self.three_body_cutoff: torch.Tensor
+        self.register_buffer(
+            "three_body_cutoff", torch.tensor(three_body_cutoff or 0)
+        )
+
+        self.implemented_properties = implemented_properties
+
+    @abstractmethod
+    def forward(self):
+        pass
+
+    @abstractmethod
+    def predict(self):
+        pass
+
+    # add type hints for mypy etc.
+    def __call__(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
+        return super().__call__(graph)
+
+    def non_decayable_parameters(self) -> list[torch.nn.Parameter]:
+        """
+        Return a list of parameters that should not be decayed during training.
+
+        By default, this method recurses over all available sub-modules
+        and calls their :meth:`non_decayable_parameters` (if it is defined).
+
+        See :class:`~graph_pes.models.components.scaling.LocalEnergiesScaler`
+        for an example of this.
+        """
+        found = []
+        for module in self.modules():
+            if module is self:
+                continue
+            if hasattr(module, "non_decayable_parameters"):
+                found.extend(module.non_decayable_parameters())
+        return found
+
+    @torch.no_grad()
+    def pre_fit_all_components(
+        self,
+        graphs: Sequence[AtomicGraph],
+    ):
+        """
+        Pre-fit the model, and all its components, to the training data.
+
+        Some models require pre-fitting to the training data to set certain
+        parameters. For example, the :class:`~graph_pes.models.pairwise.LennardJones`
+        model uses the distribution of interatomic distances in the training data
+        to set the length-scale parameter.
+
+        In the ``graph-pes-train`` routine, this method is called before
+        "normal" training begins (you can turn this off with a config option).
+
+        This method does two things:
+
+        1. iterates over all the model's :class:`~torch.nn.Module` components
+           (inlcuding itself) and calls their :meth:`pre_fit` method (if it exists -
+           see for instance :class:`~graph_pes.models.LearnableOffset` for
+           an example of a model-specific pre-fit method, and
+           :class:`~graph_pes.models.components.scaling.LocalEnergiesScaler` for
+           an example of a component-specific pre-fit method).
+        2. registers all the unique atomic numbers in the training data with
+           all of the model's :class:`~graph_pes.utils.nn.PerElementParameter`
+           instances to ensure correct parameter counting.
+
+        If the model has already been pre-fitted, subsequent calls to
+        :meth:`pre_fit_all_components` will be ignored (and a warning will be raised).
+
+        Parameters
+        ----------
+        graphs
+            The training data.
+        """  # noqa: E501
+
+        model_name = self.__class__.__name__
+        logger.debug(f"Attempting to pre-fit {model_name}")
+
+        # 1. get the graphs as a single batch
+        if isinstance(graphs, GraphDataset):
+            graphs = list(graphs)
+        graph_batch = to_batch(graphs)
+
+        # 2a. if the graph has already been pre-fitted: warn
+        if self._has_been_pre_fit:
+            model_name = self.__class__.__name__
+            logger.warning(
+                f"This model ({model_name}) has already been pre-fitted. "
+                "This, and any subsequent, call to pre_fit_all_components will "
+                "be ignored.",
+                stacklevel=2,
+            )
+
+        # 2b. if the model has not been pre-fitted: pre-fit
+        else:
+            if len(graphs) > 10_000:
+                logger.warning(
+                    f"Pre-fitting on a large dataset ({len(graphs):,} graphs). "
+                    "This may take some time. Consider using a smaller, "
+                    "representative collection of structures for pre-fitting. "
+                    "Set ``max_n_pre_fit`` in your config, or "
+                    "see GraphDataset.sample() for more information.",
+                    stacklevel=2,
+                )
+
+            self.pre_fit(graph_batch)
+            # pre-fit any sub-module with a pre_fit method
+            for module in self.modules():
+                if hasattr(module, "pre_fit") and module is not self:
+                    module.pre_fit(graph_batch)
+
+            self._has_been_pre_fit = torch.tensor(1)
+
+        # 3. finally, register all per-element parameters (no harm in doing this
+        #    multiple times)
+        for param in self.parameters():
+            if isinstance(param, PerElementParameter):
+                param.register_elements(torch.unique(graph_batch.Z).tolist())
+
+    def pre_fit(self, graphs: AtomicGraph) -> None:
+        """
+        Override this method to perform additional pre-fitting steps.
+
+        See :class:`~graph_pes.models.components.scaling.LocalEnergiesScaler` or
+        :class:`~graph_pes.models.offsets.EnergyOffset` for examples of this.
+
+        Parameters
+        ----------
+        graphs
+            The training data.
+        """
+
+    @torch.jit.unused
+    @property
+    def elements_seen(self) -> list[str]:
+        """The elements that the model has seen during training."""
+        Zs = set()
+        for param in self.parameters():
+            if isinstance(param, PerElementParameter):
+                Zs.update(param._accessed_Zs)
+        return [chemical_symbols[Z] for Z in sorted(Zs)]
+
+    @torch.jit.unused
+    @property
+    def device(self) -> torch.device:
+        return self.cutoff.device
+
+
+class GraphPESModel(GeneralPropertyGraphModel):
     r"""
     All models implemented in ``graph-pes`` are subclasses of
     :class:`~graph_pes.GraphPESModel`.
@@ -124,18 +292,13 @@ class GraphPESModel(nn.Module, ABC):
         implemented_properties: list[PropertyKey],
         three_body_cutoff: float | None = None,
     ):
-        super().__init__()
-
-        self._GRAPH_PES_VERSION: Final[str] = "0.2.2"
-
-        self.cutoff: torch.Tensor
-        self.register_buffer("cutoff", torch.tensor(cutoff))
-        self.three_body_cutoff: torch.Tensor
-        self.register_buffer(
-            "three_body_cutoff", torch.tensor(three_body_cutoff or 0)
+        super().__init__(
+            cutoff=cutoff,
+            implemented_properties=implemented_properties,
+            three_body_cutoff=three_body_cutoff,
         )
-        self._has_been_pre_fit: torch.Tensor
-        self.register_buffer("_has_been_pre_fit", torch.tensor(0))
+
+        # self._GRAPH_PES_VERSION: Final[str] = "0.1.1"
 
         self.implemented_properties = implemented_properties
         if "local_energies" not in implemented_properties:
@@ -351,122 +514,6 @@ class GraphPESModel(nn.Module, ABC):
         # return the output
         return predictions  # type: ignore
 
-    @torch.no_grad()
-    def pre_fit_all_components(
-        self,
-        graphs: Sequence[AtomicGraph],
-    ):
-        """
-        Pre-fit the model, and all its components, to the training data.
-
-        Some models require pre-fitting to the training data to set certain
-        parameters. For example, the :class:`~graph_pes.models.pairwise.LennardJones`
-        model uses the distribution of interatomic distances in the training data
-        to set the length-scale parameter.
-
-        In the ``graph-pes-train`` routine, this method is called before
-        "normal" training begins (you can turn this off with a config option).
-
-        This method does two things:
-
-        1. iterates over all the model's :class:`~torch.nn.Module` components
-           (inlcuding itself) and calls their :meth:`pre_fit` method (if it exists -
-           see for instance :class:`~graph_pes.models.LearnableOffset` for
-           an example of a model-specific pre-fit method, and
-           :class:`~graph_pes.models.components.scaling.LocalEnergiesScaler` for
-           an example of a component-specific pre-fit method).
-        2. registers all the unique atomic numbers in the training data with
-           all of the model's :class:`~graph_pes.utils.nn.PerElementParameter`
-           instances to ensure correct parameter counting.
-
-        If the model has already been pre-fitted, subsequent calls to
-        :meth:`pre_fit_all_components` will be ignored (and a warning will be raised).
-
-        Parameters
-        ----------
-        graphs
-            The training data.
-        """  # noqa: E501
-
-        model_name = self.__class__.__name__
-        logger.debug(f"Attempting to pre-fit {model_name}")
-
-        # 1. get the graphs as a single batch
-        if isinstance(graphs, GraphDataset):
-            graphs = list(graphs)
-        graph_batch = to_batch(graphs)
-
-        # 2a. if the graph has already been pre-fitted: warn
-        if self._has_been_pre_fit:
-            model_name = self.__class__.__name__
-            logger.warning(
-                f"This model ({model_name}) has already been pre-fitted. "
-                "This, and any subsequent, call to pre_fit_all_components will "
-                "be ignored.",
-                stacklevel=2,
-            )
-
-        # 2b. if the model has not been pre-fitted: pre-fit
-        else:
-            if len(graphs) > 10_000:
-                logger.warning(
-                    f"Pre-fitting on a large dataset ({len(graphs):,} graphs). "
-                    "This may take some time. Consider using a smaller, "
-                    "representative collection of structures for pre-fitting. "
-                    "Set ``max_n_pre_fit`` in your config, or "
-                    "see GraphDataset.sample() for more information.",
-                    stacklevel=2,
-                )
-
-            self.pre_fit(graph_batch)
-            # pre-fit any sub-module with a pre_fit method
-            for module in self.modules():
-                if hasattr(module, "pre_fit") and module is not self:
-                    module.pre_fit(graph_batch)
-
-            self._has_been_pre_fit = torch.tensor(1)
-
-        # 3. finally, register all per-element parameters (no harm in doing this
-        #    multiple times)
-        for param in self.parameters():
-            if isinstance(param, PerElementParameter):
-                param.register_elements(torch.unique(graph_batch.Z).tolist())
-
-    def pre_fit(self, graphs: AtomicGraph) -> None:
-        """
-        Override this method to perform additional pre-fitting steps.
-
-        See :class:`~graph_pes.models.components.scaling.LocalEnergiesScaler` or
-        :class:`~graph_pes.models.offsets.EnergyOffset` for examples of this.
-
-        Parameters
-        ----------
-        graphs
-            The training data.
-        """
-
-    def non_decayable_parameters(self) -> list[torch.nn.Parameter]:
-        """
-        Return a list of parameters that should not be decayed during training.
-
-        By default, this method recurses over all available sub-modules
-        and calls their :meth:`non_decayable_parameters` (if it is defined).
-
-        See :class:`~graph_pes.models.components.scaling.LocalEnergiesScaler`
-        for an example of this.
-        """
-        found = []
-        for module in self.modules():
-            if module is self:
-                continue
-            if hasattr(module, "non_decayable_parameters"):
-                found.extend(module.non_decayable_parameters())
-        return found
-
-    # add type hints for mypy etc.
-    def __call__(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
-        return super().__call__(graph)
-
     def get_all_PES_predictions(
         self, graph: AtomicGraph
     ) -> dict[PropertyKey, torch.Tensor]:
@@ -502,21 +549,6 @@ class GraphPESModel(nn.Module, ABC):
     def predict_local_energies(self, graph: AtomicGraph) -> torch.Tensor:
         """Convenience method to predict just the local energies."""
         return self.predict(graph, ["local_energies"])["local_energies"]
-
-    @torch.jit.unused
-    @property
-    def elements_seen(self) -> list[str]:
-        """The elements that the model has seen during training."""
-        Zs = set()
-        for param in self.parameters():
-            if isinstance(param, PerElementParameter):
-                Zs.update(param._accessed_Zs)
-        return [chemical_symbols[Z] for Z in sorted(Zs)]
-
-    @torch.jit.unused
-    @property
-    def device(self) -> torch.device:
-        return self.cutoff.device
 
     @torch.jit.unused
     @final
@@ -644,3 +676,107 @@ class GraphPESModel(nn.Module, ABC):
             compute_forces=compute_forces,
             compute_stress=compute_stress,
         )
+
+
+class GraphTensorModel(GeneralPropertyGraphModel):
+    r"""
+    All models implemented in ``graph-pes`` are subclasses of
+    :class:`~graph_pes.GeneralPropertyGraphModel`.
+
+    These models make predictions (via the
+    :meth:`~graph_pes.GraphTensorModel.predict` method) of the
+    following properties:
+
+    .. list-table::
+            :header-rows: 1
+
+            * - Key
+              - Single graph
+              - Batch of graphs
+              - Units
+            * - :code:`"tensor"`
+              - :code:`(N, size)`
+              - :code:`(N, size)`
+              - :code:`[tensor]`
+
+    assuming an input of an :class:`~graph_pes.AtomicGraph` representing a
+    single structure composed of ``N`` atoms, or an
+    :class:`~graph_pes.AtomicGraph` composed of ``M`` structures and containing
+    a total of ``N`` atoms. (see :func:`~graph_pes.atomic_graph.is_batch` for
+    more information about batching).
+
+    Note that ``graph-pes`` makes no assumptions as to the actual units of
+    the ``tensor`` and ``length`` quantities - these will depend on the
+    labels the model has been trained on (e.g. could be ``eV`` and ``Å``,
+    ``kcal/mol`` and ``nm`` or even ``J`` and ``m``).
+
+    Implementations must override the
+    :meth:`~graph_pes.GraphTensorModel.forward` method to generate a
+    dictionary of predictions for the given graph. As a minimum, this must
+    include a per-atom energy contribution (``"local_energies"``).
+
+    :class:`~graph_pes.GraphTensorModel` objects save various peices of extra
+    metadata to the ``state_dict`` via the
+    :meth:`~graph_pes.GraphTensorModel.get_extra_state` and
+    :meth:`~graph_pes.GraphTensorModel.set_extra_state` methods.
+    If you want to save additional extra state to the ``state_dict`` of your
+    model, please implement the :meth:`~graph_pes.GraphTensorModel.extra_state`
+    property and corresponding setter to ensure that you do not overwrite
+    these extra metadata items.
+
+    Parameters
+    ----------
+    cutoff
+        The cutoff radius for the model.
+    implemented_properties
+        The property predictions that the model implements in the forward pass.
+        Must include ``"tensor"``.
+    target_tensor_irreps
+        The irreps (in `e3nn` notations) of the spherical tensors targeted
+        by the model
+    target_method
+        The method used to map the target tensors
+    number_of_tps:
+        The number of the number of tensor products if taget_method
+        is ``"tensor_product"``
+    irrep_tp:
+        The irrep (in `e3nn` notations) of the tensors involved
+        in the ``"tensor_product"`` method
+    """
+
+    def __init__(
+        self,
+        cutoff: float,
+        implemented_properties: list[PropertyKey],
+        target_tensor_irreps: str,
+        number_of_tps: int | None = None,
+        irrep_tp: str | None = None,
+        target_method: Literal["direct" | "tensor_product"] = "direct",
+    ):
+        super().__init__(
+            cutoff=cutoff,
+            implemented_properties=implemented_properties,
+            three_body_cutoff=None,
+        )
+
+        if target_method == "tensor_product":
+            assert number_of_tps > 1 and number_of_tps % 2 == 0
+
+        self.number_of_tps = number_of_tps
+        self.target_tensor_irreps = target_tensor_irreps
+        self.target_method = target_method
+        self.irrep_tp = irrep_tp
+
+    @abstractmethod
+    def forward(self):
+        pass
+
+    def predict(self, graph: AtomicGraph, properties: list[PropertyKey]):
+        predictions = self(graph)
+        predictions = {prop: predictions[prop] for prop in properties}
+
+        # tidy up if in eval mode
+        if not self.training:
+            predictions = {k: v.detach() for k, v in predictions.items()}
+
+        return predictions

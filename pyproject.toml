@@ -76,6 +76,7 @@ line-length = 80
 indent-width = 4
 target-version = "py38"
 extend-include = ["*.ipynb", "*.pyi", "*.toml"]
+exclude = ["**/*ipynb"] # TODO remove this before merge
 
 [tool.ruff.lint]
 select = ["E", "F", "UP", "B", "SIM", "I"]
