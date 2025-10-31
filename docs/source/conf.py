@@ -1,7 +1,3 @@
-import builtins
-
-setattr(builtins, "__sphinx_docs_build__", True)  # noqa: B010
-
 project = "graph-pes"
 copyright = "2023-2025, John Gardner"
 author = "John Gardner"
