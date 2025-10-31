@@ -1,4 +1,4 @@
-import builtins
+import sys
 import warnings
 from typing import (
     TYPE_CHECKING,
@@ -1453,5 +1453,6 @@ def keep_at_most_k_neighbours(
     )
 
 
-if not getattr(builtins, "__spinx_docs_build__", False):
+# only script if not a sphinx build (breaks the docs otherwise)
+if "sphinx" not in sys.modules:
     keep_at_most_k_neighbours = torch.jit.script(keep_at_most_k_neighbours)
