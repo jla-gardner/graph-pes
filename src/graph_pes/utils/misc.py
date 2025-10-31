@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import copy
-import logging
 import random
 import string
 import sys
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Sequence, TypeVar, overload
 
-import pytorch_lightning as pl
 import torch
 from torch import Tensor
 
@@ -482,14 +480,6 @@ def slice_to_range(slice_obj: slice, sequence_length: int) -> range:
     step = 1 if slice_obj.step is None else slice_obj.step
 
     return range(start, stop, step)
-
-
-def silently_create_trainer(**trainer_kwargs) -> pl.Trainer:
-    logger = logging.getLogger("pytorch_lightning.utilities.rank_zero")
-    logger.setLevel(logging.ERROR)
-    _trainer = pl.Trainer(**trainer_kwargs)
-    logger.setLevel(logging.INFO)
-    return _trainer
 
 
 def first(iterable: Iterable[T]) -> T | None:

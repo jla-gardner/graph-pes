@@ -147,3 +147,10 @@ Install ``graph-pes`` using pip. We recommend doing this in a new environment (e
     pip install graph-pes
 
 Please see the `GitHub repository <https://github.com/jla-gardner/graph-pes>`__ for the source code and to report issues.
+
+
+**Contributing:**
+
+We welcome any suggestions and contributions to this project.
+Please visit our `GitHub repository <https://github.com/jla-gardner/graph-pes>`_ to report issues or submit pull requests.
+Please see our `CONTRIBUTING.md <https://github.com/jla-gardner/graph-pes/blob/main/CONTRIBUTING.md>`_ file for more details.

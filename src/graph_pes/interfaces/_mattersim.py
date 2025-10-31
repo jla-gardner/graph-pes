@@ -5,13 +5,33 @@ from graph_pes.atomic_graph import (
     PropertyKey,
     neighbour_distances,
     neighbour_vectors,
+    number_of_atoms,
     number_of_edges,
     sum_per_structure,
 )
-from graph_pes.utils.threebody import (
-    angle_spanned_by,
-    triplet_edge_pairs,
-)
+from graph_pes.utils.threebody import angle_spanned_by
+
+
+def threebody_edge_pairs(graph: AtomicGraph, three_body_cutoff: float):
+    edge_indexes = torch.arange(number_of_edges(graph), device=graph.R.device)
+    three_body_mask = neighbour_distances(graph) < three_body_cutoff
+    relevant_edge_indexes = edge_indexes[three_body_mask]
+    relevant_central_atoms = graph.neighbour_list[0][relevant_edge_indexes]
+    edge_pairs = []
+    for i in range(number_of_atoms(graph)):
+        mask = relevant_central_atoms == i
+        masked_edge_indexes = relevant_edge_indexes[mask]
+        # number of edges of distance <= three_body_cutoff
+        # that have i as a central atom
+        N = masked_edge_indexes.shape[0]
+        _idx = torch.cartesian_prod(
+            torch.arange(N),
+            torch.arange(N),
+        )  # (N**2, 2)
+        _idx = _idx[_idx[:, 0] != _idx[:, 1]]  # (N**2 - N, 2)
+        pairs_for_i = masked_edge_indexes[_idx]
+        edge_pairs.append(pairs_for_i)
+    return torch.cat(edge_pairs)
 
 
 class MatterSim_M3Gnet_Wrapper(GraphPESModel):
@@ -26,14 +46,18 @@ class MatterSim_M3Gnet_Wrapper(GraphPESModel):
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         # pre-compute
         edge_lengths = neighbour_distances(graph)  # (E)
-        edge_pairs = triplet_edge_pairs(graph, self.three_body_cutoff.item())
-        triplets_per_leading_edge = count_number_of_triplets_per_leading_edge(
-            edge_pairs, graph
+        _3b_edge_pairs = threebody_edge_pairs(
+            graph, self.three_body_cutoff.item()
         )
-        r_ik = edge_lengths[edge_pairs[:, 1]]
+        triplets_per_leading_edge = count_number_of_triplets_per_leading_edge(
+            _3b_edge_pairs, graph
+        )
+        r_ik = edge_lengths[_3b_edge_pairs[:, 1]]
         v = neighbour_vectors(graph)
-        v_ij = v[edge_pairs[:, 0]]
-        v_ik = v[edge_pairs[:, 1]]
+        v_ij = v[_3b_edge_pairs[:, 0]]
+        v_ik = v[_3b_edge_pairs[:, 1]]
+        angle = angle_spanned_by(v_ij, v_ik)
+
         angle = angle_spanned_by(v_ij, v_ik)
 
         num_atoms = sum_per_structure(
@@ -50,7 +74,6 @@ class MatterSim_M3Gnet_Wrapper(GraphPESModel):
         )
         num_bonds = sum_per_structure(bonds_per_atom, graph).unsqueeze(-1)
 
-        three_body_indices = edge_pairs
         num_triple_ij = triplets_per_leading_edge.unsqueeze(-1)
 
         # use the forward pass of M3Gnet
@@ -67,7 +90,7 @@ class MatterSim_M3Gnet_Wrapper(GraphPESModel):
                 edge_attr_zero,
                 graph.neighbour_list,
                 three_basis,
-                three_body_indices,
+                _3b_edge_pairs,
                 edge_lengths.unsqueeze(-1),
                 num_bonds,
                 num_triple_ij,

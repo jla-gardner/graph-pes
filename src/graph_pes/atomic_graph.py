@@ -37,7 +37,11 @@ DEFAULT_CUTOFF: Final[float] = 5.0
 
 
 PropertyKey: TypeAlias = Literal[
-    "local_energies", "forces", "energy", "stress", "virial"
+    "local_energies",
+    "forces",
+    "energy",
+    "stress",
+    "virial",
 ]
 ALL_PROPERTY_KEYS: Final[List[PropertyKey]] = [
     "local_energies",
@@ -415,11 +419,16 @@ class AtomicGraph(NamedTuple):
             all_keys = set(structure.info) | set(structure.arrays)
             property_mapping = {
                 k: cast(PropertyKey, k)
-                for k in ["energy", "forces", "stress", "virial"]
+                for k in [
+                    "energy",
+                    "forces",
+                    "stress",
+                    "virial",
+                ]
                 if k in all_keys
             }
         if others_to_include is None:
-            others_to_include = []
+            others_to_include = ["total_charge", "total_spin"]
 
         def to_tensor(value):
             t = torch.tensor(value)
@@ -441,6 +450,9 @@ class AtomicGraph(NamedTuple):
 
             elif key in others_to_include:
                 other[key] = to_tensor(value)
+
+        for key, default in [("total_charge", 0.0), ("total_spin", 1.0)]:
+            other.setdefault(key, torch.tensor(default, dtype=_float))
 
         missing = set(
             structure_key
@@ -610,12 +622,16 @@ def replace(
         Z=Z if Z is not None else graph.Z,
         R=R if R is not None else graph.R,
         cell=cell if cell is not None else graph.cell,
-        neighbour_list=neighbour_list
-        if neighbour_list is not None
-        else graph.neighbour_list,
-        neighbour_cell_offsets=neighbour_cell_offsets
-        if neighbour_cell_offsets is not None
-        else graph.neighbour_cell_offsets,
+        neighbour_list=(
+            neighbour_list
+            if neighbour_list is not None
+            else graph.neighbour_list
+        ),
+        neighbour_cell_offsets=(
+            neighbour_cell_offsets
+            if neighbour_cell_offsets is not None
+            else graph.neighbour_cell_offsets
+        ),
         properties=properties if properties is not None else graph.properties,
         other=other if other is not None else graph.other,
         cutoff=cutoff if cutoff is not None else graph.cutoff,
@@ -828,11 +844,22 @@ def to_batch(
         from graph_pes.utils.threebody import triplet_edge_pairs
 
         # calculate the edge pairs on the worker thread
-        edge_pairs = triplet_edge_pairs(batched_graph, three_body_cutoff)
+        ij, S_ij, ik, S_ik = triplet_edge_pairs(
+            batched_graph, three_body_cutoff
+        )
 
         # and cache these on the batch
-        key = f"__threebody-{three_body_cutoff:.3f}"
-        batched_graph.other[key] = edge_pairs
+        # stupidly verbose to make torchscript happy
+        cutoff_str = str(
+            torch.round(
+                torch.tensor(float(three_body_cutoff)), decimals=3
+            ).item()
+        )
+        key = "__threebody-" + cutoff_str
+        batched_graph.other[key + "-ij"] = ij
+        batched_graph.other[key + "-Sij"] = S_ij
+        batched_graph.other[key + "-ik"] = ik
+        batched_graph.other[key + "-Sik"] = S_ik
 
     return batched_graph
 

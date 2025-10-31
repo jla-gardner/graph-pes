@@ -10,7 +10,7 @@ from graph_pes.atomic_graph import (
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models.addition import AdditionModel
 from graph_pes.utils.logger import logger
-from graph_pes.utils.nn import learnable_parameters
+from graph_pes.utils.nn import count_used_parameters
 
 
 def log_model_info(
@@ -27,7 +27,7 @@ def log_model_info(
             for given_name, component in model.models.items()
         ]
         params = [
-            learnable_parameters(component)
+            count_used_parameters(component, only_learnable=True)
             for component in model.models.values()
         ]
         width = max(len(name) for name in model_names)
@@ -37,13 +37,12 @@ def log_model_info(
         logger.info(info_str)
 
     else:
-        logger.info(
-            f"Number of learnable params : {learnable_parameters(model):,}"
-        )
+        n = count_used_parameters(model, only_learnable=True)
+        logger.info(f"Number of learnable params : {n:,}")
 
     if ptl_logger is not None:
-        all_params = sum(p.numel() for p in model.parameters())
-        learnable_params = learnable_parameters(model)
+        all_params = count_used_parameters(model, only_learnable=False)
+        learnable_params = count_used_parameters(model, only_learnable=True)
         ptl_logger.log_metrics(
             {
                 "n_parameters": all_params,

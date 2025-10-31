@@ -1,7 +1,7 @@
 project = "graph-pes"
 copyright = "2023-2025, John Gardner"
 author = "John Gardner"
-release = "0.1.8"
+release = "0.2.2"
 
 extensions = [
     "sphinx.ext.duration",
@@ -20,7 +20,7 @@ extensions = [
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
-    "ase": ("https://wiki.fysik.dtu.dk/ase/", None),
+    "ase": ("https://ase-lib.org", None),
     "e3nn": ("https://docs.e3nn.org/en/latest/", None),
     "pytorch_lightning": ("https://lightning.ai/docs/pytorch/stable/", None),
     "matplotlib": ("https://matplotlib.org/stable/", None),

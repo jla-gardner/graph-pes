@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2025-10-07
+
+Fixed bugs in the MACE-OMOL interface.
+
+Fixed distributed training.
+
+Added default spin and charge states in the atomic graph.
+This allows using model's which use the above as input features to the model, e.g. MACE-OMOL.
+
+Also added a MACE-OMOL convenience function.
+
+Improved dev experience using pre-commit hooks.
+
+Avoid directly overriding `numel` method for `PerElementParameter`s.
+
+Fixed a bug where the threebody edge pairs were not being cached correctly.
+
 # [0.1.6] - 2025-06-03
 
 Added a ScaledHuberLoss

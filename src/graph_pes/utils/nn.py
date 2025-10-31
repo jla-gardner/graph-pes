@@ -286,8 +286,7 @@ def prod(iterable):
 class PerElementParameter(torch.nn.Parameter):
     """
     A subclass of :class:`torch.nn.Parameter` that is indexed by atomic
-    number/s. Crucially, this subclass overrides the :meth:`numel` method,
-    for accurately counting the number of relevant and learnable parameters.
+    number/s.
 
     Examples
     --------
@@ -296,9 +295,10 @@ class PerElementParameter(torch.nn.Parameter):
     containing a few elements, you don't want to count the total number of
     parameters, as this will be unnecessarily large.
 
+    >>> from graph_pes.utils.nn import PerElementParameter, count_used_parameters
     >>> # don't do this!
     >>> per_element_parameter = torch.nn.Parameter(torch.randn(119))
-    >>> per_element_parameter.numel()
+    >>> count_used_parameters(per_element_parameter)
     119
     >>> per_element_parameter
     Parameter containing:
@@ -309,7 +309,7 @@ class PerElementParameter(torch.nn.Parameter):
     >>> # do this instead
     >>> per_element_paramter = PerElementParameter.of_shape((1,))
     >>> per_element_parameter.register_elements([1, 6, 8])
-    >>> per_element_parameter.numel()
+    >>> count_used_parameters(per_element_parameter)
     3
     >>> per_element_parameter
     PerElementParameter({'O': -0.278, 'H': 0.157, 'C': -0.0379}, trainable=True)
@@ -317,7 +317,7 @@ class PerElementParameter(torch.nn.Parameter):
     ``graph-pes-train`` automatically registers all elements that a model
     encounters during training, so you rarely need to call
     :meth:`register_elements` yourself.
-    """
+    """  # noqa: E501
 
     def __new__(
         cls, data: Tensor, requires_grad: bool = True
@@ -474,7 +474,7 @@ class PerElementParameter(torch.nn.Parameter):
             pep[Z] = torch.tensor(covalent_radii[Z]) * scaling_factor
         return pep
 
-    def numel(self) -> int:
+    def num_used_el(self) -> int:
         n_elements = len(self._accessed_Zs)
         accessed_parameters = n_elements**self._index_dims
         per_element_size = prod(self.shape[self._index_dims :])
@@ -583,6 +583,21 @@ def _rebuild_per_element_parameter(data, requires_grad, state):
     return psp
 
 
+def count_used_parameters(
+    module: torch.nn.Module, only_learnable: bool = False
+) -> int:
+    total_params = 0
+    for param in module.parameters():
+        if only_learnable and not param.requires_grad:
+            continue
+
+        if hasattr(param, "num_used_el"):
+            total_params += param.num_used_el()  # type: ignore
+        else:
+            total_params += param.numel()
+    return total_params
+
+
 class PerElementEmbedding(torch.nn.Module):
     """
     A per-element equivalent of :class:`torch.nn.Embedding`.
@@ -639,11 +654,6 @@ class HaddamardProduct(torch.nn.Module):
             else:
                 out = out * component(x)
         return out
-
-
-def learnable_parameters(module: torch.nn.Module) -> int:
-    """Count the number of **learnable** parameters a module has."""
-    return sum(p.numel() for p in module.parameters() if p.requires_grad)
 
 
 class AtomicOneHot(torch.nn.Module):

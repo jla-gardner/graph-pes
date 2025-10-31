@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "graph-pes"
-version = "0.1.8"
+version = "0.2.2"
 description = "Potential Energy Surfaces on Graphs"
 readme = "README.md"
 authors = [{ name = "John Gardner", email = "gardner.john97@gmail.com" }]
@@ -55,7 +55,7 @@ graph-pes-id = "graph_pes.scripts.id:main"
 Homepage = "https://github.com/jla-gardner/graph-pes"
 
 [tool.bumpver]
-current_version = "0.1.8"
+current_version = "0.2.2"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "{old_version} -> {new_version}"
 commit = true
@@ -131,4 +131,10 @@ filterwarnings = [
 norecursedirs = "tests/helpers"
 
 [dependency-groups]
-dev = ["bumpver>=2024.1130", "notebook>=7.3.2", "ruff", "sphinx-autobuild"]
+dev = [
+    "bumpver>=2024.1130",
+ "notebook>=7.3.2",
+ "pre-commit>=4.3.0",
+ "ruff",
+ "sphinx-autobuild",
+]
