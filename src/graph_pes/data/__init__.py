@@ -5,7 +5,6 @@ from .datasets import (
     GraphDataset,
     file_dataset,
     load_atoms_dataset,
-    random_rotation,
 )
 from .loader import GraphDataLoader
 
@@ -17,5 +16,4 @@ __all__ = [
     "DatasetCollection",
     "GraphDataLoader",
     "ConcatDataset",
-    "random_rotation",
 ]

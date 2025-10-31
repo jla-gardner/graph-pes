@@ -507,7 +507,10 @@ def file_dataset(
     if path.suffix == ".db":
         structures = ASEDatabase(path)
     else:
-        structures = ase.io.read(path, index=":")
+        if n is not None and not shuffle:
+            structures = ase.io.read(path, index=slice(0, n))
+        else:
+            structures = ase.io.read(path, index=":")
         assert isinstance(structures, list)
 
     structure_collection = SequenceSampler(structures)
