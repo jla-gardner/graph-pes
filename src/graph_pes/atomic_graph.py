@@ -452,9 +452,6 @@ class AtomicGraph(NamedTuple):
             elif key in others_to_include:
                 other[key] = to_tensor(value)
 
-        for key, default in [("total_charge", 0.0), ("total_spin", 1.0)]:
-            other.setdefault(key, torch.tensor(default, dtype=_float))
-
         missing = set(
             structure_key
             for structure_key, graph_key in property_mapping.items()
