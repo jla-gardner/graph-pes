@@ -4,29 +4,19 @@ import functools
 import pathlib
 from abc import ABC
 from dataclasses import dataclass
-from typing import Callable, Literal, Mapping, Sequence, Union, overload
+from typing import Literal, Mapping, Sequence, Union, overload
 
 import ase
-import ase.db
 import ase.io
 import locache
 import torch.utils.data
 from load_atoms import load_dataset
 
-from graph_pes.atomic_graph import (
-    ALL_PROPERTY_KEYS,
-    AtomicGraph,
-    PropertyKey,
-    is_batch,
-)
+from graph_pes.atomic_graph import ALL_PROPERTY_KEYS, AtomicGraph, PropertyKey
 from graph_pes.data.ase_db import ASEDatabase
+from graph_pes.data.transforms import Transform, TransformName, parse_transform
 from graph_pes.utils.logger import logger
-from graph_pes.utils.misc import (
-    MultiSequence,
-    random_rotation_matrix,
-    slice_to_range,
-    uniform_repr,
-)
+from graph_pes.utils.misc import MultiSequence, slice_to_range, uniform_repr
 from graph_pes.utils.sampling import SequenceSampler
 
 
@@ -46,7 +36,7 @@ class GraphDataset(torch.utils.data.Dataset, ABC):
     def __init__(
         self,
         graphs: Sequence[AtomicGraph],
-        transform: Callable[[AtomicGraph], AtomicGraph] | None = None,
+        transform: Transform,
     ):
         self.graphs = graphs
         self.transform = transform
@@ -55,8 +45,7 @@ class GraphDataset(torch.utils.data.Dataset, ABC):
 
     def __getitem__(self, index: int) -> AtomicGraph:
         g = self.graphs[index]
-        if self.transform is not None:
-            g = self.transform(g)
+        g = self.transform(g)
         return g
 
     def __len__(self) -> int:
@@ -244,6 +233,9 @@ class ASEToGraphDataset(GraphDataset):
         A list of properties to include in the ``graph.other`` field
         that are present as per-atom or per-structure properties on the
         :class:`ase.Atoms` objects.
+    transform
+        A callable that acts on each :class:`~graph_pes.AtomicGraph` instance
+        in the dataset each time it is accessed.
     """
 
     def __init__(
@@ -253,13 +245,13 @@ class ASEToGraphDataset(GraphDataset):
         pre_transform: bool = False,
         property_mapping: Mapping[str, PropertyKey] | None = None,
         others_to_include: list[str] | None = None,
-        transform: Callable[[AtomicGraph], AtomicGraph] | None = None,
+        transform: Transform | None = None,
     ):
         super().__init__(
             graphs=ASEToGraphsConverter(
                 structures, cutoff, property_mapping, others_to_include
             ),
-            transform=transform,
+            transform=parse_transform(transform),
         )
         self.pre_transform = pre_transform
 
@@ -315,7 +307,7 @@ def load_atoms_dataset(
     pre_transform: bool = True,
     property_map: dict[str, PropertyKey] | None = None,
     others_to_include: list[str] | None = None,
-    transform: Callable[[AtomicGraph], AtomicGraph] | None = None,
+    transform: Transform | TransformName | None = None,
 ) -> DatasetCollection:
     """
     Load an dataset of :class:`ase.Atoms` objects using
@@ -398,7 +390,7 @@ def load_atoms_dataset(
         pre_transform=pre_transform,
         property_mapping=property_map,
         others_to_include=others_to_include,
-        transform=transform,
+        transform=parse_transform(transform),
     )
 
     structures = SequenceSampler(load_dataset(id))
@@ -429,7 +421,7 @@ def file_dataset(
     pre_transform: bool = True,
     property_map: dict[str, PropertyKey] | None = None,
     others_to_include: list[str] | None = None,
-    transform: Callable[[AtomicGraph], AtomicGraph] | None = None,
+    transform: Transform | TransformName | None = None,
 ) -> ASEToGraphDataset:
     """
     Load an ASE dataset from a file that is either:
@@ -531,25 +523,5 @@ def file_dataset(
         pre_transform,
         property_map,
         others_to_include,
-        transform,
+        transform=parse_transform(transform),
     )
-
-
-def random_rotation(graph: AtomicGraph) -> AtomicGraph:
-    """Randomly rotate the atom positions, cell and forces (if present)."""
-
-    if is_batch(graph):
-        raise ValueError("Batched graphs are not supported")
-
-    R = random_rotation_matrix()
-
-    props = {**graph.properties}
-    if "forces" in props:
-        props["forces"] = props["forces"] @ R
-
-    new_graph = graph._replace(
-        R=graph.R @ R,
-        cell=graph.cell @ R,
-        properties=props,
-    )
-    return new_graph
