@@ -1,3 +1,4 @@
+import os
 import warnings
 from typing import (
     TYPE_CHECKING,
@@ -1413,7 +1414,6 @@ def remove_mean_and_net_torque(
     return v
 
 
-@torch.jit.script  # scripted for improved performance over the for loop
 def keep_at_most_k_neighbours(
     graph: AtomicGraph,
     k: int,
@@ -1454,3 +1454,7 @@ def keep_at_most_k_neighbours(
         neighbour_list=new_nl,
         neighbour_cell_offsets=new_offsets,
     )
+
+
+if os.environ.get("SPHINX_BUILD") != "1":
+    keep_at_most_k_neighbours = torch.jit.script(keep_at_most_k_neighbours)

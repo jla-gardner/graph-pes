@@ -36,7 +36,7 @@ class GraphDataset(torch.utils.data.Dataset, ABC):
     def __init__(
         self,
         graphs: Sequence[AtomicGraph],
-        transform: Transform,
+        transform: Transform | None = None,
     ):
         self.graphs = graphs
         self.transform = transform
@@ -45,7 +45,8 @@ class GraphDataset(torch.utils.data.Dataset, ABC):
 
     def __getitem__(self, index: int) -> AtomicGraph:
         g = self.graphs[index]
-        g = self.transform(g)
+        if self.transform is not None:
+            g = self.transform(g)
         return g
 
     def __len__(self) -> int:
