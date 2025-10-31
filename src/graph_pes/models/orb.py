@@ -216,6 +216,65 @@ class OrbMessagePassingLayer(torch.nn.Module):
 
 
 class Orb(GraphPESModel):
+    r"""
+    The `Orb-v3 <https://arxiv.org/abs/2504.06231>`__ architecture.
+
+    Citation:
+
+    .. code-block:: bibtex
+
+        @misc{Rhodes-25-04,
+            title = {Orb-v3: Atomistic Simulation at Scale},
+            author = {
+                Rhodes, Benjamin and Vandenhaute, Sander 
+                and {\v S}imkus, Vaidotas and Gin, James and Godwin, Jonathan 
+                and Duignan, Tim and Neumann, Mark
+            },
+            year = {2025},
+            publisher = {arXiv},
+            doi = {10.48550/arXiv.2504.06231},
+        }
+
+    Parameters
+    ----------
+    cutoff
+        The cutoff radius for interatomic interactions.
+    conservative
+        If ``True``, the model will generate force predictions as the negative
+        gradient of the energy with respect to atomic positions. If ``False``,
+        the model will have a separate force prediction head.
+    channels
+        The number of channels in the model.
+    layers
+        The number of message passing layers.
+    radial_features
+        The number of radial basis functions to use.
+    mlp_layers
+        The number of layers in the MLPs.
+    mlp_hidden_dim
+        The hidden dimension of the MLPs.
+    l_max
+        The maximum degree of spherical harmonics to use.
+    edge_outer_product
+        If ``True``, use the outer product of radial and angular features for
+        edge embeddings. If ``False``, concatenate radial and angular features.
+    activation
+        The activation function to use in the MLPs.
+    norm_type
+        The type of normalization to use in the MLPs. Either ``"layer"`` for
+        :class:`torch.nn.LayerNorm` or ``"rms"`` for :class:`torch.nn.RMSNorm`.
+    attention_gate
+        The type of attention gating to use in message passing layers. Either
+        ``"sigmoid"`` for element-wise sigmoid gating or ``"softmax"`` for
+        normalising attention weights over neighbours.
+    distance_smoothing
+        If ``True``, apply a polynomial envelope to attention weights based on
+        interatomic distances. If ``False``, do not apply any distance-based
+        smoothing.
+    max_neighbours
+        If set, limit the number of neighbours per atom to this value by
+        keeping only the closest ones.
+    """
     def __init__(
         self,
         cutoff: float = DEFAULT_CUTOFF,
