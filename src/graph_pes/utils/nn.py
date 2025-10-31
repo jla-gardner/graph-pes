@@ -260,6 +260,19 @@ def parse_activation(act: str) -> torch.nn.Module:
     torch.nn.Module
         The parsed activation function.
     """
+    # common aliases:
+    aliases = {
+        "ssp": ShiftedSoftplus,
+        "relu": torch.nn.ReLU,
+        "elu": torch.nn.ELU,
+        "gelu": torch.nn.GELU,
+        "silu": torch.nn.SiLU,
+        "swish": torch.nn.SiLU,
+    }
+    if act in aliases:
+        return aliases[act]()
+
+    # fall back to parsing from torch.nn
     activation = getattr(torch.nn, act, None)
     if activation is None:
         raise ValueError(f"Activation function {act} not found in `torch.nn`.")
