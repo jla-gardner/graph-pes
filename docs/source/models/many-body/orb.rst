@@ -14,3 +14,16 @@ Definition
 
 .. autoclass:: graph_pes.models.Orb
     :show-inheritance:
+
+
+Helpers
+-------
+
+.. class:: graph_pes.models.orb.NormType
+
+    A type alias for a ``Literal["layer", "rms"]``.
+
+
+.. class:: graph_pes.models.orb.AttentionGate
+
+    A type alias for a ``Literal["sigmoid", "softmax"]``.
