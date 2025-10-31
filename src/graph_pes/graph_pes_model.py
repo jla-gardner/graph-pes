@@ -126,7 +126,7 @@ class GraphPESModel(nn.Module, ABC):
     ):
         super().__init__()
 
-        self._GRAPH_PES_VERSION: Final[str] = "0.2.2"
+        self._GRAPH_PES_VERSION: Final[str] = "0.2.3"
 
         self.cutoff: torch.Tensor
         self.register_buffer("cutoff", torch.tensor(cutoff))
