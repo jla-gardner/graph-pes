@@ -1,4 +1,4 @@
-import os
+import builtins
 import warnings
 from typing import (
     TYPE_CHECKING,
@@ -1456,5 +1456,5 @@ def keep_at_most_k_neighbours(
     )
 
 
-if os.environ.get("SPHINX_BUILD") != "1":
+if not getattr(builtins, "__spinx_docs_build__", False):
     keep_at_most_k_neighbours = torch.jit.script(keep_at_most_k_neighbours)
