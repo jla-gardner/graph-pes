@@ -405,8 +405,9 @@ class PerElementParameter(torch.nn.Parameter):
         **values: float,
     ) -> PerElementParameter:
         """
-        Create a :class:`PerElementParameter` containing a single value for
-        each element in the periodic table from a dictionary of values.
+        Create a :class:`PerElementParameter` containing a single value or
+        a list of values for each element in the periodic table from
+        a dictionary of values.
 
         Parameters
         ----------
@@ -431,14 +432,20 @@ class PerElementParameter(torch.nn.Parameter):
         >>> pep
         PerElementParameter({'H': 1.0, 'C': 0.0, 'O': 2.0}, trainable=True)
         """
+        length = 1
+        offset_value = [values[k] for k in values]
+        if offset_value and isinstance(offset_value[0], list):
+            lengths = [len(values[v]) for v in values]
+            if len(lengths) > 0:
+                length = lengths[0]
         pep = PerElementParameter.of_length(
-            1, requires_grad=requires_grad, default_value=default_value
+            length, requires_grad=requires_grad, default_value=default_value
         )
         for element_symbol, value in values.items():
             if element_symbol not in chemical_symbols:
                 raise ValueError(f"Unknown element: {element_symbol}")
             Z = chemical_symbols.index(element_symbol)
-            pep[Z] = value
+            pep[Z] = torch.tensor(value)
 
         pep.register_elements(atomic_numbers[v] for v in values)
 

@@ -38,11 +38,7 @@ DEFAULT_CUTOFF: Final[float] = 5.0
 
 
 PropertyKey: TypeAlias = Literal[
-    "local_energies",
-    "forces",
-    "energy",
-    "stress",
-    "virial",
+    "local_energies", "forces", "energy", "stress", "virial", "tensor"
 ]
 ALL_PROPERTY_KEYS: Final[List[PropertyKey]] = [
     "local_energies",
@@ -50,6 +46,7 @@ ALL_PROPERTY_KEYS: Final[List[PropertyKey]] = [
     "energy",
     "stress",
     "virial",
+    "tensor",
 ]
 
 if not TYPE_CHECKING and not is_being_documented():
@@ -420,12 +417,7 @@ class AtomicGraph(NamedTuple):
             all_keys = set(structure.info) | set(structure.arrays)
             property_mapping = {
                 k: cast(PropertyKey, k)
-                for k in [
-                    "energy",
-                    "forces",
-                    "stress",
-                    "virial",
-                ]
+                for k in ["energy", "forces", "stress", "virial", "tensor"]
                 if k in all_keys
             }
         if others_to_include is None:
@@ -461,7 +453,6 @@ class AtomicGraph(NamedTuple):
             raise ValueError(f"Unable to find properties: {missing}")
 
         pbc = torch.tensor(structure.pbc, dtype=torch.bool)
-
         return cls(
             Z=Z,
             R=R,
@@ -592,7 +583,7 @@ class AtomicGraph(NamedTuple):
             if key in self.properties:
                 atoms.info[key] = self.properties[key].detach().cpu().numpy()
 
-        for key in ["forces", "local_energies"]:
+        for key in ["forces", "local_energies", "tensor"]:
             if key in self.properties:
                 atoms.arrays[key] = self.properties[key].detach().cpu().numpy()
 
@@ -791,13 +782,14 @@ def to_batch(
 
     properties: dict[PropertyKey, torch.Tensor] = {}
     # - per structure labels are concatenated along a new batch axis (0)
+    # for now we only support atomic tensors
     for key in ["energy", "stress", "virial"]:
         key = cast(PropertyKey, key)
         if all(key in g.properties for g in graphs):
             properties[key] = torch.stack([g.properties[key] for g in graphs])
 
     # - per atom labels are concatenated along the first axis
-    for key in ["forces", "local_energies"]:
+    for key in ["forces", "local_energies", "tensor"]:
         key = cast(PropertyKey, key)
         if all(key in g.properties for g in graphs):
             properties[key] = torch.cat([g.properties[key] for g in graphs])

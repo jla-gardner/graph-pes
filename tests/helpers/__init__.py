@@ -17,7 +17,7 @@ from graph_pes.atomic_graph import AtomicGraph, PropertyKey
 from graph_pes.data.datasets import get_all_graphs_and_cache_to_disk
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.models import (
-    ALL_MODELS,
+    ALL_PES_MODELS,
     EDDP,
     MACE,
     AdditionModel,
@@ -34,7 +34,7 @@ from graph_pes.models.components.scaling import LocalEnergiesScaler
 # remove cache so that any changes are actually tested
 reset(get_all_graphs_and_cache_to_disk)
 
-# non-verbose load-atoms to avoid poluting the test output
+# non-verbose load-atoms to avoid polluting the test output
 os.environ["LOAD_ATOMS_VERBOSE"] = "0"
 
 
@@ -95,8 +95,8 @@ def all_model_factories(
             kwargs["cutoff"] = cutoff
         return lambda: model_klass(**kwargs)
 
-    names = [model.__name__ for model in ALL_MODELS]
-    factories = [_model_factory(model) for model in ALL_MODELS]
+    names = [model.__name__ for model in ALL_PES_MODELS]
+    factories = [_model_factory(model) for model in ALL_PES_MODELS]
     names.append("AdditionModel")
     factories.append(
         lambda: AdditionModel(

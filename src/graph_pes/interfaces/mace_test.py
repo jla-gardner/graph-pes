@@ -168,7 +168,7 @@ def test_go_mace_23():
 def test_mace_omol():
     base_model = mace_omol()
     calc = GraphPESCalculator(base_model)
-    
+
     calc.calculate(CH4, properties=["energy", "forces"])
     assert np.abs(calc.results["forces"][0]).max() < 1e-5
 
