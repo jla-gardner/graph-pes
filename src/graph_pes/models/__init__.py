@@ -14,10 +14,10 @@ import pathlib
 
 import torch
 
-from graph_pes.graph_pes_model import GeneralPropertyGraphModel
+from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.utils.logger import logger
 
-from .addition import AdditionModel
+from .addition import AdditionModel, TensorAdditionModel
 from .e3nn.mace import MACE, TensorMACE, ZEmbeddingMACE, ZEmbeddingTensorMACE
 from .e3nn.nequip import (
     NequIP,
@@ -69,6 +69,7 @@ __all__ = [
     "ZEmbeddingNequIP",
     "StillingerWeber",
     "UnitConverter",
+    "TensorAdditionModel",
     "TensorNequIP",
     "TensorMACE",
     "ZEmbeddingTensorMACE",
@@ -85,13 +86,22 @@ MODEL_EXCLUSIONS = {
     "SmoothedPairPotential",
     "UnitConverter",
 }
+TENSOR_MODELS = {
+    "TensorAdditionModel",
+    "TensorNequIP",
+    "TensorMACE",
+    "ZEmbeddingTensorMACE",
+    "ZEmbeddingTensorNequIP",
+}
 
-ALL_MODELS: list[type[GeneralPropertyGraphModel]] = [
-    globals()[model] for model in __all__ if model not in MODEL_EXCLUSIONS
+ALL_PES_MODELS: list[type[GraphPESModel]] = [
+    globals()[model]
+    for model in __all__
+    if model not in (MODEL_EXCLUSIONS | TENSOR_MODELS)
 ]
 
 
-def load_model(path: str | pathlib.Path) -> GeneralPropertyGraphModel:
+def load_model(path: str | pathlib.Path) -> GraphPESModel:
     """
     Load a model from a file.
 
@@ -128,7 +138,7 @@ def load_model(path: str | pathlib.Path) -> GeneralPropertyGraphModel:
     if isinstance(model, torch.jit.ScriptModule):
         model = ScriptedModel(model)
 
-    if not isinstance(model, GeneralPropertyGraphModel):
+    if not isinstance(model, GraphPESModel):
         raise ValueError(
             "Expected the loaded object to be a GraphPESModel "
             f"but got {type(model)}"
@@ -151,7 +161,7 @@ def load_model(path: str | pathlib.Path) -> GeneralPropertyGraphModel:
 def load_model_component(
     path: str | pathlib.Path,
     key: str,
-) -> GeneralPropertyGraphModel:
+) -> GraphPESModel:
     """
     Load a component from an :class:`~graph_pes.models.AdditionModel`.
 

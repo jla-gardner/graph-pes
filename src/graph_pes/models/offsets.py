@@ -6,7 +6,8 @@ import torch
 from ase.data import atomic_numbers
 
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey
-from graph_pes.graph_pes_model import GraphPESModel, GraphTensorModel
+from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_property_model import GraphTensorModel
 from graph_pes.utils.logger import logger
 from graph_pes.utils.nn import PerElementParameter
 from graph_pes.utils.shift_and_scale import (
@@ -294,7 +295,7 @@ class LearnableTensorOffset(TensorOffset):
 
         if "tensor" not in graphs.properties:
             warnings.warn(
-                "No tesnor labels found in the training data. "
+                "No tensor labels found in the training data. "
                 "Can't guess suitable per-element tensor offsets for "
                 f"{self.__class__.__name__}.",
                 stacklevel=2,

@@ -19,7 +19,8 @@ from graph_pes.atomic_graph import (
     neighbour_distances,
     neighbour_vectors,
 )
-from graph_pes.graph_pes_model import GraphPESModel, GraphTensorModel
+from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_property_model import GraphTensorModel
 from graph_pes.models.components import distances
 from graph_pes.models.components.aggregation import (
     NeighbourAggregation,

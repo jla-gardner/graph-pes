@@ -11,8 +11,9 @@ from graph_pes.data.datasets import (
     GraphDataset,
     file_dataset,
 )
-from graph_pes.graph_pes_model import GeneralPropertyGraphModel
-from graph_pes.models import AdditionModel
+from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_property_model import GraphPropertyModel, GraphTensorModel
+from graph_pes.models import AdditionModel, TensorAdditionModel
 from graph_pes.training.loss import Loss, TotalLoss
 from graph_pes.utils.misc import nested_merge
 
@@ -115,26 +116,27 @@ class TorchConfig:
 
 
 def parse_model(
-    model: GeneralPropertyGraphModel | dict[str, GeneralPropertyGraphModel],
-) -> GeneralPropertyGraphModel:
-    if isinstance(model, GeneralPropertyGraphModel):
+    model: GraphPropertyModel | dict[str, GraphPropertyModel],
+) -> GraphPropertyModel:
+    if isinstance(model, GraphPropertyModel):
         return model
     elif isinstance(model, dict):
-        if not all(
-            isinstance(m, GeneralPropertyGraphModel) for m in model.values()
-        ):
+        # try to build an AdditionModel or TensorAdditionModel
+        if all(isinstance(m, GraphPESModel) for m in model.values()):
+            return AdditionModel(**model)
+        elif all(isinstance(m, GraphTensorModel) for m in model.values()):
+            return TensorAdditionModel(**model)
+        else:
             _types = {k: type(v) for k, v in model.items()}
-
             raise ValueError(
                 "Expected all values in the model dictionary to be "
-                "GeneralPropertyGraphModel instances, but got something else: "
+                "GraphPropertyModel instances, but got something else: "
                 f"types: {_types}\n"
                 f"values: {model}\n"
             )
-        return AdditionModel(**model)
     raise ValueError(
-        "Expected to be able to parse a GeneralPropertyGraphModel or a "
-        "dictionary of named GeneralPropertyGraphModel from the model config, "
+        "Expected to be able to parse a GraphPropertyModel or a "
+        "dictionary of named GraphPropertyModel from the model config, "
         f"but got something else: {model}"
     )
 
@@ -158,9 +160,7 @@ def parse_loss(
     )
 
 
-def parse_single_dataset(
-    value: Any, model: GeneralPropertyGraphModel
-) -> GraphDataset:
+def parse_single_dataset(value: Any, model: GraphPropertyModel) -> GraphDataset:
     if isinstance(value, GraphDataset):
         return value
     elif isinstance(value, (str, dict)):
@@ -179,7 +179,7 @@ def parse_single_dataset(
 
 def parse_dataset_collection(
     raw_data: DatasetCollection | dict[str, Any],
-    model: GeneralPropertyGraphModel,
+    model: GraphPropertyModel,
 ) -> DatasetCollection:
     if isinstance(raw_data, DatasetCollection):
         return raw_data

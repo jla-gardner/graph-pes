@@ -63,7 +63,7 @@ def test_equivariance(model: GraphPESModel):
         rtol=10,
     )
 
-    # 4. molecule is symetric: forces should ~0 on the central C,
+    # 4. molecule is symmetric: forces should ~0 on the central C,
     #    and of equal magnitude on the H atoms, and H atom
     #    local energies should be the same
     force_norms = new_predictions["forces"].norm(dim=-1)

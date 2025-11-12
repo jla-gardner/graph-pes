@@ -19,7 +19,7 @@ from graph_pes.atomic_graph import (
 from graph_pes.config.training import FittingOptions
 from graph_pes.data.datasets import DatasetCollection, GraphDataset
 from graph_pes.data.loader import GraphDataLoader
-from graph_pes.graph_pes_model import GeneralPropertyGraphModel, GraphPESModel
+from graph_pes.graph_pes_model import GraphPESModel, GraphPropertyModel
 from graph_pes.training.loss import (
     MAE,
     Loss,
@@ -44,14 +44,14 @@ from graph_pes.utils.shift_and_scale import add_auto_offset
 
 def train_with_lightning(
     trainer: pl.Trainer,
-    model: GeneralPropertyGraphModel,
+    model: GraphPropertyModel,
     data: DatasetCollection,
     loss: TotalLoss,
     fit_config: FittingOptions,
     optimizer: Optimizer,
     user_eval_metrics: list[Loss] | None = None,
     scheduler: LRScheduler | None = None,
-) -> GeneralPropertyGraphModel:
+) -> GraphPropertyModel:
     # - prepare the data
     if trainer.global_rank == 0:
         logger.info("Preparing data")
@@ -139,7 +139,7 @@ def train_with_lightning(
 class TrainingTask(pl.LightningModule):
     def __init__(
         self,
-        model: GeneralPropertyGraphModel,
+        model: GraphPropertyModel,
         loss: TotalLoss,
         optimizer: Optimizer,
         scheduler: LRScheduler | None,

@@ -12,12 +12,13 @@ from graph_pes.atomic_graph import (
     number_of_atoms,
     number_of_structures,
 )
-from graph_pes.graph_pes_model import GeneralPropertyGraphModel
+from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_property_model import GraphTensorModel
 from graph_pes.utils.misc import all_equal, uniform_repr
 from graph_pes.utils.nn import UniformModuleDict
 
 
-class AdditionModel(GeneralPropertyGraphModel):
+class AdditionModel(GraphPESModel):
     """
     A utility class for combining the predictions of multiple models.
 
@@ -46,7 +47,7 @@ class AdditionModel(GeneralPropertyGraphModel):
         )
     """
 
-    def __init__(self, **models: GeneralPropertyGraphModel):
+    def __init__(self, **models: GraphPESModel):
         max_cutoff = max([m.cutoff.item() for m in models.values()])
         implemented_properties = list(
             set().union(*[m.implemented_properties for m in models.values()])
@@ -149,7 +150,7 @@ class AdditionModel(GeneralPropertyGraphModel):
             indent_width=2,
         )
 
-    def __getitem__(self, key: str) -> GeneralPropertyGraphModel:
+    def __getitem__(self, key: str) -> GraphPESModel:
         """
         Get a component by name.
 
@@ -159,3 +160,57 @@ class AdditionModel(GeneralPropertyGraphModel):
         >>> model["model1"]
         """
         return self.models[key]
+
+
+class TensorAdditionModel(GraphTensorModel):
+    """
+    A utility class for combining the predictions of multiple tensor models.
+    """
+
+    def __init__(self, **models: GraphTensorModel):
+        targets = set([m.target_tensor_irreps for m in models.values()])
+        if len(targets) != 1:
+            raise ValueError(
+                "The target tensor irreps of the models must be the same."
+            )
+        target_tensor_irreps = targets.pop()
+
+        target_method = set([m.target_method for m in models.values()])
+        if len(target_method) != 1:
+            raise ValueError(
+                "The target method of the models must be the same."
+            )
+        target_method = target_method.pop()
+
+        number_of_tps = set([m.number_of_tps for m in models.values()])
+        if len(number_of_tps) != 1:
+            raise ValueError(
+                "The number of tensor products of the models must be the same."
+            )
+        number_of_tps = number_of_tps.pop()
+
+        super().__init__(
+            cutoff=max([m.cutoff.item() for m in models.values()]),
+            implemented_properties=["tensor"],
+            target_tensor_irreps=target_tensor_irreps,
+            target_method=target_method,
+            number_of_tps=number_of_tps,
+        )
+        self.models = UniformModuleDict(**models)
+
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
+        preds = [model(graph)["tensor"] for model in self.models.values()]
+        return {
+            "tensor": torch.stack(preds).sum(dim=0),
+        }
+
+    def predict(
+        self, graph: AtomicGraph, properties: list[PropertyKey]
+    ) -> dict[PropertyKey, torch.Tensor]:
+        preds = [
+            model.predict(graph, properties)["tensor"]
+            for model in self.models.values()
+        ]
+        return {
+            "tensor": torch.stack(preds).sum(dim=0),
+        }

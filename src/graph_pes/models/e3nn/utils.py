@@ -47,8 +47,6 @@ class UnrestrictedLinearReadOut(o3.Linear):
     Map a set of features with arbitrary irreps to a single irrep with
     a single feature using a linear layer.
 
-    Chiheb: Removes the restriction of having a single irrep in the output
-
     Parameters
     ----------
     input_irreps : str or o3.Irreps
@@ -85,7 +83,6 @@ class LinearTPReadOut(torch.nn.Module):
     Map a set of features with arbitrary irreps to a single irrep with
     a single feature using a linear layer.
 
-    Chiheb: Perform the linear operation and then the TP
     Parameters
     ----------
     input_irreps : str or o3.Irreps
@@ -231,9 +228,6 @@ class NonLinearTPReadOut(torch.nn.Module):
     with arbitrary irreps and produces a scalar output. It uses a linear layer
     followed by an activation function and another linear layer to produce
     the final scalar output.
-
-    Chiheb: do the nonlinear readout and then apply the same tp as
-    the linear case
 
     Parameters
     ----------

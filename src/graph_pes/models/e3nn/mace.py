@@ -14,7 +14,8 @@ from graph_pes.atomic_graph import (
     neighbour_distances,
     neighbour_vectors,
 )
-from graph_pes.graph_pes_model import GraphPESModel, GraphTensorModel
+from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_property_model import GraphTensorModel
 from graph_pes.models.components.aggregation import (
     NeighbourAggregation,
     NeighbourAggregationMode,
@@ -769,7 +770,7 @@ class TensorMACE(_BaseTensorMACE):
                 Graph-neural-network predictions of solid-state NMR parameters
                   from spherical tensor decomposition
                 },
-            author = {Ben Mahmoud, Chiheb and Rosset, Louise and Yates, Jonatha and
+            author = {Ben Mahmoud, Chiheb and Rosset, Louise and Yates, Jonathan and
                       Deringer, Volker
                 },
             year = {2024},
@@ -1019,7 +1020,7 @@ class ZEmbeddingTensorMACE(_BaseTensorMACE):
                 Graph-neural-network predictions of solid-state NMR parameters
                   from spherical tensor decomposition
                 },
-            author = {Ben Mahmoud, Chiheb and Rosset, Louise and Yates, Jonatha and
+            author = {Ben Mahmoud, Chiheb and Rosset, Louise and Yates, Jonathan and
                       Deringer, Volker
                 },
             year = {2024},

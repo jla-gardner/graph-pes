@@ -13,9 +13,7 @@ from pytorch_lightning import Callback
 
 from graph_pes.config.shared import TorchConfig, parse_dataset_collection
 from graph_pes.data.datasets import DatasetCollection
-from graph_pes.graph_pes_model import (
-    GeneralPropertyGraphModel,
-)
+from graph_pes.graph_property_model import GraphPropertyModel
 from graph_pes.training.callbacks import VerboseSWACallback
 from graph_pes.training.loss import Loss, TotalLoss
 from graph_pes.training.opt import LRScheduler, Optimizer
@@ -139,9 +137,7 @@ class TrainingConfig:
     :class:`~graph_pes.GraphPESModel`.
     """
 
-    model: Union[
-        GeneralPropertyGraphModel, Dict[str, GeneralPropertyGraphModel]
-    ]
+    model: Union[GraphPropertyModel, Dict[str, GraphPropertyModel]]
     data: Union[DatasetCollection, Dict[str, Any]]
     loss: Union[Loss, TotalLoss, Dict[str, Loss], List[Loss]]
     fitting: FittingConfig
@@ -150,7 +146,7 @@ class TrainingConfig:
 
     ### Methods ###
 
-    def get_data(self, model: GeneralPropertyGraphModel) -> DatasetCollection:
+    def get_data(self, model: GraphPropertyModel) -> DatasetCollection:
         return parse_dataset_collection(self.data, model)
 
     @classmethod

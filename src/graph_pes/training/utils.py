@@ -7,25 +7,22 @@ from graph_pes.atomic_graph import (
     number_of_atoms,
     number_of_structures,
 )
-from graph_pes.graph_pes_model import (
-    GeneralPropertyGraphModel,
-    GraphPESModel,
-    GraphTensorModel,
-)
-from graph_pes.models.addition import AdditionModel
+from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_property_model import GraphPropertyModel, GraphTensorModel
+from graph_pes.models.addition import AdditionModel, TensorAdditionModel
 from graph_pes.utils.logger import logger
 from graph_pes.utils.nn import count_used_parameters
 
 
 def log_model_info(
-    model: GraphPESModel,
+    model: GraphPropertyModel,
     ptl_logger: PTLLogger | None = None,
 ) -> None:
     """Log the number of parameters in a model."""
 
     logger.debug(f"Model:\n{model}")
 
-    if isinstance(model, AdditionModel):
+    if isinstance(model, (AdditionModel, TensorAdditionModel)):
         model_names = [
             f"{given_name} ({component.__class__.__name__})"
             for given_name, component in model.models.items()
@@ -55,7 +52,7 @@ def log_model_info(
         )
 
 
-def sanity_check(model: GeneralPropertyGraphModel, batch: AtomicGraph) -> None:
+def sanity_check(model: GraphPropertyModel, batch: AtomicGraph) -> None:
     if isinstance(model, GraphPESModel):
         outputs = model.get_all_PES_predictions(batch)
 
@@ -90,28 +87,24 @@ def sanity_check(model: GeneralPropertyGraphModel, batch: AtomicGraph) -> None:
                 f"smaller than the cutoff used in the model ({model.cutoff}). "
                 "This is almost certainly not what you want to do?",
             )
+
     elif isinstance(model, GraphTensorModel):
         outputs = model.predict(batch, ["tensor"])
 
-        N = number_of_atoms(batch)
-        expected_shapes = {
-            "tensor": (
-                N,
-                9,
-            ),  # TODO: we need to make this dynamic so it matches the rank
-            # of arbitrary tensors
-        }
-        incorrect = []
-        for key, value in outputs.items():
-            if value.shape != expected_shapes[key]:
-                incorrect.append((key, value.shape, expected_shapes[key]))
-        if len(incorrect) > 0:
+        # for now, only a single output, "tensor", is supported
+        if "tensor" not in outputs:
             raise ValueError(
-                "Sanity check failed for the following outputs:\n"
-                + "\n".join(
-                    f"{key}: {value} != {expected}"
-                    for key, value, expected in incorrect
-                )
+                "Sanity check failed: the model did not predict the "
+                "`tensor` property."
+            )
+
+        tensor = outputs["tensor"]
+        N = number_of_atoms(batch)
+        if tensor.shape[0] != N:
+            raise ValueError(
+                "Sanity check failed: the model predicted a tensor with "
+                f"shape {tensor.shape} but the number of atoms in the graph "
+                f"is {N}."
             )
 
 
