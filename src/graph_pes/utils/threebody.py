@@ -89,6 +89,29 @@ def triplet_bond_descriptors(
     )
 
 
+def _threebody_cache_key(cutoff: float) -> str:
+    # stupidly verbose to make torchscript happy
+    cutoff_str = str(
+        torch.round(torch.tensor(float(cutoff)), decimals=3).item()
+    )
+    return "__threebody-" + cutoff_str
+
+
+def _cache_threebody_terms(
+    graph: AtomicGraph,
+    cutoff: float,
+    ij: torch.Tensor,
+    Sij: torch.Tensor,
+    ik: torch.Tensor,
+    Sik: torch.Tensor,
+):
+    key = _threebody_cache_key(cutoff)
+    graph.other[key + "-ij"] = ij
+    graph.other[key + "-Sij"] = Sij
+    graph.other[key + "-ik"] = ik
+    graph.other[key + "-Sik"] = Sik
+
+
 def triplet_edge_pairs(
     graph: AtomicGraph,
     three_body_cutoff: float,
@@ -123,10 +146,7 @@ def triplet_edge_pairs(
     #    to the graph within this function.
 
     # stupidly verbose to make torchscript happy
-    cutoff_str = str(
-        torch.round(torch.tensor(float(three_body_cutoff)), decimals=3).item()
-    )
-    key = "__threebody-" + cutoff_str
+    key = _threebody_cache_key(three_body_cutoff)
     ij = graph.other.get(key + "-ij")
     S_ij = graph.other.get(key + "-Sij")
     ik = graph.other.get(key + "-ik")

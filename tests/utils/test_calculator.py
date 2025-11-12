@@ -1,9 +1,10 @@
 import numpy
 import pytest
+from ase import Atoms
 from ase.build import bulk, molecule
 
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey
-from graph_pes.models import LennardJones
+from graph_pes.models import LennardJones, StillingerWeber
 from graph_pes.utils.calculator import merge_predictions
 
 
@@ -72,3 +73,30 @@ def test_calc_all():
 
     n_atoms = sum(map(len, molecules))
     assert merged["forces"].shape == (n_atoms, 3)
+
+
+def test_threebody_cache():
+    # use two separate calculators, one with and one without threebody caching
+    # and check that the results are the same when we move atoms around
+
+    atoms = Atoms("Si3", positions=[(0, 0, 0), (1, 0, 0), (0, 1, 0)])
+
+    model = StillingerWeber()
+    cached_calc = model.ase_calculator(skin=1.0, cache_threebody=True)
+    uncached_calc = model.ase_calculator(skin=1.0, cache_threebody=False)
+
+    cached_calc.calculate(atoms, ["energy"])
+    uncached_calc.calculate(atoms, ["energy"])
+    assert cached_calc.results["energy"] == uncached_calc.results["energy"]
+
+    # move some distance less than the skin
+    atoms.positions += [[0, 0, 0], [0, 0, 0], [0, 0.3, 0]]
+    cached_calc.calculate(atoms, ["energy"])
+    uncached_calc.calculate(atoms, ["energy"])
+    assert cached_calc.results["energy"] == uncached_calc.results["energy"]
+
+    # move some distance greater than the skin
+    atoms.positions += [[0, 0, 0], [0, 0, 0], [0, 2.0, 0]]
+    cached_calc.calculate(atoms, ["energy"])
+    uncached_calc.calculate(atoms, ["energy"])
+    assert cached_calc.results["energy"] == uncached_calc.results["energy"]

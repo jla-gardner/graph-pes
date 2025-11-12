@@ -839,25 +839,20 @@ def to_batch(
         and three_body_cutoff > 0
         and worker_info is not None
     ):
-        from graph_pes.utils.threebody import triplet_edge_pairs
+        from graph_pes.utils.threebody import (
+            _cache_threebody_terms,
+            triplet_edge_pairs,
+        )
 
         # calculate the edge pairs on the worker thread
         ij, S_ij, ik, S_ik = triplet_edge_pairs(
             batched_graph, three_body_cutoff
         )
 
-        # and cache these on the batch
-        # stupidly verbose to make torchscript happy
-        cutoff_str = str(
-            torch.round(
-                torch.tensor(float(three_body_cutoff)), decimals=3
-            ).item()
+        # and place them onto the batched graph
+        _cache_threebody_terms(
+            batched_graph, three_body_cutoff, ij, S_ij, ik, S_ik
         )
-        key = "__threebody-" + cutoff_str
-        batched_graph.other[key + "-ij"] = ij
-        batched_graph.other[key + "-Sij"] = S_ij
-        batched_graph.other[key + "-ik"] = ik
-        batched_graph.other[key + "-Sik"] = S_ik
 
     return batched_graph
 
