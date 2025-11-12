@@ -164,10 +164,15 @@ class GraphPESCalculator(Calculator):
                 cell_changes < self.skin / 2
             ):
                 self.cache_hits += 1
+                device = self._cached_graph.R.device
                 graph = self._cached_graph._replace(
-                    R=torch.tensor(new_R, dtype=self._cached_graph.R.dtype),
+                    R=torch.tensor(
+                        new_R, dtype=self._cached_graph.R.dtype, device=device
+                    ),
                     cell=torch.tensor(
-                        new_cell, dtype=self._cached_graph.cell.dtype
+                        new_cell,
+                        dtype=self._cached_graph.cell.dtype,
+                        device=device,
                     ),
                 )
                 if self.cache_threebody and self._threebody_cache is not None:
