@@ -786,16 +786,16 @@ class TensorMACE(_BaseTensorMACE):
             doi = {10.48550/arXiv.2206.07697},
         }
 
-        @misc{BenMahmoud2024NMR,
+        @misc{BenMahmoud2025NMR,
             title = {
                 Graph-neural-network predictions of solid-state NMR parameters
-                  from spherical tensor decomposition
+                 in silica from spherical tensor decomposition
                 },
             author = {Ben Mahmoud, Chiheb and Rosset, Louise and Yates, Jonathan and
                       Deringer, Volker
                 },
-            year = {2024},
-            doi = {10.48550/arXiv.2412.15063},
+            year = {2025},
+            doi = {10.1063/5.0274240},
         }
 
     Parameters
@@ -1036,16 +1036,16 @@ class ZEmbeddingTensorMACE(_BaseTensorMACE):
             year = {2022},
             doi = {10.48550/arXiv.2206.07697},
         }
-        @misc{BenMahmoud2024NMR,
+        @misc{BenMahmoud2025NMR,
             title = {
                 Graph-neural-network predictions of solid-state NMR parameters
-                  from spherical tensor decomposition
+                  in silica from spherical tensor decomposition
                 },
             author = {Ben Mahmoud, Chiheb and Rosset, Louise and Yates, Jonathan and
                       Deringer, Volker
                 },
-            year = {2024},
-            doi = {10.48550/arXiv.2412.15063},
+            year = {2025},
+            doi = {10.1063/5.0274240},
         }
 
     All paramters are identical to :class:`~graph_pes.models.MACE`, except for the following:

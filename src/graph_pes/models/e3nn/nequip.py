@@ -908,16 +908,16 @@ class TensorNequIP(_BaseTensorNequIP):
             copyright = {2022 The Author(s)}
         }
 
-        @misc{BenMahmoud2024NMR,
+        @misc{BenMahmoud2025NMR,
             title = {
                 Graph-neural-network predictions of solid-state NMR parameters
-                  from spherical tensor decomposition
+                  in silica from spherical tensor decomposition
                 },
             author = {Ben Mahmoud, Chiheb and Rosset, Louise and Yates, Jonatha and
                       Deringer, Volker
                 },
-            year = {2024},
-            doi = {10.48550/arXiv.2412.15063},
+            year = {2025},
+            doi = {10.1063/5.0274240},
         }
 
 
@@ -1144,16 +1144,16 @@ class ZEmbeddingTensorNequIP(_BaseTensorNequIP):
             copyright = {2022 The Author(s)}
         }
 
-        @misc{BenMahmoud2024NMR,
+        @misc{BenMahmoud2025NMR,
             title = {
                 Graph-neural-network predictions of solid-state NMR parameters
-                  from spherical tensor decomposition
+                  in silica from spherical tensor decomposition
                 },
             author = {Ben Mahmoud, Chiheb and Rosset, Louise and
                       Yates, Jonathan and Deringer, Volker
                 },
-            year = {2024},
-            doi = {10.48550/arXiv.2412.15063},
+            year = {2025},
+            doi = {10.1063/5.0274240},
         }
     """
 
