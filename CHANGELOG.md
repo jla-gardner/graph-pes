@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4] - 2025-11-12
+
 Add caching of three-body neighbour list entries for accelerated (in some cases >10x faster) MD simulations with ASE.
 
 ## [0.2.3] - 2025-10-31
