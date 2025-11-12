@@ -10,7 +10,12 @@ import torch
 from ase.calculators.calculator import Calculator, all_changes
 from ase.stress import full_3x3_to_voigt_6_stress
 
-from graph_pes.atomic_graph import AtomicGraph, PropertyKey, to_batch
+from graph_pes.atomic_graph import (
+    AtomicGraph,
+    PropertyKey,
+    get_vectors,
+    to_batch,
+)
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.utils.misc import groups_of, pairs, uniform_repr
 
@@ -40,8 +45,8 @@ class GraphPESCalculator(Calculator):
     * accelerate MD and minimisations
     * slow down single point calculations
 
-    If you are predomintantly doing single point calculations, use
-    ``skin=0``, otherwise, tune the ``skin`` paramter for your use case
+    If you are predominantly doing single point calculations, use
+    ``skin=0``, otherwise, tune the ``skin`` parameter for your use case
     (see below).
 
     Parameters
@@ -69,6 +74,7 @@ class GraphPESCalculator(Calculator):
         model: GraphPESModel,
         device: torch.device | str | None = None,
         skin: float = 1.0,
+        cache_threebody: bool = True,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -82,6 +88,14 @@ class GraphPESCalculator(Calculator):
         self._cached_R: numpy.ndarray | None = None
         self._cached_cell: numpy.ndarray | None = None
         self.skin = skin
+        self.cache_threebody = (
+            cache_threebody
+            and skin > 0.0
+            and model.three_body_cutoff.item() > 0.0
+        )
+        self._threebody_cache: (
+            tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] | None
+        ) = None
 
         # stats
         self.cache_hits = 0
@@ -99,8 +113,8 @@ class GraphPESCalculator(Calculator):
         them to ``self.results``, as per a normal
         :class:`ase.calculators.calculator.Calculator`.
 
-        Underneath-the-hood, this uses a neighbour list cache to speed up
-        repeated calculations on the similar structures (i.e. particularly
+        Under-the-hood, this uses a neighbour list caching scheme to speed up
+        repeated calculations on similar structures (i.e. particularly
         effective for MD and relaxations).
         """
         # handle defaults
@@ -114,6 +128,23 @@ class GraphPESCalculator(Calculator):
         self.total_calls += 1
 
         graph: AtomicGraph | None = None
+
+        def trim_and_cache_threebody_terms(
+            graph: AtomicGraph,
+            cutoff: float,
+            ij: torch.Tensor,
+            Sij: torch.Tensor,
+            ik: torch.Tensor,
+            Sik: torch.Tensor,
+        ):
+            from graph_pes.utils.threebody import _cache_threebody_terms
+
+            vij = get_vectors(graph, i=ij[0], j=ij[1], shifts=Sij)
+            vik = get_vectors(graph, i=ik[0], j=ik[1], shifts=Sik)
+            mask = (vij.norm(dim=-1) <= cutoff) & (vik.norm(dim=-1) <= cutoff)
+            _cache_threebody_terms(
+                graph, cutoff, ij[:, mask], Sij[mask], ik[:, mask], Sik[mask]
+            )
 
         # avoid re-calculating neighbour lists if possible
         if (
@@ -133,12 +164,27 @@ class GraphPESCalculator(Calculator):
                 cell_changes < self.skin / 2
             ):
                 self.cache_hits += 1
+                device = self._cached_graph.R.device
                 graph = self._cached_graph._replace(
-                    R=torch.tensor(new_R, dtype=self._cached_graph.R.dtype),
+                    R=torch.tensor(
+                        new_R, dtype=self._cached_graph.R.dtype, device=device
+                    ),
                     cell=torch.tensor(
-                        new_cell, dtype=self._cached_graph.cell.dtype
+                        new_cell,
+                        dtype=self._cached_graph.cell.dtype,
+                        device=device,
                     ),
                 )
+                if self.cache_threebody and self._threebody_cache is not None:
+                    ij, Sij, ik, Sik = self._threebody_cache
+                    trim_and_cache_threebody_terms(
+                        graph,
+                        self.model.three_body_cutoff.item(),
+                        ij,
+                        Sij,
+                        ik,
+                        Sik,
+                    )
 
         # cache miss
         if graph is None:
@@ -146,6 +192,19 @@ class GraphPESCalculator(Calculator):
             graph = AtomicGraph.from_ase(
                 self.atoms, self.model.cutoff.item() + self.skin
             ).to(self.model.device)
+            if self.cache_threebody:
+                from graph_pes.utils.threebody import triplet_edge_pairs
+
+                # calculate the edge pairs on the worker thread
+                self._threebody_cache = triplet_edge_pairs(
+                    graph, self.model.three_body_cutoff.item() + self.skin
+                )
+                trim_and_cache_threebody_terms(
+                    graph,
+                    self.model.three_body_cutoff.item() + self.skin,
+                    *self._threebody_cache,
+                )
+
             tock = time.perf_counter()
             self.nl_timings.append(tock - tick)
             self._cached_graph = graph
@@ -233,7 +292,7 @@ class GraphPESCalculator(Calculator):
                 k: v.detach().cpu()
                 for k, v in self.model.predict(batch, properties).items()
             }
-            separated = _seperate(predictions, batch)
+            separated = _separate(predictions, batch)
             tensor_results.extend(separated)
 
         results: list[dict[PropertyKey, numpy.ndarray | float]] = [
@@ -268,7 +327,7 @@ def to_numpy(t: torch.Tensor) -> numpy.ndarray | float:
     return n.item() if n.shape == () else n
 
 
-def _seperate(
+def _separate(
     batched_prediction: dict[PropertyKey, TensorLike],
     batch: AtomicGraph,
 ) -> list[dict[PropertyKey, TensorLike]]:
@@ -348,7 +407,7 @@ def merge_predictions(
         if key in predictions[0]:
             merged[key] = stack([p[key] for p in predictions])  # type: ignore
 
-    # concatenat per-atom properties along the first axis
+    # concatenate per-atom properties along the first axis
     for key in ["forces", "local_energies"]:
         if key in predictions[0]:
             merged[key] = cat([p[key] for p in predictions])  # type: ignore

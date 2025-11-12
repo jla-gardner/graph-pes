@@ -113,7 +113,6 @@ class StillingerWeber(GraphPESModel):
 
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         r_ij = neighbour_distances(graph)
-        r_ij = r_ij[r_ij < self.cutoff]  # strictly less than cutoff
         x = self.sigma / r_ij
         phi_2 = (
             self.A
