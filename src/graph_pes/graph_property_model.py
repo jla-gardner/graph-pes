@@ -289,6 +289,8 @@ class GraphTensorModel(GraphPropertyModel):
             three_body_cutoff=None,
         )
 
+        assert target_method in ["direct", "tensor_product"]
+
         if target_method == "tensor_product":
             assert number_of_tps > 1 and number_of_tps % 2 == 0
 

@@ -42,6 +42,8 @@ from graph_pes.models.e3nn.utils import (
     NonLinearTPReadOut,
     ReadOut,
     SphericalHarmonics,
+    UnrestrictedLinearReadOut,
+    UnrestrictedNonLinearReadOut,
     as_irreps,
     build_limited_tensor_product,
     to_full_irreps,
@@ -520,26 +522,45 @@ class _BaseTensorMACE(GraphTensorModel):
             self.layers.append(layer)
             current_node_irreps = [ir for _, ir in layer.irreps_out]
 
-        self.readouts: UniformModuleList[ReadOut] = UniformModuleList(
-            [
-                LinearTPReadOut(
-                    nodes.hidden_irreps(),
-                    number_of_tps=self.number_of_tps,
-                    tp_target=self.irrep_tp,
-                    output_irreps=self.target_tensor_irreps,
-                )
-                for _ in range(layers - 1)
-            ]
-            + [
-                NonLinearTPReadOut(
-                    self.layers[-1].irreps_out,
-                    hidden_dim=readout_width,
-                    number_of_tps=self.number_of_tps,
-                    tp_target=self.irrep_tp,
-                    output_irreps=self.target_tensor_irreps,
-                )
-            ],
-        )
+        if self.target_method == "tensor_product":
+            self.readouts: UniformModuleList[ReadOut] = UniformModuleList(
+                [
+                    LinearTPReadOut(
+                        nodes.hidden_irreps(),
+                        number_of_tps=self.number_of_tps,
+                        tp_target=self.irrep_tp,
+                        output_irreps=self.target_tensor_irreps,
+                    )
+                    for _ in range(layers - 1)
+                ]
+                + [
+                    NonLinearTPReadOut(
+                        self.layers[-1].irreps_out,
+                        hidden_dim=readout_width,
+                        number_of_tps=self.number_of_tps,
+                        tp_target=self.irrep_tp,
+                        output_irreps=self.target_tensor_irreps,
+                    )
+                ],
+            )
+        elif self.target_method == "direct":
+            self.readouts: UniformModuleList[ReadOut] = UniformModuleList(
+                [
+                    UnrestrictedLinearReadOut(
+                        nodes.hidden_irreps(),
+                        output_irreps=self.target_tensor_irreps,
+                    )
+                    for _ in range(layers - 1)
+                ]
+                + [
+                    UnrestrictedNonLinearReadOut(
+                        self.layers[-1].irreps_out,
+                        hidden_dim=readout_width,
+                        output_irreps=self.target_tensor_irreps,
+                    )
+                ],
+            )
+
         self.target_tensor_irreps = o3.Irreps(self.target_tensor_irreps)
         # TODO: do we need a scaler for the tensor properties
         self.scaler = LocalTensorScaler(self.target_tensor_irreps.dim)

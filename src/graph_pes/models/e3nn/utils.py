@@ -78,6 +78,76 @@ class UnrestrictedLinearReadOut(o3.Linear):
         return super().__call__(x)
 
 
+class UnrestrictedNonLinearReadOut(torch.nn.Sequential):
+    """
+    Map a set of features with arbitrary irreps to a single irrep with
+    a single feature using two linear layers and non linearity.
+
+    Parameters
+    ----------
+    input_irreps : str or o3.Irreps
+        The irreps of the input features.
+    output_irrep : str, optional
+        The irrep of the output feature. Defaults to "0e".
+
+    Examples
+    --------
+
+    Map an embedding to a scalar output:
+
+    >>> UnrestrictedNonLinearReadOut("16x0e+16x1o+16x2e")
+    UnrestrictedNonLinearReadOut(
+      (0): Linear(16x0e+16x1o+16x2e -> 16x0e | 256 weights)
+      (1): SiLU()
+      (2): Linear(16x0e -> 1x0e | 16 weights)
+    )
+
+
+    Map an embedding to a vector output:
+
+    >>> UnrestrictedNonLinearReadOut("16x0e+16x1o+16x2e", "1o")
+    UnrestrictedNonLinearReadOut(
+      (0): Linear(16x0e+16x1o -> 16x0e+16x1e+16x2e | 256 weights)
+      (1): SiLU()
+      (2): Linear(16x0e+16x1e+16x2e -> 1x0e+1x1e+1x2e | 48 weights)
+    )
+    """
+
+    def __init__(
+        self,
+        input_irreps: str | o3.Irreps,
+        output_irrep: str = "0e",
+        hidden_dim: int | None = None,
+        activation: str | torch.nn.Module | None = None,
+        output_irreps: str = "0e",
+    ):
+        if activation is None:
+            activation = "SiLU" if "0e" in str(output_irrep) else "Tanh"
+
+        hidden_dim = (
+            o3.Irreps(input_irreps).count(o3.Irrep(output_irrep))
+            if hidden_dim is None
+            else hidden_dim
+        )
+        hidden_irreps = "+".join(
+            [f"{hidden_dim}x{ir}" for ir in output_irreps.split("+")]
+        )
+
+        if isinstance(activation, str):
+            activation = _get_activation(activation)
+        elif not isinstance(activation, torch.nn.Module):
+            raise ValueError("activation must be a string or a torch.nn.Module")
+
+        super().__init__(
+            o3.Linear(input_irreps, hidden_irreps),
+            activation,
+            o3.Linear(hidden_irreps, f"1x{output_irreps}"),
+        )
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        return self.forward(x)
+
+
 class LinearTPReadOut(torch.nn.Module):
     """
     Map a set of features with arbitrary irreps to a single irrep with

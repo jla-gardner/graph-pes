@@ -487,7 +487,7 @@ class _BaseTensorNequIP(GraphTensorModel):
             current_layer_input = layer.irreps_out
 
         self.layers = UniformModuleList(_layers)
-        if self.number_of_tps is not None:
+        if self.target_method == "tensor_product":
             self.tp_out_irreps = o3.Irreps(f"{self.number_of_tps}x{irrep_tp}")
             self.pre_tensor_readout = UnrestrictedLinearReadOut(
                 current_layer_input, self.tp_out_irreps
@@ -504,7 +504,7 @@ class _BaseTensorNequIP(GraphTensorModel):
                 self.target_tensor_irreps,
             )
 
-        else:
+        elif self.target_method == "direct":
             self.tensor_readout = LinearReadOut(
                 current_layer_input, self.target_tensor_irreps
             )
