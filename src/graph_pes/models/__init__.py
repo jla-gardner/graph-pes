@@ -32,6 +32,7 @@ from .offsets import (
     LearnableOffset,
     LearnableTensorOffset,
 )
+from .orb import Orb
 from .painn import PaiNN
 from .pairwise import (
     LennardJones,
@@ -59,6 +60,7 @@ __all__ = [
     "MACE",
     "Morse",
     "NequIP",
+    "Orb",
     "PaiNN",
     "PairPotential",
     "SchNet",

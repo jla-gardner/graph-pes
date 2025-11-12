@@ -53,7 +53,6 @@ def test_general(structure: Atoms, graph: AtomicGraph):
     assert n_edges == graph.neighbour_list.shape[1]
     assert n_edges == neighbour_vectors(graph).shape[0]
     assert n_edges == neighbour_distances(graph).shape[0]
-    assert graph.other["total_spin"].item() == 1.0
 
 
 def test_iso_atom():

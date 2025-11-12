@@ -7,18 +7,14 @@ from dataclasses import dataclass
 from typing import Literal, Mapping, Sequence, Union, overload
 
 import ase
-import ase.db
 import ase.io
 import locache
 import torch.utils.data
 from load_atoms import load_dataset
 
-from graph_pes.atomic_graph import (
-    ALL_PROPERTY_KEYS,
-    AtomicGraph,
-    PropertyKey,
-)
+from graph_pes.atomic_graph import ALL_PROPERTY_KEYS, AtomicGraph, PropertyKey
 from graph_pes.data.ase_db import ASEDatabase
+from graph_pes.data.transforms import Transform, TransformName, parse_transform
 from graph_pes.utils.logger import logger
 from graph_pes.utils.misc import MultiSequence, slice_to_range, uniform_repr
 from graph_pes.utils.sampling import SequenceSampler
@@ -32,15 +28,26 @@ class GraphDataset(torch.utils.data.Dataset, ABC):
     ----------
     graphs
         The collection of :class:`~graph_pes.AtomicGraph` instances.
+    transform
+        A callable that acts on each :class:`~graph_pes.AtomicGraph` instance
+        in the dataset each time it is accessed.
     """
 
-    def __init__(self, graphs: Sequence[AtomicGraph]):
+    def __init__(
+        self,
+        graphs: Sequence[AtomicGraph],
+        transform: Transform | None = None,
+    ):
         self.graphs = graphs
+        self.transform = transform
         # raise errors on instantiation if accessing a datapoint would fail
         _ = self[0]
 
     def __getitem__(self, index: int) -> AtomicGraph:
-        return self.graphs[index]
+        g = self.graphs[index]
+        if self.transform is not None:
+            g = self.transform(g)
+        return g
 
     def __len__(self) -> int:
         return len(self.graphs)
@@ -227,6 +234,9 @@ class ASEToGraphDataset(GraphDataset):
         A list of properties to include in the ``graph.other`` field
         that are present as per-atom or per-structure properties on the
         :class:`ase.Atoms` objects.
+    transform
+        A callable that acts on each :class:`~graph_pes.AtomicGraph` instance
+        in the dataset each time it is accessed.
     """
 
     def __init__(
@@ -236,11 +246,13 @@ class ASEToGraphDataset(GraphDataset):
         pre_transform: bool = False,
         property_mapping: Mapping[str, PropertyKey] | None = None,
         others_to_include: list[str] | None = None,
+        transform: Transform | None = None,
     ):
         super().__init__(
-            ASEToGraphsConverter(
+            graphs=ASEToGraphsConverter(
                 structures, cutoff, property_mapping, others_to_include
             ),
+            transform=parse_transform(transform),
         )
         self.pre_transform = pre_transform
 
@@ -296,6 +308,7 @@ def load_atoms_dataset(
     pre_transform: bool = True,
     property_map: dict[str, PropertyKey] | None = None,
     others_to_include: list[str] | None = None,
+    transform: Transform | TransformName | None = None,
 ) -> DatasetCollection:
     """
     Load an dataset of :class:`ase.Atoms` objects using
@@ -363,6 +376,9 @@ def load_atoms_dataset(
         A list of properties to include in the ``graph.other`` field
         that are present as per-atom or per-structure properties on the
         :class:`ase.Atoms` objects.
+    transform:
+        A callable that acts on each :class:`~graph_pes.AtomicGraph` instance
+        in the dataset each time it is accessed.
 
     Returns
     -------
@@ -375,6 +391,7 @@ def load_atoms_dataset(
         pre_transform=pre_transform,
         property_mapping=property_map,
         others_to_include=others_to_include,
+        transform=parse_transform(transform),
     )
 
     structures = SequenceSampler(load_dataset(id))
@@ -405,6 +422,7 @@ def file_dataset(
     pre_transform: bool = True,
     property_map: dict[str, PropertyKey] | None = None,
     others_to_include: list[str] | None = None,
+    transform: Transform | TransformName | None = None,
 ) -> ASEToGraphDataset:
     """
     Load an ASE dataset from a file that is either:
@@ -474,6 +492,9 @@ def file_dataset(
         A list of properties to include in the ``graph.other`` field
         that are present as per-atom or per-structure properties on the
         :class:`ase.Atoms` objects.
+    transform:
+        A callable that acts on each :class:`~graph_pes.AtomicGraph` instance
+        in the dataset each time it is accessed.
 
     Returns
     -------
@@ -487,7 +508,10 @@ def file_dataset(
     if path.suffix == ".db":
         structures = ASEDatabase(path)
     else:
-        structures = ase.io.read(path, index=":")
+        if n is not None and not shuffle:
+            structures = ase.io.read(path, index=slice(0, n))
+        else:
+            structures = ase.io.read(path, index=":")
         assert isinstance(structures, list)
 
     structure_collection = SequenceSampler(structures)
@@ -503,4 +527,5 @@ def file_dataset(
         pre_transform,
         property_map,
         others_to_include,
+        transform=parse_transform(transform),
     )

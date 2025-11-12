@@ -1,3 +1,4 @@
+import sys
 import warnings
 from typing import (
     TYPE_CHECKING,
@@ -443,9 +444,6 @@ class AtomicGraph(NamedTuple):
             elif key in others_to_include:
                 other[key] = to_tensor(value)
 
-        for key, default in [("total_charge", 0.0), ("total_spin", 1.0)]:
-            other.setdefault(key, torch.tensor(default, dtype=_float))
-
         missing = set(
             structure_key
             for structure_key, graph_key in property_mapping.items()
@@ -833,25 +831,20 @@ def to_batch(
         and three_body_cutoff > 0
         and worker_info is not None
     ):
-        from graph_pes.utils.threebody import triplet_edge_pairs
+        from graph_pes.utils.threebody import (
+            _cache_threebody_terms,
+            triplet_edge_pairs,
+        )
 
         # calculate the edge pairs on the worker thread
         ij, S_ij, ik, S_ik = triplet_edge_pairs(
             batched_graph, three_body_cutoff
         )
 
-        # and cache these on the batch
-        # stupidly verbose to make torchscript happy
-        cutoff_str = str(
-            torch.round(
-                torch.tensor(float(three_body_cutoff)), decimals=3
-            ).item()
+        # and place them onto the batched graph
+        _cache_threebody_terms(
+            batched_graph, three_body_cutoff, ij, S_ij, ik, S_ik
         )
-        key = "__threebody-" + cutoff_str
-        batched_graph.other[key + "-ij"] = ij
-        batched_graph.other[key + "-Sij"] = S_ij
-        batched_graph.other[key + "-ik"] = ik
-        batched_graph.other[key + "-Sik"] = S_ik
 
     return batched_graph
 
@@ -1284,7 +1277,8 @@ def sum_per_structure(x: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:
     if graph_batch is not None:
         shape = (number_of_structures(graph),) + x.shape[1:]
         zeros = torch.zeros(shape, dtype=x.dtype, device=x.device)
-        return zeros.scatter_add(0, graph_batch, x)
+        index = left_aligned_mul(torch.ones_like(x), graph_batch).long()
+        return zeros.scatter_add(0, index, x)
     else:
         return x.sum(dim=0)
 
@@ -1314,3 +1308,138 @@ def divide_per_atom(x: torch.Tensor, graph: AtomicGraph) -> torch.Tensor:
     * :math:`N` is the number of atoms
     """
     return left_aligned_div(x, structure_sizes(graph))
+
+
+def edge_wise_softmax(
+    l: torch.Tensor,  # (E, 1)
+    graph: AtomicGraph,
+    aggregation: str = "senders",
+) -> torch.Tensor:  # (E, 1)
+    r"""
+    Generate a softmax score for each directed edge from per-edge logits.
+
+    For ``aggregation="senders"``, the softmax score is computed over the
+    sending atoms of each edge:
+
+    .. math::
+
+        s_{i \rightarrow j} = \frac
+            {e^{l_{i \rightarrow j}}}
+            {\sum_{k \in \mathcal{N}_i} e^{l_{i \rightarrow k}}}
+
+    where :math:`\mathcal{N}_i` is the set of neighbours of atom :math:`i`.
+
+    For ``aggregation="receivers"``, the softmax score is computed over the
+    receiving atoms of each edge:
+
+    .. math::
+
+        s_{i \rightarrow j} = \frac
+            {e^{l_{i \rightarrow j}}}
+            {\sum_{k \in \mathcal{N}_j} e^{l_{k \rightarrow j}}}
+
+    Parameters
+    ----------
+    l
+        The per-edge logits, of shape ``(E,)``.
+    graph
+        The graph to compute the softmax for.
+
+    Returns
+    -------
+    s
+        The per-edge softmax scores, of shape ``(E,)``.
+    """
+
+    # TODO: subtract max logit for each sender/receiver for numerical stability
+
+    if aggregation == "senders":
+        edge_index = graph.neighbour_list[0]
+    elif aggregation == "receivers":
+        edge_index = graph.neighbour_list[1]
+    else:
+        raise ValueError(f"Invalid aggregation: {aggregation}")
+
+    exp = torch.exp(l)  # (E, 1)
+    per_atom_denom = sum_over_central_atom_index(  # (N, 1)
+        exp, edge_index, graph
+    )
+    per_edge_denom = per_atom_denom[edge_index]  # (E, 1)
+    return exp / per_edge_denom  # (E, 1)
+
+
+def remove_mean_and_net_torque(
+    v: torch.Tensor,  # (N, 3)
+    graph: AtomicGraph,
+) -> torch.Tensor:  # (N, 3)
+    """
+    Remove the mean and net torque per (optionally batched) structure
+    from a collection of per-node vectors, ``v``
+    """
+
+    if not is_batch(graph):
+        v = v - v.mean(dim=0, keepdim=True)
+
+    else:
+        batch = graph.batch
+        assert isinstance(batch, torch.Tensor)
+
+        _sum = sum_per_structure(v, graph)  # (S, 3)
+        mean = _sum / structure_sizes(graph).unsqueeze(-1)  # (S, 3)
+        v = v - mean[batch]  # (N, 3)
+
+    # torch script annoying-ness:
+    pbc = graph.pbc
+    if pbc is not None:  # noqa: SIM102
+        if not torch.any(pbc):
+            return v
+
+    # TODO: remove net torque
+    return v
+
+
+def keep_at_most_k_neighbours(
+    graph: AtomicGraph,
+    k: int,
+) -> AtomicGraph:
+    """
+    Prune the graph by only keeping the edges corresponding to the
+    ``k`` nearest neighbours of each atom.
+
+    Parameters
+    ----------
+    graph
+        The graph to prune.
+    k
+        The maximum number of neighbours to keep for each atom.
+    """
+
+    distances = neighbour_distances(graph)
+
+    new_nl, new_offsets = [], []
+    for i in range(number_of_atoms(graph)):
+        mask = graph.neighbour_list[0] == i
+        d = distances[mask]
+        if d.numel() == 0:
+            continue
+        elif d.numel() < k:
+            new_nl.append(graph.neighbour_list[:, mask])
+            new_offsets.append(graph.neighbour_cell_offsets[mask])
+        else:
+            topk = torch.topk(d, k=k, largest=False)
+            new_nl.append(graph.neighbour_list[:, mask][:, topk.indices])
+            new_offsets.append(graph.neighbour_cell_offsets[mask][topk.indices])
+
+    new_nl = torch.cat(new_nl, dim=1)
+    new_offsets = torch.cat(new_offsets, dim=0)
+
+    return replace(
+        graph,
+        neighbour_list=new_nl,
+        neighbour_cell_offsets=new_offsets,
+    )
+
+
+# only script if not a sphinx build (breaks the docs otherwise)
+if "sphinx" not in sys.modules:
+    keep_at_most_k_neighbours = torch.jit.script(keep_at_most_k_neighbours)

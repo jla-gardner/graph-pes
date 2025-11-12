@@ -91,6 +91,7 @@ class GraphPESModel(GraphPropertyModel):
     For more details on how these are calculated, see :doc:`../theory`.
 
     :class:`~graph_pes.GraphPESModel` objects save various pieces of extra
+    :class:`~graph_pes.GraphPESModel` objects save various pieces of extra
     metadata to the ``state_dict`` via the
     :meth:`~graph_pes.GraphPESModel.get_extra_state` and
     :meth:`~graph_pes.GraphPESModel.set_extra_state` methods.
@@ -216,7 +217,7 @@ class GraphPESModel(GraphPropertyModel):
             # both the cell and the atomic positions).
             #
             # F. Knuth et al. All-electron formalism for total energy strain
-            # derivatives and stress tensor components for numeric atom-centered
+            # derivatives and stress tensor components for numeric atom-centred
             # orbitals. Computer Physics Communications 190, 33–50 (2015).
 
             change_to_cell = torch.zeros_like(graph.cell)
@@ -375,7 +376,10 @@ class GraphPESModel(GraphPropertyModel):
 
     @torch.jit.unused
     def ase_calculator(
-        self, device: torch.device | str | None = None, skin: float = 1.0
+        self,
+        device: torch.device | str | None = None,
+        skin: float = 1.0,
+        cache_threebody: bool = True,
     ) -> "GraphPESCalculator":
         """
         Return an ASE calculator wrapping this model. See
@@ -392,10 +396,19 @@ class GraphPESModel(GraphPropertyModel):
             than half of this distance between calls to `calculate`, the
             neighbour list will be reused, saving (in some cases) significant
             computation time.
+        cache_threebody
+            Whether to cache the three-body neighbour list entries. In many
+            cases, this can accelerate MD simulations by avoiding these quite
+            expensive recalculations. Tuning the ``skin`` parameter is important
+            to optimise the trade-off between less frequent but more expensive
+            neighbour list recalculations. This options is ignored
+            if the model does not use three-body interactions.
         """
         from graph_pes.utils.calculator import GraphPESCalculator
 
-        return GraphPESCalculator(self, device=device, skin=skin)
+        return GraphPESCalculator(
+            self, device=device, skin=skin, cache_threebody=cache_threebody
+        )
 
     @torch.jit.unused
     def torch_sim_model(

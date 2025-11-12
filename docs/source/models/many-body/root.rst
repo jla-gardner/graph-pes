@@ -13,5 +13,6 @@ Many Body Models
     nequip
     mace
     tensornet
+    orb
 
 

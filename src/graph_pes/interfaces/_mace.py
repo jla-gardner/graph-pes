@@ -69,8 +69,12 @@ def _atomic_graph_to_mace_input(
         "cell": cell.clone(),
         "edge_index": graph.neighbour_list,
         "unit_shifts": graph.neighbour_cell_offsets,
-        "total_charge": torch.atleast_1d(graph.other["total_charge"]).view(-1),
-        "total_spin": torch.atleast_1d(graph.other["total_spin"]).view(-1),
+        "total_charge": torch.atleast_1d(
+            graph.other.get("total_charge", torch.tensor(0.0))
+        ).view(-1),
+        "total_spin": torch.atleast_1d(
+            graph.other.get("total_spin", torch.tensor(1.0))
+        ).view(-1),
         "shifts": _shifts,
         "batch": batch,
         "ptr": ptr,

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Added atomic tensor models for NequIP and MACE
 
+## [0.2.4] - 2025-11-12
+
+Add caching of three-body neighbour list entries for accelerated (in some cases >10x faster) MD simulations with ASE.
+
+## [0.2.3] - 2025-10-31
+
+Implement Orb model
+
 ## [0.2.2] - 2025-10-07
 
 Fixed bugs in the MACE-OMOL interface.

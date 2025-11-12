@@ -37,3 +37,11 @@ Utilities
 .. autoclass:: graph_pes.data.ase_db.ASEDatabase
     :show-inheritance:
     :members:
+
+
+Helpers
+-------
+
+.. class:: graph_pes.data.datasets.TransformName
+
+    A type alias for a ``Literal["random_rotation", "identity"]``.
