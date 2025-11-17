@@ -302,7 +302,7 @@ class GraphTensorModel(GraphPropertyModel):
         # self.target_tensor_irreps = target_tensor_irreps
         irreps = Irreps(target_tensor_irreps)
         self.target_dim = irreps.dim
-        self.target_tensor_irreps = target_tensor_irreps
+        self.target_tensor_irreps = irreps
 
         self.target_method = target_method
         self.irrep_tp = irrep_tp
