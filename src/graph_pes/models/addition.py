@@ -207,8 +207,8 @@ class TensorAdditionModel(GraphTensorModel):
             cutoff=max([m.cutoff.item() for m in models.values()]),
             implemented_properties=["tensor"],
             target_tensor_irreps=target_tensor_irreps,
-            target_method=None,
-            number_of_tps=None,
+            target_method=target_method,
+            number_of_tps=number_of_tps,
         )
         self.models = UniformModuleDict(**models)
 
