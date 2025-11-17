@@ -298,12 +298,14 @@ class GraphTensorModel(GraphPropertyModel):
             assert number_of_tps > 1 and number_of_tps % 2 == 0
 
         self.number_of_tps = number_of_tps
+
+        # self.target_tensor_irreps = target_tensor_irreps
+        irreps = Irreps(target_tensor_irreps)
+        self.target_dim = irreps.dim
         self.target_tensor_irreps = target_tensor_irreps
+
         self.target_method = target_method
         self.irrep_tp = irrep_tp
-
-        irreps = Irreps(self.target_tensor_irreps)
-        self.target_dim = irreps.dim
 
     @abstractmethod
     def forward(self):

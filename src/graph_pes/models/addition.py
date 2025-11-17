@@ -175,26 +175,27 @@ class TensorAdditionModel(GraphTensorModel):
             )
         target_tensor_irreps = targets.pop()
 
-        target_method = set([m.target_method for m in models.values()])
-        if len(target_method) != 1:
-            raise ValueError(
-                "The target method of the models must be the same."
-            )
-        target_method = target_method.pop()
+        # target_method = set([m.target_method for m in models.values()])
+        # if len(target_method) != 1:
+        #     raise ValueError(
+        #         "The target method of the models must be the same."
+        #     )
+        # target_method = target_method.pop()
 
-        number_of_tps = set([m.number_of_tps for m in models.values()])
-        if len(number_of_tps) != 1:
-            raise ValueError(
-                "The number of tensor products of the models must be the same."
-            )
-        number_of_tps = number_of_tps.pop()
+        # number_of_tps = set([m.number_of_tps for m in models.values()])
+        # if len(number_of_tps) != 1:
+        #     raise ValueError(
+        #         "The number of tensor products of the
+        #               models must be the same."
+        #     )
+        # number_of_tps = number_of_tps.pop()
 
         super().__init__(
             cutoff=max([m.cutoff.item() for m in models.values()]),
             implemented_properties=["tensor"],
             target_tensor_irreps=target_tensor_irreps,
-            target_method=target_method,
-            number_of_tps=number_of_tps,
+            target_method=None,
+            number_of_tps=None,
         )
         self.models = UniformModuleDict(**models)
 
