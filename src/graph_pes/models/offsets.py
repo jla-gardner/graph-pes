@@ -4,6 +4,7 @@ import warnings
 
 import torch
 from ase.data import atomic_numbers
+from e3nn.o3 import Irreps
 
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey
 from graph_pes.graph_pes_model import GraphPESModel
@@ -67,11 +68,11 @@ class TensorOffset(GraphTensorModel):
         The tensor offsets for each atomic species.
     """
 
-    def __init__(self, offsets: PerElementParameter):
+    def __init__(self, offsets: PerElementParameter, target_tensor_irreps: str):
         super().__init__(
             cutoff=0,
             implemented_properties=["tensor"],
-            target_tensor_irreps=None,
+            target_tensor_irreps=target_tensor_irreps,
         )
         self._offsets = offsets
 
@@ -130,12 +131,12 @@ class FixedTensorOffset(TensorOffset):
     >>> model = FixedOffset(H=-1.3, C=-13.0)
     """
 
-    def __init__(self, **final_values: float):
+    def __init__(self, target_tensor_irreps: str, **final_values: float):
         offsets = PerElementParameter.from_dict(
             **final_values,
             requires_grad=False,
         )
-        super().__init__(offsets)
+        super().__init__(offsets, target_tensor_irreps=target_tensor_irreps)
 
 
 class LearnableOffset(EnergyOffset):
@@ -260,16 +261,17 @@ class LearnableTensorOffset(TensorOffset):
     >>> model.pre_fit_all_components(training_data)
     """
 
-    def __init__(self, length: int, **initial_values: float):
+    def __init__(self, target_tensor_irreps: str, **initial_values: float):
+        # length/dim calculation is duplicated here
+        irreps = Irreps(target_tensor_irreps)
+        length = irreps.dim
         offsets = PerElementParameter.of_length(
             # **initial_values,
             length,
             requires_grad=True,
         )
 
-        super().__init__(
-            offsets,
-        )
+        super().__init__(offsets, target_tensor_irreps=target_tensor_irreps)
 
         Zs = torch.tensor(
             [atomic_numbers[symbol] for symbol in initial_values],

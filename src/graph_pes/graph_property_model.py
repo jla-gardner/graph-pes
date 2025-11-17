@@ -6,6 +6,7 @@ from typing import Any, Final, Literal, Sequence, final
 
 import torch
 from ase.data import chemical_symbols
+from e3nn.o3 import Irreps
 from torch import nn
 
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey, to_batch
@@ -272,6 +273,8 @@ class GraphTensorModel(GraphPropertyModel):
     irrep_tp:
         The irrep (in `e3nn` notations) of the tensors involved
         in the ``"tensor_product"`` method
+    target_dim:
+        the dimension of the output
     """
 
     def __init__(
@@ -298,6 +301,9 @@ class GraphTensorModel(GraphPropertyModel):
         self.target_tensor_irreps = target_tensor_irreps
         self.target_method = target_method
         self.irrep_tp = irrep_tp
+
+        irreps = Irreps(self.target_tensor_irreps)
+        self.target_dim = irreps.dim
 
     @abstractmethod
     def forward(self):
