@@ -450,6 +450,7 @@ class _BaseTensorNequIP(GraphTensorModel):
             assert number_of_tps > 1 and number_of_tps % 2 == 0
         self.irrep_tp = irrep_tp
         self.number_of_tps = number_of_tps
+        self.target_method = target_method
 
         self.target_tensor_irreps = target_tensor_irreps
 
