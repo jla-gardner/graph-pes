@@ -454,7 +454,6 @@ class _BaseTensorNequIP(GraphTensorModel):
 
         self.target_tensor_irreps = target_tensor_irreps
 
-        self.target_tensor_irreps = o3.Irreps(self.target_tensor_irreps)
         if not prune_last_layer:
             prune_output_to = None
         else:
@@ -513,6 +512,8 @@ class _BaseTensorNequIP(GraphTensorModel):
             self.tensor_readout = LinearReadOut(
                 current_layer_input, self.target_tensor_irreps
             )
+
+        self.target_tensor_irreps = o3.Irreps(self.target_tensor_irreps)
 
         # TODO: does a scaler for atomic tensors even make sense?
         self.scaler = LocalTensorScaler(self.target_tensor_irreps.dim)
