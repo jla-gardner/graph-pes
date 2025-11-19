@@ -459,7 +459,7 @@ class _BaseTensorMACE(GraphTensorModel):
         # tensor related stuff
         target_method: Literal["direct", "tensor_product"],
         number_of_tps: int | None = None,
-        target_tensor_irreps: o3.Irreps | None = None,
+        target_tensor_irreps: str | None = None,
         irrep_tp: str | None = None,
         props: str = "tensor",
     ):
@@ -468,14 +468,18 @@ class _BaseTensorMACE(GraphTensorModel):
         super().__init__(
             cutoff=cutoff,
             implemented_properties=props,
-            target_method=target_method,
-            number_of_tps=number_of_tps,
-            target_tensor_irreps=target_tensor_irreps,
-            irrep_tp=irrep_tp,
         )
 
         if o3.Irrep("0e") not in nodes.hidden_features:
             raise ValueError("MACE requires a `0e` hidden feature")
+
+        assert target_method in ["direct", "tensor_product"]
+        if target_method == "tensor_product":
+            assert number_of_tps > 1 and number_of_tps % 2 == 0
+        self.irrep_tp = irrep_tp
+        self.number_of_tps = number_of_tps
+
+        self.target_tensor_irreps = target_tensor_irreps
 
         # radial things
         sph_harmonics = cast(o3.Irreps, o3.Irreps.spherical_harmonics(l_max))
@@ -516,7 +520,7 @@ class _BaseTensorMACE(GraphTensorModel):
                 aggregation=neighbour_aggregation,
                 residual=use_residual,
                 final_layer=final_layer,
-                output_irrep=irrep_tp,
+                output_irrep=self.irrep_tp,
                 is_pes=False,
             )
             self.layers.append(layer)

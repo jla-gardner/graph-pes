@@ -14,7 +14,6 @@ from graph_pes.atomic_graph import (
 )
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.graph_property_model import GraphTensorModel
-from graph_pes.models.offsets import TensorOffset
 from graph_pes.utils.misc import all_equal, uniform_repr
 from graph_pes.utils.nn import UniformModuleDict
 
@@ -169,46 +168,9 @@ class TensorAdditionModel(GraphTensorModel):
     """
 
     def __init__(self, **models: GraphTensorModel):
-        targets = set([m.target_tensor_irreps for m in models.values()])
-        if len(targets) != 1:
-            raise ValueError(
-                "The target tensor irreps of the models must be the same."
-            )
-        target_tensor_irreps = targets.pop()
-
-        # TODO: allow for adding models with different target method
-        target_method = set(
-            [
-                m.target_method
-                for m in models.values()
-                if not isinstance(m, TensorOffset)
-            ]
-        )
-        if len(target_method) != 1:
-            raise ValueError(
-                "Only models with similar target methods can be added."
-            )
-        target_method = target_method.pop()
-
-        number_of_tps = set(
-            [
-                m.number_of_tps
-                for m in models.values()
-                if not isinstance(m, TensorOffset)
-            ]
-        )
-        if len(number_of_tps) != 1:
-            raise ValueError(
-                "The number of tensor products of the models must be the same."
-            )
-        number_of_tps = number_of_tps.pop()
-
         super().__init__(
             cutoff=max([m.cutoff.item() for m in models.values()]),
             implemented_properties=["tensor"],
-            target_tensor_irreps=target_tensor_irreps,
-            target_method=target_method,
-            number_of_tps=number_of_tps,
         )
         self.models = UniformModuleDict(**models)
 

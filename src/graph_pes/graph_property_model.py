@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import Any, Final, Literal, Sequence, final
+from typing import Any, Final, Sequence, final
 
 import torch
 from ase.data import chemical_symbols
-from e3nn.o3 import Irreps
 from torch import nn
 
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey, to_batch
@@ -262,50 +261,18 @@ class GraphTensorModel(GraphPropertyModel):
     implemented_properties
         The property predictions that the model implements in the forward pass.
         Must include ``"tensor"``.
-    target_tensor_irreps
-        The irreps (in `e3nn` notations) of the spherical tensors targeted
-        by the model
-    target_method
-        The method used to map the target tensors
-    number_of_tps:
-        The number of the number of tensor products if target_method
-        is ``"tensor_product"``
-    irrep_tp:
-        The irrep (in `e3nn` notations) of the tensors involved
-        in the ``"tensor_product"`` method
-    target_dim:
-        the dimension of the output
     """
 
     def __init__(
         self,
         cutoff: float,
         implemented_properties: list[PropertyKey],
-        target_tensor_irreps: str,
-        number_of_tps: int | None = None,
-        irrep_tp: str | None = None,
-        target_method: Literal["direct", "tensor_product"] = "direct",
     ):
         super().__init__(
             cutoff=cutoff,
             implemented_properties=implemented_properties,
             three_body_cutoff=None,
         )
-
-        assert target_method in ["direct", "tensor_product"]
-
-        if target_method == "tensor_product":
-            assert number_of_tps > 1 and number_of_tps % 2 == 0
-
-        self.number_of_tps = number_of_tps
-
-        # self.target_tensor_irreps = target_tensor_irreps
-        irreps = Irreps(target_tensor_irreps)
-        self.target_dim = irreps.dim
-        self.target_tensor_irreps = irreps
-
-        self.target_method = target_method
-        self.irrep_tp = irrep_tp
 
     @abstractmethod
     def forward(self):

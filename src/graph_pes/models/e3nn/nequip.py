@@ -434,7 +434,7 @@ class _BaseTensorNequIP(GraphTensorModel):
         # tensor related stuff
         target_method: Literal["direct", "tensor_product"],
         number_of_tps: int | None = None,
-        target_tensor_irreps: o3.Irreps | None = None,
+        target_tensor_irreps: str | None = None,
         irrep_tp: str | None = None,
         props: str = "tensor",
     ):
@@ -443,17 +443,21 @@ class _BaseTensorNequIP(GraphTensorModel):
         super().__init__(
             cutoff=cutoff,
             implemented_properties=props,
-            target_method=target_method,
-            number_of_tps=number_of_tps,
-            target_tensor_irreps=target_tensor_irreps,
-            irrep_tp=irrep_tp,
         )
 
-        out_irreps = o3.Irreps(self.target_tensor_irreps)
+        assert target_method in ["direct", "tensor_product"]
+        if target_method == "tensor_product":
+            assert number_of_tps > 1 and number_of_tps % 2 == 0
+        self.irrep_tp = irrep_tp
+        self.number_of_tps = number_of_tps
+
+        self.target_tensor_irreps = target_tensor_irreps
+
+        self.target_tensor_irreps = o3.Irreps(self.target_tensor_irreps)
         if not prune_last_layer:
             prune_output_to = None
         else:
-            prune_output_to = [ir for _, ir in out_irreps]
+            prune_output_to = [ir for _, ir in self.target_tensor_irreps]
 
         self.Z_embedding = Z_embedding
 
@@ -510,7 +514,7 @@ class _BaseTensorNequIP(GraphTensorModel):
             )
 
         # TODO: does a scaler for atomic tensors even make sense?
-        self.scaler = LocalTensorScaler(out_irreps.dim)
+        self.scaler = LocalTensorScaler(self.target_tensor_irreps.dim)
 
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
         # pre-compute important quantities
