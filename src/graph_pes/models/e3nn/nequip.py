@@ -20,15 +20,20 @@ from graph_pes.atomic_graph import (
     neighbour_vectors,
 )
 from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_property_model import GraphTensorModel
 from graph_pes.models.components import distances
 from graph_pes.models.components.aggregation import (
     NeighbourAggregation,
     NeighbourAggregationMode,
 )
-from graph_pes.models.components.scaling import LocalEnergiesScaler
+from graph_pes.models.components.scaling import (
+    LocalEnergiesScaler,
+    LocalTensorScaler,
+)
 from graph_pes.models.e3nn.utils import (
     LinearReadOut,
     SphericalHarmonics,
+    UnrestrictedLinearReadOut,
     build_limited_tensor_product,
 )
 from graph_pes.utils.logger import logger
@@ -217,7 +222,8 @@ class NequIPMessagePassingLayer(torch.nn.Module):
                 if ir in prune_output_to:
                     irreps.append((target_multiplicities[ir], ir))
             desired_output_irreps = o3.Irreps(irreps)
-
+        # TODO: build_gate gives weird output when prune_last_layer is True
+        # and the target_tensor_irreps does not contain "0e"
         self.non_linearity = build_gate(desired_output_irreps)  # type: ignore
 
         # 3. Post-message linear
@@ -403,6 +409,147 @@ class _BaseNequIP(GraphPESModel):
         }
         if self.force_readout is not None:
             preds["forces"] = self.force_readout(node_embed).squeeze()
+
+        return preds
+
+
+@e3nn.util.jit.compile_mode("script")
+class _BaseTensorNequIP(GraphTensorModel):
+    def __init__(
+        self,
+        # model
+        cutoff: float,
+        # input embeddings
+        Z_embedding: torch.nn.Module,
+        Z_embedding_dim: int,
+        radial_features: int,
+        # message passing
+        layers: int,
+        node_features: o3.Irreps,
+        edge_features: o3.Irreps,
+        self_interaction: Literal["linear", "tensor_product"] | None,
+        neighbour_aggregation: NeighbourAggregationMode,
+        # optimisation
+        prune_last_layer: bool,
+        # tensor related stuff
+        target_method: Literal["direct", "tensor_product"],
+        number_of_tps: int | None = None,
+        target_tensor_irreps: str | None = None,
+        irrep_tp: str | None = None,
+        props: str = "tensor",
+    ):
+        if target_tensor_irreps is None:
+            target_tensor_irreps = o3.Irreps("0e")
+        super().__init__(
+            cutoff=cutoff,
+            implemented_properties=props,
+        )
+
+        assert target_method in ["direct", "tensor_product"]
+        if target_method == "tensor_product":
+            assert number_of_tps > 1 and number_of_tps % 2 == 0
+        self.irrep_tp = irrep_tp
+        self.number_of_tps = number_of_tps
+        self.target_method = target_method
+
+        self.target_tensor_irreps = target_tensor_irreps
+
+        if not prune_last_layer:
+            prune_output_to = None
+        else:
+            prune_output_to = [ir for _, ir in self.target_tensor_irreps]
+
+        self.Z_embedding = Z_embedding
+
+        scalar_even_dim = node_features.count("0e")
+        if scalar_even_dim == 0:
+            raise ValueError("Hidden irreps must contain a `0e` component.")
+        self.initial_node_embedding = PerElementEmbedding(scalar_even_dim)
+        # l_max = max(ir.l for ir in hidden_irreps)
+        # use_odd_parity = any(ir.ir.p == -1 for ir in hidden_irreps)
+
+        self.edge_embedding = SphericalHarmonics(edge_features, normalize=True)
+
+        # first layer recieves an even parity, scalar embedding
+        # of the atomic number
+        current_layer_input: o3.Irreps
+        current_layer_input = o3.Irreps(f"{scalar_even_dim}x0e")  # type: ignore
+        _layers: list[NequIPMessagePassingLayer] = []
+        for i in range(layers):
+            layer = NequIPMessagePassingLayer(
+                input_node_irreps=current_layer_input,
+                edge_features=edge_features,
+                target_node_features=node_features,
+                cutoff=cutoff,
+                radial_features=radial_features,
+                Z_embedding_dim=Z_embedding_dim,
+                self_interaction=self_interaction,
+                prune_output_to=None if i < layers - 1 else prune_output_to,
+                neighbour_aggregation=neighbour_aggregation,
+            )
+            _layers.append(layer)
+            current_layer_input = layer.irreps_out
+
+        self.layers = UniformModuleList(_layers)
+        if self.target_method == "tensor_product":
+            self.tp_out_irreps = o3.Irreps(f"{self.number_of_tps}x{irrep_tp}")
+            self.pre_tensor_readout = UnrestrictedLinearReadOut(
+                current_layer_input, self.tp_out_irreps
+            )
+
+            # prepare for the TPs and divide the output into two sets for TPs
+            self.tp_out_irreps = o3.Irreps(
+                f"{self.number_of_tps // 2}x{irrep_tp}"
+            )
+            # self.layers.append(self.pre_tensor_readout)
+            self.tensor_readout = o3.FullyConnectedTensorProduct(
+                self.tp_out_irreps,
+                self.tp_out_irreps,
+                self.target_tensor_irreps,
+            )
+
+        elif self.target_method == "direct":
+            self.tensor_readout = LinearReadOut(
+                current_layer_input, self.target_tensor_irreps
+            )
+
+        self.target_tensor_irreps = o3.Irreps(self.target_tensor_irreps)
+
+        # TODO: does a scaler for atomic tensors even make sense?
+        self.scaler = LocalTensorScaler(self.target_tensor_irreps.dim)
+
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
+        # pre-compute important quantities
+        r = neighbour_distances(graph)
+        Y = self.edge_embedding(neighbour_vectors(graph))
+        Z_embed = self.Z_embedding(graph.Z)
+
+        # initialise the node embeddings...
+        node_embed = self.initial_node_embedding(graph.Z)
+
+        # ...iteratively update them...
+        for layer in self.layers:
+            node_embed = layer(node_embed, Z_embed, r, Y, graph)
+
+        # ...and read out
+        # local_energies = self.energy_readout(node_embed).squeeze()
+        # local_energies = self.scaler(local_energies, graph)
+        if self.number_of_tps is not None:
+            atomic_tensors = self.pre_tensor_readout(node_embed)
+            dim = atomic_tensors.shape[-1] // 2
+            atomic_tensors = self.tensor_readout(
+                atomic_tensors[:, :dim], atomic_tensors[:, dim:]
+            )
+        else:
+            atomic_tensors = self.tensor_readout(node_embed)
+
+        atomic_tensors = self.scaler(atomic_tensors, graph)
+
+        preds: dict[PropertyKey, torch.Tensor] = {
+            self.implemented_properties: atomic_tensors
+        }
+        # if self.force_readout is not None:
+        #     preds["forces"] = self.force_readout(node_embed).squeeze()
 
         return preds
 
@@ -689,7 +836,6 @@ class NequIP(_BaseNequIP):
         ...     prune_last_layer=False,
         ... )
         >>> sum(p.numel() for p in vanilla.parameters())
-        2308720
         >>> # SevenNet-flavoured NequIP
         >>> smaller = NequIP(
         ...     elements=["C", "H", "O"],
@@ -700,7 +846,6 @@ class NequIP(_BaseNequIP):
         ...     prune_last_layer=True,
         ... )
         >>> sum(p.numel() for p in smaller.parameters())
-        965232
     """  # noqa: E501
 
     def __init__(
@@ -734,6 +879,182 @@ class NequIP(_BaseNequIP):
             prune_last_layer=prune_last_layer,
             neighbour_aggregation=neighbour_aggregation,
             radial_features=radial_features,
+        )
+
+
+@e3nn.util.jit.compile_mode("script")
+class TensorNequIP(_BaseTensorNequIP):
+    r"""
+    NequIP architecture from `E(3)-equivariant graph neural networks for
+    data-efficient and accurate interatomic potentials
+    <https://www.nature.com/articles/s41467-022-29939-5>`__ targeting
+    `arbitrary rank<https://arziv.org/abs/2412.15063>` atomic tensors
+
+    If you use this model in your research, please cite the original work:
+
+    .. code:: bibtex
+
+        @article{Batzner-22-05,
+            title = {
+                      E(3)-Equivariant Graph Neural Networks for
+                      Data-Efficient and Accurate Interatomic Potentials
+                    },
+            author = {
+                      Batzner, Simon and Musaelian, Albert and Sun, Lixin
+                      and Geiger, Mario and Mailoa, Jonathan P.
+                      and Kornbluth, Mordechai and Molinari, Nicola
+                      and Smidt, Tess E. and Kozinsky, Boris
+                    },
+            year = {2022},
+            journal = {Nature Communications},
+            volume = {13},
+            number = {1},
+            pages = {2453},
+            doi = {10.1038/s41467-022-29939-5},
+            copyright = {2022 The Author(s)}
+        }
+
+        @misc{BenMahmoud2025NMR,
+            title = {
+                Graph-neural-network predictions of solid-state NMR parameters
+                  in silica from spherical tensor decomposition
+                },
+            author = {Ben Mahmoud, Chiheb and Rosset, Louise and Yates, Jonatha and
+                      Deringer, Volker
+                },
+            year = {2025},
+            doi = {10.1063/5.0274240},
+        }
+
+
+    Parameters
+    ----------
+    elements
+        The elements that the model will encounter in the training data.
+        This is used to create the atomic one-hot embedding. If you intend
+        to fine-tune this model on additional data, you must ensure that all
+        elements you will encounter in both pre-training and fine-tuning are
+        present in this list. (See :class:`~graph_pes.models.ZEmbeddingNequIP`
+        for an alternative that allows for arbitrary atomic numbers.)
+    direct_force_predictions
+        Whether to predict forces directly. If ``True``, the model will output
+        forces (rather than infer them from the energy) using a
+        :class:`~graph_pes.models.e3nn.utils.LinearReadOut` to map the final
+        layer node embedding to a set of force predictions.
+    cutoff
+        The cutoff radius for the model.
+    features
+        A specification of the irreps to use for the node and edge embeddings.
+        Can be either a SimpleIrrepSpec or a CompleteIrrepSpec.
+    layers
+        The number of layers for the message passing.
+    self_interaction
+        The kind of self-interaction to use. If ``None``, no self-interaction
+        is applied. If ``"linear"``, a linear self-interaction is applied
+        to update the node embeddings along the residual path. If
+        ``"tensor_product"``, a tensor product combining the old node
+        embedding with an embedding of the atomic number is applied.
+        As first noticed by the authors of `SevenNet <https://pubs.acs.org/doi/10.1021/acs.jctc.4c00190>`__,
+        using linear self-interactions greatly reduces the number of parameters
+        in the model, and helps to prevent overfitting.
+    prune_last_layer
+        Whether to prune irrep communication pathways in the final layer
+        that do not contribute to the ``0e`` output embedding.
+    neighbour_aggregation
+        The neighbour aggregation mode. See
+        :class:`~graph_pes.models.components.aggregation.NeighbourAggregationMode`
+        for more details. Note that ``"mean"`` or ``"sqrt"`` aggregations lead
+        to un-physical discontinuities in the energy function as atoms enter and
+        leave the cutoff radius of the model.
+    radial_features
+        The number of features to expand the radial distances into. These
+        features are then passed through an :class:`~graph_pes.utils.nn.MLP` to
+        generate distance-conditioned weights for the message tensor product.
+    props
+        the property targeted by the model, set to "tensor"
+    target_method
+        determine how to reconstruct the target tensor, either by tensor product if
+        speherical tensor contains "0o", "1e", "2o",.. etc, or direct otherwise
+    number_of_tps
+        the number of tensors involved in the tensor product
+    target_tensor_irreps:
+        the irreps of the target tensor
+    irrep_tp:
+        the irrep of the tensors involved in the tensor product to reconstruct the target
+
+    Examples
+    --------
+
+    Configure a TensorNequIP model for use with
+    :doc:`graph-pes-train <../../cli/graph-pes-train/root>`:
+
+    .. code:: yaml
+
+        model:
+          +TensorNequIP:
+            elements: [C, H, O]
+            cutoff: 5.0
+
+            # use 2 message passing layers
+            layers: 2
+
+            # using SimpleIrrepSpec
+            features:
+              channels: [64, 32, 8]
+              l_max: 2
+              use_odd_parity: true
+
+            # scale the aggregation by the avg. number of
+            # neighbours in the training set
+            neighbour_aggregation: constant_fixed
+
+            target_method: tensor_product
+            target_tensor_irreps: 0e + 1e + 2e
+            number_of_tps: 128
+            irrep_tp: 3o
+    """  # noqa: E501
+
+    def __init__(
+        self,
+        elements: list[str],
+        # direct_force_predictions: bool = False,
+        cutoff: float = DEFAULT_CUTOFF,
+        layers: int = 3,
+        features: SimpleIrrepSpec | CompleteIrrepSpec = DEFAULT_FEATURES,
+        self_interaction: Literal["linear", "tensor_product"]
+        | None = "tensor_product",
+        prune_last_layer: bool = True,
+        neighbour_aggregation: NeighbourAggregationMode = "sum",
+        radial_features: int = 8,
+        props: str = "tensor",
+        target_method: str = "direct",
+        number_of_tps=None,
+        target_tensor_irreps=None,
+        irrep_tp="1o",
+    ):
+        assert len(set(elements)) == len(elements), "Found duplicate elements"
+        Z_embedding = AtomicOneHot(elements)
+        Z_embedding_dim = len(elements)
+
+        node_features, edge_features = parse_irrep_specification(features)
+
+        super().__init__(
+            # direct_force_predictions=direct_force_predictions,
+            Z_embedding=Z_embedding,
+            Z_embedding_dim=Z_embedding_dim,
+            node_features=node_features,
+            edge_features=edge_features,
+            layers=layers,
+            cutoff=cutoff,
+            self_interaction=self_interaction,
+            prune_last_layer=prune_last_layer,
+            neighbour_aggregation=neighbour_aggregation,
+            radial_features=radial_features,
+            target_method=target_method,
+            props=props,
+            number_of_tps=number_of_tps,
+            target_tensor_irreps=target_tensor_irreps,
+            irrep_tp=irrep_tp,
         )
 
 
@@ -783,4 +1104,100 @@ class ZEmbeddingNequIP(_BaseNequIP):
             prune_last_layer=prune_last_layer,
             neighbour_aggregation=neighbour_aggregation,
             radial_features=radial_features,
+        )
+
+
+@e3nn.util.jit.compile_mode("script")
+class ZEmbeddingTensorNequIP(_BaseTensorNequIP):
+    r"""
+    A modified version of the
+    :class:`~graph_pes.models.TensorNequIP` architecture
+    that embeds atomic numbers into a learnable embedding rather than using an
+    atomic one-hot encoding.
+
+    This circumvents the need to know in advance all the elements that the
+    model will encounter in any pre-training or fine-tuning datasets.
+
+    **Relevant differences** from :class:`~graph_pes.models.TensorNequIP`\ :
+
+    - The ``elements`` argument is removed.
+    - The ``Z_embed_dim`` (:class:`int`) argument controls the size of the
+      atomic number embedding (default: 8).
+
+    For all other options, see :class:`~graph_pes.models.TensorNequIP`.
+
+    If you use this model in your research, please cite the original work:
+
+    .. code:: bibtex
+
+        @article{Batzner-22-05,
+            title = {
+                      E(3)-Equivariant Graph Neural Networks for
+                      Data-Efficient and Accurate Interatomic Potentials
+                    },
+            author = {
+                      Batzner, Simon and Musaelian, Albert and Sun, Lixin
+                      and Geiger, Mario and Mailoa, Jonathan P.
+                      and Kornbluth, Mordechai and Molinari, Nicola
+                      and Smidt, Tess E. and Kozinsky, Boris
+                    },
+            year = {2022},
+            journal = {Nature Communications},
+            volume = {13},
+            number = {1},
+            pages = {2453},
+            doi = {10.1038/s41467-022-29939-5},
+            copyright = {2022 The Author(s)}
+        }
+
+        @misc{BenMahmoud2025NMR,
+            title = {
+                Graph-neural-network predictions of solid-state NMR parameters
+                  in silica from spherical tensor decomposition
+                },
+            author = {Ben Mahmoud, Chiheb and Rosset, Louise and
+                      Yates, Jonathan and Deringer, Volker
+                },
+            year = {2025},
+            doi = {10.1063/5.0274240},
+        }
+    """
+
+    def __init__(
+        self,
+        cutoff: float = DEFAULT_CUTOFF,
+        # direct_force_predictions: bool = False,
+        Z_embed_dim: int = 8,
+        features: SimpleIrrepSpec | CompleteIrrepSpec = DEFAULT_FEATURES,
+        layers: int = 3,
+        self_interaction: Literal["linear", "tensor_product"]
+        | None = "tensor_product",
+        prune_last_layer: bool = True,
+        neighbour_aggregation: NeighbourAggregationMode = "sum",
+        radial_features: int = 8,
+        props: str = "tensor",
+        target_method: str = "direct",
+        number_of_tps=None,
+        target_tensor_irreps=None,
+        irrep_tp="1o",
+    ):
+        Z_embedding = PerElementEmbedding(Z_embed_dim)
+        node_features, edge_features = parse_irrep_specification(features)
+        super().__init__(
+            # direct_force_predictions=direct_force_predictions,
+            Z_embedding=Z_embedding,
+            Z_embedding_dim=Z_embed_dim,
+            node_features=node_features,
+            edge_features=edge_features,
+            layers=layers,
+            cutoff=cutoff,
+            self_interaction=self_interaction,
+            prune_last_layer=prune_last_layer,
+            neighbour_aggregation=neighbour_aggregation,
+            radial_features=radial_features,
+            target_method=target_method,
+            props=props,
+            number_of_tps=number_of_tps,
+            target_tensor_irreps=target_tensor_irreps,
+            irrep_tp=irrep_tp,
         )

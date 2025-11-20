@@ -6,7 +6,7 @@ The basics
 Under the hood, the ``graph-pes-train`` command performs the following steps:
 
 1. **loads in your data, model, loss function, etc.** This happens before anything else so that if you run into errors, you can quickly identify the source of the problem.
-2. **"pre-fits" the model on the training data.** (optional) Under-the-hood, any :class:`torch.nn.Module` components of your model that define a ``pre_fit`` method will be passed the training data for them to make any adjustments/calculations before training commences (see :meth:`~graph_pes.GraphPESModel.pre_fit_all_components` for details). This is useful for e.g. estimating :class:`energy scales <graph_pes.models.components.scaling.LocalEnergiesScaler>` and :class:`offsets <graph_pes.models.offsets.EnergyOffset>` from the training data. 
+2. **"pre-fits" the model on the training data.** (optional) Under-the-hood, any :class:`torch.nn.Module` components of your model that define a ``pre_fit`` method will be passed the training data for them to make any adjustments/calculations before training commences (see :meth:`~graph_pes.GraphPropertyModel.pre_fit_all_components` for details). This is useful for e.g. estimating :class:`energy scales <graph_pes.models.components.scaling.LocalEnergiesScaler>` and :class:`offsets <graph_pes.models.offsets.EnergyOffset>` from the training data. 
 3. **trains the model** using a PyTorch Lightning trainer.
 4. **saves the best model** for later use, as well as "deploying it" for `use in LAMMPS <../tools/lammps.html>`__
 5. **tests the best model** on the training and validation data, together with any other test data you have specified.

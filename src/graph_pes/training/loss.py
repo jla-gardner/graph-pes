@@ -9,7 +9,7 @@ from torch import Tensor, nn
 from torchmetrics import Metric as TorchMetric
 
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey, divide_per_atom
-from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_pes_model import GraphPESModel, GraphPropertyModel
 from graph_pes.utils.misc import uniform_repr
 from graph_pes.utils.nn import UniformModuleList
 
@@ -65,7 +65,7 @@ class Loss(nn.Module, ABC):
     @abstractmethod
     def forward(
         self,
-        model: GraphPESModel,
+        model: GraphPropertyModel,
         graph: AtomicGraph,
         predictions: dict[PropertyKey, torch.Tensor],
     ) -> torch.Tensor | TorchMetric:
@@ -115,7 +115,7 @@ class Loss(nn.Module, ABC):
     # add type hints to play nicely with mypy
     def __call__(
         self,
-        model: GraphPESModel,
+        model: GraphPropertyModel,
         graph: AtomicGraph,
         predictions: dict[PropertyKey, torch.Tensor],
     ) -> torch.Tensor | TorchMetric:
@@ -155,14 +155,14 @@ class PropertyLoss(Loss):
     ):
         super().__init__(
             weight,
-            is_per_atom=property in ("forces", "local_energies"),
+            is_per_atom=property in ("forces", "local_energies", "tensor"),
         )
         self.property: PropertyKey = property
         self.metric = parse_metric(metric)
 
     def forward(
         self,
-        model: GraphPESModel,
+        model: GraphPropertyModel,
         graph: AtomicGraph,
         predictions: dict[PropertyKey, torch.Tensor],
     ) -> torch.Tensor | TorchMetric:
@@ -181,7 +181,6 @@ class PropertyLoss(Loss):
                 graph.properties[self.property],
             )
             return self.metric
-
         return self.metric(
             predictions[self.property],
             graph.properties[self.property],
@@ -240,7 +239,7 @@ class TotalLoss(torch.nn.Module):
 
     def forward(
         self,
-        model: GraphPESModel,
+        model: GraphPropertyModel,
         graph: AtomicGraph,
         predictions: dict[PropertyKey, torch.Tensor],
     ) -> TotalLossResult:
@@ -281,7 +280,7 @@ class TotalLoss(torch.nn.Module):
     # add type hints to appease mypy
     def __call__(
         self,
-        model: GraphPESModel,
+        model: GraphPropertyModel,
         graph: AtomicGraph,
         predictions: dict[PropertyKey, torch.Tensor],
     ) -> TotalLossResult:

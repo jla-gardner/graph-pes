@@ -1,0 +1,83 @@
+# example of config file for a rank2 tensor learning using a TensorNequIP model
+
+CUTOFF: 5.533
+
+general:
+  seed: 0
+  run_id: tensor_nequip
+
+model:
+  offset:
+    +FixedTensorOffset:
+      {
+        Si: [755.317, 0, 0, 0, 0, 0, 0, 0, 0],
+        O: [348.936, 0, 0, 0, 0, 0, 0, 0, 0],
+        Al: [100, 0, 0, 0, 0, 0, 0, 0, 0],
+      }
+  many_body:
+    +TensorNequIP:
+      elements: ["Si", "O", "Al"]
+      cutoff: =/CUTOFF
+      radial_features: 128
+      features:
+        node_irreps: 128x0e+128x1e+128x2e+128x0o+128x1o+128x2o
+        edge_irreps: 0e + 1o + 2e
+      props: tensor
+      layers: 5
+      target_tensor_irreps: 0e + 1e + 2e
+      prune_last_layer: false
+      target_method: "direct"
+
+data:
+  train:
+    path: /path/to/train_data.xyz
+    n: 5000
+    shuffle: true
+    property_map: { "ms_all_synth": "tensor" }
+    others_to_include: "tensor"
+
+  valid:
+    path: /path/to/val_data.xyz
+    n: 250
+    property_map: { "ms_all_synth": "tensor" }
+    others_to_include: "tensor"
+  test:
+    path: /path/to/test_data.xyz
+    property_map: { "ms_all": "tensor" }
+    others_to_include: "tensor"
+
+loss:
+  tensor:
+    +PropertyLoss:
+      property: tensor
+      metric: RMSE
+      weight: 1
+
+fitting:
+  pre_fit_model: false
+  trainer_kwargs:
+    max_epochs: 3000
+    accelerator: gpu
+
+  callbacks:
+    - +graph_pes.training.callbacks.DumpModel:
+        every_n_val_checks: 1
+
+  early_stopping:
+    patience: 100
+
+  optimizer:
+    name: AdamW
+    lr: 0.003
+
+  scheduler:
+    name: ReduceLROnPlateau
+    patience: 25
+    factor: 0.8
+
+  loader_kwargs:
+    batch_size: 5
+    num_workers: 28
+    shuffle: true
+
+wandb: null

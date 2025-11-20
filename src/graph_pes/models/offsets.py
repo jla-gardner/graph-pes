@@ -7,9 +7,13 @@ from ase.data import atomic_numbers
 
 from graph_pes.atomic_graph import AtomicGraph, PropertyKey
 from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_property_model import GraphTensorModel
 from graph_pes.utils.logger import logger
 from graph_pes.utils.nn import PerElementParameter
-from graph_pes.utils.shift_and_scale import guess_per_element_mean_and_var
+from graph_pes.utils.shift_and_scale import (
+    guess_per_element_mean_and_var,
+    guess_per_element_per_atom_mean_and_var,
+)
 
 
 class EnergyOffset(GraphPESModel):
@@ -53,6 +57,36 @@ class EnergyOffset(GraphPESModel):
         return self._offsets._repr(alias=self.__class__.__name__)
 
 
+class TensorOffset(GraphTensorModel):
+    r"""
+    A model that predicts the atomic tensor
+
+    Parameters
+    ----------
+    offsets
+        The tensor offsets for each atomic species.
+    """
+
+    def __init__(self, offsets: PerElementParameter):
+        super().__init__(
+            cutoff=0,
+            implemented_properties=["tensor"],
+        )
+        self._offsets = offsets
+
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
+        return {
+            "tensor": self._offsets[graph.Z].squeeze(),
+        }
+
+    def non_decayable_parameters(self) -> list[torch.nn.Parameter]:
+        """The ``_offsets`` parameter should not be decayed."""
+        return [self._offsets]
+
+    def __repr__(self):
+        return self._offsets._repr(alias=self.__class__.__name__)
+
+
 class FixedOffset(EnergyOffset):
     """
     An :class:`~graph_pes.models.offsets.EnergyOffset` model with pre-defined
@@ -64,6 +98,31 @@ class FixedOffset(EnergyOffset):
     ----------
     final_values
         A dictionary mapping element symbols to fixed energy offset values.
+
+    Examples
+    --------
+    >>> model = FixedOffset(H=-1.3, C=-13.0)
+    """
+
+    def __init__(self, **final_values: float):
+        offsets = PerElementParameter.from_dict(
+            **final_values,
+            requires_grad=False,
+        )
+        super().__init__(offsets)
+
+
+class FixedTensorOffset(TensorOffset):
+    """
+    An :class:`~graph_pes.models.offsets.TensorOffset` model with pre-defined
+    and fixed tensor offsets for each element. These do not change during
+    training. Any element not specified in the ``final_values`` argument will
+    be assigned an tensor offset of zero.
+
+    Parameters
+    ----------
+    final_values
+        A dictionary mapping element symbols to fixed tensor offset values.
 
     Examples
     --------
@@ -157,11 +216,106 @@ class LearnableOffset(EnergyOffset):
                 continue
             self._offsets[z] = offset
 
-        logger.warning(f"""
+        logger.warning(
+            f"""
 Estimated per-element energy offsets from the training data:
     {self._offsets}
 This will lead to a lack of guaranteed physicality in the model, 
 since the energy of an isolated atom (and hence the behaviour of 
 this model in the dissociation limit) is not guaranteed to be 
 correct. Use a FixedOffset energy offset model if you require
-and know the reference energy offsets.""")
+and know the reference energy offsets."""
+        )
+
+
+class LearnableTensorOffset(TensorOffset):
+    """
+    An :class:`~graph_pes.models.offsets.TensorOffset` model with
+    learnable tensor elements offsets for each element.
+
+    During pre-fitting, for each element in the training data not specified by
+    the user, the model will estimate the tensor offset from the data using
+    ridge regression (see
+    :func:`~graph_pes.utils.shift_and_scale.guess_per_element_mean_and_var`).
+
+    Parameters
+    ----------
+    initial_values
+        A dictionary of initial tensor offsets for each atomic species.
+        Leave this empty to guess the offsets from the training data.
+
+    Examples
+    --------
+    Estimate all relevant tensor offsets from the training data:
+
+    >>> model = LearnableOffset()
+    >>> # estimates offsets from data
+    >>> model.pre_fit_all_components(training_data)
+
+    Specify some initial values for the tensor offsets:
+
+    >>> model = LearnableOffset(H=[0.0, 1.0, 0.1], C=[-3.0, 0.0, 0.0])
+    >>> # estimate offsets for elements that aren't C or H
+    >>> model.pre_fit_all_components(training_data)
+    """
+
+    def __init__(self, length: int, **initial_values: float):
+        offsets = PerElementParameter.of_length(
+            # **initial_values,
+            length,
+            requires_grad=True,
+        )
+
+        super().__init__(offsets)
+
+        Zs = torch.tensor(
+            [atomic_numbers[symbol] for symbol in initial_values],
+            dtype=torch.long,
+        )
+        self.register_buffer("_pre_specified_Zs", Zs)
+
+    @torch.no_grad()
+    def pre_fit(self, graphs: AtomicGraph) -> None:
+        """
+        Calculate the **mean** per element tensor offsets per element from
+        the training data using linear regression.
+
+        **Note**: this will lead to a lack of physicality in the model, since
+        there is now no guarantee that the tensor of an isolated atom, or the
+        dissociation limit, is correctly modelled.
+
+        Parameters
+        ----------
+        graphs
+            The training data.
+        """
+
+        if "tensor" not in graphs.properties:
+            warnings.warn(
+                "No tensor labels found in the training data. "
+                "Can't guess suitable per-element tensor offsets for "
+                f"{self.__class__.__name__}.",
+                stacklevel=2,
+            )
+            return
+
+        # use ridge regression to estimate the mean tensor contribution
+        # from each atomic species
+        offsets, _ = guess_per_element_per_atom_mean_and_var(
+            graphs.properties["tensor"], graphs
+        )
+        for z, offset in offsets.items():
+            if torch.any(self._pre_specified_Zs == z):
+                continue
+            self._offsets[z] = offset
+
+        logger.warning(
+            f"""
+Estimated per-element tensor offsets from the training data:
+    {self._offsets}
+This will lead to a lack of guaranteed physicality in the model, 
+since the tensor of an isolated atom (and hence the behaviour of 
+this model in the dissociation limit) is not guaranteed to be 
+correct. Use a FixedOffset tensor offset model if you require
+and know the reference tensor offsets."""
+        )

@@ -10,6 +10,11 @@ Models
    :show-inheritance:
 
 
+.. autoclass:: graph_pes.GraphPropertyModel
+   :members:
+   :show-inheritance:
+
+
 Loading Models
 ==============
 

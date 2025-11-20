@@ -17,11 +17,21 @@ import torch
 from graph_pes.graph_pes_model import GraphPESModel
 from graph_pes.utils.logger import logger
 
-from .addition import AdditionModel
-from .e3nn.mace import MACE, ZEmbeddingMACE
-from .e3nn.nequip import NequIP, ZEmbeddingNequIP
+from .addition import AdditionModel, TensorAdditionModel
+from .e3nn.mace import MACE, TensorMACE, ZEmbeddingMACE, ZEmbeddingTensorMACE
+from .e3nn.nequip import (
+    NequIP,
+    TensorNequIP,
+    ZEmbeddingNequIP,
+    ZEmbeddingTensorNequIP,
+)
 from .eddp import EDDP
-from .offsets import FixedOffset, LearnableOffset
+from .offsets import (
+    FixedOffset,
+    FixedTensorOffset,
+    LearnableOffset,
+    LearnableTensorOffset,
+)
 from .orb import Orb
 from .painn import PaiNN
 from .pairwise import (
@@ -43,6 +53,8 @@ __all__ = [
     "EDDP",
     "FixedOffset",
     "LearnableOffset",
+    "FixedTensorOffset",
+    "LearnableTensorOffset",
     "LennardJones",
     "LennardJonesMixture",
     "MACE",
@@ -59,19 +71,35 @@ __all__ = [
     "ZEmbeddingNequIP",
     "StillingerWeber",
     "UnitConverter",
+    "TensorAdditionModel",
+    "TensorNequIP",
+    "TensorMACE",
+    "ZEmbeddingTensorMACE",
+    "ZEmbeddingTensorNequIP",
 ]
 
 MODEL_EXCLUSIONS = {
     "FixedOffset",
     "LearnableOffset",
+    "FixedTensorOffset",
+    "LearnableTensorOffset",
     "AdditionModel",
     "PairPotential",
     "SmoothedPairPotential",
     "UnitConverter",
 }
+TENSOR_MODELS = {
+    "TensorAdditionModel",
+    "TensorNequIP",
+    "TensorMACE",
+    "ZEmbeddingTensorMACE",
+    "ZEmbeddingTensorNequIP",
+}
 
-ALL_MODELS: list[type[GraphPESModel]] = [
-    globals()[model] for model in __all__ if model not in MODEL_EXCLUSIONS
+ALL_PES_MODELS: list[type[GraphPESModel]] = [
+    globals()[model]
+    for model in __all__
+    if model not in (MODEL_EXCLUSIONS | TENSOR_MODELS)
 ]
 
 

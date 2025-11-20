@@ -42,6 +42,169 @@ class LinearReadOut(o3.Linear):
         return super().__call__(x)
 
 
+class UnrestrictedLinearReadOut(o3.Linear):
+    """
+    Map a set of features with arbitrary irreps to a single irrep with
+    a single feature using a linear layer.
+
+    Parameters
+    ----------
+    input_irreps : str or o3.Irreps
+        The irreps of the input features.
+    output_irrep : str, optional
+        The irrep of the output feature. Defaults to "0e".
+
+    Examples
+    --------
+
+    Map an embedding to a scalar output:
+
+    >>> LinearReadOut("16x0e+16x1o+16x2e")
+    LinearReadOut(16x0e+16x1o+16x2e -> 1x0e | 16 weights)
+
+
+    Map an embedding to a vector output:
+
+    >>> LinearReadOut("16x0e+16x1o+16x2e", "1o")
+    LinearReadOut(16x0e+16x1o+16x2e -> 1x1o | 16 weights)
+    """
+
+    def __init__(
+        self, input_irreps: str | o3.Irreps, output_irreps: str = "0e"
+    ):
+        super().__init__(input_irreps, output_irreps)
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        return super().__call__(x)
+
+
+class UnrestrictedNonLinearReadOut(torch.nn.Sequential):
+    """
+    Map a set of features with arbitrary irreps to a single irrep with
+    a single feature using two linear layers and non linearity.
+
+    Parameters
+    ----------
+    input_irreps : str or o3.Irreps
+        The irreps of the input features.
+    output_irrep : str, optional
+        The irrep of the output feature. Defaults to "0e".
+
+    Examples
+    --------
+
+    Map an embedding to a scalar output:
+
+    >>> UnrestrictedNonLinearReadOut("16x0e+16x1o+16x2e")
+    UnrestrictedNonLinearReadOut(
+      (0): Linear(16x0e+16x1o+16x2e -> 16x0e | 256 weights)
+      (1): SiLU()
+      (2): Linear(16x0e -> 1x0e | 16 weights)
+    )
+
+
+    Map an embedding to a vector output:
+
+    >>> UnrestrictedNonLinearReadOut("16x0e+16x1o+16x2e", "1o")
+    UnrestrictedNonLinearReadOut(
+      (0): Linear(16x0e+16x1o -> 16x0e+16x1e+16x2e | 256 weights)
+      (1): SiLU()
+      (2): Linear(16x0e+16x1e+16x2e -> 1x0e+1x1e+1x2e | 48 weights)
+    )
+    """
+
+    def __init__(
+        self,
+        input_irreps: str | o3.Irreps,
+        output_irrep: str = "0e",
+        hidden_dim: int | None = None,
+        activation: str | torch.nn.Module | None = None,
+        output_irreps: str = "0e",
+    ):
+        if activation is None:
+            activation = "SiLU" if "0e" in str(output_irrep) else "Tanh"
+
+        hidden_dim = (
+            o3.Irreps(input_irreps).count(o3.Irrep(output_irrep))
+            if hidden_dim is None
+            else hidden_dim
+        )
+        hidden_irreps = "+".join(
+            [f"{hidden_dim}x{ir}" for ir in output_irreps.split("+")]
+        )
+
+        if isinstance(activation, str):
+            activation = _get_activation(activation)
+        elif not isinstance(activation, torch.nn.Module):
+            raise ValueError("activation must be a string or a torch.nn.Module")
+
+        super().__init__(
+            o3.Linear(input_irreps, hidden_irreps),
+            activation,
+            o3.Linear(hidden_irreps, f"1x{output_irreps}"),
+        )
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        return self.forward(x)
+
+
+class LinearTPReadOut(torch.nn.Module):
+    """
+    Map a set of features with arbitrary irreps to a single irrep with
+    a single feature using a linear layer.
+
+    Parameters
+    ----------
+    input_irreps : str or o3.Irreps
+        The irreps of the input features.
+    output_irrep : str, optional
+        The irrep of the output feature. Defaults to "0e".
+
+    Examples
+    --------
+
+    Map an embedding to a scalar output:
+
+    >>> LinearReadOut("16x0e+16x1o+16x2e")
+    LinearReadOut(16x0e+16x1o+16x2e -> 1x0e | 16 weights)
+
+
+    Map an embedding to a vector output:
+
+    >>> LinearReadOut("16x0e+16x1o+16x2e", "1o")
+    LinearReadOut(16x0e+16x1o+16x2e -> 1x1o | 16 weights)
+    """
+
+    def __init__(
+        self,
+        input_irreps: str | o3.Irreps,  # from features
+        output_irreps: str = "0e",  # ultimate output
+        number_of_tps: int = 2,  # number of tps
+        tp_target: str = "1o",  # irrep of TP tensors
+    ):
+        super().__init__()
+        self.number_of_tps = number_of_tps
+        self.tp_out_irreps = o3.Irreps(f"{self.number_of_tps}x{tp_target}")
+        self.linear = UnrestrictedLinearReadOut(
+            input_irreps=input_irreps, output_irreps=self.tp_out_irreps
+        )
+        self.target_tensor_irreps = o3.Irreps(output_irreps)
+        self.tp_out_irreps = o3.Irreps(f"{self.number_of_tps // 2}x{tp_target}")
+        self.tp = o3.FullyConnectedTensorProduct(
+            self.tp_out_irreps,
+            self.tp_out_irreps,
+            self.target_tensor_irreps,
+        )
+
+    def forward(self, x):
+        y = self.linear(x)
+        dim = y.shape[-1] // 2
+        return self.tp(y[:, :dim], y[:, dim:])
+
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        return self.forward(x)
+
+
 def _get_activation(name: str) -> torch.nn.Module:
     try:
         return getattr(torch.nn, name)()
@@ -125,6 +288,100 @@ class NonLinearReadOut(torch.nn.Sequential):
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
         return self.forward(x)
+
+
+class NonLinearTPReadOut(torch.nn.Module):
+    """
+    Non-linear readout layer for equivariant neural networks.
+
+    This class implements a non-linear readout layer that takes input features
+    with arbitrary irreps and produces a scalar output. It uses a linear layer
+    followed by an activation function and another linear layer to produce
+    the final scalar output.
+
+    Parameters
+    ----------
+    input_irreps : str
+        The irreps of the input features.
+    output_irrep : str, optional
+        The irrep of the output feature. Defaults to "0e".
+    hidden_dim : int, optional
+        The dimension of the hidden layer. If None,
+        it defaults to the number of scalar output irreps in the input.
+    activation : str or torch.nn.Module, optional
+        The activation function to use. Can be specified as a string
+        (e.g., 'ReLU', 'SiLU') or as a torch.nn.Module. Defaults to ``SiLU``
+        for even output irreps and ``Tanh`` for odd output irreps.
+        **Care must be taken to ensure that the activation is suitable for
+        the target irreps!**
+
+    Examples
+    --------
+
+    Map an embedding to a scalar output:
+
+    >>> NonLinearReadOut("16x0e+16x1o+16x2e")
+    NonLinearReadOut(
+      (0): Linear(16x0e+16x1o+16x2e -> 16x0e | 256 weights)
+      (1): SiLU()
+      (2): Linear(16x0e -> 1x0e | 16 weights)
+    )
+
+    Map an embedding to a vector output:
+
+    >>> NonLinearReadOut("16x0e+16x1o+16x2e", "1o")
+    NonLinearReadOut(
+      (0): Linear(16x0e+16x1o+16x2e -> 16x1o | 256 weights)
+      (1): Tanh()
+      (2): Linear(16x1o -> 1x1o | 16 weights)
+    )
+    """
+
+    def __init__(
+        self,
+        input_irreps: str | o3.Irreps,
+        output_irrep: str = "0e",
+        hidden_dim: int | None = None,
+        activation: str | torch.nn.Module | None = None,
+        number_of_tps: int = 2,
+        tp_target: str = "1o",
+        output_irreps: str = "0e+1e+2e",
+    ):
+        super().__init__()
+
+        if activation is None:
+            activation = "SiLU" if "e" in str(output_irrep) else "Tanh"
+        if isinstance(activation, str):
+            activation = _get_activation(activation)
+        elif not isinstance(activation, torch.nn.Module):
+            raise ValueError("activation must be a string or a torch.nn.Module")
+
+        hidden_dim = (
+            o3.Irreps(input_irreps).count(o3.Irrep(output_irrep))
+            if hidden_dim is None
+            else hidden_dim
+        )
+
+        self.hidden_irreps = o3.Irreps(f"{hidden_dim}x{tp_target}")
+        self.lin_out_irreps = o3.Irreps(f"{number_of_tps}x{tp_target}")
+        self.tp_in_irreps = o3.Irreps(f"{number_of_tps // 2}x{tp_target}")
+
+        self.linear1 = o3.Linear(input_irreps, self.hidden_irreps)
+        self.activation = activation
+        self.linear2 = o3.Linear(self.hidden_irreps, self.lin_out_irreps)
+        self.tp = o3.FullyConnectedTensorProduct(
+            self.tp_in_irreps,
+            self.tp_in_irreps,
+            output_irreps,
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        y = self.linear1(x)
+        y = self.activation(y)
+        y = self.linear2(y)
+
+        dim = y.shape[-1] // 2
+        return self.tp(y[:, :dim], y[:, dim:])
 
 
 ReadOut = Union[LinearReadOut, NonLinearReadOut]

@@ -13,6 +13,7 @@ from graph_pes.atomic_graph import (
     number_of_structures,
 )
 from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_property_model import GraphTensorModel
 from graph_pes.utils.misc import all_equal, uniform_repr
 from graph_pes.utils.nn import UniformModuleDict
 
@@ -107,11 +108,17 @@ class AdditionModel(GraphPESModel):
 
         final_predictions = {}
         for key in properties:
-            final_predictions[key] = zeros[key]
+            if key in zeros:
+                final_predictions[key] = zeros[key]
 
         for model in self.models.values():
             preds = model.predict(graph, properties=properties)
             for key, value in preds.items():
+                # move initialization in the case of "tensor" property here
+                if key not in final_predictions:
+                    final_predictions[key] = torch.zeros_like(
+                        value, device=device
+                    )
                 final_predictions[key] += value
 
         return final_predictions
@@ -153,3 +160,33 @@ class AdditionModel(GraphPESModel):
         >>> model["model1"]
         """
         return self.models[key]
+
+
+class TensorAdditionModel(GraphTensorModel):
+    """
+    A utility class for combining the predictions of multiple tensor models.
+    """
+
+    def __init__(self, **models: GraphTensorModel):
+        super().__init__(
+            cutoff=max([m.cutoff.item() for m in models.values()]),
+            implemented_properties=["tensor"],
+        )
+        self.models = UniformModuleDict(**models)
+
+    def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:
+        preds = [model(graph)["tensor"] for model in self.models.values()]
+        return {
+            "tensor": torch.stack(preds).sum(dim=0),
+        }
+
+    def predict(
+        self, graph: AtomicGraph, properties: list[PropertyKey]
+    ) -> dict[PropertyKey, torch.Tensor]:
+        preds = [
+            model.predict(graph, properties)["tensor"]
+            for model in self.models.values()
+        ]
+        return {
+            "tensor": torch.stack(preds).sum(dim=0),
+        }

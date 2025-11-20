@@ -226,8 +226,8 @@ class Orb(GraphPESModel):
         @misc{Rhodes-25-04,
             title = {Orb-v3: Atomistic Simulation at Scale},
             author = {
-                Rhodes, Benjamin and Vandenhaute, Sander 
-                and {\v S}imkus, Vaidotas and Gin, James and Godwin, Jonathan 
+                Rhodes, Benjamin and Vandenhaute, Sander
+                and {\v S}imkus, Vaidotas and Gin, James and Godwin, Jonathan
                 and Duignan, Tim and Neumann, Mark
             },
             year = {2025},
@@ -275,6 +275,7 @@ class Orb(GraphPESModel):
         If set, limit the number of neighbours per atom to this value by
         keeping only the closest ones.
     """
+
     def __init__(
         self,
         cutoff: float = DEFAULT_CUTOFF,
