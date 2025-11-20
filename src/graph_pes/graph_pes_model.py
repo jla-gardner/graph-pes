@@ -90,16 +90,6 @@ class GraphPESModel(GraphPropertyModel):
 
     For more details on how these are calculated, see :doc:`../theory`.
 
-    :class:`~graph_pes.GraphPESModel` objects save various pieces of extra
-    :class:`~graph_pes.GraphPESModel` objects save various pieces of extra
-    metadata to the ``state_dict`` via the
-    :meth:`~graph_pes.GraphPESModel.get_extra_state` and
-    :meth:`~graph_pes.GraphPESModel.set_extra_state` methods.
-    If you want to save additional extra state to the ``state_dict`` of your
-    model, please implement the :meth:`~graph_pes.GraphPESModel.extra_state`
-    property and corresponding setter to ensure that you do not overwrite
-    these extra metadata items.
-
     Parameters
     ----------
     cutoff
@@ -118,18 +108,17 @@ class GraphPESModel(GraphPropertyModel):
         implemented_properties: list[PropertyKey],
         three_body_cutoff: float | None = None,
     ):
-        super().__init__(
-            cutoff=cutoff,
-            implemented_properties=implemented_properties,
-            three_body_cutoff=three_body_cutoff,
-        )
-
-        self.implemented_properties = implemented_properties
         if "local_energies" not in implemented_properties:
             raise ValueError(
                 'All GraphPESModel\'s must implement a "local_energies" '
                 "prediction."
             )
+
+        super().__init__(
+            cutoff=cutoff,
+            implemented_properties=implemented_properties,
+            three_body_cutoff=three_body_cutoff,
+        )
 
     @abstractmethod
     def forward(self, graph: AtomicGraph) -> dict[PropertyKey, torch.Tensor]:

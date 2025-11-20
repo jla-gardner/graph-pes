@@ -20,6 +20,16 @@ class GraphPropertyModel(nn.Module, ABC):
     Base class for all models that make predictions of arbitrary properties
     from graph input.
 
+    :class:`~graph_pes.GraphPropertyModel` objects save various pieces of extra
+    metadata to the ``state_dict`` via the
+    :meth:`~graph_pes.GraphPropertyModel.get_extra_state` and
+    :meth:`~graph_pes.GraphPropertyModel.set_extra_state` methods.
+    If you want to save additional extra state to the ``state_dict`` of your
+    model, please implement the
+    :meth:`~graph_pes.GraphPropertyModel.extra_state`
+    property and corresponding setter to ensure that you do not overwrite
+    these extra metadata items.
+
     Parameters
     ----------
     cutoff
@@ -56,10 +66,24 @@ class GraphPropertyModel(nn.Module, ABC):
 
     @abstractmethod
     def forward(self):
-        pass
+        """
+        The model's forward pass. Generate all properties for the given graph
+        that are in this model's ``implemented_properties`` list.
+        """
+        ...
 
     @abstractmethod
-    def predict(self):
+    def predict(self, graph: AtomicGraph, properties: list[PropertyKey]):
+        """
+        Generate (optionally batched) predictions for the given
+        ``properties`` and  ``graph``.
+
+        This method returns a dictionary mapping each requested
+        ``property`` to a tensor of predictions, relying on the model's
+        :meth:`~graph_pes.GraphPropertyModel.forward` implementation
+        together with :func:`torch.autograd.grad` to automatically infer any
+        missing properties.
+        """
         pass
 
     # add type hints for mypy etc.
@@ -198,7 +222,7 @@ class GraphPropertyModel(nn.Module, ABC):
     def get_extra_state(self) -> dict[str, Any]:
         """
         Get the extra state of this instance. Please override the
-        :meth:`~graph_pes.GraphPESModel.extra_state` property to add extra
+        :meth:`~graph_pes.GraphPropertyModel.extra_state` property to add extra
         state here.
         """
         return {
@@ -211,8 +235,9 @@ class GraphPropertyModel(nn.Module, ABC):
     def set_extra_state(self, state: dict[str, Any]) -> None:  # type: ignore
         """
         Set the extra state of this instance using a dictionary mapping strings
-        to values returned by the :meth:`~graph_pes.GraphPESModel.extra_state`
-        property setter to add extra state here.
+        to values returned by the
+        :meth:`~graph_pes.GraphPropertyModel.extra_state` property setter to add
+        extra state here.
         """
         version = state.pop("_GRAPH_PES_VERSION", None)
         if version is not None:
