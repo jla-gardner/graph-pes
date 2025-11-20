@@ -104,7 +104,7 @@ class FixedOffset(EnergyOffset):
     >>> model = FixedOffset(H=-1.3, C=-13.0)
     """
 
-    def __init__(self, **final_values: torch.tensor):
+    def __init__(self, **final_values: float):
         offsets = PerElementParameter.from_dict(
             **final_values,
             requires_grad=False,
