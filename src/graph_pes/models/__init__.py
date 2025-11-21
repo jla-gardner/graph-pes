@@ -14,7 +14,7 @@ import pathlib
 
 import torch
 
-from graph_pes.graph_pes_model import GraphPESModel
+from graph_pes.graph_pes_model import GraphPESModel, GraphPropertyModel
 from graph_pes.utils.logger import logger
 
 from .addition import AdditionModel, TensorAdditionModel
@@ -50,6 +50,7 @@ from .unit_converter import UnitConverter
 
 __all__ = [
     "AdditionModel",
+    "TensorAdditionModel",
     "EDDP",
     "FixedOffset",
     "LearnableOffset",
@@ -84,6 +85,7 @@ MODEL_EXCLUSIONS = {
     "FixedTensorOffset",
     "LearnableTensorOffset",
     "AdditionModel",
+    "TensorAdditionModel",
     "PairPotential",
     "SmoothedPairPotential",
     "UnitConverter",
@@ -140,7 +142,7 @@ def load_model(path: str | pathlib.Path) -> GraphPESModel:
     if isinstance(model, torch.jit.ScriptModule):
         model = ScriptedModel(model)
 
-    if not isinstance(model, GraphPESModel):
+    if not isinstance(model, (GraphPESModel, GraphPropertyModel)):
         raise ValueError(
             "Expected the loaded object to be a GraphPESModel "
             f"but got {type(model)}"
@@ -181,7 +183,7 @@ def load_model_component(
     """
 
     base_model = load_model(path)
-    if not isinstance(base_model, AdditionModel):
+    if not isinstance(base_model, (AdditionModel, TensorAdditionModel)):
         raise ValueError(
             f"Expected to load an AdditionModel, got {type(base_model)}"
         )
