@@ -1,0 +1,77 @@
+# example of config file for a rank2 tensor learning using a TensorNequIP model
+
+CUTOFF: 5.533
+
+general:
+  seed: 0
+  run_id: tensor_nequip
+
+model:
+  offset:
+    +LearnableTensorOffset:
+      length: 9
+  many_body:
+    +TensorNequIP:
+      elements: ["Si", "O"]
+      cutoff: =/CUTOFF
+      radial_features: 64
+      features:
+        node_irreps: 128x0e+128x1o+128x2e
+        edge_irreps: 0e + 1o + 2e
+      props: tensor
+      layers: 4
+      target_tensor_irreps: 0e + 1e + 2e
+      prune_last_layer: false
+      target_method: "tensor_product"
+      irrep_tp: "2e"
+      number_of_tps: 8
+
+data:
+  train:
+    path: train-nmr.xyz
+    shuffle: true
+    property_map: { "ms_SH": "tensor" }
+
+  valid:
+    path: val-nmr.xyz
+    property_map: { "ms_SH": "tensor" }
+  test:
+    path: test-nmr.xyz
+    property_map: { "ms_SH": "tensor" }
+    others_to_include: "tensor"
+
+loss:
+  tensor:
+    +PropertyLoss:
+      property: tensor
+      metric: RMSE
+      weight: 1
+
+fitting:
+  pre_fit_model: false
+  trainer_kwargs:
+    max_epochs: 3000
+    accelerator: auto
+
+  callbacks:
+    - +graph_pes.training.callbacks.DumpModel:
+        every_n_val_checks: 1
+
+  early_stopping:
+    patience: 100
+
+  optimizer:
+    name: AdamW
+    lr: 0.003
+
+  scheduler:
+    name: ReduceLROnPlateau
+    patience: 25
+    factor: 0.8
+
+  loader_kwargs:
+    batch_size: 5
+    num_workers: 10
+    shuffle: true
+
+wandb: null

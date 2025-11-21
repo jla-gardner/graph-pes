@@ -126,7 +126,7 @@ class FixedTensorOffset(TensorOffset):
 
     Examples
     --------
-    >>> model = FixedOffset(H=-1.3, C=-13.0)
+    >>> model = FixedTensorOffset(H=[0.0, 1.0, 0.1], C=[-3.0, 0.0, 0.0])
     """
 
     def __init__(self, **final_values: float):
@@ -243,18 +243,21 @@ class LearnableTensorOffset(TensorOffset):
     initial_values
         A dictionary of initial tensor offsets for each atomic species.
         Leave this empty to guess the offsets from the training data.
+    length
+        The dimension of tensor offsets for the atomic species
 
     Examples
     --------
     Estimate all relevant tensor offsets from the training data:
 
-    >>> model = LearnableOffset()
+    >>> model = LearnableTensorOffset()
     >>> # estimates offsets from data
     >>> model.pre_fit_all_components(training_data)
 
     Specify some initial values for the tensor offsets:
 
-    >>> model = LearnableOffset(H=[0.0, 1.0, 0.1], C=[-3.0, 0.0, 0.0])
+    >>> model = LearnableTensorOffset(length=3, H=[0.0, 1.0, 0.1],
+                                      C=[-3.0, 0.0, 0.0])
     >>> # estimate offsets for elements that aren't C or H
     >>> model.pre_fit_all_components(training_data)
     """
