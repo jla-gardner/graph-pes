@@ -181,8 +181,11 @@ class TensorAdditionModel(GraphTensorModel):
         }
 
     def predict(
-        self, graph: AtomicGraph, properties: list[PropertyKey]
+        self, graph: AtomicGraph, properties: list[PropertyKey] | None = None
     ) -> dict[PropertyKey, torch.Tensor]:
+        if properties is None or len(properties) == 0:
+            properties = ["tensor"]
+        print("I WANT THESE", properties, flush=True)
         preds = [
             model.predict(graph, properties)["tensor"]
             for model in self.models.values()
