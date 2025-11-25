@@ -181,8 +181,10 @@ class TensorAdditionModel(GraphTensorModel):
         }
 
     def predict(
-        self, graph: AtomicGraph, properties: list[PropertyKey]
+        self, graph: AtomicGraph, properties: list[PropertyKey] | None = None
     ) -> dict[PropertyKey, torch.Tensor]:
+        if properties is None or len(properties) == 0:
+            properties = ["tensor"]
         preds = [
             model.predict(graph, properties)["tensor"]
             for model in self.models.values()
@@ -190,3 +192,27 @@ class TensorAdditionModel(GraphTensorModel):
         return {
             "tensor": torch.stack(preds).sum(dim=0),
         }
+
+    def __getitem__(self, key: str) -> GraphPESModel:
+        """
+        Get a component by name.
+
+        Examples
+        --------
+        >>> model = TensorAdditionModel(model1=model1, model2=model2)
+        >>> model["model1"]
+        """
+        return self.models[key]
+
+    def __repr__(self):
+        return uniform_repr(
+            self.__class__.__name__,
+            **self.models,
+            stringify=True,
+            max_width=80,
+            indent_width=2,
+        )
+
+    def pre_fit_all_components(self, graphs: Sequence[AtomicGraph]):
+        for model in self.models.values():
+            model.pre_fit_all_components(graphs)
