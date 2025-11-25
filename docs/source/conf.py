@@ -76,6 +76,7 @@ nitpick_ignore = [
     ("py:class", "TorchMetric"),
     ("py:class", "DirectForcefieldRegressor"),
     ("py:class", "ConservativeForcefieldRegressor"),
+    ("py:class", "graph_pes.graph_property_model.GraphTensorModel"),
     ("ipython3", "Lexing literal_block"),
 ]
 
