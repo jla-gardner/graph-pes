@@ -185,7 +185,6 @@ class TensorAdditionModel(GraphTensorModel):
     ) -> dict[PropertyKey, torch.Tensor]:
         if properties is None or len(properties) == 0:
             properties = ["tensor"]
-        print("I WANT THESE", properties, flush=True)
         preds = [
             model.predict(graph, properties)["tensor"]
             for model in self.models.values()
