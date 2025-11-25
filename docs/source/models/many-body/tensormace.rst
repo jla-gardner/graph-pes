@@ -1,5 +1,5 @@
 TensorMACE
-####
+##########
 
 Train this architecture on your own data using the :doc:`graph-pes-train <../../cli/graph-pes-train/root>` CLI, using e.g. the following config:
 

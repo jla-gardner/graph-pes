@@ -8,6 +8,9 @@ from graph_pes.graph_property_model import GraphPropertyModel
 
 # hide the annoying FutureWarning from e3nn
 warnings.filterwarnings("ignore", category=FutureWarning, module="e3nn")
+warnings.filterwarnings(
+    "ignore", category=UserWarning, module=r"torch\.jit\._check"
+)
 
 # fix e3nns torch.load without weights_only
 if hasattr(torch.serialization, "add_safe_globals"):

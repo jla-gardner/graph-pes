@@ -5,6 +5,7 @@ CUTOFF: 5.533
 general:
   seed: 0
   run_id: tensor_nequip
+  progress: logged
 
 model:
   offset:
@@ -16,7 +17,7 @@ model:
       cutoff: =/CUTOFF
       radial_features: 64
       features:
-        node_irreps: 128x0e+128x1o+128x2e
+        node_irreps: 32x0e+32x1o+32x2e+32x0o+32x1e+32x2o
         edge_irreps: 0e + 1o + 2e
       props: tensor
       layers: 4
@@ -27,6 +28,7 @@ model:
 data:
   train:
     path: train-nmr.xyz
+    n: 50
     shuffle: true
     property_map: { "ms_SH": "tensor" }
 

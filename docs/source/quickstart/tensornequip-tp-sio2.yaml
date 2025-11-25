@@ -5,6 +5,7 @@ CUTOFF: 5.533
 general:
   seed: 0
   run_id: tensor_nequip
+  progress: logged
 
 model:
   offset:
@@ -16,14 +17,14 @@ model:
       cutoff: =/CUTOFF
       radial_features: 64
       features:
-        node_irreps: 128x0e+128x1o+128x2e
+        node_irreps: 32x0e+32x1o+32x2e
         edge_irreps: 0e + 1o + 2e
       props: tensor
       layers: 4
       target_tensor_irreps: 0e + 1e + 2e
       prune_last_layer: false
       target_method: "tensor_product"
-      irrep_tp: "2e"
+      irrep_tp: "1o"
       number_of_tps: 8
 
 data:
