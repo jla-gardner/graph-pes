@@ -1,8 +1,6 @@
 # example of config file for a rank2 tensor learning using a TensorNequIP model
 
 general:
-  seed: 0
-  run_id: tensor_nequip
   progress: logged
 
 model:
@@ -29,19 +27,15 @@ data:
     n: 50
     shuffle: true
 
-  valid:
-    path: val-nmr.xyz
-  test:
-    path: test-nmr.xyz
+  valid: val-nmr.xyz
+  test: test-nmr.xyz
 
 loss:
-  tensor:
-    +PropertyLoss:
-      property: tensor
-      metric: RMSE
+  +PropertyLoss:
+    property: tensor
+    metric: RMSE
 
 fitting:
-  pre_fit_model: false
   trainer_kwargs:
     max_epochs: 3000
     accelerator: auto
@@ -50,7 +44,7 @@ fitting:
     patience: 100
 
   optimizer:
-    name: AdamW
+    name: Adam
     lr: 0.003
 
   scheduler:
