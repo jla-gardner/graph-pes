@@ -48,7 +48,7 @@ class FittingOptions:
     DEPRECATED: use the `early_stopping` config option instead.
     """
     auto_fit_reference_energies: bool
-    keep: Literal["best", "last"] = "best"
+    keep: Literal["best", "last"]
 
 
 @dataclass

@@ -24,6 +24,9 @@ fitting:
         batch_size: 4
         pin_memory: false
 
+    # keep the best model (as measured by the validation loss)
+    keep: best
+
     # "fancy"/optional training options disabled
     callbacks: []
     scheduler: null
