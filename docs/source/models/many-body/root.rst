@@ -14,5 +14,6 @@ Many Body Models
     mace
     tensornet
     orb
-
+    tensornequip
+    tensormace
 

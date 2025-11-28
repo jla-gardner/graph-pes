@@ -10,5 +10,6 @@ Run each of these notebooks locally, or use the Google Colab links to follow alo
     fine-tuning
     implement-a-model
     custom-training-loop
+    atomic-tensor-example
 
 

@@ -1,0 +1,60 @@
+# example of config file for a rank2 tensor learning using a TensorNequIP model
+
+general:
+  progress: logged
+
+model:
+  offset:
+    +LearnableTensorOffset:
+      length: 9
+  many_body:
+    +TensorNequIP:
+      elements: ["Si", "O"]
+      cutoff: 5.533
+      radial_features: 64
+      features:
+        node_irreps: 32x0e+32x1o+32x2e+32x0o+32x1e+32x2o
+        edge_irreps: 0e + 1o + 2e
+      props: tensor
+      layers: 4
+      target_tensor_irreps: 0e + 1e + 2e
+      prune_last_layer: false
+      target_method: "direct"
+
+data:
+  train:
+    path: train-nmr.xyz
+    n: 50
+    shuffle: true
+
+  valid: val-nmr.xyz
+  test: test-nmr.xyz
+
+loss:
+  +PropertyLoss:
+    property: tensor
+    metric: RMSE
+
+fitting:
+  trainer_kwargs:
+    max_epochs: 3000
+    accelerator: auto
+
+  early_stopping:
+    patience: 100
+
+  optimizer:
+    name: Adam
+    lr: 0.003
+
+  scheduler:
+    name: ReduceLROnPlateau
+    patience: 25
+    factor: 0.8
+
+  loader_kwargs:
+    batch_size: 5
+    num_workers: 4
+    shuffle: true
+
+wandb: null
