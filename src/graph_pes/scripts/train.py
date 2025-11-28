@@ -17,6 +17,7 @@ from pytorch_lightning.callbacks import (
 from pytorch_lightning.loggers import CSVLogger
 
 from graph_pes.config.shared import (
+    TorchConfig,
     instantiate_config_from_dict,
     parse_loss,
     parse_model,
@@ -80,14 +81,19 @@ def train_from_config(config_data: dict):
     now_ms = datetime.now().strftime("%F %T.%f")[:-3]
     logger.info(f"Started `graph-pes-train` at {now_ms}")
 
+    # before instantiating any models automatically from the config,
+    # ensure we set the correct default dtype etc.
+    d = config_data.get("general", {}).get("torch", {})
+    torch_config = TorchConfig(**d)
+    configure_general_options(
+        torch_config, config_data.get("general", {}).get("seed", 42)
+    )
+
     logger.debug("Parsing config...")
     config_data, config = instantiate_config_from_dict(
         config_data, TrainingConfig
     )
     logger.info("Successfully parsed config.")
-
-    # general options
-    configure_general_options(config.general.torch, config.general.seed)
 
     # generate / look up the output directory for this training run
     # and handle the case where there is an ID collision by incrementing
