@@ -89,7 +89,6 @@ def train_from_config(config_data: dict):
 
     # general options
     configure_general_options(config.general.torch, config.general.seed)
-    model = model.to(torch.get_default_dtype())
 
     # generate / look up the output directory for this training run
     # and handle the case where there is an ID collision by incrementing
@@ -145,6 +144,7 @@ def train_from_config(config_data: dict):
 
     # instantiate and log things
     model = parse_model(config.model)
+    model = model.to(torch.get_default_dtype())
     logger.debug(f"Model:\n{model}")
 
     data = config.get_data(model)
