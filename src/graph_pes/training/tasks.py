@@ -128,10 +128,11 @@ def train_with_lightning(
         logger.error(f"Training failed: {e}")
         raise e
     finally:
-        try:
-            task.load_best_weights(model, trainer)
-        except Exception as e:
-            logger.error(f"Failed to load best weights: {e}")
+        if fit_config.keep == "best":
+            try:
+                task.load_best_weights(model, trainer)
+            except Exception as e:
+                logger.error(f"Failed to load best weights: {e}")
 
     return model
 

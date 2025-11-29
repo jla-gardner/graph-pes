@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytorch_lightning as pl
+import torch
 import yaml
 from pytorch_lightning.callbacks import (
     LearningRateMonitor,
@@ -143,6 +144,7 @@ def train_from_config(config_data: dict):
 
     # instantiate and log things
     model = parse_model(config.model)
+    model = model.to(torch.get_default_dtype())
     logger.debug(f"Model:\n{model}")
 
     data = config.get_data(model)
