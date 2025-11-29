@@ -457,6 +457,18 @@ Use the ``trainer_kwargs`` field to configure validation frequency. For instance
 
 See the `PyTorch Lightning documentation <https://lightning.ai/docs/pytorch/stable/common/trainer.html#trainer-class-api>`__ for details.
 
+
+Model saving
+++++++++++++
+
+Use the `keep` field to configure model saving. By default, we load the `"best"` model (as measured by the validation loss) before evaluation and saving.
+Keep the `"last"` model by setting this to `"last"`.
+
+.. code-block:: yaml
+
+    fitting:
+        keep: last # or best
+
 ``wandb``
 ---------
 
