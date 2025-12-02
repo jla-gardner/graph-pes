@@ -435,10 +435,12 @@ class AtomicGraph(NamedTuple):
             if key in property_mapping:
                 property = property_mapping[key]
                 # ensure stress is always 3x3, not voigt notation
-                if property in ["stress", "virial"] and value.reshape(
-                    -1
-                ).shape == (6,):
-                    value = voigt_6_to_full_3x3_stress(value)
+                if property in ["stress", "virial"]:
+                    if value.reshape(-1).shape == (6,):
+                        value = voigt_6_to_full_3x3_stress(value)
+                    elif value.shape == (9,):
+                        value = value.reshape(3, 3)
+
                 properties[property] = to_tensor(value)
 
             elif key in others_to_include:
