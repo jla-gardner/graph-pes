@@ -1,0 +1,1899 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" />
+
+    <!-- Generated with Sphinx 7.4.7 and Furo 2024.08.06 -->
+        <title>graph_pes.atomic_graph - graph-pes</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=05238f3f" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f0f0f0;
+  --color-code-foreground: black;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">graph-pes</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../../_static/logo-square.svg" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../quickstart/root.html">Tutorials</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Tutorials</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart/quickstart.html">Train a model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart/quickstart.html#Model-analysis">Model analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart/fine-tuning.html">Fine-tuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart/implement-a-model.html">Implement a model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart/custom-training-loop.html">Custom training loops</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CLI Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../cli/graph-pes-train/root.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code></a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of graph-pes-train</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../cli/graph-pes-train/the-basics.html">The basics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cli/graph-pes-train/complete-docs.html">Config options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cli/graph-pes-train/examples.html">Example configs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli/graph-pes-resume.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-resume</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli/graph-pes-test.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../cli/graph-pes-id.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-id</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../data/root.html">Data</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Data</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../data/atomic_graph.html">Atomic Graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../data/datasets.html">Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../data/loader.html">Loader</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../models/root.html">Models</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of Models</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../models/addition.html">Addition Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../models/offsets.html">Energy Offset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../models/pairwise.html">Pair Potentials</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../models/many-body/root.html">Many Body Models</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of Many Body Models</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/stillinger-weber.html">Stillinger-Weber</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/eddp.html">EDDP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/schnet.html">SchNet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/painn.html">PaiNN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/nequip.html">NequIP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/mace.html">MACE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/tensornet.html">TensorNet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/orb.html">Orb</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../fitting/root.html">Fitting</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of Fitting</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../fitting/losses.html">Losses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../fitting/optimizers.html">Optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../fitting/callbacks.html">Callbacks</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../building-blocks/root.html">Building blocks</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of Building blocks</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../building-blocks/distances.html">Distance Expansions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../building-blocks/envelopes.html">Envelopes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../building-blocks/aggregation.html">Aggregation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../building-blocks/scaling.html">Scaling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../building-blocks/nn.html">PyTorch Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../building-blocks/e3nn.html"><code class="docutils literal notranslate"><span class="pre">e3nn</span></code> Helpers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../utils.html">Utils</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Interfaces</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../interfaces/mace.html"><code class="docutils literal notranslate"><span class="pre">mace-torch</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../interfaces/mattersim.html"><code class="docutils literal notranslate"><span class="pre">mattersim</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../interfaces/orb.html"><code class="docutils literal notranslate"><span class="pre">orb-models</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/torch-sim.html"><code class="docutils literal notranslate"><span class="pre">torch-sim</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/ase.html">ASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/lammps.html">LAMMPS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/analysis.html">Analysis</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory.html">Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../development.html">Development</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for graph_pes.atomic_graph</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TYPE_CHECKING</span><span class="p">,</span>
+    <span class="n">Dict</span><span class="p">,</span>
+    <span class="n">Final</span><span class="p">,</span>
+    <span class="n">List</span><span class="p">,</span>
+    <span class="n">Literal</span><span class="p">,</span>
+    <span class="n">Mapping</span><span class="p">,</span>
+    <span class="n">NamedTuple</span><span class="p">,</span>
+    <span class="n">Optional</span><span class="p">,</span>
+    <span class="n">Protocol</span><span class="p">,</span>
+    <span class="n">Sequence</span><span class="p">,</span>
+    <span class="n">Union</span><span class="p">,</span>
+    <span class="n">cast</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">ase</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.multiprocessing</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.utils.data</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">vesin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ase.stress</span><span class="w"> </span><span class="kn">import</span> <span class="n">voigt_6_to_full_3x3_stress</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">load_atoms.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">remove_calculator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypeAlias</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">graph_pes.utils.misc</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">all_equal</span><span class="p">,</span>
+    <span class="n">is_being_documented</span><span class="p">,</span>
+    <span class="n">left_aligned_div</span><span class="p">,</span>
+    <span class="n">left_aligned_mul</span><span class="p">,</span>
+    <span class="n">to_significant_figures</span><span class="p">,</span>
+    <span class="n">uniform_repr</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">DEFAULT_CUTOFF</span><span class="p">:</span> <span class="n">Final</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">5.0</span>
+
+
+<span class="n">PropertyKey</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span>
+    <span class="s2">&quot;local_energies&quot;</span><span class="p">,</span> <span class="s2">&quot;forces&quot;</span><span class="p">,</span> <span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="s2">&quot;stress&quot;</span><span class="p">,</span> <span class="s2">&quot;virial&quot;</span><span class="p">,</span> <span class="s2">&quot;tensor&quot;</span>
+<span class="p">]</span>
+<span class="n">ALL_PROPERTY_KEYS</span><span class="p">:</span> <span class="n">Final</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">PropertyKey</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;local_energies&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;forces&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;energy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;stress&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;virial&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tensor&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">TYPE_CHECKING</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_being_documented</span><span class="p">():</span>
+    <span class="c1"># torchscript doesn&#39;t handle TypedDicts or Literal types:</span>
+    <span class="c1"># at run-time, we just use less specific, but still correct, types</span>
+    <span class="n">Properties</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span>
+    <span class="n">PropertyKey</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="nb">str</span>
+
+
+<div class="viewcode-block" id="AtomicGraph">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.AtomicGraph">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AtomicGraph</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An :class:`AtomicGraph` represents an atomic structure.</span>
+<span class="sd">    Each node corresponds to an atom, and each directed edge links a central</span>
+<span class="sd">    atom to a &quot;bonded&quot; neighbour.</span>
+
+<span class="sd">    We implement such graphs as (immutable) :class:`~typing.NamedTuple`\ s.</span>
+<span class="sd">    This allows for easy serialisation and compatibility with PyTorch,</span>
+<span class="sd">    TorchScript and other libraries. These objects, and all functions that</span>
+<span class="sd">    operate on them, are compatible with both isolated and periodic structures.</span>
+
+<span class="sd">    Batches of multiple structures are represented by a single</span>
+<span class="sd">    :class:`AtomicGraph` object containing multiple disjoint subgraphs. See</span>
+<span class="sd">    :func:`~graph_pes.atomic_graph.to_batch` for more information.</span>
+
+<span class="sd">    Properties</span>
+<span class="sd">    ++++++++++</span>
+
+<span class="sd">    Below we assume the graph contains ``N`` atoms, ``E`` edges (and ``S``</span>
+<span class="sd">    structures if the graph is batched).</span>
+
+<span class="sd">    We use two examples to illustrate the various properties:</span>
+
+
+<span class="sd">    .. dropdown:: Water molecule</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            &gt;&gt;&gt; from ase.build import molecule</span>
+<span class="sd">            &gt;&gt;&gt; from load_atoms import view</span>
+<span class="sd">            &gt;&gt;&gt; water = molecule(&quot;H2O&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; view(water, show_bonds=True)</span>
+
+<span class="sd">        .. raw:: html</span>
+<span class="sd">            :file: ../../docs/source/_static/water.html</span>
+
+<span class="sd">        We can see that there are 3 atoms, with 2 bonds (and therefore 4</span>
+<span class="sd">        directed edges):</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            &gt;&gt;&gt; from graph_pes import AtomicGraph</span>
+<span class="sd">            &gt;&gt;&gt; water_graph = AtomicGraph.from_ase(water, cutoff=1.2)</span>
+<span class="sd">            &gt;&gt;&gt; water_graph</span>
+<span class="sd">            AtomicGraph(atoms=3, edges=4, has_cell=False, cutoff=1.2)</span>
+
+<span class="sd">    .. dropdown:: Sodium crystal</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            &gt;&gt;&gt; from ase.build import bulk</span>
+<span class="sd">            &gt;&gt;&gt; from load_atoms import view</span>
+<span class="sd">            &gt;&gt;&gt; sodium = bulk(&quot;Na&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; view(sodium.repeat(3), show_bonds=True)</span>
+
+<span class="sd">        .. raw:: html</span>
+<span class="sd">            :file: ../../docs/source/_static/Na.html</span>
+
+<span class="sd">        This structure has a single atom within a periodic cell. If you</span>
+<span class="sd">        look closely, you can see that this atom has 8 nearest neighbours.</span>
+<span class="sd">        Only &quot;source&quot; atoms within the unit cell are included in the</span>
+<span class="sd">        neighbour list, and hence there are 8 edges:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            &gt;&gt;&gt; sodium_graph = AtomicGraph.from_ase(sodium, cutoff=3.7)</span>
+<span class="sd">            &gt;&gt;&gt; sodium_graph</span>
+<span class="sd">            AtomicGraph(atoms=1, edges=8, has_cell=True, cutoff=3.7)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">Z</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The atomic numbers of the atoms in the graph, of shape ``(N,)``.</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        &gt;&gt;&gt; water_graph.Z</span>
+<span class="sd">        tensor([8, 1, 1])</span>
+<span class="sd">    </span>
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        &gt;&gt;&gt; sodium_graph.Z</span>
+<span class="sd">        tensor([11])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">R</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The cartesian positions of the atoms in the graph, of shape ``(N, 3)``.</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        &gt;&gt;&gt; water_graph.R</span>
+<span class="sd">        tensor([[ 0.0000,  0.0000,  0.1193],</span>
+<span class="sd">                [ 0.0000,  0.7632, -0.4770],</span>
+<span class="sd">                [ 0.0000, -0.7632, -0.4770]])</span>
+<span class="sd">    </span>
+<span class="sd">    .. code-block:: python</span>
+<span class="sd">        </span>
+<span class="sd">        &gt;&gt;&gt; sodium_graph.R</span>
+<span class="sd">        tensor([[0., 0., 0.]])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">cell</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The unit cell vectors, of shape ``(3, 3)`` for a single structure, or</span>
+<span class="sd">    ``(S, 3, 3)`` for a batched graph. If the structure is non-periodic,</span>
+<span class="sd">    this will be all zeros.</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        &gt;&gt;&gt; water_graph.cell</span>
+<span class="sd">        tensor([[0., 0., 0.],</span>
+<span class="sd">                [0., 0., 0.],</span>
+<span class="sd">                [0., 0., 0.]])</span>
+<span class="sd">    </span>
+<span class="sd">    .. code-block:: python</span>
+<span class="sd">        </span>
+<span class="sd">        &gt;&gt;&gt; sodium_graph.cell</span>
+<span class="sd">        tensor([[-2.1150,  2.1150,  2.1150],</span>
+<span class="sd">                [ 2.1150, -2.1150,  2.1150],</span>
+<span class="sd">                [ 2.1150,  2.1150, -2.1150]])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">neighbour_list</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A neighbour list, of shape ``(2, E)``, where </span>
+<span class="sd">    ``i, j = graph.neighbour_list[:, k]`` is the ``k``&#39;th directed edge</span>
+<span class="sd">    in the graph, linking atom ``i`` to atom ``j``.</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        &gt;&gt;&gt; water_graph.neighbour_list</span>
+<span class="sd">        tensor([[0, 0, 1, 2],</span>
+<span class="sd">                [1, 2, 0, 0]])</span>
+<span class="sd">    </span>
+<span class="sd">    .. code-block:: python</span>
+<span class="sd">        </span>
+<span class="sd">        &gt;&gt;&gt; sodium_graph.neighbour_list</span>
+<span class="sd">        tensor([[0, 0, 0, 0, 0, 0, 0, 0],</span>
+<span class="sd">                [0, 0, 0, 0, 0, 0, 0, 0]])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">neighbour_cell_offsets</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The offsets of the neighbours of each atom in units of the unit cell</span>
+<span class="sd">    vectors, of shape ``(E, 3)``, such that:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        # k-th edge</span>
+<span class="sd">        i, j = graph.neighbour_list[:, k]</span>
+<span class="sd">        kth_displacement_vector = (</span>
+<span class="sd">            graph.R[j] </span>
+<span class="sd">            + graph.neighbour_cell_offsets[k] @ graph.cell</span>
+<span class="sd">            - graph.R[i]</span>
+<span class="sd">        )</span>
+
+<span class="sd">    In the case of an isolated, non-periodic structure, these will be all zeros.</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        &gt;&gt;&gt; water_graph.neighbour_cell_offsets</span>
+<span class="sd">        tensor([[0., 0., 0.],</span>
+<span class="sd">                [0., 0., 0.],</span>
+<span class="sd">                [0., 0., 0.],</span>
+<span class="sd">                [0., 0., 0.]])</span>
+<span class="sd">    </span>
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        &gt;&gt;&gt; sodium_graph.neighbour_cell_offsets</span>
+<span class="sd">        tensor([[ 0.,  0.,  1.],</span>
+<span class="sd">                [ 0.,  1.,  0.],</span>
+<span class="sd">                [ 1.,  1.,  1.],</span>
+<span class="sd">                [ 1.,  0.,  0.],</span>
+<span class="sd">                [-1.,  0.,  0.],</span>
+<span class="sd">                [-1., -1., -1.],</span>
+<span class="sd">                [ 0., -1.,  0.],</span>
+<span class="sd">                [ 0.,  0., -1.]])</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">properties</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">PropertyKey</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A dictionary containing potential energy surface (PES) related properties</span>
+<span class="sd">    of the graph.</span>
+
+<span class="sd">    .. list-table::</span>
+<span class="sd">        :header-rows: 1</span>
+
+<span class="sd">        * - Key</span>
+<span class="sd">          - Shape</span>
+<span class="sd">          - Description</span>
+<span class="sd">        * - :code:`&quot;local_energies&quot;`</span>
+<span class="sd">          - :code:`(N,)`</span>
+<span class="sd">          - contribution to the total energy from each atom</span>
+<span class="sd">        * - :code:`&quot;energy&quot;`</span>
+<span class="sd">          - ``()`` </span>
+<span class="sd">          </span>
+<span class="sd">            (``(S,)`` if batched)</span>
+<span class="sd">          - total energy of the structure</span>
+<span class="sd">        * - :code:`&quot;forces&quot;`</span>
+<span class="sd">          - :code:`(N, 3)`</span>
+<span class="sd">          - force on each atom</span>
+<span class="sd">        * - :code:`&quot;stress&quot;`</span>
+<span class="sd">          - ``(3, 3)`` </span>
+<span class="sd">          </span>
+<span class="sd">            (``(S, 3, 3)`` if batched)</span>
+<span class="sd">          - stress tensor (see :doc:`../theory`)</span>
+<span class="sd">        * - :code:`&quot;virial&quot;`</span>
+<span class="sd">          - ``(3, 3)`` </span>
+<span class="sd">          </span>
+<span class="sd">            (``(S, 3, 3)`` if batched)</span>
+<span class="sd">          - virial stress tensor (see :doc:`../theory`)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The cutoff distance used to create the neighbour list for this graph.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">other</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A dictionary containing any other additional information about the graph.</span>
+<span class="sd">    Feel free to populate this as you wish.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">batch</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A tensor of shape ``(N,)`` indicating the index ``i`` of the structure</span>
+<span class="sd">    within the batch that each atom belongs to. Not present for a single</span>
+<span class="sd">    structure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ptr</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A tensor of shape ``(S + 1,)`` indicating the index ``i`` of the first</span>
+<span class="sd">    atom in each structure within the batch. Not present for a single structure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">pbc</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Whether the structure has periodic boundary conditions (i.e., is periodic)</span>
+<span class="sd">    in each of the three spatial dimensions: ``(x, y, z)``.  Shape ``(3,)``.</span>
+<span class="sd">    DType: :code:`torch.bool`.</span>
+
+<span class="sd">    ``graph-pes`` does not use this information directly (and hence this field</span>
+<span class="sd">    is options), but it can be useful for external tools to have access to this,</span>
+<span class="sd">    e.g. when converting to and from an :class:`ase.Atoms` object.</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        &gt;&gt;&gt; assert atoms.pbc</span>
+<span class="sd">        &gt;&gt;&gt; graph = AtomicGraph.from_ase(atoms)</span>
+<span class="sd">        &gt;&gt;&gt; atoms = graph.to_ase()</span>
+<span class="sd">        &gt;&gt;&gt; atoms.pbc</span>
+<span class="sd">        tensor([ True,  True,  True])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AtomicGraph.from_ase">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.AtomicGraph.from_ase">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_ase</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">structure</span><span class="p">:</span> <span class="n">ase</span><span class="o">.</span><span class="n">Atoms</span><span class="p">,</span>
+        <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DEFAULT_CUTOFF</span><span class="p">,</span>
+        <span class="n">property_mapping</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PropertyKey</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">others_to_include</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AtomicGraph&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert an :class:`ase.Atoms` object to an :class:`AtomicGraph`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        structure</span>
+<span class="sd">            The :class:`ase.Atoms` object to convert.</span>
+<span class="sd">        cutoff</span>
+<span class="sd">            The cutoff distance for neighbour finding.</span>
+<span class="sd">        property_mapping</span>
+<span class="sd">            An optional mapping of the form ``{key_on_structure:</span>
+<span class="sd">            key_for_graph}`` defining how relevant properties are labelled on</span>
+<span class="sd">            the :class:`ase.Atoms` object. If not provided, this function will</span>
+<span class="sd">            extract all of ``&quot;energy&quot;``, ``&quot;forces&quot;``, ``&quot;stress&quot;``, or</span>
+<span class="sd">            ``&quot;virial&quot;`` from the ``.info`` and ``.arrays`` dicts if they are</span>
+<span class="sd">            present.</span>
+<span class="sd">        others_to_include</span>
+<span class="sd">            An optional list of other ``.info``/``.arrays`` keys to include in</span>
+<span class="sd">            the graph&#39;s ``other`` dict. The corresponding values will be</span>
+<span class="sd">            converted to :class:`torch.Tensor`\ s.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            &gt;&gt;&gt; from ase.build import molecule</span>
+<span class="sd">            &gt;&gt;&gt; from graph_pes import AtomicGraph</span>
+
+<span class="sd">            &gt;&gt;&gt; # create a a structure with some extra info</span>
+<span class="sd">            &gt;&gt;&gt; atoms = molecule(&quot;H2O&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; atoms.info[&quot;DFT_energy&quot;] = -10.0</span>
+<span class="sd">            &gt;&gt;&gt; atoms.info[&quot;unique_id&quot;] = 1234</span>
+
+<span class="sd">            &gt;&gt;&gt; # default behaviour:</span>
+<span class="sd">            &gt;&gt;&gt; AtomicGraph.from_ase(atoms)</span>
+<span class="sd">            AtomicGraph(atoms=3, edges=6, has_cell=False, cutoff=5.0)</span>
+
+<span class="sd">            &gt;&gt;&gt; # specify how to map properties, and other things to include</span>
+<span class="sd">            &gt;&gt;&gt; AtomicGraph.from_ase(</span>
+<span class="sd">            ...     atoms,</span>
+<span class="sd">            ...     property_mapping={</span>
+<span class="sd">            ...         &quot;DFT_energy&quot;: &quot;energy&quot;,</span>
+<span class="sd">            ...     },</span>
+<span class="sd">            ...     others_to_include=[&quot;unique_id&quot;],</span>
+<span class="sd">            ... )</span>
+<span class="sd">            AtomicGraph(</span>
+<span class="sd">                atoms=3,</span>
+<span class="sd">                edges=6,</span>
+<span class="sd">                has_cell=False,</span>
+<span class="sd">                cutoff=5.0,</span>
+<span class="sd">                properties=[&#39;energy&#39;],</span>
+<span class="sd">                other=[&#39;unique_id&#39;]</span>
+<span class="sd">            )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># account for strange behaviour in ase 3.23.0+ whereby</span>
+        <span class="c1"># properties are sometimes removed from the atoms.info/arrays dicts</span>
+        <span class="c1"># to ensure we don&#39;t change the atoms object that the user passes in</span>
+        <span class="c1"># we first make a copy, ensuring that the calculator is also copied over</span>
+        <span class="n">calc</span> <span class="o">=</span> <span class="n">structure</span><span class="o">.</span><span class="n">calc</span>
+        <span class="n">structure</span> <span class="o">=</span> <span class="n">structure</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">structure</span><span class="o">.</span><span class="n">calc</span> <span class="o">=</span> <span class="n">calc</span>
+        <span class="c1"># then we remove the calculator and copy over the properties to the</span>
+        <span class="c1"># relevant info/arrays dicts (with help from load_atoms.utils)</span>
+        <span class="n">remove_calculator</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+
+        <span class="n">_float</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">get_default_dtype</span><span class="p">()</span>
+
+        <span class="c1"># structure</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">structure</span><span class="o">.</span><span class="n">numbers</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
+        <span class="n">R</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">structure</span><span class="o">.</span><span class="n">positions</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">_float</span><span class="p">)</span>
+        <span class="n">cell</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">structure</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">_float</span><span class="p">)</span>
+
+        <span class="c1"># neighbour list</span>
+        <span class="k">if</span> <span class="n">structure</span><span class="o">.</span><span class="n">pbc</span><span class="o">.</span><span class="n">any</span><span class="p">()</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">structure</span><span class="o">.</span><span class="n">cell</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;PBCs are set to True, but cell is all zeros: we can&#39;t &quot;</span>
+                <span class="s2">&quot;create a neighbour list. Please set the cell or switch off &quot;</span>
+                <span class="s2">&quot;PBCs.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">offsets</span> <span class="o">=</span> <span class="n">vesin</span><span class="o">.</span><span class="n">ase_neighbor_list</span><span class="p">(</span><span class="s2">&quot;ijS&quot;</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">cutoff</span><span class="p">))</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="n">j</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+        <span class="n">neighbour_list</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">long</span><span class="p">)</span>
+        <span class="n">neighbour_cell_offsets</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">offsets</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">_float</span><span class="p">)</span>
+
+        <span class="c1"># properties</span>
+        <span class="n">properties</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">PropertyKey</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">other</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">property_mapping</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">all_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">structure</span><span class="o">.</span><span class="n">info</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">structure</span><span class="o">.</span><span class="n">arrays</span><span class="p">)</span>
+            <span class="n">property_mapping</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">k</span><span class="p">:</span> <span class="n">cast</span><span class="p">(</span><span class="n">PropertyKey</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="s2">&quot;forces&quot;</span><span class="p">,</span> <span class="s2">&quot;stress&quot;</span><span class="p">,</span> <span class="s2">&quot;virial&quot;</span><span class="p">,</span> <span class="s2">&quot;tensor&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">all_keys</span>
+            <span class="p">}</span>
+        <span class="k">if</span> <span class="n">others_to_include</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">others_to_include</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;total_charge&quot;</span><span class="p">,</span> <span class="s2">&quot;total_spin&quot;</span><span class="p">]</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">to_tensor</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">is_floating_point</span><span class="p">():</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">_float</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">t</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">structure</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span>
+            <span class="n">structure</span><span class="o">.</span><span class="n">arrays</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">property_mapping</span><span class="p">:</span>
+                <span class="nb">property</span> <span class="o">=</span> <span class="n">property_mapping</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                <span class="c1"># ensure stress is always 3x3, not voigt notation</span>
+                <span class="k">if</span> <span class="nb">property</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;stress&quot;</span><span class="p">,</span> <span class="s2">&quot;virial&quot;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">6</span><span class="p">,):</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="n">voigt_6_to_full_3x3_stress</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">value</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">9</span><span class="p">,):</span>
+                        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+                <span class="n">properties</span><span class="p">[</span><span class="nb">property</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_tensor</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">others_to_include</span><span class="p">:</span>
+                <span class="n">other</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_tensor</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="n">missing</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+            <span class="n">structure_key</span>
+            <span class="k">for</span> <span class="n">structure_key</span><span class="p">,</span> <span class="n">graph_key</span> <span class="ow">in</span> <span class="n">property_mapping</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">graph_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">properties</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to find properties: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">pbc</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">structure</span><span class="o">.</span><span class="n">pbc</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">Z</span><span class="o">=</span><span class="n">Z</span><span class="p">,</span>
+            <span class="n">R</span><span class="o">=</span><span class="n">R</span><span class="p">,</span>
+            <span class="n">cell</span><span class="o">=</span><span class="n">cell</span><span class="p">,</span>
+            <span class="n">neighbour_list</span><span class="o">=</span><span class="n">neighbour_list</span><span class="p">,</span>
+            <span class="n">neighbour_cell_offsets</span><span class="o">=</span><span class="n">neighbour_cell_offsets</span><span class="p">,</span>
+            <span class="n">properties</span><span class="o">=</span><span class="n">properties</span><span class="p">,</span>
+            <span class="n">other</span><span class="o">=</span><span class="n">other</span><span class="p">,</span>
+            <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">,</span>
+            <span class="n">pbc</span><span class="o">=</span><span class="n">pbc</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AtomicGraph.create_with_defaults">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.AtomicGraph.create_with_defaults">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_with_defaults</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">Z</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">R</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">cell</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">neighbour_list</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">neighbour_cell_offsets</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">properties</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">PropertyKey</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">pbc</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AtomicGraph&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create an :class:`AtomicGraph`, populating missing values with defaults.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        Z</span>
+<span class="sd">            The atomic numbers.</span>
+<span class="sd">        R</span>
+<span class="sd">            The cartesian positions.</span>
+<span class="sd">        cell</span>
+<span class="sd">            The unit cell. Defaults to ``torch.zeros(3, 3)``.</span>
+<span class="sd">        neighbour_list</span>
+<span class="sd">            The neighbour list. Defaults to ``torch.zeros(2, 0)``.</span>
+<span class="sd">        neighbour_cell_offsets</span>
+<span class="sd">            The neighbour cell offsets. Defaults to ``torch.zeros(0, 3)``.</span>
+<span class="sd">        properties</span>
+<span class="sd">            The properties. Defaults to ``{}``.</span>
+<span class="sd">        other</span>
+<span class="sd">            The other information. Defaults to ``{}``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">cell</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cell</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">R</span><span class="o">.</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">neighbour_list</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">neighbour_list</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">R</span><span class="o">.</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">neighbour_cell_offsets</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">neighbour_cell_offsets</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">R</span><span class="o">.</span><span class="n">device</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">properties</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">properties</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">other</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">other</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">Z</span><span class="o">=</span><span class="n">Z</span><span class="p">,</span>
+            <span class="n">R</span><span class="o">=</span><span class="n">R</span><span class="p">,</span>
+            <span class="n">cell</span><span class="o">=</span><span class="n">cell</span><span class="p">,</span>
+            <span class="n">neighbour_list</span><span class="o">=</span><span class="n">neighbour_list</span><span class="p">,</span>
+            <span class="n">neighbour_cell_offsets</span><span class="o">=</span><span class="n">neighbour_cell_offsets</span><span class="p">,</span>
+            <span class="n">properties</span><span class="o">=</span><span class="n">properties</span><span class="p">,</span>
+            <span class="n">other</span><span class="o">=</span><span class="n">other</span><span class="p">,</span>
+            <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">,</span>
+            <span class="n">pbc</span><span class="o">=</span><span class="n">pbc</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AtomicGraph.to">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.AtomicGraph.to">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;AtomicGraph&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Move this graph to the specified device.&quot;&quot;&quot;</span>
+
+        <span class="n">properties</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">PropertyKey</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">AtomicGraph</span><span class="p">(</span>
+            <span class="n">Z</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span>
+            <span class="n">R</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">R</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span>
+            <span class="n">cell</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span>
+            <span class="n">neighbour_list</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">neighbour_list</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span>
+            <span class="n">neighbour_cell_offsets</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">neighbour_cell_offsets</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">),</span>
+            <span class="n">properties</span><span class="o">=</span><span class="n">properties</span><span class="p">,</span>
+            <span class="n">other</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">other</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+            <span class="n">cutoff</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cutoff</span><span class="p">,</span>
+            <span class="n">batch</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">ptr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ptr</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ptr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">pbc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pbc</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pbc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;AtomicGraphBatch&quot;</span>
+            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;structures&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;AtomicGraph&quot;</span>
+
+        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;atoms&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">number_of_atoms</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;edges&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">number_of_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;has_cell&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">has_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;cutoff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_significant_figures</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cutoff</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">:</span>
+            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;properties&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">available_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">other</span><span class="p">:</span>
+            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;other&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">other</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="n">uniform_repr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">info</span><span class="p">,</span> <span class="n">indent_width</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AtomicGraph.to_ase">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.AtomicGraph.to_ase">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_ase</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ase</span><span class="o">.</span><span class="n">Atoms</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert this graph to an :class:`ase.Atoms` object.&quot;&quot;&quot;</span>
+
+        <span class="n">pbc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pbc</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pbc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">atoms</span> <span class="o">=</span> <span class="n">ase</span><span class="o">.</span><span class="n">Atoms</span><span class="p">(</span>
+            <span class="n">numbers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+            <span class="n">positions</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">R</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+            <span class="n">cell</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span>
+            <span class="n">pbc</span><span class="o">=</span><span class="n">pbc</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">other</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="s2">&quot;energy&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">:</span>
+            <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;stress&quot;</span><span class="p">,</span> <span class="s2">&quot;virial&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">:</span>
+                <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;forces&quot;</span><span class="p">,</span> <span class="s2">&quot;local_energies&quot;</span><span class="p">,</span> <span class="s2">&quot;tensor&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">:</span>
+                <span class="n">atoms</span><span class="o">.</span><span class="n">arrays</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">atoms</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="replace">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.replace">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">replace</span><span class="p">(</span>
+    <span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">,</span>
+    <span class="n">Z</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">R</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">cell</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">neighbour_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">neighbour_cell_offsets</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">properties</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="n">PropertyKey</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">other</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">cutoff</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">pbc</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AtomicGraph</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A convenience function for replacing the values of an :class:`AtomicGraph`</span>
+<span class="sd">    that is ``TorchScript`` compatible (as opposed to the built-in ``._replace``</span>
+<span class="sd">    namedtuple method).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">AtomicGraph</span><span class="p">(</span>
+        <span class="n">Z</span><span class="o">=</span><span class="n">Z</span> <span class="k">if</span> <span class="n">Z</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">graph</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span>
+        <span class="n">R</span><span class="o">=</span><span class="n">R</span> <span class="k">if</span> <span class="n">R</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">graph</span><span class="o">.</span><span class="n">R</span><span class="p">,</span>
+        <span class="n">cell</span><span class="o">=</span><span class="n">cell</span> <span class="k">if</span> <span class="n">cell</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">graph</span><span class="o">.</span><span class="n">cell</span><span class="p">,</span>
+        <span class="n">neighbour_list</span><span class="o">=</span><span class="p">(</span>
+            <span class="n">neighbour_list</span>
+            <span class="k">if</span> <span class="n">neighbour_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">graph</span><span class="o">.</span><span class="n">neighbour_list</span>
+        <span class="p">),</span>
+        <span class="n">neighbour_cell_offsets</span><span class="o">=</span><span class="p">(</span>
+            <span class="n">neighbour_cell_offsets</span>
+            <span class="k">if</span> <span class="n">neighbour_cell_offsets</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">graph</span><span class="o">.</span><span class="n">neighbour_cell_offsets</span>
+        <span class="p">),</span>
+        <span class="n">properties</span><span class="o">=</span><span class="n">properties</span> <span class="k">if</span> <span class="n">properties</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">graph</span><span class="o">.</span><span class="n">properties</span><span class="p">,</span>
+        <span class="n">other</span><span class="o">=</span><span class="n">other</span> <span class="k">if</span> <span class="n">other</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">graph</span><span class="o">.</span><span class="n">other</span><span class="p">,</span>
+        <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span> <span class="k">if</span> <span class="n">cutoff</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">graph</span><span class="o">.</span><span class="n">cutoff</span><span class="p">,</span>
+        <span class="n">batch</span><span class="o">=</span><span class="n">graph</span><span class="o">.</span><span class="n">batch</span><span class="p">,</span>
+        <span class="n">ptr</span><span class="o">=</span><span class="n">graph</span><span class="o">.</span><span class="n">ptr</span><span class="p">,</span>
+        <span class="n">pbc</span><span class="o">=</span><span class="n">pbc</span> <span class="k">if</span> <span class="n">pbc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">graph</span><span class="o">.</span><span class="n">pbc</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1">############################### BATCHING ###############################</span>
+
+
+<div class="viewcode-block" id="CustomPropertyBatcher">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.CustomPropertyBatcher">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CustomPropertyBatcher</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="CustomPropertyBatcher.__call__">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.CustomPropertyBatcher.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Batch the given values.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        batch</span>
+<span class="sd">            The batch of graphs.</span>
+<span class="sd">        values</span>
+<span class="sd">            The list of values to batch.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<span class="n">_custom_batchers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">CustomPropertyBatcher</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="c1"># NB this is essential, otherwise all data loader workers will</span>
+<span class="c1"># have an empty _custom_batchers dict, and hence fail to perform</span>
+<span class="c1"># any custom batching</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">set_start_method</span><span class="p">(</span><span class="s2">&quot;fork&quot;</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="register_custom_batcher">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.register_custom_batcher">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">register_custom_batcher</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Register a custom batcher for a property in the ``other`` field.</span>
+
+<span class="sd">    The batcher should conform to the following protocol:</span>
+
+<span class="sd">    .. autoclass:: graph_pes.atomic_graph.CustomPropertyBatcher()</span>
+<span class="sd">        :members: __call__</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    key</span>
+<span class="sd">        The key of the property to register a custom batcher for.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+
+<span class="sd">    &gt;&gt;&gt; from graph_pes.atomic_graph import register_custom_batcher</span>
+<span class="sd">    &gt;&gt;&gt; @register_custom_batcher(&quot;foo&quot;)</span>
+<span class="sd">    ... def foo_batcher(batch, values):</span>
+<span class="sd">    ...     return torch.max(torch.vstack(values), dim=0).values</span>
+<span class="sd">    &gt;&gt;&gt; ... # create graphs</span>
+<span class="sd">    &gt;&gt;&gt; graphs[0].other[&quot;foo&quot;], graphs[1].other[&quot;foo&quot;]</span>
+<span class="sd">    (tensor([1]), tensor([2]))</span>
+<span class="sd">    &gt;&gt;&gt; ... # batch the graphs</span>
+<span class="sd">    &gt;&gt;&gt; batch = to_batch(graphs)</span>
+<span class="sd">    &gt;&gt;&gt; batch.other[&quot;foo&quot;]</span>
+<span class="sd">    tensor([2])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">CustomPropertyBatcher</span><span class="p">):</span>
+        <span class="n">_custom_batchers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="k">return</span> <span class="n">func</span>
+
+    <span class="k">return</span> <span class="n">decorator</span></div>
+
+
+
+<div class="viewcode-block" id="to_batch">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.to_batch">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_batch</span><span class="p">(</span>
+    <span class="n">graphs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">AtomicGraph</span><span class="p">],</span>
+    <span class="n">three_body_cutoff</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AtomicGraph</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Collate a sequence of atomic graphs into a single batch object.</span>
+
+<span class="sd">    The ``Z``, ``R``, ``neighbour_list``, and ``neighbour_cell_offsets``</span>
+<span class="sd">    properties are concatenated along the first axis, while the ``cell``</span>
+<span class="sd">    property is stacked along a new batch dimension.</span>
+
+<span class="sd">    Values in the ``&quot;other&quot;`` dictionary are concatenated along the first axis</span>
+<span class="sd">    if they appear to be a per-atoms property (i.e. their first dimension</span>
+<span class="sd">    matches the number of atoms in the structure). Otherwise, they are stacked</span>
+<span class="sd">    along a new batch dimension.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    graphs</span>
+<span class="sd">        The graphs to collate.</span>
+<span class="sd">    three_body_cutoff</span>
+<span class="sd">        The cutoff radius for the three-body interactions. If specified,</span>
+<span class="sd">        these are pre-computed and cached on the graph object.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+
+<span class="sd">    A basic example:</span>
+
+<span class="sd">    &gt;&gt;&gt; from ase.build import molecule</span>
+<span class="sd">    &gt;&gt;&gt; from graph_pes import AtomicGraph, to_batch</span>
+<span class="sd">    &gt;&gt;&gt; graphs = [</span>
+<span class="sd">    ...     AtomicGraph.from_ase(molecule(&quot;H2O&quot;)),</span>
+<span class="sd">    ...     AtomicGraph.from_ase(molecule(&quot;CH4&quot;)),</span>
+<span class="sd">    ... ]</span>
+<span class="sd">    &gt;&gt;&gt; batch = to_batch(graphs)</span>
+<span class="sd">    &gt;&gt;&gt; batch.batch  # H20 has 3 atoms, CH4 has 5</span>
+<span class="sd">    tensor([0, 0, 0, 1, 1, 1, 1, 1])</span>
+<span class="sd">    &gt;&gt;&gt; batch.ptr  # offset of first atom of each graph</span>
+<span class="sd">    tensor([0, 3, 8])</span>
+<span class="sd">    &gt;&gt;&gt; batch.Z.shape</span>
+<span class="sd">    torch.Size([8])</span>
+<span class="sd">    &gt;&gt;&gt; batch.R.shape</span>
+<span class="sd">    torch.Size([8, 3])</span>
+<span class="sd">    &gt;&gt;&gt; batch.cell.shape</span>
+<span class="sd">    torch.Size([2, 3, 3])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">is_batch</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot recursively batch graphs&quot;</span><span class="p">)</span>
+
+    <span class="c1"># easy properties: just cat these together</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">g</span><span class="o">.</span><span class="n">Z</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">])</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">g</span><span class="o">.</span><span class="n">R</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">])</span>
+    <span class="n">neighbour_offsets</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">g</span><span class="o">.</span><span class="n">neighbour_cell_offsets</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">])</span>
+
+    <span class="c1"># stack cells along a new batch dimension</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">all_equal</span><span class="p">([</span><span class="n">has_cell</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">]):</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;Attempting to batch a colleciton of graphs where only some &quot;</span>
+            <span class="s2">&quot;have a defined unit cell. This may lead to unexpected results.&quot;</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">cells</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">g</span><span class="o">.</span><span class="n">cell</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">])</span>
+
+    <span class="c1"># standard way to caculaute the batch and ptr properties</span>
+    <span class="n">batch</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">graphs</span><span class="p">)]</span>
+    <span class="p">)</span>
+    <span class="n">ptr</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">g</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">])</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># use the ptr to increment the neighbour index appropriately</span>
+    <span class="n">neighbour_list</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">g</span><span class="o">.</span><span class="n">neighbour_list</span> <span class="o">+</span> <span class="n">ptr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">graphs</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span>
+    <span class="p">)</span>
+
+    <span class="c1"># handle cutoff</span>
+    <span class="n">cutoffs</span> <span class="o">=</span> <span class="p">[</span><span class="n">g</span><span class="o">.</span><span class="n">cutoff</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">all_equal</span><span class="p">(</span><span class="n">cutoffs</span><span class="p">):</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;Attempting to batch graphs with different cutoffs: &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cutoffs</span><span class="si">}</span><span class="s2">. Setting graph.cutoff to the maximum.&quot;</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">cutoff</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">cutoffs</span><span class="p">)</span>
+
+    <span class="n">properties</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">PropertyKey</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># - per structure labels are concatenated along a new batch axis (0)</span>
+    <span class="c1"># for now we only support atomic tensors</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="s2">&quot;stress&quot;</span><span class="p">,</span> <span class="s2">&quot;virial&quot;</span><span class="p">]:</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">PropertyKey</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">key</span> <span class="ow">in</span> <span class="n">g</span><span class="o">.</span><span class="n">properties</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">):</span>
+            <span class="n">properties</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">g</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">])</span>
+
+    <span class="c1"># - per atom labels are concatenated along the first axis</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;forces&quot;</span><span class="p">,</span> <span class="s2">&quot;local_energies&quot;</span><span class="p">,</span> <span class="s2">&quot;tensor&quot;</span><span class="p">]:</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">PropertyKey</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">key</span> <span class="ow">in</span> <span class="n">g</span><span class="o">.</span><span class="n">properties</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">):</span>
+            <span class="n">properties</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">g</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">])</span>
+
+    <span class="n">batched_graph</span> <span class="o">=</span> <span class="n">AtomicGraph</span><span class="p">(</span>
+        <span class="n">Z</span><span class="o">=</span><span class="n">Z</span><span class="p">,</span>
+        <span class="n">R</span><span class="o">=</span><span class="n">R</span><span class="p">,</span>
+        <span class="n">cell</span><span class="o">=</span><span class="n">cells</span><span class="p">,</span>
+        <span class="n">neighbour_list</span><span class="o">=</span><span class="n">neighbour_list</span><span class="p">,</span>
+        <span class="n">neighbour_cell_offsets</span><span class="o">=</span><span class="n">neighbour_offsets</span><span class="p">,</span>
+        <span class="n">properties</span><span class="o">=</span><span class="n">properties</span><span class="p">,</span>
+        <span class="n">other</span><span class="o">=</span><span class="p">{},</span>
+        <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">,</span>
+        <span class="n">batch</span><span class="o">=</span><span class="n">batch</span><span class="p">,</span>
+        <span class="n">ptr</span><span class="o">=</span><span class="n">ptr</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># - finally, add in the other stuff: this is a bit tricky</span>
+    <span class="c1">#   since we need to try and infer whether these are per-atom</span>
+    <span class="c1">#   or per-structure</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">other</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;__threebody-&quot;</span><span class="p">):</span>
+            <span class="c1"># we don&#39;t handle batching of 3body neighbour list info currently</span>
+            <span class="k">continue</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">g</span><span class="o">.</span><span class="n">other</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_custom_batchers</span><span class="p">:</span>
+            <span class="n">batcher</span> <span class="o">=</span> <span class="n">_custom_batchers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">batched_graph</span><span class="o">.</span><span class="n">other</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">batcher</span><span class="p">(</span><span class="n">batched_graph</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_local_property</span><span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">other</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">graphs</span><span class="p">):</span>
+            <span class="n">batched_graph</span><span class="o">.</span><span class="n">other</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">batched_graph</span><span class="o">.</span><span class="n">other</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+
+    <span class="c1"># cache three body edge pair calculations when training</span>
+    <span class="n">worker_info</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get_worker_info</span><span class="p">()</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">three_body_cutoff</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="ow">and</span> <span class="n">three_body_cutoff</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="ow">and</span> <span class="n">worker_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">graph_pes.utils.threebody</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+            <span class="n">_cache_threebody_terms</span><span class="p">,</span>
+            <span class="n">triplet_edge_pairs</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># calculate the edge pairs on the worker thread</span>
+        <span class="n">ij</span><span class="p">,</span> <span class="n">S_ij</span><span class="p">,</span> <span class="n">ik</span><span class="p">,</span> <span class="n">S_ik</span> <span class="o">=</span> <span class="n">triplet_edge_pairs</span><span class="p">(</span>
+            <span class="n">batched_graph</span><span class="p">,</span> <span class="n">three_body_cutoff</span>
+        <span class="p">)</span>
+
+        <span class="c1"># and place them onto the batched graph</span>
+        <span class="n">_cache_threebody_terms</span><span class="p">(</span>
+            <span class="n">batched_graph</span><span class="p">,</span> <span class="n">three_body_cutoff</span><span class="p">,</span> <span class="n">ij</span><span class="p">,</span> <span class="n">S_ij</span><span class="p">,</span> <span class="n">ik</span><span class="p">,</span> <span class="n">S_ik</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">batched_graph</span></div>
+
+
+
+<div class="viewcode-block" id="is_batch">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.is_batch">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_batch</span><span class="p">(</span><span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Does ``graph`` represent a batch of atomic graphs?</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    graph</span>
+<span class="sd">        The graph to check.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">graph</span><span class="o">.</span><span class="n">batch</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+
+
+
+<span class="c1">############################### PROPERTIES ###############################</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_cell_volume</span><span class="p">(</span><span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the volume of the unit cell.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">cell</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="number_of_atoms">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.number_of_atoms">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">number_of_atoms</span><span class="p">(</span><span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the number of atoms in the ``graph``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">graph</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="number_of_edges">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.number_of_edges">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">number_of_edges</span><span class="p">(</span><span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the number of edges in the ``graph``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">graph</span><span class="o">.</span><span class="n">neighbour_list</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="has_cell">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.has_cell">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">has_cell</span><span class="p">(</span><span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Does ``graph`` represent a structure with a defined unit cell?</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">cell</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">cell</span><span class="p">))</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_vectors</span><span class="p">(</span>
+    <span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">,</span>
+    <span class="n">i</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">j</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">shifts</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get ``v`` such that ``v[x] = R[i[x]] - R[j[x]]`` (and accounting</span>
+<span class="sd">    for the cell shift ``shifts[x]``).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    graph: AtomicGraph</span>
+<span class="sd">        The graph to get the vectors from.</span>
+<span class="sd">    i: torch.Tensor</span>
+<span class="sd">        The indices of the central atoms. Shape ``(E,)``.</span>
+<span class="sd">    j: torch.Tensor</span>
+<span class="sd">        The indices of the atoms to get the vectors to. Shape ``(E,)``.</span>
+<span class="sd">    shifts: torch.Tensor</span>
+<span class="sd">        The cell shifts to account for. Shape ``(E, 3)``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    v: torch.Tensor</span>
+<span class="sd">        A ``(E, 3)``-shaped tensor of vectors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># to simplify the logic below, we&#39;ll expand</span>
+    <span class="c1"># a single graph into a batch of one</span>
+    <span class="n">batch</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">Z</span><span class="p">)</span>
+    <span class="n">cell</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># torchscript annoying-ness:</span>
+    <span class="n">graph_batch</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">batch</span>
+    <span class="k">if</span> <span class="n">graph_batch</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">cell</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">cell</span>
+        <span class="n">batch</span> <span class="o">=</span> <span class="n">graph_batch</span>
+
+    <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">graph</span><span class="o">.</span><span class="n">R</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="n">cell_per_edge</span> <span class="o">=</span> <span class="n">cell</span><span class="p">[</span><span class="n">batch</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>  <span class="c1"># (E, 3, 3)</span>
+    <span class="n">distance_offsets</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span>
+        <span class="s2">&quot;kl,klm-&gt;km&quot;</span><span class="p">,</span>
+        <span class="n">shifts</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">cell_per_edge</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span>
+        <span class="n">cell_per_edge</span><span class="p">,</span>
+    <span class="p">)</span>  <span class="c1"># (E, 3)</span>
+    <span class="n">neighbour_positions</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">R</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">distance_offsets</span>  <span class="c1"># (E, 3)</span>
+    <span class="k">return</span> <span class="n">neighbour_positions</span> <span class="o">-</span> <span class="n">graph</span><span class="o">.</span><span class="n">R</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  <span class="c1"># (E, 3)</span>
+
+
+<div class="viewcode-block" id="neighbour_vectors">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.neighbour_vectors">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">neighbour_vectors</span><span class="p">(</span><span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the vector between each pair of atoms specified in the</span>
+<span class="sd">    ``graph``&#39;s ``&quot;neighbour_list&quot;`` property, respecting periodic</span>
+<span class="sd">    boundary conditions where present.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">get_vectors</span><span class="p">(</span>
+        <span class="n">graph</span><span class="p">,</span>
+        <span class="n">i</span><span class="o">=</span><span class="n">graph</span><span class="o">.</span><span class="n">neighbour_list</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">j</span><span class="o">=</span><span class="n">graph</span><span class="o">.</span><span class="n">neighbour_list</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">shifts</span><span class="o">=</span><span class="n">graph</span><span class="o">.</span><span class="n">neighbour_cell_offsets</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="neighbour_distances">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.neighbour_distances">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">neighbour_distances</span><span class="p">(</span><span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the distance between each pair of atoms specified in the</span>
+<span class="sd">    ``graph``&#39;s ``neighbour_list`` property, respecting periodic</span>
+<span class="sd">    boundary conditions where present.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">neighbour_vectors</span><span class="p">(</span><span class="n">graph</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="number_of_structures">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.number_of_structures">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">number_of_structures</span><span class="p">(</span><span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the number of structures in the ``graph``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># torchscript annoying-ness:</span>
+    <span class="n">graph_ptr</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">ptr</span>
+    <span class="k">if</span> <span class="n">graph_ptr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">graph_ptr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span></div>
+
+
+
+<div class="viewcode-block" id="structure_sizes">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.structure_sizes">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">structure_sizes</span><span class="p">(</span><span class="n">batch</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the number of atoms in each structure in the ``batch``, of shape</span>
+<span class="sd">    ``(S,)`` where ``S`` is the number of structures.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    batch</span>
+<span class="sd">        The batch to get the structure sizes for.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; len(graphs)</span>
+<span class="sd">    3</span>
+<span class="sd">    &gt;&gt;&gt; [number_of_atoms(g) for g in graphs]</span>
+<span class="sd">    [3, 4, 5]</span>
+<span class="sd">    &gt;&gt;&gt; structure_sizes(to_batch(graphs))</span>
+<span class="sd">    tensor([3, 4, 5])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># torchscript annoying-ness:</span>
+    <span class="n">graph_ptr</span> <span class="o">=</span> <span class="n">batch</span><span class="o">.</span><span class="n">ptr</span>
+    <span class="k">if</span> <span class="n">graph_ptr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">scalar_tensor</span><span class="p">(</span><span class="n">number_of_atoms</span><span class="p">(</span><span class="n">batch</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">graph_ptr</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">graph_ptr</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">edges_per_graph</span><span class="p">(</span><span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the number of edges in each structure in the ``batch``, of shape</span>
+<span class="sd">    ``(S,)`` where ``S`` is the number of structures.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_batch</span><span class="p">(</span><span class="n">graph</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">number_of_edges</span><span class="p">(</span><span class="n">graph</span><span class="p">)])</span>
+
+    <span class="k">assert</span> <span class="n">graph</span><span class="o">.</span><span class="n">ptr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="n">edges</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">central_atoms</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">neighbour_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">ptr</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">graph</span><span class="o">.</span><span class="n">ptr</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+        <span class="n">edges</span><span class="o">.</span><span class="n">append</span><span class="p">(((</span><span class="n">central_atoms</span> <span class="o">&gt;=</span> <span class="n">left</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">central_atoms</span> <span class="o">&lt;</span> <span class="n">right</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="number_of_neighbours">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.number_of_neighbours">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">number_of_neighbours</span><span class="p">(</span>
+    <span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">,</span>
+    <span class="n">include_central_atom</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get a tensor, ``T``, of shape ``(N,)``, where ``N`` is the number of atoms</span>
+<span class="sd">    in the ``graph``, such that ``T[i]`` gives the number of neighbours of atom</span>
+<span class="sd">    ``i``. If ``include_central_atom`` is ``True``, then the central atom is</span>
+<span class="sd">    included in the count.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    graph</span>
+<span class="sd">        The graph to get the number of neighbours for.</span>
+<span class="sd">    include_central_atom</span>
+<span class="sd">        Whether to include the central atom in the count.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">sum_over_neighbours</span><span class="p">(</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">neighbour_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+        <span class="n">graph</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">include_central_atom</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="available_properties">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.available_properties">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">available_properties</span><span class="p">(</span><span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PropertyKey</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the labels that are available on the ``graph``.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">cast</span><span class="p">(</span><span class="n">PropertyKey</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">properties</span><span class="p">]</span></div>
+
+
+
+<span class="c1">############################### ACTIONS ###############################</span>
+
+
+<div class="viewcode-block" id="is_local_property">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.is_local_property">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_local_property</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Is the property ``x`` local to each atom in the ``graph``?</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x</span>
+<span class="sd">        The property to check.</span>
+<span class="sd">    graph</span>
+<span class="sd">        The graph to check the property for.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">number_of_atoms</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="trim_edges">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.trim_edges">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">trim_edges</span><span class="p">(</span><span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AtomicGraph</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a new graph with edges trimmed to be no longer than the ``cutoff``.</span>
+<span class="sd">    Leaves the original graph unchanged.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    graph</span>
+<span class="sd">        The graph to trim the edges of.</span>
+<span class="sd">    cutoff</span>
+<span class="sd">        The maximum distance between atoms to keep the edge.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">existing_cutoff</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">cutoff</span>
+    <span class="k">if</span> <span class="n">existing_cutoff</span> <span class="o">+</span> <span class="mf">1e-5</span> <span class="o">&lt;</span> <span class="n">cutoff</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Graph already has a cutoff of </span><span class="si">{</span><span class="n">existing_cutoff</span><span class="si">}</span><span class="s2"> which is &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;less than the requested cutoff of </span><span class="si">{</span><span class="n">cutoff</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">graph</span>
+    <span class="k">elif</span> <span class="n">existing_cutoff</span> <span class="o">==</span> <span class="n">cutoff</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">graph</span>
+
+    <span class="n">distances</span> <span class="o">=</span> <span class="n">neighbour_distances</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">distances</span> <span class="o">&lt;=</span> <span class="n">cutoff</span>
+    <span class="n">neighbour_list</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">neighbour_list</span><span class="p">[:,</span> <span class="n">mask</span><span class="p">]</span>
+    <span class="n">neighbour_cell_offsets</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">neighbour_cell_offsets</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="p">:]</span>
+
+    <span class="k">return</span> <span class="n">replace</span><span class="p">(</span>
+        <span class="n">graph</span><span class="p">,</span>
+        <span class="n">neighbour_list</span><span class="o">=</span><span class="n">neighbour_list</span><span class="p">,</span>
+        <span class="n">neighbour_cell_offsets</span><span class="o">=</span><span class="n">neighbour_cell_offsets</span><span class="p">,</span>
+        <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="sum_over_central_atom_index">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.sum_over_central_atom_index">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sum_over_central_atom_index</span><span class="p">(</span>
+    <span class="n">p</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">central_atom_index</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Efficient, shape-preserving sum of a property, :math:`p`, defined over a</span>
+<span class="sd">    ``central_atom_index``, to get a per-atom property, :math:`P`,</span>
+<span class="sd">    such that:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        # i in central_atom_index</span>
+<span class="sd">        P[i] == torch.sum(p[central_atom_index == i], dim=0)</span>
+<span class="sd">        # i not in central_atom_index</span>
+<span class="sd">        P[i] == torch.zeros_like(p[0])</span>
+
+<span class="sd">    .. seealso::</span>
+
+<span class="sd">        :func:`sum_over_neighbours` for the explicit case where</span>
+<span class="sd">        ``p`` is a per-edge property.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    p</span>
+<span class="sd">        The property to sum, of shape ``(Y, ...)``.</span>
+<span class="sd">    central_atom_index</span>
+<span class="sd">        The central atoms relevant to each element of ``p``, of shape ``(Y,)``.</span>
+<span class="sd">    graph</span>
+<span class="sd">        The graph to sum the property for.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    P: torch.Tensor</span>
+<span class="sd">        The summed property, of shape ``(N, ...)``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">N</span> <span class="o">=</span> <span class="n">number_of_atoms</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+
+    <span class="c1"># optimised implementations for common cases</span>
+    <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">zeros</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">zeros</span><span class="o">.</span><span class="n">scatter_add</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">central_atom_index</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">p</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">zeros</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">zeros</span><span class="o">.</span><span class="n">scatter_add</span><span class="p">(</span>
+            <span class="mi">0</span><span class="p">,</span>
+            <span class="n">central_atom_index</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span>
+            <span class="n">p</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">N</span><span class="p">,)</span> <span class="o">+</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">zeros</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># return all zeros if there are no atoms</span>
+        <span class="k">return</span> <span class="n">zeros</span>
+
+    <span class="c1"># create `index`, where index.shape = p.shape</span>
+    <span class="c1"># and (index[e] == central_atoms[e]).all()</span>
+    <span class="n">ones</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">left_aligned_mul</span><span class="p">(</span><span class="n">ones</span><span class="p">,</span> <span class="n">central_atom_index</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">zeros</span><span class="o">.</span><span class="n">scatter_add</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="sum_over_neighbours">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.sum_over_neighbours">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sum_over_neighbours</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Shape-preserving sum over neighbours of a per-edge property, :math:`p_{ij}`,</span>
+<span class="sd">    to get a per-atom property, :math:`P_i`:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        P_i = \sum_{j \in \mathcal{N}_i} p_{ij}</span>
+
+<span class="sd">    where:</span>
+
+<span class="sd">    * :math:`\mathcal{N}_i` is the set of neighbours of atom :math:`i`.</span>
+<span class="sd">    * :math:`p_{ij}` is the property of the edge between atoms :math:`i` and</span>
+<span class="sd">      :math:`j`.</span>
+<span class="sd">    * :math:`p` is of shape :code:`(E, ...)` and :math:`P` is of shape</span>
+<span class="sd">      :code:`(N, ...)` where :math:`E` is the number of edges and :math:`N` is</span>
+<span class="sd">      the number of atoms. :code:`...` denotes any number of additional</span>
+<span class="sd">      dimensions, including none.</span>
+<span class="sd">    * :math:`P_i` = 0 if :math:`|\mathcal{N}_i| = 0`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    p</span>
+<span class="sd">        The per-edge property to sum.</span>
+<span class="sd">    graph</span>
+<span class="sd">        The graph to sum the property for.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">sum_over_central_atom_index</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">graph</span><span class="o">.</span><span class="n">neighbour_list</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">graph</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="sum_per_structure">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.sum_per_structure">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sum_per_structure</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Shape-preserving sum of a per-atom property, :math:`p`, to get a</span>
+<span class="sd">    per-structure property, :math:`P`:</span>
+
+<span class="sd">    If a single structure, containing ``N`` atoms, is used, then</span>
+<span class="sd">    :math:`P = \sum_i p_i`, where:</span>
+
+<span class="sd">    * :math:`p_i` is of shape ``(N, ...)``</span>
+<span class="sd">    * :math:`P` is of shape ``(...)``</span>
+<span class="sd">    * ``...`` denotes any</span>
+<span class="sd">      number of additional dimensions, including ``None``.</span>
+
+<span class="sd">    If a batch of ``S`` structures, containing a total of ``N`` atoms, is</span>
+<span class="sd">    used, then :math:`P_k = \sum_{k \in K} p_k`, where:</span>
+
+<span class="sd">    * :math:`K` is the collection of all atoms in structure :math:`k`</span>
+<span class="sd">    * :math:`p_i` is of shape ``(N, ...)``</span>
+<span class="sd">    * :math:`P` is of shape ``(S, ...)``</span>
+<span class="sd">    * ``...`` denotes any</span>
+<span class="sd">      number of additional dimensions, including ``None``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x</span>
+<span class="sd">        The per-atom property to sum.</span>
+<span class="sd">    graph</span>
+<span class="sd">        The graph to sum the property for.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Single graph case:</span>
+
+<span class="sd">    &gt;&gt;&gt; import torch</span>
+<span class="sd">    &gt;&gt;&gt; from ase.build import molecule</span>
+<span class="sd">    &gt;&gt;&gt; from graph_pes.atomic_graph import sum_per_structure, AtomicGraph</span>
+<span class="sd">    &gt;&gt;&gt; water = molecule(&quot;H2O&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; graph = AtomicGraph.from_ase(water, cutoff=1.5)</span>
+<span class="sd">    &gt;&gt;&gt; # summing over a vector gives a scalar</span>
+<span class="sd">    &gt;&gt;&gt; sum_per_structure(torch.ones(3), graph)</span>
+<span class="sd">    tensor(3.)</span>
+<span class="sd">    &gt;&gt;&gt; # summing over higher order tensors gives a tensor</span>
+<span class="sd">    &gt;&gt;&gt; sum_per_structure(torch.ones(3, 2, 3), graph).shape</span>
+<span class="sd">    torch.Size([2, 3])</span>
+
+<span class="sd">    Batch case:</span>
+
+<span class="sd">    &gt;&gt;&gt; import torch</span>
+<span class="sd">    &gt;&gt;&gt; from ase.build import molecule</span>
+<span class="sd">    &gt;&gt;&gt; from graph_pes.atomic_graph import sum_per_structure, AtomicGraph, to_batch</span>
+<span class="sd">    &gt;&gt;&gt; water = molecule(&quot;H2O&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; graph = AtomicGraph.from_ase(water, cutoff=1.5)</span>
+<span class="sd">    &gt;&gt;&gt; batch = to_batch([graph, graph])</span>
+<span class="sd">    &gt;&gt;&gt; batch</span>
+<span class="sd">    AtomicGraphBatch(structures: 2, atoms: 6, edges: 8, has_cell: False)</span>
+<span class="sd">    &gt;&gt;&gt; # summing over a vector gives a tensor</span>
+<span class="sd">    &gt;&gt;&gt; sum_per_structure(torch.ones(6), graph)</span>
+<span class="sd">    tensor([3., 3.])</span>
+<span class="sd">    &gt;&gt;&gt; # summing over higher order tensors gives a tensor</span>
+<span class="sd">    &gt;&gt;&gt; sum_per_structure(torch.ones(6, 3, 4), graph).shape</span>
+<span class="sd">    torch.Size([2, 3, 4])</span>
+<span class="sd">    &quot;&quot;&quot;</span>  <span class="c1"># noqa: E501</span>
+
+    <span class="c1"># torchscript annoying-ness:</span>
+    <span class="n">graph_batch</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">batch</span>
+    <span class="k">if</span> <span class="n">graph_batch</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">number_of_structures</span><span class="p">(</span><span class="n">graph</span><span class="p">),)</span> <span class="o">+</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="n">zeros</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">left_aligned_mul</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">graph_batch</span><span class="p">)</span><span class="o">.</span><span class="n">long</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">zeros</span><span class="o">.</span><span class="n">scatter_add</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="index_over_neighbours">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.index_over_neighbours">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">index_over_neighbours</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Index a per-atom property, :math:`x`, over the neighbours of each atom in</span>
+<span class="sd">    the ``graph``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">[</span><span class="n">graph</span><span class="o">.</span><span class="n">neighbour_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span></div>
+
+
+
+<div class="viewcode-block" id="divide_per_atom">
+<a class="viewcode-back" href="../../data/atomic_graph.html#graph_pes.divide_per_atom">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">divide_per_atom</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Divide a per-structure property, :math:`X`, by the number of atoms in each</span>
+<span class="sd">    structure to get a per-atom property, :math:`x`:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        x_i = \frac{X_k}{N_k}</span>
+
+<span class="sd">    where:</span>
+
+<span class="sd">    * :math:`X` is of shape ``(S, ...)``</span>
+<span class="sd">    * :math:`x` is of shape ``(N, ...)``</span>
+<span class="sd">    * :math:`S` is the number of structures</span>
+<span class="sd">    * :math:`N` is the number of atoms</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">left_aligned_div</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">structure_sizes</span><span class="p">(</span><span class="n">graph</span><span class="p">))</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">edge_wise_softmax</span><span class="p">(</span>
+    <span class="n">l</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>  <span class="c1"># (E, 1)</span>
+    <span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">,</span>
+    <span class="n">aggregation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;senders&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>  <span class="c1"># (E, 1)</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate a softmax score for each directed edge from per-edge logits.</span>
+
+<span class="sd">    For ``aggregation=&quot;senders&quot;``, the softmax score is computed over the</span>
+<span class="sd">    sending atoms of each edge:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        s_{i \rightarrow j} = \frac</span>
+<span class="sd">            {e^{l_{i \rightarrow j}}}</span>
+<span class="sd">            {\sum_{k \in \mathcal{N}_i} e^{l_{i \rightarrow k}}}</span>
+
+<span class="sd">    where :math:`\mathcal{N}_i` is the set of neighbours of atom :math:`i`.</span>
+
+<span class="sd">    For ``aggregation=&quot;receivers&quot;``, the softmax score is computed over the</span>
+<span class="sd">    receiving atoms of each edge:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        s_{i \rightarrow j} = \frac</span>
+<span class="sd">            {e^{l_{i \rightarrow j}}}</span>
+<span class="sd">            {\sum_{k \in \mathcal{N}_j} e^{l_{k \rightarrow j}}}</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    l</span>
+<span class="sd">        The per-edge logits, of shape ``(E,)``.</span>
+<span class="sd">    graph</span>
+<span class="sd">        The graph to compute the softmax for.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    s</span>
+<span class="sd">        The per-edge softmax scores, of shape ``(E,)``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># TODO: subtract max logit for each sender/receiver for numerical stability</span>
+
+    <span class="k">if</span> <span class="n">aggregation</span> <span class="o">==</span> <span class="s2">&quot;senders&quot;</span><span class="p">:</span>
+        <span class="n">edge_index</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">neighbour_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">aggregation</span> <span class="o">==</span> <span class="s2">&quot;receivers&quot;</span><span class="p">:</span>
+        <span class="n">edge_index</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">neighbour_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid aggregation: </span><span class="si">{</span><span class="n">aggregation</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">exp</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>  <span class="c1"># (E, 1)</span>
+    <span class="n">per_atom_denom</span> <span class="o">=</span> <span class="n">sum_over_central_atom_index</span><span class="p">(</span>  <span class="c1"># (N, 1)</span>
+        <span class="n">exp</span><span class="p">,</span> <span class="n">edge_index</span><span class="p">,</span> <span class="n">graph</span>
+    <span class="p">)</span>
+    <span class="n">per_edge_denom</span> <span class="o">=</span> <span class="n">per_atom_denom</span><span class="p">[</span><span class="n">edge_index</span><span class="p">]</span>  <span class="c1"># (E, 1)</span>
+    <span class="k">return</span> <span class="n">exp</span> <span class="o">/</span> <span class="n">per_edge_denom</span>  <span class="c1"># (E, 1)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">remove_mean_and_net_torque</span><span class="p">(</span>
+    <span class="n">v</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>  <span class="c1"># (N, 3)</span>
+    <span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>  <span class="c1"># (N, 3)</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Remove the mean and net torque per (optionally batched) structure</span>
+<span class="sd">    from a collection of per-node vectors, ``v``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_batch</span><span class="p">(</span><span class="n">graph</span><span class="p">):</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">v</span> <span class="o">-</span> <span class="n">v</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">batch</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">batch</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+
+        <span class="n">_sum</span> <span class="o">=</span> <span class="n">sum_per_structure</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">graph</span><span class="p">)</span>  <span class="c1"># (S, 3)</span>
+        <span class="n">mean</span> <span class="o">=</span> <span class="n">_sum</span> <span class="o">/</span> <span class="n">structure_sizes</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># (S, 3)</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">v</span> <span class="o">-</span> <span class="n">mean</span><span class="p">[</span><span class="n">batch</span><span class="p">]</span>  <span class="c1"># (N, 3)</span>
+
+    <span class="c1"># torch script annoying-ness:</span>
+    <span class="n">pbc</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">pbc</span>
+    <span class="k">if</span> <span class="n">pbc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: SIM102</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">pbc</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">v</span>
+
+    <span class="c1"># TODO: remove net torque</span>
+    <span class="k">return</span> <span class="n">v</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">keep_at_most_k_neighbours</span><span class="p">(</span>
+    <span class="n">graph</span><span class="p">:</span> <span class="n">AtomicGraph</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AtomicGraph</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Prune the graph by only keeping the edges corresponding to the</span>
+<span class="sd">    ``k`` nearest neighbours of each atom.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    graph</span>
+<span class="sd">        The graph to prune.</span>
+<span class="sd">    k</span>
+<span class="sd">        The maximum number of neighbours to keep for each atom.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">distances</span> <span class="o">=</span> <span class="n">neighbour_distances</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+
+    <span class="n">new_nl</span><span class="p">,</span> <span class="n">new_offsets</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_of_atoms</span><span class="p">(</span><span class="n">graph</span><span class="p">)):</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">neighbour_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">i</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">distances</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">elif</span> <span class="n">d</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">:</span>
+            <span class="n">new_nl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">neighbour_list</span><span class="p">[:,</span> <span class="n">mask</span><span class="p">])</span>
+            <span class="n">new_offsets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">neighbour_cell_offsets</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">topk</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">largest</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">new_nl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">neighbour_list</span><span class="p">[:,</span> <span class="n">mask</span><span class="p">][:,</span> <span class="n">topk</span><span class="o">.</span><span class="n">indices</span><span class="p">])</span>
+            <span class="n">new_offsets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">neighbour_cell_offsets</span><span class="p">[</span><span class="n">mask</span><span class="p">][</span><span class="n">topk</span><span class="o">.</span><span class="n">indices</span><span class="p">])</span>
+
+    <span class="n">new_nl</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">new_nl</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">new_offsets</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">new_offsets</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">replace</span><span class="p">(</span>
+        <span class="n">graph</span><span class="p">,</span>
+        <span class="n">neighbour_list</span><span class="o">=</span><span class="n">new_nl</span><span class="p">,</span>
+        <span class="n">neighbour_cell_offsets</span><span class="o">=</span><span class="n">new_offsets</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="c1"># only script if not a sphinx build (breaks the docs otherwise)</span>
+<span class="k">if</span> <span class="s2">&quot;sphinx&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
+    <span class="n">keep_at_most_k_neighbours</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">script</span><span class="p">(</span><span class="n">keep_at_most_k_neighbours</span><span class="p">)</span>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023-2025, John Gardner
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=cb850272"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=35fd3fb5"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    </body>
+</html>

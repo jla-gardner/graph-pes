@@ -1,0 +1,981 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" /><link rel="next" title="Example configs" href="examples.html" /><link rel="prev" title="The basics" href="the-basics.html" />
+
+    <!-- Generated with Sphinx 7.4.7 and Furo 2024.08.06 -->
+        <title>Config options - graph-pes</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=05238f3f" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f0f0f0;
+  --color-code-foreground: black;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">graph-pes</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../../_static/logo-square.svg" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../quickstart/root.html">Tutorials</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Tutorials</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart/quickstart.html">Train a model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart/quickstart.html#Model-analysis">Model analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart/fine-tuning.html">Fine-tuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart/implement-a-model.html">Implement a model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../quickstart/custom-training-loop.html">Custom training loops</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CLI Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="root.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code></a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of graph-pes-train</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="the-basics.html">The basics</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Config options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html">Example configs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../graph-pes-resume.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-resume</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../graph-pes-test.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../graph-pes-id.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-id</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../data/root.html">Data</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Data</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../data/atomic_graph.html">Atomic Graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../data/datasets.html">Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../data/loader.html">Loader</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../models/root.html">Models</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of Models</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../models/addition.html">Addition Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../models/offsets.html">Energy Offset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../models/pairwise.html">Pair Potentials</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../models/many-body/root.html">Many Body Models</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of Many Body Models</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/stillinger-weber.html">Stillinger-Weber</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/eddp.html">EDDP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/schnet.html">SchNet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/painn.html">PaiNN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/nequip.html">NequIP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/mace.html">MACE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/tensornet.html">TensorNet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../models/many-body/orb.html">Orb</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../fitting/root.html">Fitting</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of Fitting</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../fitting/losses.html">Losses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../fitting/optimizers.html">Optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../fitting/callbacks.html">Callbacks</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../building-blocks/root.html">Building blocks</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of Building blocks</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../building-blocks/distances.html">Distance Expansions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../building-blocks/envelopes.html">Envelopes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../building-blocks/aggregation.html">Aggregation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../building-blocks/scaling.html">Scaling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../building-blocks/nn.html">PyTorch Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../building-blocks/e3nn.html"><code class="docutils literal notranslate"><span class="pre">e3nn</span></code> Helpers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../utils.html">Utils</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Interfaces</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../interfaces/mace.html"><code class="docutils literal notranslate"><span class="pre">mace-torch</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../interfaces/mattersim.html"><code class="docutils literal notranslate"><span class="pre">mattersim</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../interfaces/orb.html"><code class="docutils literal notranslate"><span class="pre">orb-models</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/torch-sim.html"><code class="docutils literal notranslate"><span class="pre">torch-sim</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/ase.html">ASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/lammps.html">LAMMPS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/analysis.html">Analysis</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../theory.html">Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../development.html">Development</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../../_sources/cli/graph-pes-train/complete-docs.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="config-options">
+<h1>Config options<a class="headerlink" href="#config-options" title="Link to this heading">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> is configured using a nested dictionary of options.
+The top-level keys that we look for are: <code class="docutils literal notranslate"><span class="pre">model</span></code>, <code class="docutils literal notranslate"><span class="pre">data</span></code>, <code class="docutils literal notranslate"><span class="pre">loss</span></code>, <code class="docutils literal notranslate"><span class="pre">fitting</span></code>, <code class="docutils literal notranslate"><span class="pre">general</span></code> and <code class="docutils literal notranslate"><span class="pre">wandb</span></code>.</p>
+<p>You are free to add any additional top-level keys to your config files for your own purposes. This can be useful for easily referencing constants or repeated values using the <code class="docutils literal notranslate"><span class="pre">=</span></code> <a class="reference external" href="https://github.com/jla-gardner/data2objects">reference syntax</a>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># define a constant...</span>
+<span class="nt">CUTOFF</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0</span>
+
+<span class="c1"># ... and reference it later</span>
+<span class="nt">model</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+SchNet</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">=/CUTOFF</span>
+</pre></div>
+</div>
+<p>You will also notice the <code class="docutils literal notranslate"><span class="pre">+</span></code> syntax used throughout. Under-the-hood, we use the <a class="reference external" href="https://github.com/jla-gardner/data2objects">data2objects</a> library to parse these config files, and this syntax is used to automatically instantiate objects.</p>
+<p>You can use this syntax to reference arbitrary python functions, classes and objects:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># call your own functions/class constructors</span>
+<span class="c1"># with the ``+`` syntax and key word arguments</span>
+<span class="nt">key</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+my_module.my_function</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">foo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">        </span><span class="nt">bar</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+
+<span class="c1"># syntactic sugar for calling a function</span>
+<span class="c1"># with no arguments</span>
+<span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+torch.nn.ReLU()</span>
+
+<span class="c1"># reference arbitrary objects</span>
+<span class="c1"># (note the lack of any key word arguments or parentheses)</span>
+<span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+my_module.my_object</span>
+</pre></div>
+</div>
+<p>By default, we will look for any objects in the <code class="docutils literal notranslate"><span class="pre">graph_pes</span></code> namespace, and hence <code class="docutils literal notranslate"><span class="pre">+SchNet</span></code> is shorthand for <code class="docutils literal notranslate"><span class="pre">graph_pes.models.SchNet</span></code> etc.</p>
+<section id="model">
+<h2><code class="docutils literal notranslate"><span class="pre">model</span></code><a class="headerlink" href="#model" title="Link to this heading">¶</a></h2>
+<p>To specify the model to train, you need to point to something that instantiates a <a class="reference internal" href="../../models/root.html#graph_pes.GraphPESModel" title="graph_pes.GraphPESModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">GraphPESModel</span></code></a>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># point to the in-built Lennard-Jones model</span>
+<span class="nt">model</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+LennardJones</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">sigma</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span>
+<span class="w">        </span><span class="nt">epsilon</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+<span class="c1"># or point to a custom model</span>
+<span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+my_model.SpecialModel()</span>
+</pre></div>
+</div>
+<p>…or pass a dictionary mapping custom names to <a class="reference internal" href="../../models/root.html#graph_pes.GraphPESModel" title="graph_pes.GraphPESModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">GraphPESModel</span></code></a> objects:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">offset</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+FixedOffset</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> H</span><span class="p">:</span><span class="w"> </span><span class="nv">-123.4</span><span class="p p-Indicator">,</span><span class="nt"> C</span><span class="p">:</span><span class="w"> </span><span class="nv">-456.7</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">many-body</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+SchNet()</span>
+</pre></div>
+</div>
+<p>The latter approach will be used to instantiate an <a class="reference internal" href="../../models/addition.html#graph_pes.models.AdditionModel" title="graph_pes.models.AdditionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdditionModel</span></code></a>, in this case with <a class="reference internal" href="../../models/offsets.html#graph_pes.models.FixedOffset" title="graph_pes.models.FixedOffset"><code class="xref py py-class docutils literal notranslate"><span class="pre">FixedOffset</span></code></a> and
+<a class="reference internal" href="../../models/many-body/schnet.html#graph_pes.models.SchNet" title="graph_pes.models.SchNet"><code class="xref py py-class docutils literal notranslate"><span class="pre">SchNet</span></code></a> components. This is a useful approach
+for dealing with arbitrary offset energies.</p>
+<p>You can fine-tune an existing model by pointing <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> to an existing model:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+load_model</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/model.pt</span>
+</pre></div>
+</div>
+<p>You could also load in parts of a model if e.g. you are fine-tuning on a different level of theory with different offsets:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">offset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+LearnableOffset()</span>
+<span class="w">    </span><span class="nt">force_field</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+load_model_component</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/model.pt</span>
+<span class="w">            </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">many-body</span>
+</pre></div>
+</div>
+<p>See <a class="reference external" href="https://jla-gardner.github.io/graph-pes/quickstart/quickstart.html#Fine-tuning">the fine-tuning guide</a>,
+<a class="reference internal" href="../../models/root.html#graph_pes.models.load_model" title="graph_pes.models.load_model"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_model()</span></code></a>, and <a class="reference internal" href="../../models/root.html#graph_pes.models.load_model_component" title="graph_pes.models.load_model_component"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_model_component()</span></code></a> for more details.</p>
+</section>
+<section id="data">
+<h2><code class="docutils literal notranslate"><span class="pre">data</span></code><a class="headerlink" href="#data" title="Link to this heading">¶</a></h2>
+<p>There are various ways to specify the data you wish to use.</p>
+<p>The simplest is to point to a dictionary showing where your training, validation and (optionally) test data are located:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">train</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/train.xyz</span>
+<span class="w">    </span><span class="nt">valid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/valid.xyz</span>
+<span class="w">    </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/test.xyz</span><span class="w">  </span><span class="c1"># results logged to &quot;test/test/&lt;metric_name&gt;&quot;</span>
+</pre></div>
+</div>
+<p>Note that the <code class="docutils literal notranslate"><span class="pre">test</span></code> key can point either to a single dataset as above, or to a dictionary of several named test sets:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">train</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/train.xyz</span>
+<span class="w">    </span><span class="nt">valid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/valid.xyz</span>
+<span class="w">    </span><span class="nt">test</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">bulk</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/bulk-test.xyz</span><span class="w">  </span><span class="c1"># results logged to &quot;test/bulk/&lt;metric_name&gt;&quot;</span>
+<span class="w">        </span><span class="nt">slab</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/slab-test.xyz</span><span class="w">  </span><span class="c1"># results logged to &quot;test/slab/&lt;metric_name&gt;&quot;</span>
+</pre></div>
+</div>
+<p>Under the hood, these file-paths are passed to the <a class="reference internal" href="../../data/datasets.html#graph_pes.data.file_dataset" title="graph_pes.data.file_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">file_dataset()</span></code></a> function, together with the <code class="docutils literal notranslate"><span class="pre">cutoff</span></code> of the model you are training.</p>
+<p>You can achieve more-fine grained control by instead providing a dictionary of keys to pass to the <a class="reference internal" href="../../data/datasets.html#graph_pes.data.file_dataset" title="graph_pes.data.file_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">file_dataset()</span></code></a> function:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">train</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># take a random sample of 1000 graphs to train on</span>
+<span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/train.xyz</span>
+<span class="w">        </span><span class="nt">n</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">        </span><span class="nt">shuffle</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">42</span>
+<span class="w">    </span><span class="nt">valid</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># use the first 100 graphs in the validation set</span>
+<span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/valid.db</span>
+<span class="w">        </span><span class="nt">n</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">        </span><span class="nt">shuffle</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The files can be any plain-text file that can be read by <a class="reference external" href="https://ase-lib.org/ase/io/io.html#ase.io.read" title="(in ASE)"><code class="xref py py-func docutils literal notranslate"><span class="pre">ase.io.read()</span></code></a>, e.g. an <code class="docutils literal notranslate"><span class="pre">.xyz</span></code> file, or a <code class="docutils literal notranslate"><span class="pre">.db</span></code> file containing a SQLite database of <a class="reference external" href="https://ase-lib.org/ase/atoms.html#ase.Atoms" title="(in ASE)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ase.Atoms</span></code></a> objects that is readable as an <a class="reference external" href="https://wiki.fysik.dtu.dk/ase/ase/db/db.html">ASE database</a>.</p>
+</div>
+<p>Alternatively, you are able to point to any python function that returns a <a class="reference internal" href="../../data/datasets.html#graph_pes.data.GraphDataset" title="graph_pes.data.GraphDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">GraphDataset</span></code></a> instance:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">train</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+my_module.my_training_set()</span>
+<span class="w">    </span><span class="nt">valid</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+file_dataset</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/valid.xyz</span>
+<span class="w">            </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
+</pre></div>
+</div>
+<p>Finally, you can also just point the <code class="docutils literal notranslate"><span class="pre">data</span></code> key directly to a <a class="reference internal" href="../../data/datasets.html#graph_pes.data.DatasetCollection" title="graph_pes.data.DatasetCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetCollection</span></code></a> instance:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+my_module.my_dataset_collection()</span>
+</pre></div>
+</div>
+<p>This is exactly what the <a class="reference internal" href="../../data/datasets.html#graph_pes.data.load_atoms_dataset" title="graph_pes.data.load_atoms_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_atoms_dataset()</span></code></a> function does:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">data</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+load_atoms_dataset</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">QM9</span>
+<span class="w">        </span><span class="nt">cutoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
+<span class="w">        </span><span class="nt">n_train</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000</span>
+<span class="w">        </span><span class="nt">n_val</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">        </span><span class="nt">property_map</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">energy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">U0</span>
+</pre></div>
+</div>
+</section>
+<section id="loss">
+<h2><code class="docutils literal notranslate"><span class="pre">loss</span></code><a class="headerlink" href="#loss" title="Link to this heading">¶</a></h2>
+<p>This config section should either point to something that instantiates a single
+<a class="reference internal" href="../../fitting/losses.html#graph_pes.training.loss.Loss" title="graph_pes.training.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">graph_pes.training.loss.Loss</span></code></a> object…</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># basic per-atom energy loss</span>
+<span class="nt">loss</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+PerAtomEnergyLoss()</span>
+
+<span class="c1"># or more fine-grained control</span>
+<span class="nt">loss</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+PropertyLoss</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">property</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stress</span>
+<span class="w">        </span><span class="nt">metric</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MAE</span><span class="w">  </span><span class="c1"># defaults to RMSE if not specified</span>
+</pre></div>
+</div>
+<p>…or specify a list of <a class="reference internal" href="../../fitting/losses.html#graph_pes.training.loss.Loss" title="graph_pes.training.loss.Loss"><code class="xref py py-class docutils literal notranslate"><span class="pre">Loss</span></code></a> instances…</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">loss</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># specify a loss with several components:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+PerAtomEnergyLoss()</span><span class="w">  </span><span class="c1"># defaults to weight 1.0</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">+PropertyLoss</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">property</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">forces</span>
+<span class="w">        </span><span class="nt">metric</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MSE</span>
+<span class="w">        </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0</span>
+</pre></div>
+</div>
+<p>…or point to your own custom loss implementation, either in isolation:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">loss</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+my.module.CustomLoss</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> alpha</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</pre></div>
+</div>
+<p>…or in conjunction with other components:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">loss</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+PerAtomEnergyLoss()</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">+my.module.CustomLoss</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> alpha</span><span class="p">:</span><span class="w"> </span><span class="nv">0.5</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</pre></div>
+</div>
+<p>If you want to sweep over a loss component weight via the command line, you can use a
+dictionary mapping arbitrary strings to loss instances like so:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">loss</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">energy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+PerAtomEnergyLoss()</span>
+<span class="w">    </span><span class="nt">forces</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">+ForceRMSE</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
+</pre></div>
+</div>
+<p>allowing you to run a command such as:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="w"> </span>weight<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">0</span>.1<span class="w"> </span><span class="m">0</span>.5<span class="w"> </span><span class="m">1</span>.0<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span>graph-pes-train<span class="w"> </span>config.yaml<span class="w"> </span>loss/forces/+ForceRMSE/weight<span class="o">=</span><span class="nv">$weight</span>
+<span class="k">done</span>
+</pre></div>
+</div>
+</section>
+<section id="fitting">
+<h2><code class="docutils literal notranslate"><span class="pre">fitting</span></code><a class="headerlink" href="#fitting" title="Link to this heading">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">fitting</span></code> section of the config is used to specify various hyperparameters and behaviours of the training process.</p>
+<section id="optimizer">
+<h3>Optimizer<a class="headerlink" href="#optimizer" title="Link to this heading">¶</a></h3>
+<p>Configure the optimizer used to train the model, either by providing a dictionary of keyword arguments to the <a class="reference internal" href="../../fitting/optimizers.html#graph_pes.training.opt.Optimizer" title="graph_pes.training.opt.Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code></a> constructor:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">optimizer</span><span class="p">:</span>
+<span class="w">        </span><span class="c1"># these are the default values</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Adam</span>
+<span class="w">        </span><span class="nt">lr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3e-3</span>
+<span class="w">        </span><span class="nt">weight_decay</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<span class="w">        </span><span class="nt">amsgrad</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+<p>or by pointing to something that instantiates a <a class="reference internal" href="../../fitting/optimizers.html#graph_pes.training.opt.Optimizer" title="graph_pes.training.opt.Optimizer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code></a>, for instance using your own code:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">optimizer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+my.module.MagicOptimizer()</span>
+</pre></div>
+</div>
+</section>
+<section id="learning-rate-scheduler">
+<span id="id1"></span><h3>Learning rate scheduler<a class="headerlink" href="#learning-rate-scheduler" title="Link to this heading">¶</a></h3>
+<p>Configure the learning rate scheduler to use to train the model by specifying a dictionary of keyword arguments to the <a class="reference internal" href="../../fitting/optimizers.html#graph_pes.training.opt.LRScheduler" title="graph_pes.training.opt.LRScheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">LRScheduler</span></code></a> constructor:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">scheduler</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ReduceLROnPlateau</span>
+<span class="w">        </span><span class="nt">factor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
+<span class="w">        </span><span class="nt">patience</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+</pre></div>
+</div>
+<p>By default, no learning rate scheduler is used if you don’t specify one, or if you specify <code class="docutils literal notranslate"><span class="pre">null</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">scheduler</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+</pre></div>
+</div>
+<p>If you want to use a learning rate warm up, you can do so by specifying the number of training steps over which to warm up the learning rate:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">lr_warmup_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+</pre></div>
+</div>
+<p>This is compatible with specifying any other learning rate scheduler in the <code class="docutils literal notranslate"><span class="pre">scheduler</span></code> field: once the warmup is complete, the original scheduler is restored and used.
+By default, no warmup is used.</p>
+</section>
+<section id="model-pre-fitting">
+<h3>Model pre-fitting<a class="headerlink" href="#model-pre-fitting" title="Link to this heading">¶</a></h3>
+<p>To turn off <a class="reference internal" href="the-basics.html#pre-fit-model"><span class="std std-ref">pre-fitting of the model</span></a>, override the <code class="docutils literal notranslate"><span class="pre">pre_fit_model</span></code> field (default is <code class="docutils literal notranslate"><span class="pre">true</span></code>):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">pre_fit_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+<p>To set the maximum number of graphs to use for <a class="reference internal" href="the-basics.html#pre-fit-model"><span class="std std-ref">pre-fitting</span></a>, override the <code class="docutils literal notranslate"><span class="pre">max_n_pre_fit</span></code> field (default is <code class="docutils literal notranslate"><span class="pre">5_000</span></code>). These graphs will be randomly sampled from the training data. To use all the training data, set this to <code class="docutils literal notranslate"><span class="pre">null</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">max_n_pre_fit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+</pre></div>
+</div>
+</section>
+<section id="reference-energies">
+<h3>Reference energies<a class="headerlink" href="#reference-energies" title="Link to this heading">¶</a></h3>
+<p>If you know the reference energies for your dataset, you can construct an <a class="reference internal" href="../../models/addition.html#graph_pes.models.AdditionModel" title="graph_pes.models.AdditionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdditionModel</span></code></a> with a <a class="reference internal" href="../../models/offsets.html#graph_pes.models.FixedOffset" title="graph_pes.models.FixedOffset"><code class="xref py py-class docutils literal notranslate"><span class="pre">FixedOffset</span></code></a> component (see e.g. <a class="reference external" href="https://jla-gardner.github.io/graph-pes/cli/graph-pes-train/examples.html#realistic-config">here</a>).</p>
+<p>If, however, you want <cite>graph-pes</cite> to make an educated guess at the mean energy per element in your training data, you can pass the following option:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">auto_fit_reference_energies</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
+<p>See the <a class="reference internal" href="../../quickstart/fine-tuning.html"><span class="doc">fine-tuning guide</span></a> for more details.</p>
+</section>
+<section id="early-stopping">
+<h3>Early stopping<a class="headerlink" href="#early-stopping" title="Link to this heading">¶</a></h3>
+<p>Turn on early stopping by setting the <code class="docutils literal notranslate"><span class="pre">early_stopping</span></code> field to a dictionary with keys corresponding to the <a class="reference internal" href="#graph_pes.config.training.EarlyStoppingConfig" title="graph_pes.config.training.EarlyStoppingConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">EarlyStoppingConfig</span></code></a> class.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.config.training.EarlyStoppingConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.config.training.</span></span><span class="sig-name descname"><span class="pre">EarlyStoppingConfig</span></span><a class="reference internal" href="../../_modules/graph_pes/config/training.html#EarlyStoppingConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.config.training.EarlyStoppingConfig" title="Link to this definition">¶</a></dt>
+<dd><p>EarlyStoppingConfig(patience: ‘int’, min_delta: ‘float’ = 0.0, monitor: ‘str’ = ‘valid/loss/total’)</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.training.EarlyStoppingConfig.patience">
+<span class="sig-name descname"><span class="pre">patience</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#graph_pes.config.training.EarlyStoppingConfig.patience" title="Link to this definition">¶</a></dt>
+<dd><p>The number of validation checks with no improvement before stopping.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.training.EarlyStoppingConfig.min_delta">
+<span class="sig-name descname"><span class="pre">min_delta</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></em><a class="headerlink" href="#graph_pes.config.training.EarlyStoppingConfig.min_delta" title="Link to this definition">¶</a></dt>
+<dd><p>The minimum change in the monitored quantity to qualify as an improvement.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.training.EarlyStoppingConfig.monitor">
+<span class="sig-name descname"><span class="pre">monitor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'valid/loss/total'</span></em><a class="headerlink" href="#graph_pes.config.training.EarlyStoppingConfig.monitor" title="Link to this definition">¶</a></dt>
+<dd><p>The quantity to monitor.</p>
+</dd></dl>
+
+</dd></dl>
+
+<p>The minimal required config for early stopping:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">early_stopping</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">patience</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+</pre></div>
+</div>
+<p>Achieve more fine-grained control:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">early_stopping</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">monitor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">valid/metrics/forces_rmse</span><span class="w">  </span><span class="c1"># early stop on forces...</span>
+<span class="w">        </span><span class="nt">patience</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w">  </span><span class="c1"># ... after 10 checks with no improvement</span>
+<span class="w">        </span><span class="nt">min_delta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.01</span><span class="w">  </span><span class="c1"># ... with a minimum change of 0.01 in the rmse</span>
+</pre></div>
+</div>
+</section>
+<section id="data-loaders">
+<h3>Data loaders<a class="headerlink" href="#data-loaders" title="Link to this heading">¶</a></h3>
+<p>Data loaders are responsible for sampling batches of data from the dataset. We use <a class="reference internal" href="../../data/loader.html#graph_pes.data.loader.GraphDataLoader" title="graph_pes.data.loader.GraphDataLoader"><code class="xref py py-class docutils literal notranslate"><span class="pre">GraphDataLoader</span></code></a> instances to do this. These inherit from the PyTorch <a class="reference external" href="https://docs.pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader" title="(in PyTorch v2.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataLoader</span></code></a> class, and hence you can pass any key word arguments to the underlying loader by setting the <code class="docutils literal notranslate"><span class="pre">loader_kwargs</span></code> field:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">loader_kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">42</span>
+<span class="w">        </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<span class="w">        </span><span class="nt">persistent_workers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">num_workers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+</pre></div>
+</div>
+<p>See the <a class="reference external" href="https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader">PyTorch documentation</a> for details.</p>
+<p>We reccommend using several, persistent workers, since loading data can be a bottleneck, either due to expensive read operations from disk, or due to the time taken to convert the underlying data into <a class="reference internal" href="../../data/atomic_graph.html#graph_pes.AtomicGraph" title="graph_pes.AtomicGraph"><code class="xref py py-class docutils literal notranslate"><span class="pre">AtomicGraph</span></code></a> objects (calculating neighbour lists etc.).</p>
+<p>Caution: setting the <code class="docutils literal notranslate"><span class="pre">shuffle</span></code> field here will have no effect: we always shuffle the training data, and keep the validation and testing data in order.</p>
+</section>
+<section id="stochastic-weight-averaging">
+<span id="swa"></span><h3>Stochastic weight averaging<a class="headerlink" href="#stochastic-weight-averaging" title="Link to this heading">¶</a></h3>
+<p>Configure stochastic weight averaging (SWA) by specifying fields from the <a class="reference internal" href="#graph_pes.config.training.SWAConfig" title="graph_pes.config.training.SWAConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">SWAConfig</span></code></a> class, e.g.:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">swa</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">lr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1e-3</span>
+<span class="w">        </span><span class="nt">start</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.8</span>
+<span class="w">        </span><span class="nt">anneal_epochs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.config.training.SWAConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.config.training.</span></span><span class="sig-name descname"><span class="pre">SWAConfig</span></span><a class="reference internal" href="../../_modules/graph_pes/config/training.html#SWAConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.config.training.SWAConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for Stochastic Weight Averaging.</p>
+<p>Internally, this is handled by <a class="reference external" href="https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.StochasticWeightAveraging.html">this PyTorch Lightning callback</a>.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.training.SWAConfig.lr">
+<span class="sig-name descname"><span class="pre">lr</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#graph_pes.config.training.SWAConfig.lr" title="Link to this definition">¶</a></dt>
+<dd><p>The learning rate to use during the SWA phase. If not specified,
+the learning rate from the end of the training phase will be used.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.training.SWAConfig.start">
+<span class="sig-name descname"><span class="pre">start</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.8</span></em><a class="headerlink" href="#graph_pes.config.training.SWAConfig.start" title="Link to this definition">¶</a></dt>
+<dd><p>The epoch at which to start SWA. If a float, it will be interpreted
+as a fraction of the total number of epochs.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.training.SWAConfig.anneal_epochs">
+<span class="sig-name descname"><span class="pre">anneal_epochs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10</span></em><a class="headerlink" href="#graph_pes.config.training.SWAConfig.anneal_epochs" title="Link to this definition">¶</a></dt>
+<dd><p>The number of epochs over which to linearly anneal the learning rate
+to zero.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.training.SWAConfig.strategy">
+<span class="sig-name descname"><span class="pre">strategy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'linear'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'cos'</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'linear'</span></em><a class="headerlink" href="#graph_pes.config.training.SWAConfig.strategy" title="Link to this definition">¶</a></dt>
+<dd><p>The strategy to use for annealing the learning rate.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="callbacks">
+<span id="id2"></span><h3>Callbacks<a class="headerlink" href="#callbacks" title="Link to this heading">¶</a></h3>
+<p>PyTorch Lightning callbacks are a convenient way to add additional functionality to the training process.
+We implement several useful callbacks in <code class="docutils literal notranslate"><span class="pre">graph_pes.training.callbacks</span></code> (e.g. <a class="reference internal" href="../../fitting/callbacks.html#graph_pes.training.callbacks.OffsetLogger" title="graph_pes.training.callbacks.OffsetLogger"><code class="xref py py-class docutils literal notranslate"><span class="pre">graph_pes.training.callbacks.OffsetLogger</span></code></a>). Use the <code class="docutils literal notranslate"><span class="pre">callbacks</span></code> field to define a list of these, or any other <code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code> objects, that you wish to use:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">callbacks</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+graph_pes.training.callbacks.OffsetLogger()</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">+my_module.my_callback</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> foo</span><span class="p">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="nt"> bar</span><span class="p">:</span><span class="w"> </span><span class="nv">2</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</pre></div>
+</div>
+</section>
+<section id="pytorch-lightning-trainer">
+<h3>PyTorch Lightning Trainer<a class="headerlink" href="#pytorch-lightning-trainer" title="Link to this heading">¶</a></h3>
+<p>You are free to configure the PyTorch Lightning trainer as you see fit using the <code class="docutils literal notranslate"><span class="pre">trainer_kwargs</span></code> field - these keyword arguments will be passed directly to the <code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code> constructor. By default, we train for 100 epochs on the best device available (and disable model summaries):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">trainer_kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">max_epochs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">        </span><span class="nt">accelerator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auto</span>
+<span class="w">        </span><span class="nt">enable_model_summary</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+<p>You can use this functionality to configure any other PyTorch Lightning trainer options, including…</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#gradient-clipping"><span class="std std-ref">gradient clipping</span></a></p></li>
+<li><p><a class="reference internal" href="#validation-frequency"><span class="std std-ref">validation frequency</span></a></p></li>
+</ul>
+</section>
+<section id="gradient-clipping">
+<span id="id3"></span><h3>Gradient clipping<a class="headerlink" href="#gradient-clipping" title="Link to this heading">¶</a></h3>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">trainer_kwargs</span></code> field to configure gradient clipping, e.g.:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">trainer_kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">gradient_clip_val</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">        </span><span class="nt">gradient_clip_algorithm</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;norm&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="validation-frequency">
+<span id="id4"></span><h3>Validation frequency<a class="headerlink" href="#validation-frequency" title="Link to this heading">¶</a></h3>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">trainer_kwargs</span></code> field to configure validation frequency. For instance, to validate at 10%, 20%, 30% etc. through the training dataset:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">trainer_kwargs</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">val_check_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span>
+</pre></div>
+</div>
+<p>See the <a class="reference external" href="https://lightning.ai/docs/pytorch/stable/common/trainer.html#trainer-class-api">PyTorch Lightning documentation</a> for details.</p>
+</section>
+<section id="model-saving">
+<h3>Model saving<a class="headerlink" href="#model-saving" title="Link to this heading">¶</a></h3>
+<p>Use the <cite>keep</cite> field to configure model saving. By default, we load the <cite>“best”</cite> model (as measured by the validation loss) before evaluation and saving.
+Keep the <cite>“last”</cite> model by setting this to <cite>“last”</cite>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">fitting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">keep</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">last</span><span class="w"> </span><span class="c1"># or best</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="wandb">
+<h2><code class="docutils literal notranslate"><span class="pre">wandb</span></code><a class="headerlink" href="#wandb" title="Link to this heading">¶</a></h2>
+<p>Disable weights &amp; biases logging:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">wandb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+</pre></div>
+</div>
+<p>Otherwise, provide a dictionary of
+overrides to pass to lightning’s <a class="reference external" href="https://lightning.ai/docs/pytorch/stable/extensions/generated/lightning.pytorch.loggers.WandbLogger.html">WandbLogger</a></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">wandb</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">project</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_project</span>
+<span class="w">    </span><span class="nt">entity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_entity</span>
+<span class="w">    </span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">my_tag</span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+</section>
+<section id="general">
+<h2><code class="docutils literal notranslate"><span class="pre">general</span></code><a class="headerlink" href="#general" title="Link to this heading">¶</a></h2>
+<p>Other miscellaneous configuration options are defined here:</p>
+<section id="random-seed">
+<h3>Random seed<a class="headerlink" href="#random-seed" title="Link to this heading">¶</a></h3>
+<p>Set the global random seed for reproducibility by setting this to an integer value (by default it is <code class="docutils literal notranslate"><span class="pre">42</span></code>). This is used to set the random seed for the <code class="docutils literal notranslate"><span class="pre">torch</span></code>, <code class="docutils literal notranslate"><span class="pre">numpy</span></code> and <code class="docutils literal notranslate"><span class="pre">random</span></code> modules.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">general</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">42</span>
+</pre></div>
+</div>
+</section>
+<section id="output-location">
+<h3>Output location<a class="headerlink" href="#output-location" title="Link to this heading">¶</a></h3>
+<p>The outputs from a training run (model weights, logs etc.) are stored in <code class="docutils literal notranslate"><span class="pre">./&lt;root_dir&gt;/&lt;run_id&gt;</span></code> (relative to the current working directory when you run <code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code>). By default, we use:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">general</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">root_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">graph-pes-results</span>
+<span class="w">    </span><span class="nt">run_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span><span class="w">  </span><span class="c1"># a random run ID will be generated</span>
+</pre></div>
+</div>
+<p>You are free to specify any other root directory, and any run ID. If the same run ID is specified for multiple runs, we add numbers to the end of the run ID to make it unique (i.e. <code class="docutils literal notranslate"><span class="pre">my_run</span></code>, <code class="docutils literal notranslate"><span class="pre">my_run_1</span></code>, <code class="docutils literal notranslate"><span class="pre">my_run_2</span></code>, etc.):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">general</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">root_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_results</span>
+<span class="w">    </span><span class="nt">run_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_run</span>
+</pre></div>
+</div>
+</section>
+<section id="logging-verbosity">
+<h3>Logging verbosity<a class="headerlink" href="#logging-verbosity" title="Link to this heading">¶</a></h3>
+<p>Set the logging verbosity for the training run by setting this to a string value (by default it is <code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code>).</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">general</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">log_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DEBUG</span>
+</pre></div>
+</div>
+</section>
+<section id="progress-bar">
+<h3>Progress bar<a class="headerlink" href="#progress-bar" title="Link to this heading">¶</a></h3>
+<p>Set the progress bar style to use by setting this to either:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;rich&quot;</span></code>: use the <a class="reference external" href="https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.RichProgressBar.html">RichProgressBar</a> implemented in PyTorch Lightning to display a progress bar. This will not be displayed in any logs.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;logged&quot;</span></code>: prints the validation metrics to the console at the end of each validation check.</p></li>
+</ul>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">general</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">progress</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">logged</span>
+</pre></div>
+</div>
+</section>
+<section id="torch-options">
+<h3>Torch options<a class="headerlink" href="#torch-options" title="Link to this heading">¶</a></h3>
+<p>Configure common PyTorch options by setting the <code class="docutils literal notranslate"><span class="pre">general.torch</span></code> field to a dictionary of values from the <a class="reference internal" href="#graph_pes.config.shared.TorchConfig" title="graph_pes.config.shared.TorchConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchConfig</span></code></a> class, e.g.:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">general</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">torch</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float32</span>
+<span class="w">        </span><span class="nt">float32_matmul_precision</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">high</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.config.shared.TorchConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.config.shared.</span></span><span class="sig-name descname"><span class="pre">TorchConfig</span></span><a class="reference internal" href="../../_modules/graph_pes/config/shared.html#TorchConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.config.shared.TorchConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for PyTorch.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.shared.TorchConfig.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'float16'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'float32'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'float64'</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#graph_pes.config.shared.TorchConfig.dtype" title="Link to this definition">¶</a></dt>
+<dd><p>The dtype to use for all model parameters and graph properties.
+Defaults is <code class="docutils literal notranslate"><span class="pre">&quot;float32&quot;</span></code>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.config.shared.TorchConfig.float32_matmul_precision">
+<span class="sig-name descname"><span class="pre">float32_matmul_precision</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'highest'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'high'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'medium'</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#graph_pes.config.shared.TorchConfig.float32_matmul_precision" title="Link to this definition">¶</a></dt>
+<dd><p>The precision to use internally for float32 matrix multiplications. Refer to the
+<a class="reference external" href="https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html">PyTorch documentation</a>
+for details.</p>
+<p>Defaults to <code class="docutils literal notranslate"><span class="pre">&quot;high&quot;</span></code> to favour accelerated learning over numerical
+exactness for matmuls.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="examples.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Example configs</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="the-basics.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">The basics</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023-2025, John Gardner
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Config options</a><ul>
+<li><a class="reference internal" href="#model"><code class="docutils literal notranslate"><span class="pre">model</span></code></a></li>
+<li><a class="reference internal" href="#data"><code class="docutils literal notranslate"><span class="pre">data</span></code></a></li>
+<li><a class="reference internal" href="#loss"><code class="docutils literal notranslate"><span class="pre">loss</span></code></a></li>
+<li><a class="reference internal" href="#fitting"><code class="docutils literal notranslate"><span class="pre">fitting</span></code></a><ul>
+<li><a class="reference internal" href="#optimizer">Optimizer</a></li>
+<li><a class="reference internal" href="#learning-rate-scheduler">Learning rate scheduler</a></li>
+<li><a class="reference internal" href="#model-pre-fitting">Model pre-fitting</a></li>
+<li><a class="reference internal" href="#reference-energies">Reference energies</a></li>
+<li><a class="reference internal" href="#early-stopping">Early stopping</a><ul>
+<li><a class="reference internal" href="#graph_pes.config.training.EarlyStoppingConfig"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingConfig</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.config.training.EarlyStoppingConfig.patience"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingConfig.patience</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.training.EarlyStoppingConfig.min_delta"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingConfig.min_delta</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.training.EarlyStoppingConfig.monitor"><code class="docutils literal notranslate"><span class="pre">EarlyStoppingConfig.monitor</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#data-loaders">Data loaders</a></li>
+<li><a class="reference internal" href="#stochastic-weight-averaging">Stochastic weight averaging</a><ul>
+<li><a class="reference internal" href="#graph_pes.config.training.SWAConfig"><code class="docutils literal notranslate"><span class="pre">SWAConfig</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.config.training.SWAConfig.lr"><code class="docutils literal notranslate"><span class="pre">SWAConfig.lr</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.training.SWAConfig.start"><code class="docutils literal notranslate"><span class="pre">SWAConfig.start</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.training.SWAConfig.anneal_epochs"><code class="docutils literal notranslate"><span class="pre">SWAConfig.anneal_epochs</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.training.SWAConfig.strategy"><code class="docutils literal notranslate"><span class="pre">SWAConfig.strategy</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#callbacks">Callbacks</a></li>
+<li><a class="reference internal" href="#pytorch-lightning-trainer">PyTorch Lightning Trainer</a></li>
+<li><a class="reference internal" href="#gradient-clipping">Gradient clipping</a></li>
+<li><a class="reference internal" href="#validation-frequency">Validation frequency</a></li>
+<li><a class="reference internal" href="#model-saving">Model saving</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#wandb"><code class="docutils literal notranslate"><span class="pre">wandb</span></code></a></li>
+<li><a class="reference internal" href="#general"><code class="docutils literal notranslate"><span class="pre">general</span></code></a><ul>
+<li><a class="reference internal" href="#random-seed">Random seed</a></li>
+<li><a class="reference internal" href="#output-location">Output location</a></li>
+<li><a class="reference internal" href="#logging-verbosity">Logging verbosity</a></li>
+<li><a class="reference internal" href="#progress-bar">Progress bar</a></li>
+<li><a class="reference internal" href="#torch-options">Torch options</a><ul>
+<li><a class="reference internal" href="#graph_pes.config.shared.TorchConfig"><code class="docutils literal notranslate"><span class="pre">TorchConfig</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.config.shared.TorchConfig.dtype"><code class="docutils literal notranslate"><span class="pre">TorchConfig.dtype</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.config.shared.TorchConfig.float32_matmul_precision"><code class="docutils literal notranslate"><span class="pre">TorchConfig.float32_matmul_precision</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=cb850272"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=35fd3fb5"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    </body>
+</html>

@@ -1,0 +1,735 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="e3nn Helpers" href="e3nn.html" /><link rel="prev" title="Scaling" href="scaling.html" />
+
+    <!-- Generated with Sphinx 7.4.7 and Furo 2024.08.06 -->
+        <title>PyTorch Helpers - graph-pes</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=05238f3f" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f0f0f0;
+  --color-code-foreground: black;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">graph-pes</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/logo-square.svg" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../quickstart/root.html">Tutorials</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Tutorials</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/quickstart.html">Train a model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/quickstart.html#Model-analysis">Model analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/fine-tuning.html">Fine-tuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/implement-a-model.html">Implement a model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/custom-training-loop.html">Custom training loops</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CLI Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../cli/graph-pes-train/root.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code></a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of graph-pes-train</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../cli/graph-pes-train/the-basics.html">The basics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli/graph-pes-train/complete-docs.html">Config options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli/graph-pes-train/examples.html">Example configs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../cli/graph-pes-resume.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-resume</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli/graph-pes-test.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli/graph-pes-id.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-id</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../data/root.html">Data</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Data</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../data/atomic_graph.html">Atomic Graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/datasets.html">Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/loader.html">Loader</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../models/root.html">Models</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of Models</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../models/addition.html">Addition Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../models/offsets.html">Energy Offset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../models/pairwise.html">Pair Potentials</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../models/many-body/root.html">Many Body Models</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of Many Body Models</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/stillinger-weber.html">Stillinger-Weber</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/eddp.html">EDDP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/schnet.html">SchNet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/painn.html">PaiNN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/nequip.html">NequIP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/mace.html">MACE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/tensornet.html">TensorNet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/orb.html">Orb</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../fitting/root.html">Fitting</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of Fitting</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../fitting/losses.html">Losses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fitting/optimizers.html">Optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fitting/callbacks.html">Callbacks</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="root.html">Building blocks</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of Building blocks</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="distances.html">Distance Expansions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="envelopes.html">Envelopes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aggregation.html">Aggregation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scaling.html">Scaling</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">PyTorch Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="e3nn.html"><code class="docutils literal notranslate"><span class="pre">e3nn</span></code> Helpers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Interfaces</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/mace.html"><code class="docutils literal notranslate"><span class="pre">mace-torch</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/mattersim.html"><code class="docutils literal notranslate"><span class="pre">mattersim</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/orb.html"><code class="docutils literal notranslate"><span class="pre">orb-models</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/torch-sim.html"><code class="docutils literal notranslate"><span class="pre">torch-sim</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/ase.html">ASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/lammps.html">LAMMPS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/analysis.html">Analysis</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../theory.html">Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development.html">Development</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/building-blocks/nn.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="pytorch-helpers">
+<h1>PyTorch Helpers<a class="headerlink" href="#pytorch-helpers" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.PerElementParameter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.utils.nn.</span></span><span class="sig-name descname"><span class="pre">PerElementParameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">requires_grad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/utils/nn.html#PerElementParameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.utils.nn.PerElementParameter" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.parameter.Parameter.html#torch.nn.parameter.Parameter" title="(in PyTorch v2.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a></p>
+<p>A subclass of <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Parameter</span></code> that is indexed by atomic
+number/s.</p>
+<p class="rubric">Examples</p>
+<p>Imagine the case where you have a model parameter with a value for each
+element in the periodic table. If you only train the model on a dataset
+containing a few elements, you don’t want to count the total number of
+parameters, as this will be unnecessarily large.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">graph_pes.utils.nn</span><span class="w"> </span><span class="kn">import</span> <span class="n">PerElementParameter</span><span class="p">,</span> <span class="n">count_used_parameters</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># don&#39;t do this!</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">per_element_parameter</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">119</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">count_used_parameters</span><span class="p">(</span><span class="n">per_element_parameter</span><span class="p">)</span>
+<span class="go">119</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">per_element_parameter</span>
+<span class="go">Parameter containing:</span>
+<span class="go">tensor([ 1.2838e-01, -1.4507e+00,  1.3465e-01, -9.5786e-01, ...,</span>
+<span class="go">        -1.3329e+00, -1.5515e+00,  2.1106e+00, -9.7268e-01],</span>
+<span class="go">   requires_grad=True)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># do this instead</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">per_element_paramter</span> <span class="o">=</span> <span class="n">PerElementParameter</span><span class="o">.</span><span class="n">of_shape</span><span class="p">((</span><span class="mi">1</span><span class="p">,))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">per_element_parameter</span><span class="o">.</span><span class="n">register_elements</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">count_used_parameters</span><span class="p">(</span><span class="n">per_element_parameter</span><span class="p">)</span>
+<span class="go">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">per_element_parameter</span>
+<span class="go">PerElementParameter({&#39;O&#39;: -0.278, &#39;H&#39;: 0.157, &#39;C&#39;: -0.0379}, trainable=True)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code> automatically registers all elements that a model
+encounters during training, so you rarely need to call
+<a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter.register_elements" title="graph_pes.utils.nn.PerElementParameter.register_elements"><code class="xref py py-meth docutils literal notranslate"><span class="pre">register_elements()</span></code></a> yourself.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter" title="graph_pes.utils.nn.PerElementParameter">PerElementParameter</a></p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.PerElementParameter.register_elements">
+<span class="sig-name descname"><span class="pre">register_elements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Zs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/utils/nn.html#PerElementParameter.register_elements"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.utils.nn.PerElementParameter.register_elements" title="Link to this definition">¶</a></dt>
+<dd><p>Register the elements that are relevant for the parameter.</p>
+<p>This is typically only used internally - you shouldn’t call this
+yourself in any of your model definitions.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.PerElementParameter.of_shape">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">of_shape</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">index_dims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">default_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">requires_grad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/utils/nn.html#PerElementParameter.of_shape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.utils.nn.PerElementParameter.of_shape" title="Link to this definition">¶</a></dt>
+<dd><p>Create a <a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter" title="graph_pes.utils.nn.PerElementParameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">PerElementParameter</span></code></a> with a given shape for each
+element in the periodic table.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>...</em><em>]</em>) – The shape of the parameter for each element.</p></li>
+<li><p><strong>index_dims</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The number of dimensions to index by.</p></li>
+<li><p><strong>default_value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><em>None</em>) – The value to initialise the parameter with. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the
+parameter is initialised with random values.</p></li>
+<li><p><strong>requires_grad</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether the parameter should be learnable.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The created parameter.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter" title="graph_pes.utils.nn.PerElementParameter">PerElementParameter</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Create a parameter intended to be indexed by a single atomic number,
+i.e. <code class="docutils literal notranslate"><span class="pre">pep[Z]</span></code>:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">PerElementParameter</span><span class="o">.</span><span class="n">of_shape</span><span class="p">((</span><span class="mi">3</span><span class="p">,))</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">torch.Size([119, 3])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">PerElementParameter</span><span class="o">.</span><span class="n">of_shape</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">torch.Size([119, 3, 4])</span>
+</pre></div>
+</div>
+<p>Create a parameter intended to be indexed by two atomic numbers, i.e.
+<code class="docutils literal notranslate"><span class="pre">pep[Z1,</span> <span class="pre">Z2]</span></code>:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">PerElementParameter</span><span class="o">.</span><span class="n">of_shape</span><span class="p">((</span><span class="mi">3</span><span class="p">,),</span> <span class="n">index_dims</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">torch.Size([119, 119, 3])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.PerElementParameter.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">requires_grad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">default_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">values</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/utils/nn.html#PerElementParameter.from_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.utils.nn.PerElementParameter.from_dict" title="Link to this definition">¶</a></dt>
+<dd><p>Create a <a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter" title="graph_pes.utils.nn.PerElementParameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">PerElementParameter</span></code></a> containing a single value or
+a list of values for each element in the periodic table from
+a dictionary of values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>requires_grad</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether the parameter should be learnable.</p></li>
+<li><p><strong>default_value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – The value to initialise the parameter with. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the
+parameter is initialised with random values.</p></li>
+<li><p><strong>values</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – A dictionary of values, indexed by element symbol.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The created parameter.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter" title="graph_pes.utils.nn.PerElementParameter">PerElementParameter</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">graph_pes.utils.nn</span><span class="w"> </span><span class="kn">import</span> <span class="n">PerElementParameter</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pep</span> <span class="o">=</span> <span class="n">PerElementParameter</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">H</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pep</span><span class="o">.</span><span class="n">register_elements</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pep</span>
+<span class="go">PerElementParameter({&#39;H&#39;: 1.0, &#39;C&#39;: 0.0, &#39;O&#39;: 2.0}, trainable=True)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.PerElementParameter.of_length">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">of_length</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">length</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">index_dims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">default_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">requires_grad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/utils/nn.html#PerElementParameter.of_length"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.utils.nn.PerElementParameter.of_length" title="Link to this definition">¶</a></dt>
+<dd><p>Alias for <code class="docutils literal notranslate"><span class="pre">PerElementParameter.of_shape((length,),</span> <span class="pre">**kwargs)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter" title="graph_pes.utils.nn.PerElementParameter">PerElementParameter</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.PerElementParameter.covalent_radii">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">covalent_radii</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scaling_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/utils/nn.html#PerElementParameter.covalent_radii"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.utils.nn.PerElementParameter.covalent_radii" title="Link to this definition">¶</a></dt>
+<dd><p>Create a <a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter" title="graph_pes.utils.nn.PerElementParameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">PerElementParameter</span></code></a> containing the covalent radii of
+each element in the periodic table.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter" title="graph_pes.utils.nn.PerElementParameter"><em>PerElementParameter</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.PerElementEmbedding">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.utils.nn.</span></span><span class="sig-name descname"><span class="pre">PerElementEmbedding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/utils/nn.html#PerElementEmbedding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.utils.nn.PerElementEmbedding" title="Link to this definition">¶</a></dt>
+<dd><p>A per-element equivalent of <a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Embedding.html#torch.nn.Embedding" title="(in PyTorch v2.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Embedding</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dim</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – The length of each embedding vector.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">embedding</span> <span class="o">=</span> <span class="n">PerElementEmbedding</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">graph</span><span class="p">[</span><span class="s2">&quot;atomic_numbers&quot;</span><span class="p">])</span>  <span class="c1"># number of atoms in the graph</span>
+<span class="go">24</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">embedding</span><span class="p">(</span><span class="n">graph</span><span class="p">[</span><span class="s2">&quot;atomic_numbers&quot;</span><span class="p">])</span>
+<span class="go">&lt;tensor of shape (24, 10)&gt;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.MLPConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.utils.nn.</span></span><span class="sig-name descname"><span class="pre">MLPConfig</span></span><a class="reference internal" href="../_modules/graph_pes/utils/nn.html#MLPConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.utils.nn.MLPConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypedDict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></a></p>
+<p>A TypedDict helper class for configuring an <a class="reference internal" href="#graph_pes.utils.nn.MLP" title="graph_pes.utils.nn.MLP"><code class="xref py py-class docutils literal notranslate"><span class="pre">MLP</span></code></a>.</p>
+<p class="rubric">Examples</p>
+<p>Specify this in a config file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">mlp</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">hidden_depth</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">    </span><span class="nt">hidden_features</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64</span>
+<span class="w">    </span><span class="nt">activation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SiLU</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.MLPConfig.hidden_depth">
+<span class="sig-name descname"><span class="pre">hidden_depth</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#graph_pes.utils.nn.MLPConfig.hidden_depth" title="Link to this definition">¶</a></dt>
+<dd><p>The number of hidden layers in the MLP.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.MLPConfig.hidden_features">
+<span class="sig-name descname"><span class="pre">hidden_features</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#graph_pes.utils.nn.MLPConfig.hidden_features" title="Link to this definition">¶</a></dt>
+<dd><p>The number of features in the hidden layers.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.MLPConfig.activation">
+<span class="sig-name descname"><span class="pre">activation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></em><a class="headerlink" href="#graph_pes.utils.nn.MLPConfig.activation" title="Link to this definition">¶</a></dt>
+<dd><p>The activation function to use.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.MLP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.utils.nn.</span></span><span class="sig-name descname"><span class="pre">MLP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">layers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'CELU'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activate_last</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/utils/nn.html#MLP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.utils.nn.MLP" title="Link to this definition">¶</a></dt>
+<dd><p>A multi-layer perceptron model, alternating linear layers and activations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>layers</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em>) – The number of nodes in each layer.</p></li>
+<li><p><strong>activation</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module" title="(in PyTorch v2.9)"><em>torch.nn.Module</em></a>) – The activation function to use: either a named activation function
+from <cite>torch.nn</cite>, or a <cite>torch.nn.Module</cite> instance.</p></li>
+<li><p><strong>activate_last</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether to apply the activation function after the last linear layer.</p></li>
+<li><p><strong>bias</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Whether to include bias terms in the linear layers.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">graph_pes.utils.nn</span><span class="w"> </span><span class="kn">import</span> <span class="n">MLP</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">MLP</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span>
+<span class="go">MLP(10 → 5 → 1, activation=CELU())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">MLP</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">activation</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">())</span>
+<span class="go">MLP(10 → 5 → 1, activation=ReLU())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">MLP</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">activation</span><span class="o">=</span><span class="s2">&quot;Tanh&quot;</span><span class="p">)</span>
+<span class="go">MLP(10 → 5 → 1, activation=Tanh())</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.MLP.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/utils/nn.html#MLP.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.utils.nn.MLP.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Perform a forward pass through the network.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><em>Tensor</em></a>) – The input to the network.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><em>Tensor</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.MLP.input_size">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_size</span></span><a class="headerlink" href="#graph_pes.utils.nn.MLP.input_size" title="Link to this definition">¶</a></dt>
+<dd><p>The size of the input to the network.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.MLP.output_size">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_size</span></span><a class="headerlink" href="#graph_pes.utils.nn.MLP.output_size" title="Link to this definition">¶</a></dt>
+<dd><p>The size of the output of the network.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.MLP.layer_widths">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">layer_widths</span></span><a class="headerlink" href="#graph_pes.utils.nn.MLP.layer_widths" title="Link to this definition">¶</a></dt>
+<dd><p>The widths of the layers in the network.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.utils.nn.MLP.from_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/utils/nn.html#MLP.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.utils.nn.MLP.from_config" title="Link to this definition">¶</a></dt>
+<dd><p>Create an <a class="reference internal" href="#graph_pes.utils.nn.MLP" title="graph_pes.utils.nn.MLP"><code class="xref py py-class docutils literal notranslate"><span class="pre">MLP</span></code></a> from a configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#graph_pes.utils.nn.MLP" title="graph_pes.utils.nn.MLP"><em>MLP</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="e3nn.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title"><code class="docutils literal notranslate"><span class="pre">e3nn</span></code> Helpers</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="scaling.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Scaling</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023-2025, John Gardner
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">PyTorch Helpers</a><ul>
+<li><a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter"><code class="docutils literal notranslate"><span class="pre">PerElementParameter</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter.register_elements"><code class="docutils literal notranslate"><span class="pre">PerElementParameter.register_elements()</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter.of_shape"><code class="docutils literal notranslate"><span class="pre">PerElementParameter.of_shape()</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter.from_dict"><code class="docutils literal notranslate"><span class="pre">PerElementParameter.from_dict()</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter.of_length"><code class="docutils literal notranslate"><span class="pre">PerElementParameter.of_length()</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.utils.nn.PerElementParameter.covalent_radii"><code class="docutils literal notranslate"><span class="pre">PerElementParameter.covalent_radii()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#graph_pes.utils.nn.PerElementEmbedding"><code class="docutils literal notranslate"><span class="pre">PerElementEmbedding</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.utils.nn.MLPConfig"><code class="docutils literal notranslate"><span class="pre">MLPConfig</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.utils.nn.MLPConfig.hidden_depth"><code class="docutils literal notranslate"><span class="pre">MLPConfig.hidden_depth</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.utils.nn.MLPConfig.hidden_features"><code class="docutils literal notranslate"><span class="pre">MLPConfig.hidden_features</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.utils.nn.MLPConfig.activation"><code class="docutils literal notranslate"><span class="pre">MLPConfig.activation</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#graph_pes.utils.nn.MLP"><code class="docutils literal notranslate"><span class="pre">MLP</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.utils.nn.MLP.forward"><code class="docutils literal notranslate"><span class="pre">MLP.forward()</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.utils.nn.MLP.input_size"><code class="docutils literal notranslate"><span class="pre">MLP.input_size</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.utils.nn.MLP.output_size"><code class="docutils literal notranslate"><span class="pre">MLP.output_size</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.utils.nn.MLP.layer_widths"><code class="docutils literal notranslate"><span class="pre">MLP.layer_widths</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.utils.nn.MLP.from_config"><code class="docutils literal notranslate"><span class="pre">MLP.from_config()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=cb850272"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=35fd3fb5"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    </body>
+</html>

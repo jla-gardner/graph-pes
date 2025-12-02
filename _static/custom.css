@@ -1,0 +1,71 @@
+h1 {
+    font-size: 3em;
+    text-align: center;
+    /* pad on top, but not on bottom */
+    padding-top: 0.5em;
+    padding-bottom: 0;
+    border-bottom: 0;
+}
+
+.code-block-caption,
+.highlight {
+    margin-left: 7%;
+    margin-right: 7%;
+    width: 86%;
+    border-radius: 10px;
+}
+
+.code-block-caption {
+    padding: 0;
+}
+.code-block-caption .caption-text {
+    padding: 10px 15px;
+}
+
+/* squish code blocks so that everything looks a bit prettier */
+article[role="main"] .highlight pre {
+    line-height: 1.3;
+}
+
+/* unless child of "input-area" */
+.input_area .highlight {
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+    border-radius: 0;
+}
+
+/* center all children of viz divs */
+/* and don't allow highlighting when clicked */
+.viz {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+img {
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
+
+/* align content vertically */
+.info-card {
+    display: flex;
+    justify-content: center; /* Align horizontal */
+    align-items: center; /* Align vertical */
+}
+
+/* align text center in each cell */
+.table-wrapper td {
+    text-align: center;
+}
+
+/* anything that lives in a span wrapped by a .sphinx-codeautolink-a */
+.sphinx-codeautolink-a span {
+    text-decoration: underline;
+    text-decoration-color: var(--color-api-name);
+}
+/* make it obviously clickable on hover by turning bold */
+.sphinx-codeautolink-a span:hover {
+    font-weight: bold;
+}

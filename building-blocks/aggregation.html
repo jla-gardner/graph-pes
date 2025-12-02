@@ -1,0 +1,675 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Scaling" href="scaling.html" /><link rel="prev" title="Envelopes" href="envelopes.html" />
+
+    <!-- Generated with Sphinx 7.4.7 and Furo 2024.08.06 -->
+        <title>Aggregation - graph-pes</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=05238f3f" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f0f0f0;
+  --color-code-foreground: black;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #272822;
+  --color-code-foreground: #f8f8f2;
+  --color-problematic: #f74565;
+  --color-brand-primary: #f74565;
+  --color-brand-content: #f74565;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">graph-pes</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <div class="sidebar-logo-container">
+    <img class="sidebar-logo" src="../_static/logo-square.svg" alt="Logo"/>
+  </div>
+  
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../quickstart/root.html">Tutorials</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Tutorials</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/quickstart.html">Train a model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/quickstart.html#Model-analysis">Model analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/fine-tuning.html">Fine-tuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/implement-a-model.html">Implement a model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart/custom-training-loop.html">Custom training loops</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CLI Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../cli/graph-pes-train/root.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-train</span></code></a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of graph-pes-train</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../cli/graph-pes-train/the-basics.html">The basics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli/graph-pes-train/complete-docs.html">Config options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cli/graph-pes-train/examples.html">Example configs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../cli/graph-pes-resume.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-resume</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli/graph-pes-test.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cli/graph-pes-id.html"><code class="docutils literal notranslate"><span class="pre">graph-pes-id</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../data/root.html">Data</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Data</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../data/atomic_graph.html">Atomic Graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/datasets.html">Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/loader.html">Loader</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../models/root.html">Models</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of Models</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../models/addition.html">Addition Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../models/offsets.html">Energy Offset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../models/pairwise.html">Pair Potentials</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../models/many-body/root.html">Many Body Models</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of Many Body Models</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/stillinger-weber.html">Stillinger-Weber</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/eddp.html">EDDP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/schnet.html">SchNet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/painn.html">PaiNN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/nequip.html">NequIP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/mace.html">MACE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/tensornet.html">TensorNet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../models/many-body/orb.html">Orb</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../fitting/root.html">Fitting</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of Fitting</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../fitting/losses.html">Losses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fitting/optimizers.html">Optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fitting/callbacks.html">Callbacks</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="root.html">Building blocks</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of Building blocks</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="distances.html">Distance Expansions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="envelopes.html">Envelopes</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Aggregation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scaling.html">Scaling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nn.html">PyTorch Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="e3nn.html"><code class="docutils literal notranslate"><span class="pre">e3nn</span></code> Helpers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utils</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Interfaces</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/mace.html"><code class="docutils literal notranslate"><span class="pre">mace-torch</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/mattersim.html"><code class="docutils literal notranslate"><span class="pre">mattersim</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces/orb.html"><code class="docutils literal notranslate"><span class="pre">orb-models</span></code></a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/torch-sim.html"><code class="docutils literal notranslate"><span class="pre">torch-sim</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/ase.html">ASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/lammps.html">LAMMPS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/analysis.html">Analysis</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">About</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../theory.html">Theory</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../development.html">Development</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/building-blocks/aggregation.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="aggregation">
+<h1>Aggregation<a class="headerlink" href="#aggregation" title="Link to this heading">¶</a></h1>
+<p>Aggregating some value over one’s neighbours is a common operation in graph-based
+ML models. <code class="docutils literal notranslate"><span class="pre">graph-pes</span></code> provides a base class for such operations, together with
+a few common implementations. A common way to specify the aggregation mode to use
+in a model is to use a <a class="reference internal" href="#graph_pes.models.components.aggregation.NeighbourAggregationMode" title="graph_pes.models.components.aggregation.NeighbourAggregationMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">NeighbourAggregationMode</span></code></a>
+string, which internally is passed to <a class="reference internal" href="#graph_pes.models.components.aggregation.NeighbourAggregation.parse" title="graph_pes.models.components.aggregation.NeighbourAggregation.parse"><code class="xref py py-meth docutils literal notranslate"><span class="pre">parse()</span></code></a>.</p>
+<section id="base-class">
+<h2>Base Class<a class="headerlink" href="#base-class" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.models.components.aggregation.NeighbourAggregation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.models.components.aggregation.</span></span><span class="sig-name descname"><span class="pre">NeighbourAggregation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/models/components/aggregation.html#NeighbourAggregation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.models.components.aggregation.NeighbourAggregation" title="Link to this definition">¶</a></dt>
+<dd><p>An abstract base class for aggregating values over neighbours:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[X_i^\prime = \text{Agg}_{j \in \mathcal{N}_i} \left[X_j\right]\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(\mathcal{N}_i\)</span> is the set of neighbours of atom <span class="math notranslate nohighlight">\(i\)</span>,
+<span class="math notranslate nohighlight">\(X\)</span> has shape <code class="docutils literal notranslate"><span class="pre">(E,</span> <span class="pre">...)</span></code>, <span class="math notranslate nohighlight">\(X^\prime\)</span> has shape <code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">...)</span></code>
+and <code class="docutils literal notranslate"><span class="pre">E</span></code> and <code class="docutils literal notranslate"><span class="pre">N</span></code> are the number of edges and atoms in the graph,
+respectively.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.models.components.aggregation.NeighbourAggregation.forward">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/models/components/aggregation.html#NeighbourAggregation.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.models.components.aggregation.NeighbourAggregation.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Aggregate x over neighbours.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><em>Tensor</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.models.components.aggregation.NeighbourAggregation.pre_fit">
+<span class="sig-name descname"><span class="pre">pre_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">graphs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/models/components/aggregation.html#NeighbourAggregation.pre_fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.models.components.aggregation.NeighbourAggregation.pre_fit" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate any quantities that are dependent on the graph structure
+that should be fixed before prediction.</p>
+<p>Default implementation does nothing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>graphs</strong> (<a class="reference internal" href="../data/atomic_graph.html#graph_pes.AtomicGraph" title="graph_pes.atomic_graph.AtomicGraph"><em>AtomicGraph</em></a>) – A batch of graphs to pre-fit to.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.models.components.aggregation.NeighbourAggregation.parse">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/models/components/aggregation.html#NeighbourAggregation.parse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.models.components.aggregation.NeighbourAggregation.parse" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluates the following map:</p>
+<div class="table-wrapper colwidths-given docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Mode</p></th>
+<th class="head"><p>Aggregation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;sum&quot;</span></code></p></td>
+<td><p><a class="reference internal" href="#graph_pes.models.components.aggregation.SumNeighbours" title="graph_pes.models.components.aggregation.SumNeighbours"><code class="xref py py-class docutils literal notranslate"><span class="pre">SumNeighbours()</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;mean&quot;</span></code></p></td>
+<td><p><a class="reference internal" href="#graph_pes.models.components.aggregation.MeanNeighbours" title="graph_pes.models.components.aggregation.MeanNeighbours"><code class="xref py py-class docutils literal notranslate"><span class="pre">MeanNeighbours()</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;constant_fixed&quot;</span></code></p></td>
+<td><p><a class="reference internal" href="#graph_pes.models.components.aggregation.ScaledSumNeighbours" title="graph_pes.models.components.aggregation.ScaledSumNeighbours"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScaledSumNeighbours(learnable=False)</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;constant_learnable&quot;</span></code></p></td>
+<td><p><a class="reference internal" href="#graph_pes.models.components.aggregation.ScaledSumNeighbours" title="graph_pes.models.components.aggregation.ScaledSumNeighbours"><code class="xref py py-class docutils literal notranslate"><span class="pre">ScaledSumNeighbours(learnable=True)</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&quot;sqrt&quot;</span></code></p></td>
+<td><p><a class="reference internal" href="#graph_pes.models.components.aggregation.VariancePreservingSumNeighbours" title="graph_pes.models.components.aggregation.VariancePreservingSumNeighbours"><code class="xref py py-class docutils literal notranslate"><span class="pre">VariancePreservingSumNeighbours()</span></code></a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mode</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a><em>[</em><em>'sum'</em><em>, </em><em>'mean'</em><em>, </em><em>'constant_fixed'</em><em>, </em><em>'constant_learnable'</em><em>, </em><em>'sqrt'</em><em>]</em>) – The neighbour aggregation mode to parse.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The parsed neighbour aggregation mode.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#graph_pes.models.components.aggregation.NeighbourAggregation" title="graph_pes.models.components.aggregation.NeighbourAggregation">NeighbourAggregation</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.models.components.aggregation.NeighbourAggregationMode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.models.components.aggregation.</span></span><span class="sig-name descname"><span class="pre">NeighbourAggregationMode</span></span><a class="headerlink" href="#graph_pes.models.components.aggregation.NeighbourAggregationMode" title="Link to this definition">¶</a></dt>
+<dd><p>Type alias for <code class="docutils literal notranslate"><span class="pre">Literal[&quot;sum&quot;,</span> <span class="pre">&quot;mean&quot;,</span> <span class="pre">&quot;constant_fixed&quot;,</span> <span class="pre">&quot;constant_learnable&quot;,</span> <span class="pre">&quot;sqrt&quot;]</span></code>.</p>
+</dd></dl>
+
+</section>
+<section id="implementations">
+<h2>Implementations<a class="headerlink" href="#implementations" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.models.components.aggregation.SumNeighbours">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.models.components.aggregation.</span></span><span class="sig-name descname"><span class="pre">SumNeighbours</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/models/components/aggregation.html#SumNeighbours"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.models.components.aggregation.SumNeighbours" title="Link to this definition">¶</a></dt>
+<dd><p>Sum over neighbours:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[X_i^\prime = \sum_{j \in \mathcal{N}_i} X_j\]</div>
+</div>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.models.components.aggregation.SumNeighbours.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/models/components/aggregation.html#SumNeighbours.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.models.components.aggregation.SumNeighbours.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Aggregate x over neighbours.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><em>Tensor</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.models.components.aggregation.MeanNeighbours">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.models.components.aggregation.</span></span><span class="sig-name descname"><span class="pre">MeanNeighbours</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/models/components/aggregation.html#MeanNeighbours"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.models.components.aggregation.MeanNeighbours" title="Link to this definition">¶</a></dt>
+<dd><p>Take an average over neighbours:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[X_i^\prime = \frac{1}{|\mathcal{N}_i|} \sum_{j \in \mathcal{N}_i} X_j\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(|\mathcal{N}_i|\)</span> is the number of neighbours of atom <span class="math notranslate nohighlight">\(i\)</span>
+(including the central atom).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This aggregation can lead to un-physical discontinuities in the PES
+as neighbours enter or leave the radial cutoff.</p>
+</div>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.models.components.aggregation.MeanNeighbours.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/models/components/aggregation.html#MeanNeighbours.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.models.components.aggregation.MeanNeighbours.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Aggregate x over neighbours.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><em>Tensor</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.models.components.aggregation.ScaledSumNeighbours">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.models.components.aggregation.</span></span><span class="sig-name descname"><span class="pre">ScaledSumNeighbours</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">learnable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/models/components/aggregation.html#ScaledSumNeighbours"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.models.components.aggregation.ScaledSumNeighbours" title="Link to this definition">¶</a></dt>
+<dd><p>Scale the sum over neighbours by a learnable or fixed constant,
+<span class="math notranslate nohighlight">\(s\)</span>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[X_i^\prime = \frac{1}{s} \sum_{j \in \mathcal{N}_i} X_j\]</div>
+</div>
+<p><span class="math notranslate nohighlight">\(s\)</span> defaults to 1.0, but is set to the average number of neighbours
+of each atom in the training set passed to <a class="reference internal" href="#graph_pes.models.components.aggregation.ScaledSumNeighbours.pre_fit" title="graph_pes.models.components.aggregation.ScaledSumNeighbours.pre_fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pre_fit()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>learnable</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the scale is a learnable parameter. If <code class="docutils literal notranslate"><span class="pre">False</span></code>, the
+scale is a fixed constant.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.models.components.aggregation.ScaledSumNeighbours.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/models/components/aggregation.html#ScaledSumNeighbours.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.models.components.aggregation.ScaledSumNeighbours.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Aggregate x over neighbours.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><em>Tensor</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.models.components.aggregation.ScaledSumNeighbours.pre_fit">
+<span class="sig-name descname"><span class="pre">pre_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">graphs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/models/components/aggregation.html#ScaledSumNeighbours.pre_fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.models.components.aggregation.ScaledSumNeighbours.pre_fit" title="Link to this definition">¶</a></dt>
+<dd><p>Set the scale equal to the average number of neighbours in the
+training set.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="graph_pes.models.components.aggregation.VariancePreservingSumNeighbours">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">graph_pes.models.components.aggregation.</span></span><span class="sig-name descname"><span class="pre">VariancePreservingSumNeighbours</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/models/components/aggregation.html#VariancePreservingSumNeighbours"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.models.components.aggregation.VariancePreservingSumNeighbours" title="Link to this definition">¶</a></dt>
+<dd><p>Scale the sum over neighbours by the square root of the number of
+neighbours:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[X_i^\prime = \frac{1}{\sqrt{|\mathcal{N}_i|}} \sum_{j \in \mathcal{N}_i} X_j\]</div>
+</div>
+<p>where <span class="math notranslate nohighlight">\(|\mathcal{N}_i|\)</span> is the number of neighbours of atom <span class="math notranslate nohighlight">\(i\)</span>
+(including the central atom).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This aggregation can lead to un-physical discontinuities in the PES
+as neighbours enter or leave the radial cutoff.</p>
+</div>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="graph_pes.models.components.aggregation.VariancePreservingSumNeighbours.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/graph_pes/models/components/aggregation.html#VariancePreservingSumNeighbours.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#graph_pes.models.components.aggregation.VariancePreservingSumNeighbours.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Aggregate x over neighbours.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.pytorch.org/docs/stable/tensors.html#torch.Tensor" title="(in PyTorch v2.9)"><em>Tensor</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="scaling.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Scaling</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="envelopes.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Envelopes</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023-2025, John Gardner
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Aggregation</a><ul>
+<li><a class="reference internal" href="#base-class">Base Class</a><ul>
+<li><a class="reference internal" href="#graph_pes.models.components.aggregation.NeighbourAggregation"><code class="docutils literal notranslate"><span class="pre">NeighbourAggregation</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.models.components.aggregation.NeighbourAggregation.forward"><code class="docutils literal notranslate"><span class="pre">NeighbourAggregation.forward()</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.models.components.aggregation.NeighbourAggregation.pre_fit"><code class="docutils literal notranslate"><span class="pre">NeighbourAggregation.pre_fit()</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.models.components.aggregation.NeighbourAggregation.parse"><code class="docutils literal notranslate"><span class="pre">NeighbourAggregation.parse()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#graph_pes.models.components.aggregation.NeighbourAggregationMode"><code class="docutils literal notranslate"><span class="pre">graph_pes.models.components.aggregation.NeighbourAggregationMode</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementations">Implementations</a><ul>
+<li><a class="reference internal" href="#graph_pes.models.components.aggregation.SumNeighbours"><code class="docutils literal notranslate"><span class="pre">SumNeighbours</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.models.components.aggregation.SumNeighbours.forward"><code class="docutils literal notranslate"><span class="pre">SumNeighbours.forward()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#graph_pes.models.components.aggregation.MeanNeighbours"><code class="docutils literal notranslate"><span class="pre">MeanNeighbours</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.models.components.aggregation.MeanNeighbours.forward"><code class="docutils literal notranslate"><span class="pre">MeanNeighbours.forward()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#graph_pes.models.components.aggregation.ScaledSumNeighbours"><code class="docutils literal notranslate"><span class="pre">ScaledSumNeighbours</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.models.components.aggregation.ScaledSumNeighbours.forward"><code class="docutils literal notranslate"><span class="pre">ScaledSumNeighbours.forward()</span></code></a></li>
+<li><a class="reference internal" href="#graph_pes.models.components.aggregation.ScaledSumNeighbours.pre_fit"><code class="docutils literal notranslate"><span class="pre">ScaledSumNeighbours.pre_fit()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#graph_pes.models.components.aggregation.VariancePreservingSumNeighbours"><code class="docutils literal notranslate"><span class="pre">VariancePreservingSumNeighbours</span></code></a><ul>
+<li><a class="reference internal" href="#graph_pes.models.components.aggregation.VariancePreservingSumNeighbours.forward"><code class="docutils literal notranslate"><span class="pre">VariancePreservingSumNeighbours.forward()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=cb850272"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=5fa4622c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=35fd3fb5"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    </body>
+</html>
