@@ -14,4 +14,4 @@ if hasattr(torch.serialization, "add_safe_globals"):
     torch.serialization.add_safe_globals([slice])
 
 __all__ = ["AtomicGraph", "GraphPESModel", "GraphPropertyModel"]
-__version__ = "0.2.4"
+__version__ = "0.2.5"
