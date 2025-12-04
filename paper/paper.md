@@ -72,7 +72,7 @@ We also support models that return direct force and stress tensor predictions (e
 Building on the `GraphPESModel` class, we provide independent (re-) implementations of popular MLIP architectures, including `PaiNN` [@Schutt-21-06], `EDDP` [@Pickard-22-07], `NequIP` [@Batzner-22-05], `MACE` [@Batatia-22-10], and `TensorNet` [@Simeon-23-06]. 
 We use building blocks provided by `e3nn` [@Geiger-22-07] to implement models that act on spherical tensor decompositions.
 
-Furthermore, we provide an `AdditionModel` implementation, which makes energy, force, and stress predictions as a sum over several independent models. 
+Furthermore, we provide an `AdditionModel` implementation, which makes predictions as a sum over independent models. 
 This allows `graph-pes` to add offset energies (`EnergyOffset`) and pair-repulsion terms (`LennardJones`, `Morse`, and `ZBLCoreRepulsion`) to any model implementation, as well as the creation and use of model ensembles.
 
 ## Training and validation
@@ -87,7 +87,7 @@ Because all models conform to the same interface, all training features can be u
 
 ## Easy access to foundation models
 
-A recent area of research is the development of "foundational" MLIPs that can describe the potential-energy surface of a wide range of systems. `graph-pes` integrates directly with the `mace-torch`, `mattersim`, and `orb-models` packages to provide access to, among others, the `MACE-MP` [@Batatia-24-03], `MatterSim` [@Yang-24-05], `orb-v2` [@Neumann-24-10], `MACE-OFF` [@Kovacs-25-01],  `Egret-v1` [@Mann-25-05], and `orb-v3` [@Rhodes-25-04] families of models. Each of these integrations generates `GraphPESModels` that are directly compatible with all `graph-pes` features, including fine-tuning, validation, and MD simulations.
+A recent area of research is the development of "foundational" MLIPs that can describe the potential-energy surface of a wide range of systems. `graph-pes` integrates directly with the `mace-torch`, `mattersim`, and `orb-models` packages to provide access to, among others, the `MACE-MP` [@Batatia-25-11], `MatterSim` [@Yang-24-05], `orb-v2` [@Neumann-24-10], `MACE-OFF` [@Kovacs-25-01],  `Egret-v1` [@Mann-25-05], and `orb-v3` [@Rhodes-25-04] families of models. Each of these integrations generates `GraphPESModels` that are directly compatible with all relevant `graph-pes` features.
 
 # Acknowledgements
 
