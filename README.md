@@ -15,6 +15,14 @@ Links: [Google Colab Quickstart](https://colab.research.google.com/github/jla-ga
 
 </div>
 
+## Statement of need
+
+`graph-pes` is a toolkit for building, training, and deploying machine-learned potential energy surfaces (PES) models that act on graph representations of atomic structures.
+
+As a researcher who wants to train and use existing MLIPs, you can use the `graph-pes-train` command to train many different architectures from scratch on your own data, or fine-tune several existing foundation models. Once trained, you can use our drivers to run optimisations, single point energy calculations, and molecular dynamics simulations with your model with a variety of existing tools (`LAMMPS`, `ASE`, and `torch-sim`).
+
+As a researcher wanting to work on MLIP methodology, `graph-pes` makes implementing new architectures easy, allows you to experiment with various different training strategies, and provides a clean, well-documented API for building things yourself.
+
 
 ## Features
 
@@ -38,7 +46,15 @@ Alternatively, for a 0-install quickstart experience, please see [this Google Co
 
 ## Contributing
 
-Contributions are welcome! If you find any issues or have suggestions for new features, please open an issue or submit a pull request on the [GitHub repository](https://github.com/jla-gardner/graph-pes). Please see our [CONTRIBUTING.md](CONTRIBUTING.md) file for more details.
+Contributions are welcome! If you find any issues or have suggestions for new features, please open an issue or submit a pull request on the [GitHub repository](https://github.com/jla-gardner/graph-pes). 
+We use `uv` to manage dependencies and run commands. Install it [here](https://docs.astral.sh/uv/), and sync the dependencies using `uv sync --all-extras`.
+
+Once you have made your changes, you can:
+
+- run tests locally: `uv run pytest tests/`
+- build the documentation: `uv run sphinx-build docs/source docs/build`
+
+Please see our [CONTRIBUTING.md](CONTRIBUTING.md) file for more details.
 
 ## Citing `graph-pes`
 
