@@ -765,7 +765,9 @@ def to_batch(
     batch = torch.cat(
         [torch.full_like(g.Z, fill_value=i) for i, g in enumerate(graphs)]
     )
-    ptr = torch.tensor([0] + [g.Z.shape[0] for g in graphs]).cumsum(dim=0)
+    ptr = torch.tensor(
+        [0] + [g.Z.shape[0] for g in graphs], device=Z.device
+    ).cumsum(dim=0)
 
     # use the ptr to increment the neighbour index appropriately
     neighbour_list = torch.cat(
