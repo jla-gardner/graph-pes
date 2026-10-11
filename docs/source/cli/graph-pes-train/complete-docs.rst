@@ -369,7 +369,7 @@ Data loaders are responsible for sampling batches of data from the dataset. We u
 
 See the `PyTorch documentation <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`__ for details.
 
-We reccommend using several, persistent workers, since loading data can be a bottleneck, either due to expensive read operations from disk, or due to the time taken to convert the underlying data into :class:`~graph_pes.AtomicGraph` objects (calculating neighbour lists etc.).
+We recommend using several, persistent workers, since loading data can be a bottleneck, either due to expensive read operations from disk, or due to the time taken to convert the underlying data into :class:`~graph_pes.AtomicGraph` objects (calculating neighbour lists etc.).
 
 Caution: setting the ``shuffle`` field here will have no effect: we always shuffle the training data, and keep the validation and testing data in order.
 
